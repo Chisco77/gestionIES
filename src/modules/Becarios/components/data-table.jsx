@@ -47,6 +47,10 @@ import {
 import jsPDF from "jspdf";
 
 export function DataTable({ columns, data }) {
+  const [showMesDialog, setShowMesDialog] = useState(false);
+  const [mesSeleccionado, setMesSeleccionado] = useState("Enero");
+  const [nombreArchivoMes, setNombreArchivoMes] = useState("nombre de archivo");
+
   const [sorting, setSorting] = useState([
     { id: "grupo", desc: false }
   ]);
@@ -160,6 +164,13 @@ export function DataTable({ columns, data }) {
     }
   }, [showSuccessToast]);
 
+
+// dentro del componente DataTable, antes del return:
+useEffect(() => {
+  console.log("showMesDialog cambiado a", showMesDialog);
+}, [showMesDialog]);
+
+
   return (
     <div>
       <div className="mb-4">
@@ -249,6 +260,59 @@ export function DataTable({ columns, data }) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+<Dialog open={showMesDialog} onOpenChange={setShowMesDialog}>
+  <DialogTrigger asChild>
+    <Button variant="secondary">Abrir formulario de mes</Button>
+  </DialogTrigger>
+
+   <DialogContent
+    className="opacity-100 duration-200 transition-opacity bg-white"
+    onInteractOutside={(e) => e.preventDefault()}
+  >
+    <DialogHeader>
+      <DialogTitle>Seleccionar mes y nombre de archivo</DialogTitle>
+    </DialogHeader>
+
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-1">Mes</label>
+        <Select value={mesSeleccionado} onValueChange={setMesSeleccionado}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Seleccionar mes" />
+          </SelectTrigger>
+          <SelectContent>
+            {[
+              "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+              "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+            ].map((mes) => (
+              <SelectItem key={mes} value={mes}>
+                {mes}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Nombre del archivo</label>
+        <Input
+          type="text"
+          value={nombreArchivoMes}
+          onChange={(e) => setNombreArchivoMes(e.target.value)}
+          placeholder="nombre de archivo"
+        />
+      </div>
+    </div>
+
+    <DialogFooter className="pt-4">
+      <Button onClick={() => setShowMesDialog(false)}>
+        Confirmar
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
 
         {loading && (
           <div className="my-4 w-full">
