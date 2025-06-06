@@ -61,7 +61,7 @@ export function LoginForm({ className, ...props }) {
       <Card>
         <CardHeader className="flex flex-col items-center justify-center text-center">
           <CardTitle className="text-2xl">Gestión de Becarios</CardTitle>
-          <CardDescription>IES Santa Eulalia</CardDescription>
+          <CardDescription>IES Francisco de Orellana</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>

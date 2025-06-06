@@ -1,24 +1,27 @@
-import { useEffect, useState } from "react"
-import { columns } from "../components/colums"
-import { DataTable } from "../components/data-table"
-
-
+// BecariosIndex.jsx
+import { useEffect, useState } from "react";
+import { columns } from "../components/colums";
+import { TablaAlumnos } from "../components/TablaAlumnos";
+import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
+import { DialogoMes } from "../components/DialogoMes";
 
 export function BecariosIndex() {
+  const [data, setData] = useState([]);
 
-    const [data, setData] = useState([])
-    // fetch de datos a backend ldap, que está corriendo en puerto 5000
-    useEffect(() => {
-        fetch("http://localhost:5000/api/alumnos")
-            .then(response => response.json())
-            .then(data => setData(data))
-            .catch((error) => console.log("error al cargar alumnos"))
-    }, [])
+  useEffect(() => {
+    fetch("http://localhost:5000/api/alumnos")
+      .then(response => response.json())
+      .then(data => setData(data))
+      .catch(() => console.log("error al cargar alumnos"));
+  }, []);
 
-
-    return (
-        <div className="container mx-auto py-10 p-12">
-            <DataTable columns={columns} data={data} />
-        </div>
-    )
+  return (
+    <div className="container mx-auto py-10 p-12 space-y-6">
+      <div className="flex gap-4">
+        <DialogoEtiquetas alumnos={data} />
+        <DialogoMes />
+      </div>
+      <TablaAlumnos columns={columns} data={data} />
+    </div>
+  );
 }

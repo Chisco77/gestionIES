@@ -59,7 +59,7 @@ export function AppSidebar({ ...props }) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify("usuario"),
+      //body: JSON.stringify("usuario"),
       credentials: "include",
     });
     navigate("/login");
