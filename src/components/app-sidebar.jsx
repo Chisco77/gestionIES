@@ -1,4 +1,4 @@
-import * as React from "react";
+/*import * as React from "react";
 import { GalleryVerticalEnd, Power, User } from "lucide-react";
 import {
   Sidebar,
@@ -115,14 +115,14 @@ export function AppSidebar({ ...props }) {
       <SidebarFooter>
   <SidebarMenu className="border-t p-4">
     <div className="flex items-center justify-between w-full">
-      {/* Logout simple sin tooltip */}
+
       <Power
         className="cursor-pointer"
         color="red"
         onClick={handleClick}
       />
 
-      {/* Usuario */}
+
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium">{username}</span>
         <User className="h-5 w-5 text-gray-500" />
@@ -135,4 +135,206 @@ export function AppSidebar({ ...props }) {
       <SidebarRail />
     </Sidebar>
   );
+}*/
+
+"use client";
+
+import * as React from "react";
+import {
+  AudioWaveform,
+  BookOpen,
+  Bot,
+  Command,
+  Frame,
+  GalleryVerticalEnd,
+  Map,
+  PieChart,
+  Settings2,
+  SquareTerminal,
+  Power,
+  User,
+} from "lucide-react";
+
+import { NavMain } from "@/components/nav-main";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
+  SidebarMenu,
+} from "@/components/ui/sidebar";
+
+import { Link, useNavigate } from "react-router-dom";
+
+// This is sample data.
+const data = {
+  user: {
+    name: "shadcn",
+    email: "m@example.com",
+    avatar: "/avatars/shadcn.jpg",
+  },
+  teams: [
+    {
+      name: "Acme Inc",
+      logo: GalleryVerticalEnd,
+      plan: "Enterprise",
+    },
+    {
+      name: "Acme Corp.",
+      logo: AudioWaveform,
+      plan: "Startup",
+    },
+    {
+      name: "Evil Corp.",
+      logo: Command,
+      plan: "Free",
+    },
+  ],
+  navMain: [
+    {
+      title: "IES Francisco de Orellana",
+      url: "#",
+      icon: SquareTerminal,
+      isActive: true,
+      items: [
+        {
+          title: "Alumnos",
+          url: "/becarios",
+        },
+        {
+          title: "Profesores",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Models",
+      url: "#",
+      icon: Bot,
+      items: [
+        {
+          title: "Genesis",
+          url: "#",
+        },
+        {
+          title: "Explorer",
+          url: "#",
+        },
+        {
+          title: "Quantum",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Documentation",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        {
+          title: "Introduction",
+          url: "#",
+        },
+        {
+          title: "Get Started",
+          url: "#",
+        },
+        {
+          title: "Tutorials",
+          url: "#",
+        },
+        {
+          title: "Changelog",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Settings",
+      url: "#",
+      icon: Settings2,
+      items: [
+        {
+          title: "General",
+          url: "#",
+        },
+        {
+          title: "Team",
+          url: "#",
+        },
+        {
+          title: "Billing",
+          url: "#",
+        },
+        {
+          title: "Limits",
+          url: "#",
+        },
+      ],
+    },
+  ],
+ };
+
+export function AppSidebar(props) {
+  const navigate = useNavigate();
+
+  // Leer y decodificar el token
+  const token = localStorage.getItem("token");
+  let username = "";
+
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      username = decoded.name || decoded.username || "Usuario";
+    } catch (err) {
+      console.error("Token inválido:", err);
+      username = "Usuario";
+    }
+  }
+
+  // logout
+  const handleClick = () => {
+    localStorage.removeItem("token");
+    const url = "http://localhost:5000/api/logout";
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      //body: JSON.stringify("usuario"),
+      credentials: "include",
+    });
+    navigate("/login");
+  };
+
+  return (
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+      </SidebarHeader>
+      <SidebarContent>
+        <NavMain items={data.navMain} />
+       </SidebarContent>
+      <SidebarFooter>
+<SidebarMenu className="border-t p-4">
+    <div className="flex items-center justify-between w-full">
+
+      <Power
+        className="cursor-pointer"
+        color="red"
+        onClick={handleClick}
+      />
+
+
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium">{username}</span>
+        <User className="h-5 w-5 text-gray-500" />
+      </div>
+    </div>
+  </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  );
 }
+

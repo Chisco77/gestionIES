@@ -5,7 +5,7 @@ import { TablaAlumnos } from "../components/TablaAlumnos";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 import { DialogoMes } from "../components/DialogoMes";
 
-export function BecariosIndex() {
+export function AlumnosIndex() {
   const [data, setData] = useState([]);
 
   useEffect(() => {
@@ -17,11 +17,13 @@ export function BecariosIndex() {
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
-      <div className="flex gap-4">
+      <TablaAlumnos columns={columns} data={data} />
+          <div className="flex gap-4">
         <DialogoEtiquetas alumnos={data} />
         <DialogoMes />
-      </div>
-      <TablaAlumnos columns={columns} data={data} />
     </div>
+    </div>
+
+
   );
 }

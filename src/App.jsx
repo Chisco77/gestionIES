@@ -1,5 +1,4 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
-import { Formulario } from "./modules/Formulario/pages/Formulario"
 import Layout from "./layout/Layout"
 import { Dashboard } from "./modules/Dashboard/pages/Dashboard"
 import Login from "./modules/Login/pages/Login"
@@ -10,7 +9,7 @@ import store from "./reducers/store"
 import { Toaster } from "sonner"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
-import { BecariosIndex } from "./modules/Becarios/pages/BecariosIndex"
+import { AlumnosIndex } from "./modules/Alumnos/pages/AlumnosIndex"
 
 const router = createBrowserRouter([
   {
@@ -28,7 +27,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/becarios",
-        element: <BecariosIndex />
+        element: <AlumnosIndex />
       },
     ]
   },
