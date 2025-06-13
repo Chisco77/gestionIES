@@ -70,14 +70,14 @@ export function DialogoEtiquetas({ alumnos }) {
 
       doc.addImage(image, "JPEG", logoX, logoY, logoWidth, logoHeight);
 
-      let nombreCompleto = `${alumno.nombre} ${alumno.apellido1} ${alumno.apellido2}`;
+      let nombreCompleto = `${alumno.givenName} ${alumno.sn}`;
       if (nombreCompleto.length > 25) nombreCompleto = nombreCompleto.slice(0, 22) + "…";
 
       doc.setFontSize(9);
       doc.text(nombreCompleto, centerX, y + 15, { align: "center" });
 
       doc.setFontSize(8);
-      doc.text(`Curso: ${alumno.grupo} - ${cursoSeleccionado}`, centerX, y + 21, { align: "center" });
+      doc.text(`Curso: ${alumno.groups[1]} - ${cursoSeleccionado}`, centerX, y + 21, { align: "center" });
 
       if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
       setProgress(Math.round(((i + 1) / total) * 100));
@@ -92,6 +92,10 @@ export function DialogoEtiquetas({ alumnos }) {
       return () => clearTimeout(timeout);
     }
   }, [showSuccessToast]);
+
+    useEffect(() => {
+    console.log("🔍 alumnos recibidos en DialogoEtiquetas:", alumnos);
+  }, [alumnos]);
 
   return (
     <>

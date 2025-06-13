@@ -31,36 +31,32 @@ export function LoginForm({ className, ...props }) {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    // const url = "http://localhost:3001/login"
-    const url = "http://localhost:5000/api/login";
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(usuario),
-      //credentials: "include",
+  e.preventDefault();
+  const url = "http://localhost:5000/api/login";
+
+  fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include", // ⬅️ ¡IMPORTANTE para mantener sesión!
+    body: JSON.stringify(usuario),
+  })
+    .then((response) => {
+      if (response.status === 200) {
+        navigate("/alumnos"); 
+      } else {
+        alert("Usuario o Password incorrectos");
+      }
     })
-      .then((response) => {
-        if (response.status == 200) {
-          return response.json();
-        } else {
-          alert("Usuario o Password incorrectos");
-        }
-      })
-      .then((data) => {
-        localStorage.setItem("token", data.accessToken);
-        navigate("/becarios");
-      })
-      .catch(() => alert("Error de otro tipo"));
-  };
+    .catch(() => alert("Error de conexión con el servidor"));
+};
 
   return (
     <div className={`flex flex-col gap-6 mx-auto max-w-sm ${className}`} {...props}>
       <Card>
         <CardHeader className="flex flex-col items-center justify-center text-center">
-          <CardTitle className="text-2xl">Gestión de Becarios</CardTitle>
+          <CardTitle className="text-2xl">gestionIES</CardTitle>
           <CardDescription>IES Francisco de Orellana</CardDescription>
         </CardHeader>
         <CardContent>

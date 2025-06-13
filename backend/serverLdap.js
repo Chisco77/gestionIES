@@ -1,62 +1,57 @@
-// server.js
 const express = require("express");
-const ldap = require("ldapjs");
-const jwt = require("jsonwebtoken");
-const bodyParser = require("body-parser");
+const session = require("express-session");
 const cors = require("cors");
-const cookieParser = require("cookie-parser"); // Para poder leer y manejar las cookies
-const alumnosController = require('./controllers/alumnosController');  // Importamos el controlador de alumnos
+
+const { getLdapAlumnos } = require("./controllers/usuariosController");
+const { loginLdap } = require("./controllers/loginController");
 
 const app = express();
-const port = 5000;
 
-// Configura CORS
-app.use(
-  cors({
-    origin: "http://localhost:5173", // Tu frontend
-    credentials: true, // Permite que las cookies se envíen
-  })
-);
+// 💡 Paso 1: Configurar CORS con origin fijo y credentials
+app.use(cors({
+  origin: "http://localhost:5173", // ⚠️ frontend Vite
+  credentials: true
+}));
 
-app.use(bodyParser.json());
-app.use(cookieParser()); // Middleware para manejar cookies
+// 💡 Paso 2: Aceptar preflight OPTIONS explícitamente
+app.options("*", cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 
-const ldapClient = ldap.createClient({
-  url: "ldap://172.16.218.2", // Dirección de tu servidor LDAP
-});
+// 💡 Paso 3: Middleware ordenado
+app.use(express.json());
 
-// Endpoint de login para autenticación con LDAP
-app.post("/api/login", (req, res) => {
-  const { username, password } = req.body;
-  const dn = `uid=${username},ou=People,dc=instituto,dc=extremadura,dc=es`; // Formato del DN
-
-  ldapClient.bind(dn, password, (err) => {
-    if (err) {
-      return res.status(401).json({ message: "Credenciales incorrectas" });
-    } else {
-      const token = jwt.sign({ username }, "your-secret-key", { expiresIn: "1h" });
-      return res.status(200).json({
-        message: "Autenticación exitosa",
-        accessToken: token,
-      });
-    }
-  });
-});
-
-// Endpoint de logout
-app.post("/api/logout", (req, res) => {
-  res.clearCookie("token", {
+app.use(session({
+  secret: "clave-secreta-super-segura",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // true si HTTPS
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
-  });
+    sameSite: "lax"
+  }
+}));
 
-  return res.status(200).json({ message: "Sesión cerrada con éxito" });
+// 💡 Paso 4: Endpoints
+app.post("/api/login", loginLdap);
+app.get("/api/ldap/alumnos", getLdapAlumnos);
+
+app.get("/api/check-auth", (req, res) => {
+  if (req.session.ldap) {
+    const uid = req.session.ldap.dn.split(",")[0].replace("uid=", "");
+    res.json({ authenticated: true, username: uid });
+  } else {
+    res.sendStatus(401);
+  }
 });
 
-// Rutas para alumnos
-app.use('/api', alumnosController);  // Añadimos el controlador de alumnos
+app.post("/api/logout", (req, res) => {
+  req.session.destroy(() => res.sendStatus(200));
+});
 
-app.listen(port, () => {
-  console.log(`Servidor backend corriendo en http://localhost:${port}`);
+// 💡 Paso 5: Iniciar servidor
+const PORT = 5000;
+app.listen(PORT, () => {
+  console.log(`Servidor LDAP backend en http://localhost:${PORT}`);
 });

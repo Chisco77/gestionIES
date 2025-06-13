@@ -24,11 +24,11 @@ import {
   ChevronsLeft,
   ChevronLeft,
   ChevronRight,
-  ChevronsRight
+  ChevronsRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-export function TablaAlumnos({ columns, data }) {
+export function TablaAlumnos({ columns, data, onFilteredChange }) {
   const [sorting, setSorting] = useState([{ id: "grupo", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
 
@@ -47,8 +47,19 @@ export function TablaAlumnos({ columns, data }) {
     },
   });
 
+  // ✅ Solo llamar a onFilteredChange cuando cambien los datos filtrados realmente
+useEffect(() => {
+  const filtered = table.getFilteredRowModel().rows.map((row) => row.original);
+  onFilteredChange?.(filtered);
+}, [columnFilters]);
+
+
   const getUniqueValues = (columnId) =>
-    Array.from(new Set(data.map((row) => row[columnId])))
+    Array.from(
+      new Set(
+        table.getPreFilteredRowModel().rows.map((row) => row.getValue(columnId))
+      )
+    )
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b));
 
@@ -63,8 +74,13 @@ export function TablaAlumnos({ columns, data }) {
           <label className="text-sm font-medium block mb-1">Grupo</label>
           <MultiSelect
             values={table.getColumn("grupo")?.getFilterValue() ?? []}
-            onChange={(value) => table.getColumn("grupo")?.setFilterValue(value)}
-            options={getUniqueValues("grupo").map((g) => ({ value: g, label: g }))}
+            onChange={(value) =>
+              table.getColumn("grupo")?.setFilterValue(value)
+            }
+            options={getUniqueValues("grupo").map((g) => ({
+              value: g,
+              label: g,
+            }))}
             placeholder="Seleccionar grupos"
           />
         </div>
@@ -80,19 +96,14 @@ export function TablaAlumnos({ columns, data }) {
           />
         </div>
         <div>
-          <label className="text-sm font-medium block mb-1">Becario</label>
-          <MultiSelect
-            values={[String(table.getColumn("becario")?.getFilterValue() ?? "")].filter(Boolean)}
-            onChange={(value) =>
-              table.getColumn("becario")?.setFilterValue(
-                value.length === 0 ? undefined : value.includes("true")
-              )
+          <label className="text-sm font-medium block mb-1">Usuario</label>
+          <Input
+            placeholder="Buscar usuario..."
+            value={table.getColumn("uid")?.getFilterValue() ?? ""}
+            onChange={(e) =>
+              table.getColumn("uid")?.setFilterValue(e.target.value)
             }
-            options={[
-              { value: "true", label: "Sí" },
-              { value: "false", label: "No" },
-            ]}
-            placeholder="Seleccionar"
+            className="w-[200px]"
           />
         </div>
       </div>
@@ -107,7 +118,10 @@ export function TablaAlumnos({ columns, data }) {
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -116,17 +130,26 @@ export function TablaAlumnos({ columns, data }) {
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No hay resultados.
                 </TableCell>
               </TableRow>
@@ -138,19 +161,40 @@ export function TablaAlumnos({ columns, data }) {
       {/* Paginación */}
       <div className="flex items-center justify-between py-4">
         <div className="text-sm">
-          Total de registros: {table.getFilteredRowModel().rows.length} | Página {currentPage} de {totalPages}
+          Total de registros: {table.getFilteredRowModel().rows.length} | Página{" "}
+          {currentPage} de {totalPages}
         </div>
         <div className="flex items-center space-x-1">
-          <Button variant="outline" size="icon" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
+          >
             <ChevronsLeft className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
             <ChevronRight className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
+          >
             <ChevronsRight className="w-4 h-4" />
           </Button>
         </div>

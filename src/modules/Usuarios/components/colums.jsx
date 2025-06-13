@@ -9,21 +9,40 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Filtro para apellidos
+// Filtro para apellidos (usa sn)
 const fuzzyTextFilter = (row, columnId, filterValue) => {
-  const cellValue = `${row.original.apellido1} ${row.original.apellido2}`;
-  return cellValue.toLowerCase().includes(filterValue.toLowerCase());
+  const apellidos = row.original.sn ?? "";
+  return apellidos.toLowerCase().includes(filterValue.toLowerCase());
 };
 
 export const columns = [
   {
-    accessorKey: "grupo",
+    id: "tipo",
+    accessorFn: (row) => row.groups?.[0] ?? "",
     header: ({ column }) => (
       <Button
         variant="ghost"
-        onClick={() =>
-          column.toggleSorting(column.getIsSorted() === "asc")
-        }
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Tipo
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    filterFn: (row, columnId, filterValue) => {
+      if (!filterValue || filterValue.length === 0) return true;
+      return filterValue.includes(row.getValue(columnId));
+    },
+  },
+  {
+    id: "grupo",
+    accessorFn: (row) => {
+      const grupo = Array.isArray(row.groups) ? row.groups[1] : "";
+      return grupo ?? "";
+    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         Grupo
         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -34,14 +53,13 @@ export const columns = [
       return filterValue.includes(row.getValue(columnId));
     },
   },
+
   {
-    accessorKey: "nombre",
+    accessorKey: "givenName",
     header: ({ column }) => (
       <Button
         variant="ghost"
-        onClick={() =>
-          column.toggleSorting(column.getIsSorted() === "asc")
-        }
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         Nombre
         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -49,20 +67,21 @@ export const columns = [
     ),
     filterFn: (row, columnId, filterValue) => {
       if (!filterValue || filterValue.length === 0) return true;
-      return filterValue.includes(row.getValue(columnId));
+      return row
+        .getValue(columnId)
+        .toLowerCase()
+        .includes(filterValue.toLowerCase());
     },
   },
   {
     id: "apellidos",
-    accessorFn: (row) => `${row.apellido1} ${row.apellido2}`,
-    cell: (info) => `${info.row.original.apellido1} ${info.row.original.apellido2}`,
+    accessorFn: (row) => row.sn ?? "",
+    cell: (info) => info.getValue(),
     filterFn: fuzzyTextFilter,
     header: ({ column }) => (
       <Button
         variant="ghost"
-        onClick={() =>
-          column.toggleSorting(column.getIsSorted() === "asc")
-        }
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         Apellidos
         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -70,33 +89,20 @@ export const columns = [
     ),
   },
   {
-    accessorKey: "becario",
+    accessorKey: "uid",
     header: ({ column }) => (
       <Button
         variant="ghost"
-        onClick={() =>
-          column.toggleSorting(column.getIsSorted() === "asc")
-        }
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Becario
+        Usuario
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => {
-      const value = row.getValue("becario");
-      return (
-        <div className="text-right font-medium">
-          {value ? (
-            <Check className="w-4 h-4 text-green-500" />
-          ) : (
-            <X className="w-4 h-4 text-red-500" />
-          )}
-        </div>
-      );
-    },
     filterFn: (row, columnId, filterValue) => {
-      if (!filterValue || filterValue.length === 0) return true;
-      return filterValue.includes(String(row.getValue(columnId)));
+      if (!filterValue || filterValue.trim() === "") return true;
+      const value = String(row.getValue(columnId) ?? "").toLowerCase();
+      return value.includes(filterValue.toLowerCase());
     },
   },
   {
