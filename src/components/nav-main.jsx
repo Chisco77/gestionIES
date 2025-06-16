@@ -23,7 +23,7 @@ import { Link } from "react-router-dom";
 export function NavMain({ items }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroupLabel>IES Francisco de Orellana</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible

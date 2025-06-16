@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export function TablaAlumnos({ columns, data, onFilteredChange }) {
+export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
   const [sorting, setSorting] = useState([{ id: "grupo", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
 
@@ -48,11 +48,12 @@ export function TablaAlumnos({ columns, data, onFilteredChange }) {
   });
 
   // ✅ Solo llamar a onFilteredChange cuando cambien los datos filtrados realmente
-useEffect(() => {
-  const filtered = table.getFilteredRowModel().rows.map((row) => row.original);
-  onFilteredChange?.(filtered);
-}, [columnFilters]);
-
+  useEffect(() => {
+    const filtered = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
+    onFilteredChange?.(filtered);
+  }, [columnFilters]);
 
   const getUniqueValues = (columnId) =>
     Array.from(
@@ -69,9 +70,9 @@ useEffect(() => {
   return (
     <div>
       {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-4 py-4">
-        <div>
-          <label className="text-sm font-medium block mb-1">Grupo</label>
+      <div className="flex flex-wrap items-end gap-3 py-2 text-sm text-muted-foreground">
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Grupo</label>
           <MultiSelect
             values={table.getColumn("grupo")?.getFilterValue() ?? []}
             onChange={(value) =>
@@ -84,28 +85,32 @@ useEffect(() => {
             placeholder="Seleccionar grupos"
           />
         </div>
-        <div>
-          <label className="text-sm font-medium block mb-1">Apellidos</label>
+
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Apellidos</label>
           <Input
             placeholder="Buscar apellidos..."
             value={table.getColumn("apellidos")?.getFilterValue() ?? ""}
             onChange={(e) =>
               table.getColumn("apellidos")?.setFilterValue(e.target.value)
             }
-            className="w-[200px]"
+            className="w-[180px] h-8 text-sm"
           />
         </div>
-        <div>
-          <label className="text-sm font-medium block mb-1">Usuario</label>
+
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Usuario</label>
           <Input
             placeholder="Buscar usuario..."
             value={table.getColumn("uid")?.getFilterValue() ?? ""}
             onChange={(e) =>
               table.getColumn("uid")?.setFilterValue(e.target.value)
             }
-            className="w-[200px]"
+            className="w-[180px] h-8 text-sm"
           />
         </div>
+
+        {acciones && <div className="ml-auto">{acciones}</div>}
       </div>
 
       {/* Tabla */}
@@ -159,12 +164,9 @@ useEffect(() => {
       </div>
 
       {/* Paginación */}
-      <div className="flex items-center justify-between py-4">
-        <div className="text-sm">
-          Total de registros: {table.getFilteredRowModel().rows.length} | Página{" "}
-          {currentPage} de {totalPages}
-        </div>
-        <div className="flex items-center space-x-1">
+      {/* Paginación */}
+      <div className="flex flex-col items-center justify-center py-6 space-y-2">
+        <div className="flex items-center space-x-2">
           <Button
             variant="outline"
             size="icon"
@@ -181,6 +183,11 @@ useEffect(() => {
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
+
+          <span className="text-xs text-muted-foreground px-2">
+            Página {currentPage} de {totalPages}
+          </span>
+
           <Button
             variant="outline"
             size="icon"
@@ -197,6 +204,10 @@ useEffect(() => {
           >
             <ChevronsRight className="w-4 h-4" />
           </Button>
+        </div>
+
+        <div className="text-xs text-muted-foreground">
+          Total de registros: {table.getFilteredRowModel().rows.length}
         </div>
       </div>
     </div>

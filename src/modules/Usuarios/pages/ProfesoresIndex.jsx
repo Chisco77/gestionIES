@@ -1,7 +1,7 @@
 // BecariosIndex.jsx
 import { useEffect, useState } from "react";
 import { columns } from "../components/colums";
-import { TablaAlumnos } from "../components/TablaAlumnos";
+import { TablaUsuarios } from "../components/TablaUsuarios";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 
 export function ProfesoresIndex() {
@@ -26,7 +26,7 @@ export function ProfesoresIndex() {
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
-      <TablaAlumnos
+      <TablaUsuarios
         columns={columns}
         data={data}
         onFilteredChange={(rows) => setAlumnosFiltrados(rows)}

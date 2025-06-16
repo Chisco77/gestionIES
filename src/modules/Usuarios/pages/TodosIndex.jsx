@@ -1,7 +1,7 @@
 // BecariosIndex.jsx
 import { useEffect, useState } from "react";
 import { columns } from "../components/colums";
-import { TablaAlumnos } from "../components/TablaAlumnos";
+import { TablaAlumnos } from "../components/TablaUsuarios";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 
 export function TodosIndex() {
