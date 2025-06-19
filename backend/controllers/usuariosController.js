@@ -1,6 +1,6 @@
 const ldap = require("ldapjs");
 
-exports.getLdapAlumnos = (req, res) => {
+exports.getLdapUsuarios = (req, res) => {
   const ldapSession = req.session.ldap;
   const tipo = req.query.tipo || "all"; // default: sin filtro
   const grupoPermitido = ["students", "teachers"].includes(tipo) ? tipo : "all";

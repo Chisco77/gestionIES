@@ -1,7 +1,7 @@
 // BecariosIndex.jsx
 import { useEffect, useState } from "react";
 import { columns } from "../components/colums";
-import { TablaAlumnos } from "../components/TablaUsuarios";
+import { TablaUsuarios } from "../components/TablaUsuarios";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 
 export function TodosIndex() {
@@ -9,7 +9,7 @@ export function TodosIndex() {
   const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/ldap/alumnos?tipo=all", {
+    fetch("http://localhost:5000/api/ldap/usuarios?tipo=all", {
       credentials: "include",
     })
       .then((response) => response.json())
@@ -26,7 +26,7 @@ export function TodosIndex() {
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
-      <TablaAlumnos
+      <TablaUsuarios
         columns={columns}
         data={data}
         onFilteredChange={(rows) => setAlumnosFiltrados(rows)}

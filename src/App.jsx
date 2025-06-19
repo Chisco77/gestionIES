@@ -12,6 +12,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AlumnosIndex } from "./modules/Usuarios/pages/AlumnosIndex";
 import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
 import { TodosIndex } from "./modules/Usuarios/pages/TodosIndex";
+import { CursosIndex } from "./modules/Cursos/pages/CursosIndex";
 
 const router = createBrowserRouter([
   {
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
         path: "/todos",
         element: <TodosIndex />,
       },            
+      {
+        path: "/cursos",
+        element: <CursosIndex />,
+      },                  
     ],
   },
 ]);

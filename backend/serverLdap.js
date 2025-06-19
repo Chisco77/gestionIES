@@ -2,8 +2,9 @@ const express = require("express");
 const session = require("express-session");
 const cors = require("cors");
 
-const { getLdapAlumnos } = require("./controllers/usuariosController");
+const { getLdapUsuarios } = require("./controllers/usuariosController");
 const { loginLdap } = require("./controllers/loginController");
+const cursosRouter = require("./controllers/cursosController");
 
 const app = express();
 
@@ -35,7 +36,8 @@ app.use(session({
 
 // 💡 Paso 4: Endpoints
 app.post("/api/login", loginLdap);
-app.get("/api/ldap/alumnos", getLdapAlumnos);
+app.get("/api/ldap/usuarios", getLdapUsuarios);
+app.use("/api/db", cursosRouter);
 
 app.get("/api/check-auth", (req, res) => {
   if (req.session.ldap) {

@@ -9,7 +9,7 @@ export function ProfesoresIndex() {
   const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/ldap/alumnos?tipo=teachers", {
+    fetch("http://localhost:5000/api/ldap/usuarios?tipo=teachers", {
       credentials: "include",
     })
       .then((response) => response.json())

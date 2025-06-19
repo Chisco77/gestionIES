@@ -65,17 +65,7 @@ export function AppSidebar(props) {
       ],
     },
     {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        { title: "Genesis", url: "#" },
-        { title: "Explorer", url: "#" },
-        { title: "Quantum", url: "#" },
-      ],
-    },
-    {
-      title: "Documentation",
+      title: "Préstamo Libros",
       url: "#",
       icon: BookOpen,
       items: [
@@ -90,7 +80,7 @@ export function AppSidebar(props) {
       url: "#",
       icon: Settings2,
       items: [
-        { title: "General", url: "#" },
+        { title: "Cursos", url: "/cursos" },
         { title: "Team", url: "#" },
         { title: "Billing", url: "#" },
         { title: "Limits", url: "#" },

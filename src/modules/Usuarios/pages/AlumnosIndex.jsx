@@ -19,7 +19,7 @@ export function AlumnosIndex() {
   const [abrirDialogoListadoCurso, setAbrirDialogoListadoCurso] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/ldap/alumnos?tipo=students", {
+    fetch("http://localhost:5000/api/ldap/usuarios?tipo=students", {
       credentials: "include",
     })
       .then((response) => response.json())
