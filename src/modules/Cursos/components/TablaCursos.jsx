@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export function TablaCursos({ columns, data, onFilteredChange }) {
+export function TablaCursos({ columns, data, onFilteredChange, acciones }) {
   const [sorting, setSorting] = useState([{ id: "curso", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
 
@@ -52,7 +52,7 @@ export function TablaCursos({ columns, data, onFilteredChange }) {
       .getFilteredRowModel()
       .rows.map((row) => row.original);
     onFilteredChange?.(filtered);
-  }, [columnFilters]);
+  }, [columnFilters, data]);
 
   const getUniqueValues = (columnId) =>
     Array.from(
@@ -84,7 +84,6 @@ export function TablaCursos({ columns, data, onFilteredChange }) {
             placeholder="Seleccionar cursos"
           />
         </div>
-
       </div>
 
       {/* Tabla */}
@@ -138,7 +137,10 @@ export function TablaCursos({ columns, data, onFilteredChange }) {
       </div>
 
       {/* Paginación */}
-      <div className="flex flex-col items-center justify-center py-6 space-y-2">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-center py-6 space-y-4 sm:space-y-0">
+        {" "}
+        {/* Acciones (lado izquierdo) */}
+        <div className="flex gap-2">{acciones}</div>
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
@@ -178,7 +180,6 @@ export function TablaCursos({ columns, data, onFilteredChange }) {
             <ChevronsRight className="w-4 h-4" />
           </Button>
         </div>
-
         <div className="text-xs text-muted-foreground">
           Total de registros: {table.getFilteredRowModel().rows.length}
         </div>

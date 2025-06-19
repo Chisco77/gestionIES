@@ -33,6 +33,8 @@ export function AlumnosIndex() {
       });
   }, []);
 
+  
+
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
       {/* Tabla */}

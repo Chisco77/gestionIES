@@ -1,10 +1,10 @@
-const express = require("express");
+/*const express = require("express");
 const session = require("express-session");
 const cors = require("cors");
 
 const { getLdapUsuarios } = require("./controllers/usuariosController");
 const { loginLdap } = require("./controllers/loginController");
-const cursosRouter = require("./controllers/cursosController");
+const cursosRouter = require("./controllers/db/cursosController");
 
 const app = express();
 
@@ -56,4 +56,48 @@ app.post("/api/logout", (req, res) => {
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Servidor LDAP backend en http://localhost:${PORT}`);
+});*/
+
+const express = require("express");
+const session = require("express-session");
+const cors = require("cors");
+
+// Rutas
+const authRoutes = require("./routes/authRoutes");
+const ldapRoutes = require("./routes/ldapRoutes");
+const dbRoutes = require("./routes/dbRoutes");
+
+const app = express();
+
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+}));
+
+app.options("*", cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+}));
+
+app.use(express.json());
+
+app.use(session({
+  secret: "clave-secreta-super-segura",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false,
+    httpOnly: true,
+    sameSite: "lax",
+  }
+}));
+
+// Usar rutas organizadas
+app.use("/api", authRoutes);      // login, logout, check-auth
+app.use("/api/ldap", ldapRoutes); // usuarios LDAP
+app.use("/api/db", dbRoutes);     // cursos BD
+
+const PORT = 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor en http://localhost:${PORT}`);
 });
