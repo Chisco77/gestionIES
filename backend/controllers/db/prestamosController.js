@@ -209,6 +209,7 @@ async function obtenerPrestamosAgrupados(req, res) {
       }
 
       agrupado[p.uidalumno].prestamos.push({
+        id: p.id,
         libro: nombreLibro,
         devuelto: p.devuelto,
         fechaentrega: p.fechaentrega,
@@ -223,6 +224,40 @@ async function obtenerPrestamosAgrupados(req, res) {
     res.status(500).json({ error: "Error al obtener resumen de préstamos" });
   }
 }
+
+async function devolverPrestamos(req, res) {
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession) {
+      return res.status(401).json({ error: "No autenticado" });
+    }
+
+    const { ids } = req.body; // ids = array de ids de préstamos a devolver
+    console.log ("Ids deuveltos: ", ids);
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "No se especificaron préstamos" });
+    }
+
+    const fechaDevolucion = new Date();
+
+    // Actualizamos devuelto y fechadevolucion para esos ids
+    const query = `
+      UPDATE prestamos
+      SET devuelto = true,
+          fechadevolucion = $1
+      WHERE id = ANY($2::int[])
+    `;
+
+    await pool.query(query, [fechaDevolucion, ids]);
+
+    res.json({ success: true, cantidad: ids.length });
+  } catch (error) {
+    console.error("❌ Error al devolver préstamos:", error.message);
+    res.status(500).json({ error: "Error al devolver préstamos" });
+  }
+}
+
 
 async function insertarPrestamosMasivo(req, res) {
   try {
@@ -284,4 +319,5 @@ module.exports = {
   obtenerPrestamosEnriquecidos,
   obtenerPrestamosAgrupados,
   insertarPrestamosMasivo,
+  devolverPrestamos,
 };
