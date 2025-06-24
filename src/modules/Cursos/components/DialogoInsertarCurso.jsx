@@ -35,8 +35,8 @@ export function DialogoInsertarCurso({ open, onClose, onSuccess }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={onClose} modal={false}>
+      <DialogContent onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Insertar curso</DialogTitle>
         </DialogHeader>

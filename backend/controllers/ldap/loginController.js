@@ -11,6 +11,7 @@ exports.loginLdap = (req, res) => {
 
   const client = ldap.createClient({
     url: 'ldap://172.16.218.2:389' // Cambia a IP o dominio real
+    //url: 'ldap://192.168.1.30:389' // Cambia a IP o dominio real
   });
 
   client.bind(userDN, password, (err) => {

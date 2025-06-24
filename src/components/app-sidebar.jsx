@@ -69,8 +69,8 @@ export function AppSidebar(props) {
       url: "#",
       icon: BookOpen,
       items: [
-        { title: "Introduction", url: "#" },
-        { title: "Get Started", url: "#" },
+        { title: "Préstamos", url: "/prestamos" },
+        { title: "Libros", url: "/libros" },
         { title: "Tutorials", url: "#" },
         { title: "Changelog", url: "#" },
       ],

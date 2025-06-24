@@ -8,16 +8,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-export function DialogoEliminarCurso({
+export function DialogoEliminarLibro({
   open,
   onClose,
-  cursoSeleccionado,
+  libroSeleccionado,
   onSuccess,
 }) {
   const handleEliminar = async () => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/db/cursos/${cursoSeleccionado.id}`,
+        `http://localhost:5000/api/db/libros/${libroSeleccionado.id}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -26,11 +26,11 @@ export function DialogoEliminarCurso({
 
       if (!res.ok) throw new Error("Error al eliminar");
 
-      toast.success("Curso eliminado");
+      toast.success("Libro eliminado");
       onSuccess?.();
       onClose();
     } catch (err) {
-      toast.error("Error al eliminar curso");
+      toast.error("Error al eliminar libro");
       console.error(err);
     }
   };
@@ -39,7 +39,7 @@ export function DialogoEliminarCurso({
     <Dialog open={open} onOpenChange={onClose} modal={false}>
       <DialogContent onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>¿Eliminar curso?</DialogTitle>
+          <DialogTitle>¿Eliminar libro?</DialogTitle>
         </DialogHeader>
         <p className="text-sm">Esta acción no se puede deshacer.</p>
         <DialogFooter>

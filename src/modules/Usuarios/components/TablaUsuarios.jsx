@@ -164,7 +164,6 @@ export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
       </div>
 
       {/* Paginación */}
-      {/* Paginación */}
       <div className="flex flex-col items-center justify-center py-6 space-y-2">
         <div className="flex items-center space-x-2">
           <Button

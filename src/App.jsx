@@ -13,6 +13,8 @@ import { AlumnosIndex } from "./modules/Usuarios/pages/AlumnosIndex";
 import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
 import { TodosIndex } from "./modules/Usuarios/pages/TodosIndex";
 import { CursosIndex } from "./modules/Cursos/pages/CursosIndex";
+import { LibrosIndex } from "./modules/Libros/pages/LibrosIndex";
+import { PrestamosIndex } from "./modules/Prestamos/pages/PrestamosIndex";
 
 const router = createBrowserRouter([
   {
@@ -51,6 +53,14 @@ const router = createBrowserRouter([
         path: "/cursos",
         element: <CursosIndex />,
       },                  
+      {
+        path: "/libros",
+        element: <LibrosIndex />,
+      },
+{
+        path: "/prestamos",
+        element: <PrestamosIndex />,
+      },                              
     ],
   },
 ]);

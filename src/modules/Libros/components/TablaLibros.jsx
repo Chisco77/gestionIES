@@ -1,4 +1,3 @@
-// components/TablaCursos.jsx
 import {
   flexRender,
   getCoreRowModel,
@@ -17,7 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MultiSelect } from "@/components/ui/multiselect";
 
 import {
   ChevronsLeft,
@@ -25,34 +23,49 @@ import {
   ChevronRight,
   ChevronsRight,
 } from "lucide-react";
+
 import { useEffect, useState } from "react";
 
-export function TablaCursos({ columns, data, onFilteredChange, acciones }) {
-  const [sorting, setSorting] = useState([{ id: "curso", desc: false }]);
+export function TablaLibros({
+  columns,
+  data,
+  cursos,
+  onFilteredChange,
+  informes,
+  acciones,
+}) {
+  const [sorting, setSorting] = useState([{ id: "libro", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
+  const [textoFiltro, setTextoFiltro] = useState("");
+  const [filtroCurso, setFiltroCurso] = useState("");
 
   const table = useReactTable({
-  data,
-  columns,
-  getCoreRowModel: getCoreRowModel(),
-  getPaginationRowModel: getPaginationRowModel(),
-  onSortingChange: setSorting,
-  getSortedRowModel: getSortedRowModel(),
-  onColumnFiltersChange: setColumnFilters,
-  getFilteredRowModel: getFilteredRowModel(),
-  enableRowSelection: true, // permite seleccionar filas
-  state: {
-    sorting,
-    columnFilters,
-  },
-  // 🔒 permite solo una fila seleccionada a la vez
-  enableMultiRowSelection: false,
-});
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    enableRowSelection: true,
+    enableMultiRowSelection: false,
+    state: {
+      sorting,
+      columnFilters,
+    },
+  });
 
-  const selectedRow = table.getSelectedRowModel().rows[0];
-  const selectedItem = selectedRow?.original;
+  // Filtros manuales
+  useEffect(() => {
+    table.getColumn("libro")?.setFilterValue(textoFiltro);
+  }, [textoFiltro]);
 
-  // ✅ Solo llamar a onFilteredChange cuando cambien los datos filtrados realmente
+  useEffect(() => {
+    table.getColumn("idcurso")?.setFilterValue(filtroCurso || undefined);
+  }, [filtroCurso]);
+
+  // Callback al padre
   useEffect(() => {
     const filtered = table
       .getFilteredRowModel()
@@ -60,14 +73,8 @@ export function TablaCursos({ columns, data, onFilteredChange, acciones }) {
     onFilteredChange?.(filtered);
   }, [columnFilters, data]);
 
-  const getUniqueValues = (columnId) =>
-    Array.from(
-      new Set(
-        table.getPreFilteredRowModel().rows.map((row) => row.getValue(columnId))
-      )
-    )
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b));
+  const selectedRow = table.getSelectedRowModel().rows[0];
+  const selectedItem = selectedRow?.original;
 
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
@@ -75,25 +82,38 @@ export function TablaCursos({ columns, data, onFilteredChange, acciones }) {
   return (
     <div>
       {/* Filtros */}
-      <div className="flex flex-wrap items-end gap-3 py-2 text-sm text-muted-foreground">
+      <div className="flex flex-wrap gap-4 py-2 text-sm text-muted-foreground items-end">
         <div className="space-y-1">
-          <label className="block font-medium text-xs">Grupo</label>
-          <MultiSelect
-            values={table.getColumn("curso")?.getFilterValue() ?? []}
-            onChange={(value) =>
-              table.getColumn("curso")?.setFilterValue(value)
-            }
-            options={getUniqueValues("curso").map((g) => ({
-              value: g,
-              label: g,
-            }))}
-            placeholder="Seleccionar cursos"
+          <label className="block font-medium text-xs">Curso</label>
+          <select
+            className="border p-2 rounded text-sm"
+            value={filtroCurso}
+            onChange={(e) => setFiltroCurso(e.target.value)}
+          >
+            <option value="">Todos</option>
+            {cursos.map((curso) => (
+              <option key={curso.id} value={curso.id}>
+                {curso.curso}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Libro</label>
+          <input
+            type="text"
+            className="border p-2 rounded text-sm"
+            placeholder="Buscar por nombre"
+            value={textoFiltro}
+            onChange={(e) => setTextoFiltro(e.target.value)}
           />
         </div>
+        {informes && <div className="ml-auto">{informes}</div>}
       </div>
 
       {/* Tabla */}
-      <div className="rounded-md border">
+      <div className="rounded-md border mt-4">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -144,10 +164,8 @@ export function TablaCursos({ columns, data, onFilteredChange, acciones }) {
         </Table>
       </div>
 
-      {/* Paginación */}
+      {/* Acciones + Paginación */}
       <div className="flex flex-col sm:flex-row sm:justify-between items-center py-6 space-y-4 sm:space-y-0">
-        {" "}
-        {/* Acciones (lado izquierdo) */}
         <div className="flex gap-2">{acciones(selectedItem)}</div>
         <div className="flex items-center space-x-2">
           <Button
