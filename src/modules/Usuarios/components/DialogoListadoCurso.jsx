@@ -22,8 +22,6 @@ import { Button } from "@/components/ui/button";
 
 export function DialogoListadoCurso({ alumnos, open, onOpenChange }) {
   //const [open, setOpen] = useState(false);
-  const [etiquetasPorAlumno, setEtiquetasPorAlumno] = useState("1");
-  const [cursoSeleccionado, setCursoSeleccionado] = useState("2024-25");
   const [nombrePdf, setNombrePdf] = useState("etiquetasbecarios");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -129,53 +127,9 @@ export function DialogoListadoCurso({ alumnos, open, onOpenChange }) {
       <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
         <DialogContent onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
-            <DialogTitle>Configuración de etiquetas</DialogTitle>
+            <DialogTitle>Listado de alumnos por curso</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Número de etiquetas por alumno
-              </label>
-              <Select
-                value={etiquetasPorAlumno}
-                onValueChange={setEtiquetasPorAlumno}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[...Array(12)].map((_, i) => (
-                    <SelectItem key={i + 1} value={(i + 1).toString()}>
-                      {i + 1}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Curso académico
-              </label>
-              <Select
-                value={cursoSeleccionado}
-                onValueChange={setCursoSeleccionado}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 11 }).map((_, i) => {
-                    const yearStart = 2020 + i;
-                    const value = `${yearStart}-${(yearStart + 1).toString().slice(2)}`;
-                    return (
-                      <SelectItem key={value} value={value}>
-                        {value}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
             <div>
               <label className="block text-sm font-medium mb-1">
                 Nombre del archivo PDF

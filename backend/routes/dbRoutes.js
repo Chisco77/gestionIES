@@ -31,11 +31,15 @@ const {
   insertarPrestamosMasivo,
   obtenerPrestamosAgrupados,
   devolverPrestamos,
+  prestarPrestamos,
+  prestarUnAlumno,
 } = require("../controllers/db/prestamosController");
 
 router.get("/prestamos/agrupados", obtenerPrestamosAgrupados);
 router.get("/prestamos", obtenerPrestamosEnriquecidos);
 router.post("/prestamos/devolver", devolverPrestamos);
+router.post("/prestamos/prestar", prestarPrestamos);
 router.post ("/prestamos/insertarMasivo", insertarPrestamosMasivo);
+router.post("/prestamos/prestarUnAlumno", prestarUnAlumno);
 
 module.exports = router;

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Check, X } from "lucide-react";
+import jsPDF from "jspdf";
 
 export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   const [cursos, setCursos] = useState([]);
@@ -25,6 +26,10 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
   const [paso, setPaso] = useState(1);
 
+  const [descartes, setDescartes] = useState([]);
+  const [mostrarInforme, setMostrarInforme] = useState(false);
+
+  // Estados iniciales en la carga del formulario
   useEffect(() => {
     if (open) {
       setCursoSeleccionado("");
@@ -34,20 +39,24 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
       setLibros([]);
       setAlumnos([]);
       setPaso(1);
+      setDescartes([]); // limpiar informe
+      setMostrarInforme(false); // ocultar informe
     }
   }, [open]);
 
   useEffect(() => {
     fetch("http://localhost:5000/api/db/cursos", { credentials: "include" })
       .then((res) => res.json())
-      .then(setCursos)
+      .then((data) =>
+        setCursos(data.sort((a, b) => a.curso.localeCompare(b.curso)))
+      )
       .catch(() => toast.error("Error al obtener cursos"));
   }, []);
 
   useEffect(() => {
     fetch("http://localhost:5000/api/ldap/grupos", { credentials: "include" })
       .then((res) => res.json())
-      .then(setGrupos)
+      .then((data) => setGrupos(data.sort((a, b) => a.cn.localeCompare(b.cn))))
       .catch(() => toast.error("Error al obtener grupos"));
   }, []);
 
@@ -96,6 +105,91 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
     }
   };
 
+  const generarInformePDF = () => {
+    const doc = new jsPDF();
+    const margenIzquierdo = 10;
+    const margenDerecho = 200;
+    const altoLinea = 7;
+    const margenSuperior = 20;
+    const margenInferior = 15; // margen para pie página
+
+    let y = margenSuperior;
+
+    // 🕓 Fecha y hora actual
+    const fecha = new Date();
+    const fechaTexto = fecha.toLocaleDateString();
+    const horaTexto = fecha.toLocaleTimeString();
+    const fechaHora = `Generado el ${fechaTexto} ${horaTexto}`;
+
+    doc.setFontSize(14);
+    doc.text("Informe de préstamos omitidos", margenIzquierdo, y);
+    doc.setFontSize(10);
+    doc.text(fechaHora, margenDerecho, y, { align: "right" });
+
+    y += 4;
+    doc.setLineWidth(0.5);
+    doc.line(margenIzquierdo, y, margenDerecho, y);
+    y += altoLinea;
+
+    // 🔃 Agrupar descartes por alumno
+    const agrupados = {};
+    descartes.forEach((item) => {
+      if (!agrupados[item.alumno]) {
+        agrupados[item.alumno] = [];
+      }
+      agrupados[item.alumno].push(item.libro);
+    });
+
+    // Guardamos las posiciones donde debemos poner el pie de página luego
+    const paginas = [];
+
+    // Función para dibujar pie de página (se llamará tras crear todo el contenido)
+    function dibujarPiePagina(pageNum, totalPages) {
+      const yPie = 285; // posición fija vertical para la línea y texto pie
+      doc.setLineWidth(0.5);
+      doc.line(margenIzquierdo, yPie, margenDerecho, yPie);
+      doc.setFontSize(10);
+      doc.setFont(undefined, "normal");
+      const textoPie = `Página ${pageNum} de ${totalPages}`;
+      doc.text(textoPie, margenDerecho, yPie + 4, { align: "right" });
+    }
+
+    // Añadimos contenido alumno a alumno, gestionando salto de página
+    Object.entries(agrupados).forEach(([alumno, libros], index, arr) => {
+      const alturaNecesaria = altoLinea * (libros.length + 1) + 3; // libros + título + espacio extra
+
+      if (y + alturaNecesaria > 280 - margenInferior) {
+        paginas.push(doc.internal.getCurrentPageInfo().pageNumber);
+        doc.addPage();
+        y = margenSuperior;
+      }
+
+      doc.setFont(undefined, "bold");
+      doc.text(`Alumno: ${alumno}`, margenIzquierdo, y);
+      y += altoLinea;
+
+      doc.setFont(undefined, "normal");
+      libros.forEach((libro) => {
+        doc.text(`- ${libro}`, margenIzquierdo + 5, y);
+        y += altoLinea;
+      });
+
+      y += 3;
+    });
+
+    // Añadimos la última página también a la lista
+    paginas.push(doc.internal.getCurrentPageInfo().pageNumber);
+
+    // Ahora añadimos el pie de página a cada página
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      dibujarPiePagina(i, totalPages);
+    }
+
+    doc.save("prestamos_omitidos.pdf");
+  };
+
   const handleAsignar = async () => {
     try {
       const res = await fetch(
@@ -111,11 +205,32 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
         }
       );
 
-      if (!res.ok) throw new Error("Falló la asignación");
+      const json = await res.json();
 
-      toast.success("Préstamos asignados correctamente");
-      onSuccess?.();
-      onClose();
+      if (!res.ok) throw new Error(json.error || "Falló la asignación");
+
+      toast.success(`Se insertaron ${json.insertados} préstamos.`);
+
+      if (json.descartados?.length > 0) {
+        const mapaAlumnos = Object.fromEntries(
+          alumnos.map((a) => [a.uid, `${a.givenName} ${a.sn}`])
+        );
+        const mapaLibros = Object.fromEntries(
+          libros.map((l) => [l.id, l.libro])
+        );
+
+        const enriquecidos = json.descartados.map(({ uidalumno, idlibro }) => ({
+          alumno: mapaAlumnos[uidalumno] || uidalumno,
+          uid: uidalumno,
+          libro: mapaLibros[idlibro] || `ID ${idlibro}`,
+        }));
+
+        setDescartes(enriquecidos);
+        setMostrarInforme(true);
+      } else {
+        onSuccess?.();
+        onClose();
+      }
     } catch (err) {
       toast.error("Error al asignar préstamos");
       console.error(err);
@@ -124,7 +239,10 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={false}>
-      <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-3xl">
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="max-w-3xl"
+      >
         <DialogHeader>
           <DialogTitle>Asignación masiva de libros</DialogTitle>
         </DialogHeader>
@@ -176,7 +294,9 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
                 <div className="max-h-64 overflow-auto border border-gray-200 rounded-md p-3 shadow-sm">
                   {libros.length === 0 && (
-                    <p className="text-xs italic text-gray-500">No hay libros</p>
+                    <p className="text-xs italic text-gray-500">
+                      No hay libros
+                    </p>
                   )}
                   {libros.map((libro) => (
                     <div
@@ -267,7 +387,9 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
                 <div className="max-h-64 overflow-auto border border-gray-200 rounded-md p-3 shadow-sm">
                   {alumnos.length === 0 && (
-                    <p className="text-xs italic text-gray-500">No hay alumnos</p>
+                    <p className="text-xs italic text-gray-500">
+                      No hay alumnos
+                    </p>
                   )}
                   {alumnos.map((a) => (
                     <div
@@ -308,6 +430,25 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
                 Asignar préstamos
               </Button>
             </div>
+          </div>
+        )}
+        {mostrarInforme && (
+          <div className="mt-4 border-t pt-4 space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Algunos préstamos no se insertaron porque ya existían. Puedes
+              descargar el informe.
+            </p>
+            <Button onClick={generarInformePDF}>Descargar informe PDF</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setMostrarInforme(false);
+                onSuccess?.();
+                onClose();
+              }}
+            >
+              Cerrar
+            </Button>
           </div>
         )}
       </DialogContent>

@@ -3,6 +3,8 @@ import { columns } from "../components/columns";
 import { TablaPrestamos } from "../components/TablaPrestamos";
 import { DialogoAsignacionMasiva } from "../components/DialogoAsignacionMasiva";
 import { DialogoEditarPrestamos } from "../components/DialogoEditarPrestamos";
+import { DialogoPrestarLibros } from "../components/DialogoPrestarLibros";
+import { DialogoDocumentoPrestamo } from "../components/DialogoDocumentoPrestamo";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -17,7 +19,7 @@ import {
   Plus,
   Trash2,
   Pencil,
-  CopyPlus,
+  LibraryBig,
 } from "lucide-react";
 
 export function PrestamosIndex() {
@@ -26,20 +28,26 @@ export function PrestamosIndex() {
   const [abrirInsertarMasivo, setAbrirInsertarMasivo] = useState(false);
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);
   const [abrirEditar, setAbrirEditar] = useState(false);
+  const [abrirDialogoPrestar, setAbrirDialogoPrestar] = useState(false);
+  const [abrirDialogoDocumentoPrestamo, setAbrirDialogoDocumentoPrestamo] =
+    useState(false);
 
-  useEffect(() => {
+  const cargarPrestamos = () => {
     fetch("http://localhost:5000/api/db/prestamos/agrupados", {
       credentials: "include",
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log("📚 Préstamos enriquecidos:", data);
         setData(data);
-        setPrestamosFiltrados(data); // al principio, sin filtros
+        setPrestamosFiltrados(data);
       })
       .catch((error) => {
         console.error("❌ Error al cargar préstamos:", error);
       });
+  };
+
+  useEffect(() => {
+    cargarPrestamos();
   }, []);
 
   const handleEditar = (seleccionado) => {
@@ -48,9 +56,10 @@ export function PrestamosIndex() {
     setAbrirEditar(true);
   };
 
+  const uidsConPrestamo = data.map((p) => p.uidalumno);
+
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
-      {/* Tabla */}
       <TablaPrestamos
         columns={columns}
         data={data}
@@ -60,7 +69,8 @@ export function PrestamosIndex() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setAbrirInsertar(true)}
+              onClick={() => setAbrirDialogoPrestar(true)}
+              title="Prestar libros a un alumno"
             >
               <Plus className="w-4 h-4" />
             </Button>
@@ -68,14 +78,16 @@ export function PrestamosIndex() {
               variant="outline"
               size="icon"
               onClick={() => setAbrirInsertarMasivo(true)}
+              title="Asignación masiva"
             >
-              <CopyPlus className="w-4 h-4" />
+              <LibraryBig className="w-4 h-4" />
             </Button>
             <Button
               variant="outline"
               size="icon"
               onClick={() => handleEditar(seleccionado)}
               disabled={!seleccionado}
+              title="Editar préstamos"
             >
               <Pencil className="w-4 h-4" />
             </Button>
@@ -84,6 +96,7 @@ export function PrestamosIndex() {
               size="icon"
               onClick={() => handleEliminar(seleccionado)}
               disabled={!seleccionado}
+              title="Eliminar préstamos"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -92,14 +105,16 @@ export function PrestamosIndex() {
         informes={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" title="Informes">
                 <Printer className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setAbrirDialogoEtiquetas(true)}>
+              <DropdownMenuItem
+                onClick={() => setAbrirDialogoDocumentoPrestamo(true)}
+              >
                 <Tag className="mr-2 h-4 w-4" />
-                Etiquetas libros
+                Documento Préstamo Libros{" "}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setAbrirDialogoListadoCurso(true)}
@@ -107,28 +122,38 @@ export function PrestamosIndex() {
                 <Users className="mr-2 h-4 w-4" />
                 Alumnos por grupo
               </DropdownMenuItem>
-              {/* Aquí puedes añadir más opciones */}
-              {/* <DropdownMenuItem>Otro documento</DropdownMenuItem> */}
             </DropdownMenuContent>
           </DropdownMenu>
         }
       />
+
       <DialogoAsignacionMasiva
         open={abrirInsertarMasivo}
         onClose={() => setAbrirInsertarMasivo(false)}
-        onSuccess={() => {
-          // refresca los préstamos tras asignar
-          fetch("http://localhost:5000/api/db/prestamos", {
-            credentials: "include",
-          })
-            .then((res) => res.json())
-            .then(setData);
-        }}
+        onSuccess={cargarPrestamos}
       />
+
       <DialogoEditarPrestamos
         open={abrirEditar}
         onClose={() => setAbrirEditar(false)}
         alumno={alumnoSeleccionado}
+        onSuccess={cargarPrestamos}
+      />
+
+      <DialogoPrestarLibros
+        open={abrirDialogoPrestar}
+        onClose={() => setAbrirDialogoPrestar(false)}
+        onSuccess={() => {
+          cargarPrestamos();
+          setAbrirDialogoPrestar(false);
+        }}
+        uidsConPrestamo={uidsConPrestamo}
+      />
+
+      <DialogoDocumentoPrestamo
+        open={abrirDialogoDocumentoPrestamo}
+        onOpenChange={setAbrirDialogoDocumentoPrestamo}
+        alumnos={prestamosFiltrados} // o simplemente data
       />
     </div>
   );
