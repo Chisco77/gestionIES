@@ -315,6 +315,34 @@ async function prestarUnAlumno(req, res) {
   }
 }
 
+async function eliminarPrestamosAlumno(req, res) {
+  console.log ("Llega a eliminar");
+  console.log ("Req: ", req);
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession) {
+      return res.status(401).json({ error: "No autenticado" });
+    }
+
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "No se especificaron préstamos" });
+    }
+
+    await pool.query(
+      `DELETE FROM prestamos WHERE id = ANY($1::int[])`,
+      [ids]
+    );
+
+    res.json({ success: true, eliminados: ids.length });
+  } catch (error) {
+    console.error("❌ Error al eliminar préstamos:", error.message);
+    res.status(500).json({ error: "Error al eliminar préstamos" });
+  }
+}
+
+
 
 module.exports = {
   obtenerPrestamosEnriquecidos,
@@ -323,4 +351,5 @@ module.exports = {
   devolverPrestamos,
   prestarPrestamos,
   prestarUnAlumno,
+  eliminarPrestamosAlumno,
 };

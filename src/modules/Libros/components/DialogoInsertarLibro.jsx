@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { API_BASE_URL } from '../../../config';
 
 export function DialogoInsertarLibro({ open, onClose, cursos, onSuccess }) {
   const [libro, setLibro] = useState("");
@@ -16,7 +17,7 @@ export function DialogoInsertarLibro({ open, onClose, cursos, onSuccess }) {
 
   const handleGuardar = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/db/libros", {
+      const res = await fetch(`${API_BASE_URL}/db/libros`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

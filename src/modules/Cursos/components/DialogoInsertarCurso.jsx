@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
+import { API_BASE_URL } from '../../../config';
 
 export function DialogoInsertarCurso({ open, onClose, onSuccess }) {
   const [curso, setCurso] = useState("");
 
   const handleGuardar = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/db/cursos", {
+      const res = await fetch(`${API_BASE_URL}/db/cursos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

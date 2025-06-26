@@ -33,6 +33,7 @@ const {
   devolverPrestamos,
   prestarPrestamos,
   prestarUnAlumno,
+  eliminarPrestamosAlumno,
 } = require("../controllers/db/prestamosController");
 
 router.get("/prestamos/agrupados", obtenerPrestamosAgrupados);
@@ -41,5 +42,6 @@ router.post("/prestamos/devolver", devolverPrestamos);
 router.post("/prestamos/prestar", prestarPrestamos);
 router.post ("/prestamos/insertarMasivo", insertarPrestamosMasivo);
 router.post("/prestamos/prestarUnAlumno", prestarUnAlumno);
+router.post ("/prestamos/eliminarUnAlumno", eliminarPrestamosAlumno);
 
 module.exports = router;

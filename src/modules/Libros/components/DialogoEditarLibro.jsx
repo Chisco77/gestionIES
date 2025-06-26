@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { API_BASE_URL } from '../../../config';
 
 export function DialogoEditarLibro({
   open,
@@ -30,7 +31,7 @@ export function DialogoEditarLibro({
   const handleEditar = async () => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/db/libros/${libroSeleccionado.id}`,
+        `${API_BASE_URL}/db/libros/${libroSeleccionado.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -76,3 +77,5 @@ export function DialogoEditarLibro({
     </Dialog>
   );
 }
+
+

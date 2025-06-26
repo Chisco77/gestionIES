@@ -3,13 +3,14 @@ import { useEffect, useState } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
+import { API_BASE_URL } from '../../../config';
 
 export function TodosIndex() {
   const [data, setData] = useState([]);
   const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/ldap/usuarios?tipo=all", {
+    fetch(`${API_BASE_URL}/ldap/usuarios?tipo=all`, {
       credentials: "include",
     })
       .then((response) => response.json())

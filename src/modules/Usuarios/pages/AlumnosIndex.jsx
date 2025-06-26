@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Printer, Tag, Users } from "lucide-react";
+import { API_BASE_URL } from '../../../config';
 
 export function AlumnosIndex() {
   const [data, setData] = useState([]);
@@ -19,7 +20,7 @@ export function AlumnosIndex() {
   const [abrirDialogoListadoCurso, setAbrirDialogoListadoCurso] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/ldap/usuarios?tipo=students", {
+    fetch(`${API_BASE_URL}/ldap/usuarios?tipo=students`, {
       credentials: "include",
     })
       .then((response) => response.json())

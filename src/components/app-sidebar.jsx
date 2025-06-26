@@ -1,4 +1,6 @@
 import * as React from "react";
+import { API_BASE_URL } from '../config';
+
 import {
   AudioWaveform,
   BookOpen,
@@ -29,7 +31,7 @@ export function AppSidebar(props) {
 
   // Obtener info del usuario desde backend (opcional)
   React.useEffect(() => {
-    fetch("http://localhost:5000/api/check-auth", {
+    fetch(`${API_BASE_URL}/check-auth`, {
       credentials: "include",
     })
       .then(res => res.json())
@@ -44,7 +46,7 @@ export function AppSidebar(props) {
   }, []);
 
   const handleClick = () => {
-    fetch("http://localhost:5000/api/logout", {
+    fetch(`${API_BASE_URL}/logout`, {
       method: "POST",
       credentials: "include",
     }).finally(() => {
@@ -81,9 +83,7 @@ export function AppSidebar(props) {
       icon: Settings2,
       items: [
         { title: "Cursos", url: "/cursos" },
-        { title: "Team", url: "#" },
-        { title: "Billing", url: "#" },
-        { title: "Limits", url: "#" },
+        { title: "Importar de Rayuela", url: "#" },
       ],
     },
   ];

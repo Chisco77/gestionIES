@@ -1,11 +1,12 @@
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from '../config';
 
 function ProtectedRoute({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/check-auth", {
+    fetch(`${API_BASE_URL}/check-auth`, {
       method: "GET",
       credentials: "include", // Importante para enviar cookie de sesión
     })

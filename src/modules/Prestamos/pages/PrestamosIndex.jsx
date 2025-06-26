@@ -21,6 +21,7 @@ import {
   Pencil,
   LibraryBig,
 } from "lucide-react";
+import { API_BASE_URL } from '../../../config';
 
 export function PrestamosIndex() {
   const [data, setData] = useState([]);
@@ -33,7 +34,7 @@ export function PrestamosIndex() {
     useState(false);
 
   const cargarPrestamos = () => {
-    fetch("http://localhost:5000/api/db/prestamos/agrupados", {
+    fetch(`${API_BASE_URL}/db/prestamos/agrupados`, {
       credentials: "include",
     })
       .then((response) => response.json())
