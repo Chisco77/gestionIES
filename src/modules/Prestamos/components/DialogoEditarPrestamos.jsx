@@ -21,7 +21,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { API_BASE_URL } from '../../../config';
+
 
 import {
   AlertDialog,
@@ -75,7 +75,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
   const devolver = async (ids) => {
     try {
       const res = await fetch(
-        `${API_BASE_URL}/db/prestamos/devolver`,
+        `/api/db/prestamos/devolver`,
         {
           method: "POST",
           credentials: "include",
@@ -108,7 +108,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
   const prestar = async (ids) => {
     try {
       const res = await fetch(
-        `${API_BASE_URL}/db/prestamos/prestar`,
+        `/api/db/prestamos/prestar`,
         {
           method: "POST",
           credentials: "include",
@@ -258,7 +258,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                         onClick={async () => {
                           try {
                             const res = await fetch(
-                              `${API_BASE_URL}/db/prestamos/eliminar`,
+                              `/api/db/prestamos/eliminar`,
                               {
                                 method: "POST",
                                 credentials: "include",

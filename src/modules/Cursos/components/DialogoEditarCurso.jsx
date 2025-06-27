@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { API_BASE_URL } from '../../../config';
+
 
 export function DialogoEditarCurso({
   open,
@@ -29,7 +29,7 @@ export function DialogoEditarCurso({
   const handleEditar = async () => {
   try {
     const res = await fetch(
-      `${API_BASE_URL}/db/cursos/${cursoSeleccionado.id}`,
+      `/api/db/cursos/${cursoSeleccionado.id}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

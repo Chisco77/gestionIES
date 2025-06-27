@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage } from "@radix-ui/react-avatar";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from '../config';
 
 export function LoginForm({ className, ...props }) {
   const [usuario, setUsuario] = useState({
@@ -33,7 +32,8 @@ export function LoginForm({ className, ...props }) {
 
   const handleSubmit = (e) => {
   e.preventDefault();
-  const url = `${API_BASE_URL}/login`;
+  const url = "/api/login";  // CORRECTO
+
 
   fetch(url, {
     method: "POST",

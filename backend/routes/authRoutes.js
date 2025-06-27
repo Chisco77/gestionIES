@@ -3,7 +3,10 @@ const express = require("express");
 const router = express.Router();
 const { loginLdap } = require("../controllers/ldap/loginController");
 
-router.post("/login", loginLdap);
+router.post("/login", (req, res, next) => {
+  console.log("POST /api/login recibido");
+  next();
+}, loginLdap);
 
 router.get("/check-auth", (req, res) => {
   if (req.session.ldap) {

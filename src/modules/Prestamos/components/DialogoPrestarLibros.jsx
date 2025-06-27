@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { API_BASE_URL } from '../../../config';
+
 
 export function DialogoPrestarLibros({
   open,
@@ -49,7 +49,7 @@ export function DialogoPrestarLibros({
 
   // Cargar grupos al montar
   useEffect(() => {
-    fetch(`${API_BASE_URL}/ldap/grupos`, { credentials: "include" })
+    fetch(`/api/ldap/grupos`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         // Ordenar alfabéticamente por cn
@@ -63,7 +63,7 @@ export function DialogoPrestarLibros({
   useEffect(() => {
     if (grupoSeleccionado) {
       fetch(
-        `${API_BASE_URL}/ldap/usuariosPorGrupo?grupo=${grupoSeleccionado}`,
+        `/api/ldap/usuariosPorGrupo?grupo=${grupoSeleccionado}`,
         {
           credentials: "include",
         }
@@ -93,7 +93,7 @@ export function DialogoPrestarLibros({
   // Cuando cambia curso, cargar libros
   useEffect(() => {
     if (cursoSeleccionado) {
-      fetch(`${API_BASE_URL}/db/libros?curso=${cursoSeleccionado}`, {
+      fetch(`/api/db/libros?curso=${cursoSeleccionado}`, {
         credentials: "include",
       })
         .then((res) => res.json())
@@ -107,7 +107,7 @@ export function DialogoPrestarLibros({
 
   // Cargar cursos al montar
   useEffect(() => {
-    fetch(`${API_BASE_URL}/db/cursos`, {
+    fetch(`/api/db/cursos`, {
       credentials: "include",
     })
       .then((res) => res.json())
@@ -154,7 +154,7 @@ export function DialogoPrestarLibros({
 
     try {
       const res = await fetch(
-        `${API_BASE_URL}/db/prestamos/prestarUnAlumno`,
+        `/api/db/prestamos/prestarUnAlumno`,
         {
           method: "POST",
           credentials: "include",

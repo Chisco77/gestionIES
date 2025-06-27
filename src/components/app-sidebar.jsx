@@ -1,5 +1,4 @@
 import * as React from "react";
-import { API_BASE_URL } from '../config';
 
 import {
   AudioWaveform,
@@ -31,7 +30,7 @@ export function AppSidebar(props) {
 
   // Obtener info del usuario desde backend (opcional)
   React.useEffect(() => {
-    fetch(`${API_BASE_URL}/check-auth`, {
+    fetch(`/check-auth`, {
       credentials: "include",
     })
       .then(res => res.json())
@@ -46,7 +45,7 @@ export function AppSidebar(props) {
   }, []);
 
   const handleClick = () => {
-    fetch(`${API_BASE_URL}/logout`, {
+    fetch(`/api/logout`, {
       method: "POST",
       credentials: "include",
     }).finally(() => {

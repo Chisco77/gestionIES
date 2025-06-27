@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
-import { API_BASE_URL } from '../../../config';
+
 
 export function ProfesoresIndex() {
   const [data, setData] = useState([]);
   const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/ldap/usuarios?tipo=teachers`, {
+    fetch(`/api/ldap/usuarios?tipo=teachers`, {
       credentials: "include",
     })
       .then((response) => response.json())

@@ -12,7 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { API_BASE_URL } from '../../../config';
+
 
 export function LibrosIndex() {
   const [librosFiltrados, setLibrosFiltrados] = useState([]);
@@ -25,7 +25,7 @@ export function LibrosIndex() {
 
   const fetchLibros = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/db/libros`, {
+      const res = await fetch(`/api/db/libros`, {
         credentials: "include",
       });
       const data = await res.json();
@@ -49,7 +49,7 @@ export function LibrosIndex() {
   // obtengo los cursos ya ordenados
   const fetchCursos = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/db/cursos`, {
+      const res = await fetch(`/api/db/cursos`, {
         credentials: "include",
       });
       const data = await res.json();

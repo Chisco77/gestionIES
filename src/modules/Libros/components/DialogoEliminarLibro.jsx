@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { API_BASE_URL } from '../../../config';
+
 
 export function DialogoEliminarLibro({
   open,
@@ -18,7 +18,7 @@ export function DialogoEliminarLibro({
   const handleEliminar = async () => {
     try {
       const res = await fetch(
-        `${API_BASE_URL}/db/libros/${libroSeleccionado.id}`,
+        `/api/db/libros/${libroSeleccionado.id}`,
         {
           method: "DELETE",
           credentials: "include",

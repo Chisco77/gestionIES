@@ -6,7 +6,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { DialogoInsertarCurso } from "../components/DialogoInsertarCurso";
 import { DialogoEditarCurso } from "../components/DialogoEditarCurso";
 import { DialogoEliminarCurso } from "../components/DialogoEliminarCurso";
-import { API_BASE_URL } from '../../../config';
+
 
 export function CursosIndex() {
   const [data, setData] = useState([]);
@@ -19,7 +19,7 @@ export function CursosIndex() {
   // Función para cargar cursos
   const fetchCursos = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/db/cursos`, {
+      const response = await fetch(`/api/db/cursos`, {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Error al obtener cursos");
