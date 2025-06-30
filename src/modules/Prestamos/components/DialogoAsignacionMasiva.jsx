@@ -29,7 +29,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
   const [descartes, setDescartes] = useState([]);
   const [mostrarInforme, setMostrarInforme] = useState(false);
-
+  const API_URL = import.meta.env.VITE_API_URL;
   // Estados iniciales en la carga del formulario
   useEffect(() => {
     if (open) {
@@ -46,7 +46,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   }, [open]);
 
   useEffect(() => {
-    fetch(`/api/db/cursos`, { credentials: 'include' })
+    fetch(`${API_URL}/db/cursos`, { credentials: 'include' })
       .then((res) => res.json())
       .then((data) =>
         setCursos(data.sort((a, b) => a.curso.localeCompare(b.curso)))
@@ -55,7 +55,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   }, []);
 
   useEffect(() => {
-    fetch(`/api/ldap/grupos`, { credentials: 'include' })
+    fetch(`${API_URL}/ldap/grupos`, { credentials: 'include' })
       .then((res) => res.json())
       .then((data) => setGrupos(data.sort((a, b) => a.cn.localeCompare(b.cn))))
       .catch(() => toast.error("Error al obtener grupos"));
@@ -63,7 +63,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
   useEffect(() => {
     if (cursoSeleccionado) {
-      fetch(`/api/db/libros?curso=${cursoSeleccionado}`, {
+      fetch(`${API_URL}/db/libros?curso=${cursoSeleccionado}`, {
         credentials: 'include',
       })
         .then((res) => res.json())
@@ -78,7 +78,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   useEffect(() => {
     if (grupoSeleccionado) {
       fetch(
-        `/api/ldap/usuariosPorGrupo?grupo=${grupoSeleccionado}`,
+        `${API_URL}/ldap/usuariosPorGrupo?grupo=${grupoSeleccionado}`,
         { credentials: 'include' }
       )
         .then((res) => res.json())
@@ -194,7 +194,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   const handleAsignar = async () => {
     try {
       const res = await fetch(
-        `/api/db/prestamos/insertarMasivo`,
+        `${API_URL}/db/prestamos/insertarMasivo`,
         {
           method: "POST",
           credentials: "include",

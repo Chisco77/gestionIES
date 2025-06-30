@@ -30,11 +30,12 @@ export function PrestamosIndex() {
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);
   const [abrirEditar, setAbrirEditar] = useState(false);
   const [abrirDialogoPrestar, setAbrirDialogoPrestar] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL;
   const [abrirDialogoDocumentoPrestamo, setAbrirDialogoDocumentoPrestamo] =
     useState(false);
 
   const cargarPrestamos = () => {
-    fetch(`/api/db/prestamos/agrupados`, {
+    fetch(`${API_URL}/db/prestamos/agrupados`, {
       credentials: "include",
     })
       .then((response) => response.json())

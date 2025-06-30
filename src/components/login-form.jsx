@@ -32,10 +32,10 @@ export function LoginForm({ className, ...props }) {
 
   const handleSubmit = (e) => {
   e.preventDefault();
-  const url = "/api/login";  // CORRECTO
+    //const url = "/api/login";  // CORRECTO
 
-
-  fetch(url, {
+  const API_URL = import.meta.env.VITE_API_URL;
+  fetch(`${API_URL}/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -65,7 +65,7 @@ export function LoginForm({ className, ...props }) {
             <div className="flex flex-col gap-6">
               <Avatar className="flex justify-center">
                 <AvatarImage
-                  src="/public/logo.png"
+                  src="/logo.png"
                   alt="Logo"
                   style={{ width: "25%", height: "25%" }}
                 />

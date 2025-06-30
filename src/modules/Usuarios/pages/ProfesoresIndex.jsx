@@ -8,9 +8,10 @@ import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 export function ProfesoresIndex() {
   const [data, setData] = useState([]);
   const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    fetch(`/api/ldap/usuarios?tipo=teachers`, {
+    fetch(`${API_URL}/ldap/usuarios?tipo=teachers`, {
       credentials: "include",
     })
       .then((response) => response.json())

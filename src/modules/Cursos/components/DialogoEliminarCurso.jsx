@@ -8,17 +8,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-
 export function DialogoEliminarCurso({
   open,
   onClose,
   cursoSeleccionado,
   onSuccess,
 }) {
+  const API_URL = import.meta.env.VITE_API_URL;
   const handleEliminar = async () => {
     try {
       const res = await fetch(
-        `/api/db/cursos/${cursoSeleccionado.id}`,
+        `${API_URL}/db/cursos/${cursoSeleccionado.id}`,
+        //fetch(
+        //`/api/db/cursos/${cursoSeleccionado.id}`,
         {
           method: "DELETE",
           credentials: "include",

@@ -7,7 +7,6 @@ import { DialogoInsertarCurso } from "../components/DialogoInsertarCurso";
 import { DialogoEditarCurso } from "../components/DialogoEditarCurso";
 import { DialogoEliminarCurso } from "../components/DialogoEliminarCurso";
 
-
 export function CursosIndex() {
   const [data, setData] = useState([]);
   const [cursosFiltrados, setCursosFiltrados] = useState([]);
@@ -15,11 +14,12 @@ export function CursosIndex() {
   const [abrirDialogoEditar, setAbrirDialogoEditar] = useState(false);
   const [abrirDialogoEliminar, setAbrirDialogoEliminar] = useState(false);
   const [cursoSeleccionado, setCursoSeleccionado] = useState(null);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // Función para cargar cursos
   const fetchCursos = async () => {
     try {
-      const response = await fetch(`/api/db/cursos`, {
+      const response = await fetch(`${API_URL}/db/cursos`, {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Error al obtener cursos");
@@ -127,7 +127,7 @@ export function CursosIndex() {
         onClose={() => setAbrirDialogoInsertar(false)}
         cursoSeleccionado={cursoSeleccionado}
         onSuccess={onInsertarSuccess}
-      />      
+      />
     </div>
   );
 }

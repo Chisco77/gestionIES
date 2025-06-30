@@ -13,10 +13,12 @@ import { toast } from "sonner";
 
 export function DialogoInsertarCurso({ open, onClose, onSuccess }) {
   const [curso, setCurso] = useState("");
-
+  const API_URL = import.meta.env.VITE_API_URL;
   const handleGuardar = async () => {
     try {
-      const res = await fetch(`/api/db/cursos`, {
+       const res = await fetch(
+        `${API_URL}/db/cursos`, {
+      //const res = await fetch(`/api/db/cursos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

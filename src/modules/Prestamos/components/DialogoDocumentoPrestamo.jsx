@@ -46,8 +46,8 @@ export function DialogoDocumentoPrestamo({ open, onOpenChange, alumnos = [] }) {
       if (i > 0) doc.addPage();
 
       // Nueva cabecera con imágenes y texto alineado al logo izquierdo
-      const imagenLogoIzquierda = "../../../public/logo.png";
-      const imagenLogoDerecha = "../../../public/logojunta.png";
+      const imagenLogoIzquierda = "logo.png";
+      const imagenLogoDerecha = "logojunta.png";
 
       const logoHeight = 20; // tamaño en mm
       const logoWith = 50; // tamaño en mm

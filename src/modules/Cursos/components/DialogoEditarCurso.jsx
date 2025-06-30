@@ -18,7 +18,8 @@ export function DialogoEditarCurso({
   onSuccess,
 }) {
   const [curso, setCurso] = useState("");
-
+  const API_URL = import.meta.env.VITE_API_URL;
+  
   // 👇 Este efecto actualiza el input cuando cambia el curso seleccionado
   useEffect(() => {
     if (cursoSeleccionado) {
@@ -28,8 +29,8 @@ export function DialogoEditarCurso({
 
   const handleEditar = async () => {
   try {
-    const res = await fetch(
-      `/api/db/cursos/${cursoSeleccionado.id}`,
+    const res =   fetch(`${API_URL}/db/cursos/${cursoSeleccionado.id}`, 
+      //`/api/db/cursos/${cursoSeleccionado.id}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

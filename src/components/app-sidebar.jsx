@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/sidebar";
 
 import { useNavigate } from "react-router-dom";
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 export function AppSidebar(props) {
   const navigate = useNavigate();
@@ -30,11 +32,13 @@ export function AppSidebar(props) {
 
   // Obtener info del usuario desde backend (opcional)
   React.useEffect(() => {
-    fetch(`/check-auth`, {
+    fetch(`${API_URL}/check-auth`, {
+      //    fetch(`/api/check-auth`, {
       credentials: "include",
     })
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("datos usuario: ", data);
         if (data.username) {
           setUsername(data.username);
         }
@@ -45,7 +49,7 @@ export function AppSidebar(props) {
   }, []);
 
   const handleClick = () => {
-    fetch(`/api/logout`, {
+    fetch(`${API_URL}/logout`, {
       method: "POST",
       credentials: "include",
     }).finally(() => {
@@ -96,7 +100,11 @@ export function AppSidebar(props) {
       <SidebarFooter>
         <SidebarMenu className="border-t p-4">
           <div className="flex items-center justify-between w-full">
-            <Power className="cursor-pointer" color="red" onClick={handleClick} />
+            <Power
+              className="cursor-pointer"
+              color="red"
+              onClick={handleClick}
+            />
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">{username}</span>
               <User className="h-5 w-5 text-gray-500" />

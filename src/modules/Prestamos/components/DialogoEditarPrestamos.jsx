@@ -56,6 +56,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
 
   const noDevueltos = prestamos.filter((p) => !p.devuelto);
   const devueltos = prestamos.filter((p) => p.devuelto);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const toggleSeleccion = (id, lado) => {
     const setSeleccionados =
@@ -75,7 +76,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
   const devolver = async (ids) => {
     try {
       const res = await fetch(
-        `/api/db/prestamos/devolver`,
+        `${API_URL}/db/prestamos/devolver`,
         {
           method: "POST",
           credentials: "include",
@@ -108,7 +109,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
   const prestar = async (ids) => {
     try {
       const res = await fetch(
-        `/api/db/prestamos/prestar`,
+        `${API_URL}/db/prestamos/prestar`,
         {
           method: "POST",
           credentials: "include",
@@ -258,7 +259,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                         onClick={async () => {
                           try {
                             const res = await fetch(
-                              `/api/db/prestamos/eliminar`,
+                              `${API_URL}/db/prestamos/eliminar`,
                               {
                                 method: "POST",
                                 credentials: "include",

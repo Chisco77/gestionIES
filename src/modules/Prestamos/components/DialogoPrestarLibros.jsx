@@ -32,6 +32,7 @@ export function DialogoPrestarLibros({
   const [librosSeleccionados, setLibrosSeleccionados] = useState([]);
 
   const [paso, setPaso] = useState(1);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // Al abrir el diálogo reseteamos estados
   useEffect(() => {
@@ -49,7 +50,7 @@ export function DialogoPrestarLibros({
 
   // Cargar grupos al montar
   useEffect(() => {
-    fetch(`/api/ldap/grupos`, { credentials: "include" })
+    fetch(`${API_URL}/ldap/grupos`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         // Ordenar alfabéticamente por cn
@@ -63,7 +64,7 @@ export function DialogoPrestarLibros({
   useEffect(() => {
     if (grupoSeleccionado) {
       fetch(
-        `/api/ldap/usuariosPorGrupo?grupo=${grupoSeleccionado}`,
+        `${API_URL}/ldap/usuariosPorGrupo?grupo=${grupoSeleccionado}`,
         {
           credentials: "include",
         }
@@ -93,7 +94,7 @@ export function DialogoPrestarLibros({
   // Cuando cambia curso, cargar libros
   useEffect(() => {
     if (cursoSeleccionado) {
-      fetch(`/api/db/libros?curso=${cursoSeleccionado}`, {
+      fetch(`${API_URL}/db/libros?curso=${cursoSeleccionado}`, {
         credentials: "include",
       })
         .then((res) => res.json())
@@ -107,7 +108,7 @@ export function DialogoPrestarLibros({
 
   // Cargar cursos al montar
   useEffect(() => {
-    fetch(`/api/db/cursos`, {
+    fetch(`${API_URL}/db/cursos`, {
       credentials: "include",
     })
       .then((res) => res.json())
@@ -154,7 +155,7 @@ export function DialogoPrestarLibros({
 
     try {
       const res = await fetch(
-        `/api/db/prestamos/prestarUnAlumno`,
+        `${API_URL}/db/prestamos/prestarUnAlumno`,
         {
           method: "POST",
           credentials: "include",

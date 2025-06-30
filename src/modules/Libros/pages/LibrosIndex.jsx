@@ -13,7 +13,6 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-
 export function LibrosIndex() {
   const [librosFiltrados, setLibrosFiltrados] = useState([]);
   const [libros, setLibros] = useState([]);
@@ -22,10 +21,11 @@ export function LibrosIndex() {
   const [abrirInsertar, setAbrirInsertar] = useState(false);
   const [abrirEditar, setAbrirEditar] = useState(false);
   const [abrirEliminar, setAbrirEliminar] = useState(false);
-
+  const API_URL = import.meta.env.VITE_API_URL;
+  
   const fetchLibros = async () => {
     try {
-      const res = await fetch(`/api/db/libros`, {
+      const res = await fetch(`${API_URL}/db/libros`, {
         credentials: "include",
       });
       const data = await res.json();
@@ -49,7 +49,7 @@ export function LibrosIndex() {
   // obtengo los cursos ya ordenados
   const fetchCursos = async () => {
     try {
-      const res = await fetch(`/api/db/cursos`, {
+      const res = await fetch(`${API_URL}/db/cursos`, {
         credentials: "include",
       });
       const data = await res.json();

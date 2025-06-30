@@ -18,9 +18,10 @@ export function AlumnosIndex() {
   const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
   const [abrirDialogoEtiquetas, setAbrirDialogoEtiquetas] = useState(false);
   const [abrirDialogoListadoCurso, setAbrirDialogoListadoCurso] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    fetch(`/api/ldap/usuarios?tipo=students`, {
+    fetch(`${API_URL}/ldap/usuarios?tipo=students`, {
       credentials: "include",
     })
       .then((response) => response.json())

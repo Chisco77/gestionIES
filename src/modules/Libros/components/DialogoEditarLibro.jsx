@@ -20,7 +20,7 @@ export function DialogoEditarLibro({
 }) {
   const [libro, setLibro] = useState("");
   const [idcurso, setIdcurso] = useState("");
-
+  const API_URL = import.meta.env.VITE_API_URL;
   useEffect(() => {
     if (libroSeleccionado) {
       setLibro(libroSeleccionado.libro || "");
@@ -31,7 +31,7 @@ export function DialogoEditarLibro({
   const handleEditar = async () => {
     try {
       const res = await fetch(
-        `/api/db/libros/${libroSeleccionado.id}`,
+        `${API_URL}/db/libros/${libroSeleccionado.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
