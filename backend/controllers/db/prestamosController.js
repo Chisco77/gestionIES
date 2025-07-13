@@ -113,7 +113,6 @@ async function devolverPrestamos(req, res) {
     }
 
     const { ids } = req.body; // ids = array de ids de préstamos a devolver
-    console.log ("Ids deuveltos: ", ids);
 
     if (!Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ error: "No se especificaron préstamos" });
@@ -146,7 +145,6 @@ async function prestarPrestamos(req, res) {
     }
 
     const { ids } = req.body; // ids = array de ids de préstamos a reactivar (prestar de nuevo)
-    console.log("Ids re-prestados: ", ids);
 
     if (!Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ error: "No se especificaron préstamos" });
@@ -316,8 +314,7 @@ async function prestarUnAlumno(req, res) {
 }
 
 async function eliminarPrestamosAlumno(req, res) {
-  console.log ("Llega a eliminar");
-  console.log ("Req: ", req);
+
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) {

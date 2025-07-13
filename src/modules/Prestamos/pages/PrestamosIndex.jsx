@@ -5,6 +5,7 @@ import { DialogoAsignacionMasiva } from "../components/DialogoAsignacionMasiva";
 import { DialogoEditarPrestamos } from "../components/DialogoEditarPrestamos";
 import { DialogoPrestarLibros } from "../components/DialogoPrestarLibros";
 import { DialogoDocumentoPrestamo } from "../components/DialogoDocumentoPrestamo";
+
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,6 +23,7 @@ import {
   LibraryBig,
 } from "lucide-react";
 
+import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 
 export function PrestamosIndex() {
   const [data, setData] = useState([]);
@@ -31,6 +33,8 @@ export function PrestamosIndex() {
   const [abrirEditar, setAbrirEditar] = useState(false);
   const [abrirDialogoPrestar, setAbrirDialogoPrestar] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
+  const [abrirDialogoEtiquetas, setAbrirDialogoEtiquetas] = useState(false);
+
   const [abrirDialogoDocumentoPrestamo, setAbrirDialogoDocumentoPrestamo] =
     useState(false);
 
@@ -118,11 +122,9 @@ export function PrestamosIndex() {
                 <Tag className="mr-2 h-4 w-4" />
                 Documento Préstamo Libros{" "}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setAbrirDialogoListadoCurso(true)}
-              >
-                <Users className="mr-2 h-4 w-4" />
-                Alumnos por grupo
+              <DropdownMenuItem onClick={() => setAbrirDialogoEtiquetas(true)}>
+                <Tag className="mr-2 h-4 w-4" />
+                Etiquetas libros
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -156,6 +158,13 @@ export function PrestamosIndex() {
         open={abrirDialogoDocumentoPrestamo}
         onOpenChange={setAbrirDialogoDocumentoPrestamo}
         alumnos={prestamosFiltrados} // o simplemente data
+      />
+
+      {/* Diálogo para generar etiquetas */}
+      <DialogoEtiquetas
+        alumnos={prestamosFiltrados}
+        open={abrirDialogoEtiquetas}
+        onOpenChange={setAbrirDialogoEtiquetas}
       />
     </div>
   );

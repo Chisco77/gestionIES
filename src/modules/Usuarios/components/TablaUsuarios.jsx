@@ -1,13 +1,3 @@
-// components/TablaAlumnos.jsx
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getPaginationRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-} from "@tanstack/react-table";
-
 import {
   Table,
   TableBody,
@@ -19,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MultiSelect } from "@/components/ui/multiselect";
-
 import {
   ChevronsLeft,
   ChevronLeft,
@@ -27,6 +16,15 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  getPaginationRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+} from "@tanstack/react-table";
 
 export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
   const [sorting, setSorting] = useState([{ id: "grupo", desc: false }]);
@@ -41,13 +39,9 @@ export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      sorting,
-      columnFilters,
-    },
+    state: { sorting, columnFilters },
   });
 
-  // ✅ Solo llamar a onFilteredChange cuando cambien los datos filtrados realmente
   useEffect(() => {
     const filtered = table
       .getFilteredRowModel()
@@ -68,55 +62,63 @@ export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
   const totalPages = table.getPageCount();
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Filtros */}
-      <div className="flex flex-wrap items-end gap-3 py-2 text-sm text-muted-foreground">
-        <div className="space-y-1">
-          <label className="block font-medium text-xs">Grupo</label>
-          <MultiSelect
-            values={table.getColumn("grupo")?.getFilterValue() ?? []}
-            onChange={(value) =>
-              table.getColumn("grupo")?.setFilterValue(value)
-            }
-            options={getUniqueValues("grupo").map((g) => ({
-              value: g,
-              label: g,
-            }))}
-            placeholder="Seleccionar grupos"
-          />
-        </div>
+      <Card className="p-4 shadow-none">
+        <div className="flex flex-wrap items-end gap-4 text-sm">
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-muted-foreground">
+              Grupo
+            </label>
+            <MultiSelect
+              values={table.getColumn("grupo")?.getFilterValue() ?? []}
+              onChange={(value) =>
+                table.getColumn("grupo")?.setFilterValue(value)
+              }
+              options={getUniqueValues("grupo").map((g) => ({
+                value: g,
+                label: g,
+              }))}
+              placeholder="Seleccionar grupos"
+            />
+          </div>
 
-        <div className="space-y-1">
-          <label className="block font-medium text-xs">Apellidos</label>
-          <Input
-            placeholder="Buscar apellidos..."
-            value={table.getColumn("apellidos")?.getFilterValue() ?? ""}
-            onChange={(e) =>
-              table.getColumn("apellidos")?.setFilterValue(e.target.value)
-            }
-            className="w-[180px] h-8 text-sm"
-          />
-        </div>
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-muted-foreground">
+              Apellidos
+            </label>
+            <Input
+              placeholder="Buscar apellidos..."
+              value={table.getColumn("apellidos")?.getFilterValue() ?? ""}
+              onChange={(e) =>
+                table.getColumn("apellidos")?.setFilterValue(e.target.value)
+              }
+              className="w-[180px] h-8 text-sm"
+            />
+          </div>
 
-        <div className="space-y-1">
-          <label className="block font-medium text-xs">Usuario</label>
-          <Input
-            placeholder="Buscar usuario..."
-            value={table.getColumn("uid")?.getFilterValue() ?? ""}
-            onChange={(e) =>
-              table.getColumn("uid")?.setFilterValue(e.target.value)
-            }
-            className="w-[180px] h-8 text-sm"
-          />
-        </div>
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-muted-foreground">
+              Usuario
+            </label>
+            <Input
+              placeholder="Buscar usuario..."
+              value={table.getColumn("uid")?.getFilterValue() ?? ""}
+              onChange={(e) =>
+                table.getColumn("uid")?.setFilterValue(e.target.value)
+              }
+              className="w-[180px] h-8 text-sm"
+            />
+          </div>
 
-        {acciones && <div className="ml-auto">{acciones}</div>}
-      </div>
+          {acciones && <div className="ml-auto">{acciones}</div>}
+        </div>
+      </Card>
 
       {/* Tabla */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
+      <div className="rounded-md border overflow-auto">
+        <Table className="text-sm">
+          <TableHeader className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -138,6 +140,7 @@ export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="hover:bg-muted/50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -164,7 +167,7 @@ export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
       </div>
 
       {/* Paginación */}
-      <div className="flex flex-col items-center justify-center py-6 space-y-2">
+      <div className="flex flex-col items-center justify-center py-4 space-y-2 text-sm">
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
@@ -183,7 +186,7 @@ export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
-          <span className="text-xs text-muted-foreground px-2">
+          <span className="px-2 text-muted-foreground">
             Página {currentPage} de {totalPages}
           </span>
 

@@ -14,6 +14,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Trash2,
+  Calendar,
 } from "lucide-react";
 import {
   Tooltip,
@@ -21,7 +22,6 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
 
 import {
   AlertDialog,
@@ -41,6 +41,15 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
   const [seleccionadosDerecha, setSeleccionadosDerecha] = useState([]);
   const [confirmarEliminacionAbierto, setConfirmarEliminacionAbierto] =
     useState(false);
+
+  // Estados para diálogos de cambio fecha
+  const [fechaPrestamoModalAbierto, setFechaPrestamoModalAbierto] =
+    useState(false);
+  const [fechaNuevaPrestamo, setFechaNuevaPrestamo] = useState("");
+
+  const [fechaDevolucionModalAbierto, setFechaDevolucionModalAbierto] =
+    useState(false);
+  const [fechaNuevaDevolucion, setFechaNuevaDevolucion] = useState("");
 
   useEffect(() => {
     if (open && alumno?.prestamos) {
@@ -73,17 +82,96 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
     );
   };
 
+  // Prestamo seleccionado único izquierda
+  const prestamoSeleccionado =
+    seleccionadosIzquierda.length === 1
+      ? noDevueltos.find((p) => p.id === seleccionadosIzquierda[0])
+      : null;
+
+  // Prestamo seleccionado único derecha (devueltos)
+  const prestamoDevueltoSeleccionado =
+    seleccionadosDerecha.length === 1
+      ? devueltos.find((p) => p.id === seleccionadosDerecha[0])
+      : null;
+
+  // Abrir diálogo cambiar fecha préstamo
+  const abrirDialogoFechaPrestamo = () => {
+    if (!prestamoSeleccionado) return;
+    setFechaNuevaPrestamo(
+      prestamoSeleccionado.fechaentrega?.slice(0, 10) || ""
+    );
+    setFechaPrestamoModalAbierto(true);
+  };
+
+  // Abrir diálogo cambiar fecha devolución
+  const abrirDialogoFechaDevolucion = () => {
+    if (!prestamoDevueltoSeleccionado) return;
+    setFechaNuevaDevolucion(
+      prestamoDevueltoSeleccionado.fechadevolucion?.slice(0, 10) || ""
+    );
+    setFechaDevolucionModalAbierto(true);
+  };
+
+  // Guardar fecha nueva préstamo (simulado)
+  const guardarFechaNuevaPrestamo = () => {
+    if (!fechaNuevaPrestamo) {
+      toast.error("Selecciona una fecha válida");
+      return;
+    }
+    toast.success(
+      `Fecha de préstamo actualizada a ${fechaNuevaPrestamo} para el libro "${prestamoSeleccionado.libro}"`
+    );
+    setFechaPrestamoModalAbierto(false);
+    setPrestamos((prev) =>
+      prev.map((p) =>
+        p.id === prestamoSeleccionado.id
+          ? { ...p, fechaentrega: fechaNuevaPrestamo }
+          : p
+      )
+    );
+    onSuccess?.();
+  };
+
+  // Guardar fecha nueva devolución (simulado)
+  const guardarFechaNuevaDevolucion = () => {
+    if (!fechaNuevaDevolucion) {
+      toast.error("Selecciona una fecha válida");
+      return;
+    }
+    toast.success(
+      `Fecha de devolución actualizada a ${fechaNuevaDevolucion} para el libro "${prestamoDevueltoSeleccionado.libro}"`
+    );
+    setFechaDevolucionModalAbierto(false);
+    setPrestamos((prev) =>
+      prev.map((p) =>
+        p.id === prestamoDevueltoSeleccionado.id
+          ? { ...p, fechadevolucion: fechaNuevaDevolucion }
+          : p
+      )
+    );
+    onSuccess?.();
+  };
+
+  useEffect(() => {
+    if (open && alumno?.prestamos) {
+      const normalizados = alumno.prestamos.map((p) => ({
+        ...p,
+        devuelto: p.devuelto === true || p.devuelto === "true",
+      }));
+      setPrestamos(normalizados);
+      setSeleccionadosIzquierda([]);
+      setSeleccionadosDerecha([]);
+    }
+  }, [open, alumno]);
+
   const devolver = async (ids) => {
     try {
-      const res = await fetch(
-        `${API_URL}/db/prestamos/devolver`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids }),
-        }
-      );
+      const res = await fetch(`${API_URL}/db/prestamos/devolver`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
       if (!res.ok) throw new Error("Error al devolver préstamos");
 
       toast.success("Préstamos devueltos correctamente");
@@ -108,15 +196,12 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
 
   const prestar = async (ids) => {
     try {
-      const res = await fetch(
-        `${API_URL}/db/prestamos/prestar`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids }),
-        }
-      );
+      const res = await fetch(`${API_URL}/db/prestamos/prestar`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
       if (!res.ok) throw new Error("Error al re-prestar préstamos");
 
       toast.success("Préstamos reactivados correctamente");
@@ -148,23 +233,6 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
     toast.success("Préstamos eliminados del listado (frontend)");
   };
 
-  const devolverSeleccionados = () => {
-    if (seleccionadosIzquierda.length === 0) {
-      toast.error("Selecciona al menos un préstamo");
-      return;
-    }
-    devolver(seleccionadosIzquierda);
-  };
-
-  const devolverTodos = () => {
-    const ids = noDevueltos.map((p) => p.id);
-    if (ids.length === 0) {
-      toast.error("No hay préstamos por devolver");
-      return;
-    }
-    devolver(ids);
-  };
-
   const prestarSeleccionados = () => {
     if (seleccionadosDerecha.length === 0) {
       toast.error("Selecciona al menos un préstamo");
@@ -182,14 +250,32 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
     prestar(ids);
   };
 
+  const devolverSeleccionados = () => {
+    if (seleccionadosIzquierda.length === 0) {
+      toast.error("Selecciona al menos un préstamo");
+      return;
+    }
+    devolver(seleccionadosIzquierda);
+  };
+
+  const devolverTodos = () => {
+    const ids = noDevueltos.map((p) => p.id);
+    if (ids.length === 0) {
+      toast.error("No hay préstamos por devolver");
+      return;
+    }
+    devolver(ids);
+  };
   return (
     <Dialog open={open} onOpenChange={onClose} modal={false}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
         className="max-w-6xl"
       >
-        <DialogHeader>
-          <DialogTitle>Préstamos de {alumno?.nombreAlumno}</DialogTitle>
+        <DialogHeader className="w-full flex justify-center">
+          <DialogTitle className="text-center">
+            Préstamos de {alumno?.nombreAlumno}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-6 max-h-[30rem] text-sm">
@@ -198,12 +284,36 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold">En Préstamo</h3>
               <div className="flex gap-1 items-center">
+                {/* Botón cambiar fecha préstamo */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={devolverSeleccionados}
+                      onClick={abrirDialogoFechaPrestamo}
+                      disabled={seleccionadosIzquierda.length !== 1}
+                    >
+                      <Calendar className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Cambiar fecha préstamo (selección única)
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Botón devolver seleccionado(s) */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        if (seleccionadosIzquierda.length === 0) {
+                          toast.error("Selecciona al menos un préstamo");
+                          return;
+                        }
+                        devolver(seleccionadosIzquierda);
+                      }}
                       disabled={seleccionadosIzquierda.length === 0}
                     >
                       <ChevronRight className="w-4 h-4" />
@@ -211,12 +321,21 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                   </TooltipTrigger>
                   <TooltipContent>Devolver seleccionado(s)</TooltipContent>
                 </Tooltip>
+
+                {/* Botón devolver todos */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={devolverTodos}
+                      onClick={() => {
+                        const ids = noDevueltos.map((p) => p.id);
+                        if (ids.length === 0) {
+                          toast.error("No hay préstamos por devolver");
+                          return;
+                        }
+                        devolver(ids);
+                      }}
                       disabled={noDevueltos.length === 0}
                     >
                       <ChevronsRight className="w-4 h-4" />
@@ -224,6 +343,8 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                   </TooltipTrigger>
                   <TooltipContent>Devolver todos</TooltipContent>
                 </Tooltip>
+
+                {/* Botón eliminar */}
                 <AlertDialog
                   open={confirmarEliminacionAbierto}
                   onOpenChange={setConfirmarEliminacionAbierto}
@@ -259,7 +380,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                         onClick={async () => {
                           try {
                             const res = await fetch(
-                              `${API_URL}/db/prestamos/eliminar`,
+                              `${API_URL}/db/prestamos/eliminarUnAlumno`,
                               {
                                 method: "POST",
                                 credentials: "include",
@@ -294,6 +415,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                 </AlertDialog>
               </div>
             </div>
+
             <ScrollArea className="h-64 border rounded-md p-2">
               {noDevueltos.length === 0 && (
                 <p className="text-muted-foreground">
@@ -332,12 +454,36 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold">Devueltos</h3>
               <div className="flex gap-1 items-center">
+                {/* Botón cambiar fecha devolución */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={prestarSeleccionados}
+                      onClick={abrirDialogoFechaDevolucion}
+                      disabled={seleccionadosDerecha.length !== 1}
+                    >
+                      <Calendar className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Cambiar fecha devolución (selección única)
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Botón prestar seleccionado(s) */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        if (seleccionadosDerecha.length === 0) {
+                          toast.error("Selecciona al menos un préstamo");
+                          return;
+                        }
+                        prestar(seleccionadosDerecha);
+                      }}
                       disabled={seleccionadosDerecha.length === 0}
                     >
                       <ChevronLeft className="w-4 h-4" />
@@ -345,12 +491,20 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                   </TooltipTrigger>
                   <TooltipContent>Prestar seleccionado(s)</TooltipContent>
                 </Tooltip>
+
+                {/* Botón prestar todos */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={prestarTodos}
+                      onClick={() => {
+                        if (devueltos.length === 0) {
+                          toast.error("No hay préstamos devueltos");
+                          return;
+                        }
+                        prestar(devueltos.map((p) => p.id));
+                      }}
                       disabled={devueltos.length === 0}
                     >
                       <ChevronsLeft className="w-4 h-4" />
@@ -403,6 +557,82 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
             Cerrar
           </Button>
         </DialogFooter>
+
+        {/* Diálogo para cambiar fecha préstamo */}
+        <Dialog
+          open={fechaPrestamoModalAbierto}
+          onOpenChange={setFechaPrestamoModalAbierto}
+          modal={false}
+        >
+          <DialogContent onInteractOutside={(e) => e.preventDefault()}>
+            <DialogHeader>
+              <DialogTitle>
+                Cambiar fecha de préstamo:{" "}
+                <span className="font-semibold">
+                  {prestamoSeleccionado?.libro || ""}
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <label className="block text-sm font-medium">Fecha</label>
+              <input
+                type="date"
+                className="w-full rounded border border-input bg-background px-3 py-2 text-sm"
+                value={fechaNuevaPrestamo}
+                onChange={(e) => setFechaNuevaPrestamo(e.target.value)}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setFechaPrestamoModalAbierto(false)}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={guardarFechaNuevaPrestamo}>Guardar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Diálogo para cambiar fecha devolución */}
+        <Dialog
+          open={fechaDevolucionModalAbierto}
+          onOpenChange={setFechaDevolucionModalAbierto}
+          modal={false}
+        >
+          <DialogContent onInteractOutside={(e) => e.preventDefault()}>
+            <DialogHeader>
+              <DialogTitle>
+                Cambiar fecha de devolución:{" "}
+                <span className="font-semibold">
+                  {prestamoDevueltoSeleccionado?.libro || ""}
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <label className="block text-sm font-medium">Fecha</label>
+              <input
+                type="date"
+                className="w-full rounded border border-input bg-background px-3 py-2 text-sm"
+                value={fechaNuevaDevolucion}
+                onChange={(e) => setFechaNuevaDevolucion(e.target.value)}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setFechaDevolucionModalAbierto(false)}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={guardarFechaNuevaDevolucion}>Guardar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );

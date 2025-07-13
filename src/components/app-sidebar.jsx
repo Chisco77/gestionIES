@@ -1,4 +1,5 @@
 import * as React from "react";
+import { DialogoEtiquetasGenericas } from "@/modules/Utilidades/components/DialogoEtiquetasGenericas";
 
 import {
   AudioWaveform,
@@ -25,20 +26,17 @@ import {
 import { useNavigate } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_URL;
 
-
-export function AppSidebar(props) {
+export function AppSidebar({ onOpenEtiquetas, ...props }) {
   const navigate = useNavigate();
   const [username, setUsername] = React.useState("Usuario");
+  const [openEtiquetas, setOpenEtiquetas] = React.useState(false);
 
-  // Obtener info del usuario desde backend (opcional)
   React.useEffect(() => {
     fetch(`${API_URL}/check-auth`, {
-      //    fetch(`/api/check-auth`, {
       credentials: "include",
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log("datos usuario: ", data);
         if (data.username) {
           setUsername(data.username);
         }
@@ -59,12 +57,23 @@ export function AppSidebar(props) {
 
   const navMain = [
     {
-      title: "Usuarios",
+      title: "Personas",
       url: "#",
       icon: SquareTerminal,
       isActive: true,
       items: [
         { title: "Alumnos", url: "/alumnos" },
+        { title: "Profesores", url: "/profesores" },
+        { title: "Todos", url: "/todos" },
+      ],
+    },
+    {
+      title: "Máquinas",
+      url: "#",
+      icon: SquareTerminal,
+      isActive: true,
+      items: [
+        { title: "Red Troncal", url: "/alumnos" },
         { title: "Profesores", url: "/profesores" },
         { title: "Todos", url: "/todos" },
       ],
@@ -76,17 +85,20 @@ export function AppSidebar(props) {
       items: [
         { title: "Préstamos", url: "/prestamos" },
         { title: "Libros", url: "/libros" },
-        { title: "Tutorials", url: "#" },
-        { title: "Changelog", url: "#" },
+        { title: "Cursos", url: "/cursos" },
       ],
     },
     {
-      title: "Settings",
+      title: "Utilidades",
       url: "#",
       icon: Settings2,
       items: [
-        { title: "Cursos", url: "/cursos" },
         { title: "Importar de Rayuela", url: "#" },
+        {
+          title: "Etiquetas Ordenadores",
+          url: "#",
+          onClick: () => setOpenEtiquetas(true), // ✅ abre el diálogo
+        },
       ],
     },
   ];
@@ -113,6 +125,10 @@ export function AppSidebar(props) {
         </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
+      <DialogoEtiquetasGenericas
+        open={openEtiquetas}
+        onOpenChange={setOpenEtiquetas}
+      />
     </Sidebar>
   );
 }

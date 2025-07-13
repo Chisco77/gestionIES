@@ -15,8 +15,8 @@ exports.getLdapGrupos = (req, res) => {
   }
 
   const client = ldap.createClient({
-    url: "ldap://172.16.218.2:389",
-    //url: "ldap://192.168.1.30:389",
+    //url: "ldap://172.16.218.2:389",
+    url: "ldap://192.168.1.32:389",
   });
 
   client.bind(ldapSession.dn, ldapSession.password, (err) => {

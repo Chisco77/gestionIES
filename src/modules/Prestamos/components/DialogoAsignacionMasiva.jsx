@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { Check, X } from "lucide-react";
 import jsPDF from "jspdf";
 
-
 export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   const [cursos, setCursos] = useState([]);
   const [grupos, setGrupos] = useState([]);
@@ -46,7 +45,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   }, [open]);
 
   useEffect(() => {
-    fetch(`${API_URL}/db/cursos`, { credentials: 'include' })
+    fetch(`${API_URL}/db/cursos`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) =>
         setCursos(data.sort((a, b) => a.curso.localeCompare(b.curso)))
@@ -55,7 +54,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   }, []);
 
   useEffect(() => {
-    fetch(`${API_URL}/ldap/grupos`, { credentials: 'include' })
+    fetch(`${API_URL}/ldap/grupos`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setGrupos(data.sort((a, b) => a.cn.localeCompare(b.cn))))
       .catch(() => toast.error("Error al obtener grupos"));
@@ -63,8 +62,10 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
   useEffect(() => {
     if (cursoSeleccionado) {
+      setLibros([]); // ← limpia inmediatamente la lista
+      setLibrosSeleccionados([]); // ← limpia los checks
       fetch(`${API_URL}/db/libros?curso=${cursoSeleccionado}`, {
-        credentials: 'include',
+        credentials: "include",
       })
         .then((res) => res.json())
         .then(setLibros)
@@ -77,10 +78,9 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
   useEffect(() => {
     if (grupoSeleccionado) {
-      fetch(
-        `${API_URL}/ldap/usuariosPorGrupo?grupo=${grupoSeleccionado}`,
-        { credentials: 'include' }
-      )
+      fetch(`${API_URL}/ldap/usuariosPorGrupo?grupo=${grupoSeleccionado}`, {
+        credentials: "include",
+      })
         .then((res) => res.json())
         .then(setAlumnos)
         .catch(() => toast.error("Error al obtener alumnos"));
@@ -193,18 +193,15 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
   const handleAsignar = async () => {
     try {
-      const res = await fetch(
-        `${API_URL}/db/prestamos/insertarMasivo`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            alumnos: alumnosSeleccionados,
-            libros: librosSeleccionados,
-          }),
-        }
-      );
+      const res = await fetch(`${API_URL}/db/prestamos/insertarMasivo`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alumnos: alumnosSeleccionados,
+          libros: librosSeleccionados,
+        }),
+      });
 
       const json = await res.json();
 

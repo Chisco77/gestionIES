@@ -8,7 +8,9 @@ async function obtenerGruposDesdeLdap(ldapSession, filtroGroupType = null) {
     }
 
     const client = ldap.createClient({
-      url: "ldap://172.16.218.2:389",
+     // url: "ldap://172.16.218.2:389",
+         url: "ldap://192.168.1.32:389",
+
     });
 
     client.bind(ldapSession.dn, ldapSession.password, (err) => {
@@ -73,7 +75,6 @@ exports.obtenerGruposPeople = async (req, res) => {
     const filtroGroupType = req.query.groupType || null;
 
     const grupos = await obtenerGruposDesdeLdap(ldapSession, filtroGroupType);
-    console.log(res);
     res.json(grupos);
   } catch (error) {
     console.error("❌ Error en obtenerGruposPeople:", error.message);
@@ -83,7 +84,9 @@ exports.obtenerGruposPeople = async (req, res) => {
 
 exports.buscarAlumnoPorUid = (ldapSession, uid, callback) => {
   const client = ldap.createClient({
-    url: "ldap://172.16.218.2:389",
+   // url: "ldap://172.16.218.2:389",
+       url: "ldap://192.168.1.32:389",
+
   });
 
   client.bind(ldapSession.dn, ldapSession.password, (err) => {
@@ -145,7 +148,9 @@ exports.getLdapUsuarios = (req, res) => {
   }
 
   const client = ldap.createClient({
-    url: "ldap://172.16.218.2:389",
+   // url: "ldap://172.16.218.2:389",
+       url: "ldap://192.168.1.32:389",
+
   });
 
   client.bind(ldapSession.dn, ldapSession.password, (err) => {
@@ -254,8 +259,6 @@ exports.obtenerAlumnosPorGrupo = (req, res) => {
   const ldapSession = req.session.ldap;
   const grupo = req.query.grupo;
 
-  console.log("✅ Petición a /api/ldap/alumnos recibida");
-  console.log("🔍 Grupo recibido:", grupo);
 
   if (!grupo || grupo.trim() === "") {
     return res.status(400).json({ error: "Parámetro 'grupo' requerido" });
@@ -270,7 +273,9 @@ exports.obtenerAlumnosPorGrupo = (req, res) => {
     input.replace(/([\\\*\(\)\0])/g, "\\$1");
 
   const client = ldap.createClient({
-    url: "ldap://172.16.218.2:389",
+    //url: "ldap://172.16.218.2:389",
+        url: "ldap://192.168.1.32:389",
+
   });
 
   client.bind(ldapSession.dn, ldapSession.password, (err) => {
@@ -326,7 +331,6 @@ exports.obtenerAlumnosPorGrupo = (req, res) => {
         }
 
         const filter = `(|${filterParts.join('')})`;
-        console.log("Filtro LDAP para alumnos:", filter);
 
         const peopleOptions = {
           scope: "sub",

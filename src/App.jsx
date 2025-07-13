@@ -15,6 +15,7 @@ import { TodosIndex } from "./modules/Usuarios/pages/TodosIndex";
 import { CursosIndex } from "./modules/Cursos/pages/CursosIndex";
 import { LibrosIndex } from "./modules/Libros/pages/LibrosIndex";
 import { PrestamosIndex } from "./modules/Prestamos/pages/PrestamosIndex";
+import { SidebarProviderCustom } from "./context/SideBarContext";
 
 const router = createBrowserRouter([
   {
@@ -48,19 +49,19 @@ const router = createBrowserRouter([
       {
         path: "/todos",
         element: <TodosIndex />,
-      },            
+      },
       {
         path: "/cursos",
         element: <CursosIndex />,
-      },                  
+      },
       {
         path: "/libros",
         element: <LibrosIndex />,
       },
-{
+      {
         path: "/prestamos",
         element: <PrestamosIndex />,
-      },                              
+      },
     ],
   },
 ]);
@@ -72,8 +73,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>
         <TaskProvider>
-          <Toaster richColors />
-          <RouterProvider router={router} />
+          <SidebarProviderCustom>
+            <Toaster richColors />
+            <RouterProvider router={router} />
+          </SidebarProviderCustom>
         </TaskProvider>
       </Provider>
       <ReactQueryDevtools initialIsOpen={false} />

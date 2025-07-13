@@ -1,18 +1,28 @@
 const db = require("../../db");
 
-// Obtener todos los libros
 exports.getLibros = async (req, res) => {
-  console.log("📚 Llega a getLibros");
   try {
-    const result = await db.query(
-      "SELECT id, idcurso, libro FROM libros ORDER BY id"
-    );
+    const { curso } = req.query;               // idcurso opcional
+
+    // Construimos la consulta dinámicamente
+    let text   = "SELECT id, idcurso, libro FROM libros";
+    const params = [];
+
+    if (curso) {
+      text  += " WHERE idcurso = $1";          // filtro por idcurso
+      params.push(curso);
+    }
+
+    text += " ORDER BY id";
+
+    const result = await db.query(text, params);
     res.json(result.rows);
   } catch (error) {
     console.error("❌ Error al obtener los libros:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+
 
 // Insertar un nuevo libro
 exports.insertLibro = async (req, res) => {
@@ -40,8 +50,6 @@ exports.insertLibro = async (req, res) => {
 exports.updateLibro = async (req, res) => {
   const { id } = req.params;
   const { idcurso, libro } = req.body;
-
-  console.log("🛠️ PUT recibido - ID:", id, "idcurso:", idcurso, "libro:", libro);
 
   if (!idcurso || !libro) {
     return res.status(400).json({

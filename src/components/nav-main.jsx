@@ -45,9 +45,21 @@ export function NavMain({ items }) {
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <Link to={subItem.url}>
-                          <span>{subItem.title}</span>
-                        </Link>
+                        {subItem.onClick ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              subItem.onClick();
+                              setTituloActivo(subItem.title); // También actualiza el título si quieres
+                            }}
+                            className="w-full text-left"
+                          >
+                            {subItem.title}
+                          </button>
+                        ) : (
+                          <Link to={subItem.url}>{subItem.title}</Link>
+                        )}
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   ))}

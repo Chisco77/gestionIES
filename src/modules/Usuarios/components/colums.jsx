@@ -16,7 +16,7 @@ const fuzzyTextFilter = (row, columnId, filterValue) => {
 };
 
 export const columns = [
-  {
+ /*{
     id: "tipo",
     accessorFn: (row) => row.groups?.[0] ?? "",
     header: ({ column }) => (
@@ -32,7 +32,7 @@ export const columns = [
       if (!filterValue || filterValue.length === 0) return true;
       return filterValue.includes(row.getValue(columnId));
     },
-  },
+  },*/
   {
     id: "grupo",
     accessorFn: (row) => {

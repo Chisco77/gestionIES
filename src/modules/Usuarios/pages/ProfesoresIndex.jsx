@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
-import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 
 
 export function ProfesoresIndex() {
@@ -16,7 +15,6 @@ export function ProfesoresIndex() {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log("✅ Datos LDAP:", data);
         setData(data);
         setAlumnosFiltrados(data); // al principio, sin filtros
       })
@@ -33,9 +31,7 @@ export function ProfesoresIndex() {
         data={data}
         onFilteredChange={(rows) => setAlumnosFiltrados(rows)}
       />
-      <div className="flex gap-4">
-        <DialogoEtiquetas alumnos={alumnosFiltrados} />
-      </div>
+      
     </div>
   );
 }
