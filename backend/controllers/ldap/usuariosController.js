@@ -113,6 +113,7 @@ exports.buscarAlumnoPorUid = (ldapSession, uid, callback) => {
 
       res.on("searchEntry", (entry) => {
         const attrs = {};
+        console.log("🔍 entry.attributes:");
         entry.attributes.forEach((attr) => {
           attrs[attr.type] = attr.vals;
         });
@@ -125,6 +126,7 @@ exports.buscarAlumnoPorUid = (ldapSession, uid, callback) => {
 
       res.on("end", () => {
         client.unbind();
+        console.log (alumno);
         callback(null, alumno);
       });
 

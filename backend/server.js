@@ -16,6 +16,8 @@ const app = express();
 
 const isProduction = process.env.NODE_ENV === "production";
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
+const path = require("path");
+
 
 // 🔐 Pool de conexión a PostgreSQL (para sesiones y otras operaciones si lo deseas)
 const pgPool = new Pool({
@@ -71,6 +73,8 @@ app.use(
 app.use("/api", authRoutes);
 app.use("/api/ldap", ldapRoutes);
 app.use("/api/db", dbRoutes);
+// sirve rutas de fotos de alumnos para que puedan obtenerse por GET
+app.use('/uploads/alumnos', express.static(path.join(__dirname, 'uploads/alumnos')));
 
 // 🚀 Servidor
 const PORT = process.env.PORT || 5000;

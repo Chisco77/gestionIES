@@ -35,6 +35,15 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 
+import {
+  DndContext,
+  closestCenter,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  DragOverlay,
+} from "@dnd-kit/core";
+
 export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
   const [prestamos, setPrestamos] = useState([]);
   const [seleccionadosIzquierda, setSeleccionadosIzquierda] = useState([]);
@@ -66,6 +75,9 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
   const noDevueltos = prestamos.filter((p) => !p.devuelto);
   const devueltos = prestamos.filter((p) => p.devuelto);
   const API_URL = import.meta.env.VITE_API_URL;
+
+  const [draggingItem, setDraggingItem] = useState(null);
+  const sensors = useSensors(useSensor(PointerSensor));
 
   const toggleSeleccion = (id, lado) => {
     const setSeleccionados =
@@ -131,6 +143,40 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
     );
     onSuccess?.();
   };
+
+  // estado para almacenar la url de la foto del alumno
+  const [fotoUrl, setFotoUrl] = useState(null);
+
+  useEffect(() => {
+    if (!alumno?.uidalumno) return;
+
+    const extensiones = ["jpg", "jpeg", "png"];
+    //const baseUrl = `${import.meta.env.VITE_API_URL}/alumnos/${alumno.uidalumno}`;
+    const baseUrl = `https://localhost:5000/uploads/alumnos/${alumno.uidalumno}`;
+
+    let encontrada = false;
+
+    (async () => {
+      for (const ext of extensiones) {
+        try {
+          const res = await fetch(`${baseUrl}.${ext}`, {
+            method: "HEAD",
+            credentials: "include",
+          });
+          if (res.ok) {
+            setFotoUrl(`${baseUrl}.${ext}`);
+            encontrada = true;
+            break;
+          }
+        } catch (e) {
+          // Silenciar errores
+        }
+      }
+      if (!encontrada) {
+        setFotoUrl(null); // o puedes usar una imagen por defecto
+      }
+    })();
+  }, [alumno?.uidalumno]);
 
   // Guardar fecha nueva devolución (simulado)
   const guardarFechaNuevaDevolucion = () => {
@@ -272,36 +318,27 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
         onInteractOutside={(e) => e.preventDefault()}
         className="max-w-6xl"
       >
-        <DialogHeader className="w-full flex justify-center">
-          <DialogTitle className="text-center">
-            Préstamos de {alumno?.nombreAlumno}
-          </DialogTitle>
+        <DialogHeader className="w-full flex flex-col items-center justify-center text-center space-y-2">
+          <DialogTitle>Préstamos de {alumno?.nombreAlumno}</DialogTitle>
+
+          {fotoUrl ? (
+            <img
+              src={fotoUrl}
+              alt="Foto del alumno"
+              className="w-24 h-24 rounded-full border object-cover"
+            />
+          ) : (
+            <div className="text-xs text-muted-foreground">
+              No se encontró imagen
+            </div>
+          )}
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-6 max-h-[30rem] text-sm">
-          {/* En préstamo */}
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold">En Préstamo</h3>
               <div className="flex gap-1 items-center">
-                {/* Botón cambiar fecha préstamo */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={abrirDialogoFechaPrestamo}
-                      disabled={seleccionadosIzquierda.length !== 1}
-                    >
-                      <Calendar className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Cambiar fecha préstamo (selección única)
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Botón devolver seleccionado(s) */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -322,7 +359,6 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                   <TooltipContent>Devolver seleccionado(s)</TooltipContent>
                 </Tooltip>
 
-                {/* Botón devolver todos */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -344,7 +380,6 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                   <TooltipContent>Devolver todos</TooltipContent>
                 </Tooltip>
 
-                {/* Botón eliminar */}
                 <AlertDialog
                   open={confirmarEliminacionAbierto}
                   onOpenChange={setConfirmarEliminacionAbierto}
@@ -428,19 +463,46 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                   return (
                     <li
                       key={p.id}
-                      className={`border p-2 rounded cursor-pointer transition-all ${
+                      className={`border p-2 rounded transition-all ${
                         seleccionado
                           ? "bg-green-100 border-green-500"
                           : "hover:bg-muted"
                       }`}
-                      onClick={() => toggleSeleccion(p.id, "izquierda")}
                     >
-                      <div>
-                        <strong>Libro:</strong> {p.libro}
-                      </div>
-                      <div>
-                        <strong>Entrega:</strong>{" "}
-                        {p.fechaentrega?.slice(0, 10) || "—"}
+                      <div className="flex items-center justify-between gap-4">
+                        <div
+                          onClick={() => toggleSeleccion(p.id, "izquierda")}
+                          className="cursor-pointer"
+                        >
+                          <div>
+                            <strong>Libro:</strong> {p.libro}
+                          </div>
+                          <div>
+                            <strong>Entrega:</strong>{" "}
+                            {p.fechaentrega?.slice(0, 10) || "—"}
+                          </div>
+                        </div>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setFechaNuevaPrestamo(
+                                  p.fechaentrega?.slice(0, 10) || ""
+                                );
+                                setSeleccionadosIzquierda([p.id]);
+                                setFechaPrestamoModalAbierto(true);
+                              }}
+                            >
+                              <Calendar className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Cambiar fecha préstamo
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </li>
                   );
@@ -449,29 +511,10 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
             </ScrollArea>
           </div>
 
-          {/* Devueltos */}
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold">Devueltos</h3>
               <div className="flex gap-1 items-center">
-                {/* Botón cambiar fecha devolución */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={abrirDialogoFechaDevolucion}
-                      disabled={seleccionadosDerecha.length !== 1}
-                    >
-                      <Calendar className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Cambiar fecha devolución (selección única)
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Botón prestar seleccionado(s) */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -492,7 +535,6 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                   <TooltipContent>Prestar seleccionado(s)</TooltipContent>
                 </Tooltip>
 
-                {/* Botón prestar todos */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -526,23 +568,50 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
                   return (
                     <li
                       key={p.id}
-                      className={`border p-2 rounded cursor-pointer transition-all ${
+                      className={`border p-2 rounded transition-all ${
                         seleccionado
                           ? "bg-green-100 border-green-500"
                           : "hover:bg-muted"
                       }`}
-                      onClick={() => toggleSeleccion(p.id, "derecha")}
                     >
-                      <div>
-                        <strong>Libro:</strong> {p.libro}
-                      </div>
-                      <div>
-                        <strong>Entrega:</strong>{" "}
-                        {p.fechaentrega?.slice(0, 10) || "—"}
-                      </div>
-                      <div>
-                        <strong>Devolución:</strong>{" "}
-                        {p.fechadevolucion?.slice(0, 10) || "—"}
+                      <div className="flex items-center justify-between gap-4">
+                        <div
+                          onClick={() => toggleSeleccion(p.id, "derecha")}
+                          className="cursor-pointer"
+                        >
+                          <div>
+                            <strong>Libro:</strong> {p.libro}
+                          </div>
+                          <div>
+                            <strong>Entrega:</strong>{" "}
+                            {p.fechaentrega?.slice(0, 10) || "—"}
+                          </div>
+                          <div>
+                            <strong>Devolución:</strong>{" "}
+                            {p.fechadevolucion?.slice(0, 10) || "—"}
+                          </div>
+                        </div>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setFechaNuevaDevolucion(
+                                  p.fechadevolucion?.slice(0, 10) || ""
+                                );
+                                setSeleccionadosDerecha([p.id]);
+                                setFechaDevolucionModalAbierto(true);
+                              }}
+                            >
+                              <Calendar className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Cambiar fecha devolución
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </li>
                   );
@@ -558,7 +627,6 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
           </Button>
         </DialogFooter>
 
-        {/* Diálogo para cambiar fecha préstamo */}
         <Dialog
           open={fechaPrestamoModalAbierto}
           onOpenChange={setFechaPrestamoModalAbierto}
@@ -596,7 +664,6 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
           </DialogContent>
         </Dialog>
 
-        {/* Diálogo para cambiar fecha devolución */}
         <Dialog
           open={fechaDevolucionModalAbierto}
           onOpenChange={setFechaDevolucionModalAbierto}
