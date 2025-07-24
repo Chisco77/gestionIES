@@ -3,6 +3,7 @@ const ldap = require("ldapjs");
 const BASE_DN = "dc=instituto,dc=extremadura,dc=es";
 const GROUP_DN = `ou=Group,${BASE_DN}`;
 const PEOPLE_DN = `ou=People,${BASE_DN}`;
+const LDAP_URL = process.env.LDAP_URL;
 
 // ✅ 1. Obtener grupos filtrando por groupType
 exports.getLdapGrupos = (req, res) => {
@@ -16,7 +17,7 @@ exports.getLdapGrupos = (req, res) => {
 
   const client = ldap.createClient({
     //url: "ldap://172.16.218.2:389",
-    url: "ldap://192.168.1.32:389",
+    url: LDAP_URL,
   });
 
   client.bind(ldapSession.dn, ldapSession.password, (err) => {
@@ -80,8 +81,8 @@ exports.getMiembrosPorGidNumber = (req, res) => {
   }
 
   const client = ldap.createClient({
-    url: "ldap://172.16.218.2:389",
-    //url: "ldap://192.168.1.30:389",
+    url: LDAP_URL,
+    //url: "ldap://172.16.218.2:389",
   });
 
   client.bind(ldapSession.dn, ldapSession.password, (err) => {

@@ -1,7 +1,9 @@
 const ldap = require("ldapjs");
+const LDAP_URL = process.env.LDAP_URL;
 
 // ✅ Función reutilizable para obtener grupos desde LDAP
 async function obtenerGruposDesdeLdap(ldapSession, filtroGroupType = null) {
+  console.log ("LDAP: ".LDAP_URL);
   return new Promise((resolve, reject) => {
     if (!ldapSession) {
       return reject(new Error("No autenticado: falta sesión LDAP"));
@@ -9,7 +11,7 @@ async function obtenerGruposDesdeLdap(ldapSession, filtroGroupType = null) {
 
     const client = ldap.createClient({
      // url: "ldap://172.16.218.2:389",
-         url: "ldap://192.168.1.32:389",
+         url: LDAP_URL,
 
     });
 
@@ -84,8 +86,8 @@ exports.obtenerGruposPeople = async (req, res) => {
 
 exports.buscarAlumnoPorUid = (ldapSession, uid, callback) => {
   const client = ldap.createClient({
-   // url: "ldap://172.16.218.2:389",
-       url: "ldap://192.168.1.32:389",
+    //url: "ldap://172.16.218.2:389",
+       url: LDAP_URL,
 
   });
 
@@ -150,8 +152,8 @@ exports.getLdapUsuarios = (req, res) => {
   }
 
   const client = ldap.createClient({
-   // url: "ldap://172.16.218.2:389",
-       url: "ldap://192.168.1.32:389",
+    //url: "ldap://172.16.218.2:389",
+       url: LDAP_URL,
 
   });
 
@@ -276,7 +278,7 @@ exports.obtenerAlumnosPorGrupo = (req, res) => {
 
   const client = ldap.createClient({
     //url: "ldap://172.16.218.2:389",
-        url: "ldap://192.168.1.32:389",
+        url: LDAP_URL,
 
   });
 

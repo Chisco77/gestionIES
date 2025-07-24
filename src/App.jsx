@@ -15,7 +15,7 @@ import { TodosIndex } from "./modules/Usuarios/pages/TodosIndex";
 import { CursosIndex } from "./modules/Cursos/pages/CursosIndex";
 import { LibrosIndex } from "./modules/Libros/pages/LibrosIndex";
 import { PrestamosIndex } from "./modules/Prestamos/pages/PrestamosIndex";
-import { SidebarProviderCustom } from "./context/SideBarContext";
+import { SidebarProviderCustom } from "./context/SidebarContext";
 
 const router = createBrowserRouter([
   {
