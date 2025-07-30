@@ -45,6 +45,7 @@ import {
 } from "@dnd-kit/core";
 
 export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
+  console.log ("Alumno en dialogo: ", alumno);
   const [prestamos, setPrestamos] = useState([]);
   const [seleccionadosIzquierda, setSeleccionadosIzquierda] = useState([]);
   const [seleccionadosDerecha, setSeleccionadosDerecha] = useState([]);
@@ -148,12 +149,13 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
   const [fotoUrl, setFotoUrl] = useState(null);
 
   useEffect(() => {
-    if (!alumno?.uidalumno) return;
+    console.log ("Alunno en diálogo: ", alumno);
+    if (!alumno?.uid) return;
 
     const extensiones = ["jpg", "jpeg", "png"];
     //const baseUrl = `${import.meta.env.VITE_API_URL}/alumnos/${alumno.uidalumno}`;
-    const baseUrl = `https://localhost:5000/uploads/alumnos/${alumno.uidalumno}`;
-
+    const baseUrl = `https://localhost:5000/uploads/alumnos/${alumno.uid}`;
+    console.log ("Foto: ", baseUrl);
     let encontrada = false;
 
     (async () => {
@@ -176,7 +178,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
         setFotoUrl(null); // o puedes usar una imagen por defecto
       }
     })();
-  }, [alumno?.uidalumno]);
+  }, [alumno?.uid]);
 
   // Guardar fecha nueva devolución (simulado)
   const guardarFechaNuevaDevolucion = () => {
@@ -319,8 +321,6 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
         className="max-w-6xl"
       >
         <DialogHeader className="w-full flex flex-col items-center justify-center text-center space-y-2">
-          <DialogTitle>Préstamos de {alumno?.nombreAlumno}</DialogTitle>
-
           {fotoUrl ? (
             <img
               src={fotoUrl}
@@ -332,6 +332,9 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
               No se encontró imagen
             </div>
           )}
+          <DialogTitle>{alumno?.nombreAlumno}</DialogTitle>
+
+          
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-6 max-h-[30rem] text-sm">

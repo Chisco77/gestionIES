@@ -27,17 +27,17 @@ router.put("/libros/:id", updateLibro);
 router.delete("/libros/:id", deleteLibro);
 
 const {
-  obtenerPrestamosEnriquecidos,
+ // getPrestamosEnriquecidos,
   insertarPrestamosMasivo,
-  obtenerPrestamosAgrupados,
+  getPrestamosAgrupados,
   devolverPrestamos,
   prestarPrestamos,
   prestarUnAlumno,
   eliminarPrestamosAlumno,
 } = require("../controllers/db/prestamosController");
 
-router.get("/prestamos/agrupados", obtenerPrestamosAgrupados);
-router.get("/prestamos", obtenerPrestamosEnriquecidos);
+router.get("/prestamos/agrupados", getPrestamosAgrupados);
+//router.get("/prestamos", getPrestamosEnriquecidos);
 router.post("/prestamos/devolver", devolverPrestamos);
 router.post("/prestamos/prestar", prestarPrestamos);
 router.post ("/prestamos/insertarMasivo", insertarPrestamosMasivo);

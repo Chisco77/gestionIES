@@ -192,6 +192,8 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   };
 
   const handleAsignar = async () => {
+    console.log ("Alumnos: ", alumnosSeleccionados);
+    console.log ("Libros: ", librosSeleccionados);
     try {
       const res = await fetch(`${API_URL}/db/prestamos/insertarMasivo`, {
         method: "POST",

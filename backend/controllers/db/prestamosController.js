@@ -1,7 +1,11 @@
 const pool = require("../../db");
-const { obtenerGruposDesdeLdap, buscarAlumnoPorUid } = require("../ldap/usuariosController");
+const {
+  obtenerGruposDesdeLdap,
+  buscarAlumnoPorUid,
+} = require("../ldap/usuariosController");
 
-async function obtenerPrestamosEnriquecidos(req, res) {
+/*
+async function getPrestamosEnriquecidos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) {
@@ -45,9 +49,11 @@ async function obtenerPrestamosEnriquecidos(req, res) {
     console.error("❌ Error al obtener préstamos enriquecidos:", error.message);
     res.status(500).json({ error: "Error al obtener préstamos enriquecidos" });
   }
-}
+} */
 
-async function obtenerPrestamosAgrupados(req, res) {
+// Devuelve registros de alumnos con prestamos: uidalumno, nombreAlumno, curso y lista de prestamos
+// Obtiene datos de nodo People de LDAP (alumnos tiene atributo "school_class") y tablas libros y prestamos de postgresql.
+/*async function getPrestamosAgrupados(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) {
@@ -56,7 +62,7 @@ async function obtenerPrestamosAgrupados(req, res) {
 
     const { rows: prestamos } = await pool.query("SELECT * FROM prestamos");
     const { rows: libros } = await pool.query("SELECT * FROM libros");
-    const grupos = await obtenerGruposDesdeLdap(ldapSession, 'school_class');
+    const grupos = await obtenerGruposDesdeLdap(ldapSession, "school_class");
 
     const agrupado = {};
 
@@ -65,13 +71,13 @@ async function obtenerPrestamosAgrupados(req, res) {
       const nombreLibro = libro?.libro || "Desconocido";
 
       const grupo = grupos.find(
-        (g) => Array.isArray(g.memberUid) && g.memberUid.includes(p.uidalumno)
+        (g) => Array.isArray(g.memberUid) && g.memberUid.includes(p.uid)
       );
       const curso = grupo?.cn || "Curso desconocido";
 
-      if (!agrupado[p.uidalumno]) {
+      if (!agrupado[p.uid]) {
         const alumno = await new Promise((resolve) => {
-          buscarAlumnoPorUid(ldapSession, p.uidalumno, (err, datos) => {
+          buscarAlumnoPorUid(ldapSession, p.uid, (err, datos) => {
             if (!err && datos) {
               resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
             } else {
@@ -80,15 +86,83 @@ async function obtenerPrestamosAgrupados(req, res) {
           });
         });
 
-        agrupado[p.uidalumno] = {
-          uidalumno: p.uidalumno,
+        agrupado[p.uid] = {
+          uid: p.uid,
           nombreAlumno: alumno,
           curso,
           prestamos: [],
         };
       }
 
-      agrupado[p.uidalumno].prestamos.push({
+      agrupado[p.uid].prestamos.push({
+        id: p.id,
+        libro: nombreLibro,
+        devuelto: p.devuelto,
+        fechaentrega: p.fechaentrega,
+        fechadevolucion: p.fechadevolucion,
+      });
+    }
+
+    const resultado = Object.values(agrupado);
+    res.json(resultado);
+  } catch (error) {
+    console.error("❌ Error al obtener préstamos agrupados:", error.message);
+    res.status(500).json({ error: "Error al obtener resumen de préstamos" });
+  }
+}*/
+
+async function getPrestamosAgrupados(req, res) {
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession) {
+      return res.status(401).json({ error: "No autenticado" });
+    }
+
+    const { esalumno } = req.query;
+    const esAlumnoBool = esalumno === "true"; // porque viene como string desde query
+
+    const { rows: prestamos } = await pool.query(
+      "SELECT * FROM prestamos WHERE esalumno = $1",
+      [esAlumnoBool]
+    );
+    console.log ("Es alumno: ", esAlumnoBool);
+    const { rows: libros } = await pool.query("SELECT * FROM libros");
+
+    const tipoGrupo = esAlumnoBool ? "school_class" : "staff_group"; // o lo que uses para profesores
+    const grupos = await obtenerGruposDesdeLdap(ldapSession, tipoGrupo);
+
+    const agrupado = {};
+
+    for (const p of prestamos) {
+      const libro = libros.find((l) => l.id === p.idlibro);
+      const nombreLibro = libro?.libro || "Desconocido";
+
+      const grupo = grupos.find(
+        (g) => Array.isArray(g.memberUid) && g.memberUid.includes(p.uid)
+      );
+      const curso = grupo?.cn || (esAlumnoBool ? "Curso desconocido" : "Departamento desconocido");
+
+      if (!agrupado[p.uid]) {
+        const persona = await new Promise((resolve) => {
+          const buscar = esAlumnoBool ? buscarAlumnoPorUid : buscarProfesorPorUid;
+          buscar(ldapSession, p.uid, (err, datos) => {
+            if (!err && datos) {
+              resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
+            } else {
+              resolve(esAlumnoBool ? "Alumno desconocido" : "Profesor desconocido");
+            }
+          });
+        });
+
+        agrupado[p.uid] = {
+          uid: p.uid,
+          nombreAlumno: persona,
+          curso,
+          prestamos: [],
+        };
+      }
+
+      agrupado[p.uid].prestamos.push({
         id: p.id,
         libro: nombreLibro,
         devuelto: p.devuelto,
@@ -105,6 +179,8 @@ async function obtenerPrestamosAgrupados(req, res) {
   }
 }
 
+
+// Marta atributo devuelto a true de prestamos
 async function devolverPrestamos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -137,6 +213,7 @@ async function devolverPrestamos(req, res) {
   }
 }
 
+// Marca deuvelto a false de prestamos
 async function prestarPrestamos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -167,8 +244,7 @@ async function prestarPrestamos(req, res) {
   }
 }
 
-
-
+// Inserción masiva de prestamos de alumnos. Asigna a cada alumno de alumnos los libros de libros (los marca con devuelto = false)
 async function insertarPrestamosMasivo(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -185,47 +261,49 @@ async function insertarPrestamosMasivo(req, res) {
     const fechaentrega = new Date();
     const valoresAInsertar = [];
     const descartados = [];
-
-    for (const uidalumno of alumnos) {
+    // 
+    for (const uid of alumnos) {
       for (const idlibro of libros) {
         // Comprobamos si ya existe
         const resultado = await pool.query(
-          `SELECT 1 FROM prestamos WHERE uidalumno = $1 AND idlibro = $2`,
-          [uidalumno, idlibro]
+          `SELECT 1 FROM prestamos WHERE uid = $1 AND idlibro = $2`,
+          [uid, idlibro]
         );
 
         if (resultado.rowCount > 0) {
-          descartados.push({ uidalumno, idlibro });
+          descartados.push({ uid, idlibro });
         } else {
           valoresAInsertar.push({
-            uidalumno,
+            uid,
             idlibro,
             devuelto: false,
             fechaentrega,
             fechadevolucion: null,
+            esalumno: true,
           });
         }
       }
     }
-
+    // Insertar prestamos
     if (valoresAInsertar.length > 0) {
       const insertValues = valoresAInsertar
         .map(
           (_, i) =>
-            `($${i * 5 + 1}, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5})`
+            `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${i * 6 + 5}, $${i * 6 + 6})`
         )
         .join(", ");
 
       const parametros = valoresAInsertar.flatMap((v) => [
-        v.uidalumno,
+        v.uid,
         v.idlibro,
         v.devuelto,
         v.fechaentrega,
         v.fechadevolucion,
+        v.esalumno,
       ]);
 
       await pool.query(
-        `INSERT INTO prestamos (uidalumno, idlibro, devuelto, fechaentrega, fechadevolucion)
+        `INSERT INTO prestamos (uid, idlibro, devuelto, fechaentrega, fechadevolucion, esalumno)
          VALUES ${insertValues}`,
         parametros
       );
@@ -242,7 +320,7 @@ async function insertarPrestamosMasivo(req, res) {
   }
 }
 
-
+//
 async function prestarUnAlumno(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -250,9 +328,9 @@ async function prestarUnAlumno(req, res) {
       return res.status(401).json({ error: "No autenticado" });
     }
 
-    const { uidalumno, libros } = req.body;
+    const { uid, libros } = req.body;
 
-    if (!uidalumno || !Array.isArray(libros) || libros.length === 0) {
+    if (!uid || !Array.isArray(libros) || libros.length === 0) {
       return res.status(400).json({ error: "Datos incompletos" });
     }
 
@@ -262,19 +340,20 @@ async function prestarUnAlumno(req, res) {
 
     for (const idlibro of libros) {
       const resultado = await pool.query(
-        `SELECT 1 FROM prestamos WHERE uidalumno = $1 AND idlibro = $2 AND devuelto = false`,
-        [uidalumno, idlibro]
+        `SELECT 1 FROM prestamos WHERE uid = $1 AND idlibro = $2 AND devuelto = false`,
+        [uid, idlibro]
       );
 
       if (resultado.rowCount > 0) {
-        descartados.push({ uidalumno, idlibro });
+        descartados.push({ uid, idlibro });
       } else {
         valoresAInsertar.push({
-          uidalumno,
+          uid,
           idlibro,
           devuelto: false,
           fechaentrega,
           fechadevolucion: null,
+          esalumno: true,
         });
       }
     }
@@ -288,15 +367,16 @@ async function prestarUnAlumno(req, res) {
         .join(", ");
 
       const parametros = valoresAInsertar.flatMap((v) => [
-        v.uidalumno,
+        v.uid,
         v.idlibro,
         v.devuelto,
         v.fechaentrega,
         v.fechadevolucion,
+        v.esalumno,
       ]);
 
       await pool.query(
-        `INSERT INTO prestamos (uidalumno, idlibro, devuelto, fechaentrega, fechadevolucion)
+        `INSERT INTO prestamos (uid, idlibro, devuelto, fechaentrega, fechadevolucion, esalumno)
          VALUES ${insertValues}`,
         parametros
       );
@@ -314,7 +394,6 @@ async function prestarUnAlumno(req, res) {
 }
 
 async function eliminarPrestamosAlumno(req, res) {
-
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) {
@@ -327,10 +406,7 @@ async function eliminarPrestamosAlumno(req, res) {
       return res.status(400).json({ error: "No se especificaron préstamos" });
     }
 
-    await pool.query(
-      `DELETE FROM prestamos WHERE id = ANY($1::int[])`,
-      [ids]
-    );
+    await pool.query(`DELETE FROM prestamos WHERE id = ANY($1::int[])`, [ids]);
 
     res.json({ success: true, eliminados: ids.length });
   } catch (error) {
@@ -339,11 +415,9 @@ async function eliminarPrestamosAlumno(req, res) {
   }
 }
 
-
-
 module.exports = {
-  obtenerPrestamosEnriquecidos,
-  obtenerPrestamosAgrupados,
+  //getPrestamosEnriquecidos,
+  getPrestamosAgrupados,
   insertarPrestamosMasivo,
   devolverPrestamos,
   prestarPrestamos,

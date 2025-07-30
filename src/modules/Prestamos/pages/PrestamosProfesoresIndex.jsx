@@ -25,7 +25,7 @@ import {
 
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 
-export function PrestamosIndex() {
+export function PrestamosProfesoresIndex() {
   const [data, setData] = useState([]);
   const [prestamosFiltrados, setPrestamosFiltrados] = useState([]);
   const [abrirInsertarMasivo, setAbrirInsertarMasivo] = useState(false);
@@ -39,8 +39,8 @@ export function PrestamosIndex() {
     useState(false);
 
   // Obtiene prestamos agrupados por uid
-  const cargarPrestamos = (esalumno = true) => {
-    fetch(`${API_URL}/db/prestamos/agrupados?esalumno=${esalumno}`, {
+  const cargarPrestamos = (esalumno = false) => {
+    fetch(`${API_URL}/db/prestamos/agrupados`, {
       credentials: "include",
     })
       .then((response) => response.json())

@@ -70,7 +70,8 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
       url: "#",
       icon: BookOpen,
       items: [
-        { title: "Préstamos", url: "/prestamos" },
+        { title: "Alumnos", url: "/prestamos" },
+        { title: "Profesores", url: "/prestamosProfesores" },
         { title: "Libros", url: "/libros" },
         { title: "Cursos", url: "/cursos" },
       ],

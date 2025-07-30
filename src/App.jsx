@@ -10,12 +10,13 @@ import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AlumnosIndex } from "./modules/Usuarios/pages/AlumnosIndex";
-import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
 import { TodosIndex } from "./modules/Usuarios/pages/TodosIndex";
 import { CursosIndex } from "./modules/Cursos/pages/CursosIndex";
 import { LibrosIndex } from "./modules/Libros/pages/LibrosIndex";
 import { PrestamosIndex } from "./modules/Prestamos/pages/PrestamosIndex";
 import { SidebarProviderCustom } from "./context/SidebarContext";
+import { PrestamosProfesoresIndex } from "./modules/Prestamos/pages/PrestamosProfesoresIndex";
+import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
 
 const router = createBrowserRouter([
   {
@@ -61,6 +62,10 @@ const router = createBrowserRouter([
       {
         path: "/prestamos",
         element: <PrestamosIndex />,
+      },
+      {
+        path: "/prestamosProfesores",
+        element: <PrestamosProfesoresIndex />,
       },
     ],
   },
