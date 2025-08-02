@@ -18,7 +18,7 @@ import { SidebarProviderCustom } from "./context/SidebarContext";
 import { PrestamosProfesoresIndex } from "./modules/Prestamos/pages/PrestamosProfesoresIndex";
 import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
 
-const router = createBrowserRouter([
+/*const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />,
@@ -69,7 +69,57 @@ const router = createBrowserRouter([
       },
     ],
   },
+]);*/
+
+const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        path: "/",
+        element: <Dashboard />, // ← Ya protegido por Layout
+      },
+      {
+        path: "/alumnos",
+        element: <AlumnosIndex />,
+      },
+      {
+        path: "/profesores",
+        element: <ProfesoresIndex />,
+      },
+      {
+        path: "/todos",
+        element: <TodosIndex />,
+      },
+      {
+        path: "/cursos",
+        element: <CursosIndex />,
+      },
+      {
+        path: "/libros",
+        element: <LibrosIndex />,
+      },
+      {
+        path: "/prestamos",
+        element: <PrestamosIndex />,
+      },
+      {
+        path: "/prestamosProfesores",
+        element: <PrestamosProfesoresIndex />,
+      },
+    ],
+  },
 ]);
+
 
 const queryClient = new QueryClient();
 
