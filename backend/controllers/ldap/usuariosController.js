@@ -84,7 +84,7 @@ exports.obtenerGruposPeople = async (req, res) => {
   }
 };
 
-exports.buscarAlumnoPorUid = (ldapSession, uid, callback) => {
+exports.buscarPorUid = (ldapSession, uid, callback) => {
   const client = ldap.createClient({
     //url: "ldap://172.16.218.2:389",
        url: LDAP_URL,

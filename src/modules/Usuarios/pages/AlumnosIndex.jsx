@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+// Con react query. Usa hook useAlumnosLdap.jsx
+import { useState } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
 import { DialogoListadoCurso } from "../components/DialogoListadoCurso";
-import { Loader } from "lucide-react";
-
+import { Loader, Printer, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,45 +11,28 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Printer, Tag, Users } from "lucide-react";
+import { useAlumnosLdap } from "@/hooks/useAlumnosLdap";
 
 export function AlumnosIndex() {
-  const [data, setData] = useState([]);
+  const [abrirDialogoListadoCurso, setAbrirDialogoListadoCurso] = useState(false);
   const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
-  const [abrirDialogoListadoCurso, setAbrirDialogoListadoCurso] =
-    useState(false);
-  const API_URL = import.meta.env.VITE_API_URL;
-  const [loading, setLoading] = useState(true); // nuevo estado
 
-  useEffect(() => {
-    setLoading(true); // empieza la carga
-    fetch(`${API_URL}/ldap/usuarios?tipo=students`, {
-      credentials: "include",
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setData(data);
-        setAlumnosFiltrados(data);
-      })
-      .catch((error) => {
-        console.error("❌ Error al cargar alumnos:", error);
-      })
-      .finally(() => {
-        setLoading(false); // termina la carga
-      });
-  }, []);
+  const { data: alumnos, isLoading, error } = useAlumnosLdap();
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
-      {/* Tabla */}
-      {loading ? (
+      {isLoading ? (
         <div className="flex justify-center py-24">
           <Loader className="h-10 w-10 animate-spin text-primary" />
+        </div>
+      ) : error ? (
+        <div className="text-red-500 text-center">
+          ❌ Error al cargar alumnos: {error.message}
         </div>
       ) : (
         <TablaUsuarios
           columns={columns}
-          data={data}
+          data={alumnos}
           onFilteredChange={(rows) => setAlumnosFiltrados(rows)}
           acciones={
             <DropdownMenu>
@@ -65,8 +48,6 @@ export function AlumnosIndex() {
                   <Users className="mr-2 h-4 w-4" />
                   Alumnos por grupo
                 </DropdownMenuItem>
-                {/* Aquí puedes añadir más opciones */}
-                {/* <DropdownMenuItem>Otro documento</DropdownMenuItem> */}
               </DropdownMenuContent>
             </DropdownMenu>
           }

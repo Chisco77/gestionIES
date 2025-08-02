@@ -1,7 +1,7 @@
 const pool = require("../../db");
 const {
   obtenerGruposDesdeLdap,
-  buscarAlumnoPorUid,
+  buscarPorUid,
 } = require("../ldap/usuariosController");
 
 /*
@@ -125,10 +125,10 @@ async function getPrestamosAgrupados(req, res) {
       "SELECT * FROM prestamos WHERE esalumno = $1",
       [esAlumnoBool]
     );
-    console.log ("Es alumno: ", esAlumnoBool);
+
     const { rows: libros } = await pool.query("SELECT * FROM libros");
 
-    const tipoGrupo = esAlumnoBool ? "school_class" : "staff_group"; // o lo que uses para profesores
+    const tipoGrupo = esAlumnoBool ? "school_class" : "school_department"; // o lo que uses para profesores
     const grupos = await obtenerGruposDesdeLdap(ldapSession, tipoGrupo);
 
     const agrupado = {};
@@ -140,11 +140,13 @@ async function getPrestamosAgrupados(req, res) {
       const grupo = grupos.find(
         (g) => Array.isArray(g.memberUid) && g.memberUid.includes(p.uid)
       );
+      console.log ("Grupos: ", grupos);
       const curso = grupo?.cn || (esAlumnoBool ? "Curso desconocido" : "Departamento desconocido");
 
       if (!agrupado[p.uid]) {
         const persona = await new Promise((resolve) => {
-          const buscar = esAlumnoBool ? buscarAlumnoPorUid : buscarProfesorPorUid;
+          //const buscar = esAlumnoBool ? buscarAlumnoPorUid : buscarAlumnoPorUid;
+          const buscar = buscarPorUid;
           buscar(ldapSession, p.uid, (err, datos) => {
             if (!err && datos) {
               resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());

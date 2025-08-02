@@ -44,8 +44,7 @@ import {
   DragOverlay,
 } from "@dnd-kit/core";
 
-export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
-  console.log ("Alumno en dialogo: ", alumno);
+export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
   const [prestamos, setPrestamos] = useState([]);
   const [seleccionadosIzquierda, setSeleccionadosIzquierda] = useState([]);
   const [seleccionadosDerecha, setSeleccionadosDerecha] = useState([]);
@@ -62,8 +61,8 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
   const [fechaNuevaDevolucion, setFechaNuevaDevolucion] = useState("");
 
   useEffect(() => {
-    if (open && alumno?.prestamos) {
-      const normalizados = alumno.prestamos.map((p) => ({
+    if (open && usuario?.prestamos) {
+      const normalizados = usuario.prestamos.map((p) => ({
         ...p,
         devuelto: p.devuelto === true || p.devuelto === "true",
       }));
@@ -71,7 +70,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
       setSeleccionadosIzquierda([]);
       setSeleccionadosDerecha([]);
     }
-  }, [open, alumno]);
+  }, [open, usuario]);
 
   const noDevueltos = prestamos.filter((p) => !p.devuelto);
   const devueltos = prestamos.filter((p) => p.devuelto);
@@ -145,16 +144,15 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
     onSuccess?.();
   };
 
-  // estado para almacenar la url de la foto del alumno
+  // estado para almacenar la url de la foto del usuario
   const [fotoUrl, setFotoUrl] = useState(null);
 
   useEffect(() => {
-    console.log ("Alunno en diálogo: ", alumno);
-    if (!alumno?.uid) return;
+    console.log ("Alunno en diálogo: ", usuario);
+    if (!usuario?.uid) return;
 
     const extensiones = ["jpg", "jpeg", "png"];
-    //const baseUrl = `${import.meta.env.VITE_API_URL}/alumnos/${alumno.uidalumno}`;
-    const baseUrl = `https://localhost:5000/uploads/alumnos/${alumno.uid}`;
+    const baseUrl = `https://localhost:5000/uploads/alumnos/${usuario.uid}`;
     console.log ("Foto: ", baseUrl);
     let encontrada = false;
 
@@ -178,7 +176,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
         setFotoUrl(null); // o puedes usar una imagen por defecto
       }
     })();
-  }, [alumno?.uid]);
+  }, [usuario?.uid]);
 
   // Guardar fecha nueva devolución (simulado)
   const guardarFechaNuevaDevolucion = () => {
@@ -201,8 +199,8 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
   };
 
   useEffect(() => {
-    if (open && alumno?.prestamos) {
-      const normalizados = alumno.prestamos.map((p) => ({
+    if (open && usuario?.prestamos) {
+      const normalizados = usuario.prestamos.map((p) => ({
         ...p,
         devuelto: p.devuelto === true || p.devuelto === "true",
       }));
@@ -210,7 +208,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
       setSeleccionadosIzquierda([]);
       setSeleccionadosDerecha([]);
     }
-  }, [open, alumno]);
+  }, [open, usuario]);
 
   const devolver = async (ids) => {
     try {
@@ -324,7 +322,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
           {fotoUrl ? (
             <img
               src={fotoUrl}
-              alt="Foto del alumno"
+              alt="Foto del usuario"
               className="w-24 h-24 rounded-full border object-cover"
             />
           ) : (
@@ -332,7 +330,7 @@ export function DialogoEditarPrestamos({ open, onClose, alumno, onSuccess }) {
               No se encontró imagen
             </div>
           )}
-          <DialogTitle>{alumno?.nombreAlumno}</DialogTitle>
+          <DialogTitle>{usuario?.nombreAlumno}</DialogTitle>
 
           
         </DialogHeader>

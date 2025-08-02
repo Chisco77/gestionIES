@@ -1,38 +1,31 @@
-// BecariosIndex.jsx
-import { useEffect, useState } from "react";
+// Con react query, usamos hook useProfesoresLdap.jsx.
+import { useState } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
-
+import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+import { Loader } from "lucide-react";
 
 export function ProfesoresIndex() {
-  const [data, setData] = useState([]);
-  const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
-  const API_URL = import.meta.env.VITE_API_URL;
-
-  useEffect(() => {
-    fetch(`${API_URL}/ldap/usuarios?tipo=teachers`, {
-      credentials: "include",
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setData(data);
-        setAlumnosFiltrados(data); // al principio, sin filtros
-      })
-      .catch((error) => {
-        console.error("❌ Error al cargar profesores:", error);
-      });
-  }, []);
-
+  const [profesoresFiltrados, setProfesoresFiltrados] = useState([]);
+  const { data: profesores, isLoading, error } = useProfesoresLdap();
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
-      <TablaUsuarios
-        columns={columns}
-        data={data}
-        onFilteredChange={(rows) => setAlumnosFiltrados(rows)}
-      />
-      
+      {isLoading ? (
+        <div className="flex justify-center py-24">
+          <Loader className="h-10 w-10 animate-spin text-primary" />
+        </div>
+      ) : error ? (
+        <div className="text-red-500 text-center">
+          ❌ Error al cargar profesores: {error.message}
+        </div>
+      ) : (
+        <TablaUsuarios
+          columns={columns}
+          data={profesores}
+          onFilteredChange={(rows) => setProfesoresFiltrados(rows)}
+        />
+      )}
     </div>
   );
 }
-
