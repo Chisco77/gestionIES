@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { usePrestamos } from "@/hooks/usePrestamos";
 
-export function PrestamosIndex() {
+export function PrestamosAlumnosIndex() {
   const [prestamosFiltrados, setPrestamosFiltrados] = useState([]);
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);
   const [abrirEditar, setAbrirEditar] = useState(false);
@@ -145,6 +145,7 @@ export function PrestamosIndex() {
           setAbrirDialogoPrestar(false);
         }}
         uidsConPrestamo={uidsConPrestamo}
+        esAlumno={true}
       />
 
       <DialogoDocumentoPrestamo

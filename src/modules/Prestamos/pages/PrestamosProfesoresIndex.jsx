@@ -33,7 +33,12 @@ export function PrestamosProfesoresIndex() {
     useState(false);
   const [abrirDialogoEtiquetas, setAbrirDialogoEtiquetas] = useState(false);
 
-  const { data: prestamos, isLoading, error, refetch } = usePrestamos({esAlumno:false});
+  const {
+    data: prestamos,
+    isLoading,
+    error,
+    refetch,
+  } = usePrestamos({ esAlumno: false });
 
   const handleEditar = (seleccionado) => {
     if (!seleccionado) return;
@@ -71,7 +76,7 @@ export function PrestamosProfesoresIndex() {
             >
               <Plus className="w-4 h-4" />
             </Button>
-            
+
             <Button
               onClick={() => handleEditar(seleccionado)}
               disabled={!seleccionado}
@@ -130,6 +135,7 @@ export function PrestamosProfesoresIndex() {
           setAbrirDialogoPrestar(false);
         }}
         uidsConPrestamo={uidsConPrestamo}
+        esAlumno={false}
       />
 
       <DialogoDocumentoPrestamo

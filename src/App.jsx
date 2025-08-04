@@ -13,7 +13,7 @@ import { AlumnosIndex } from "./modules/Usuarios/pages/AlumnosIndex";
 import { TodosIndex } from "./modules/Usuarios/pages/TodosIndex";
 import { CursosIndex } from "./modules/Cursos/pages/CursosIndex";
 import { LibrosIndex } from "./modules/Libros/pages/LibrosIndex";
-import { PrestamosIndex } from "./modules/Prestamos/pages/PrestamosIndex";
+import { PrestamosAlumnosIndex } from "./modules/Prestamos/pages/PrestamosAlumnosIndex";
 import { SidebarProviderCustom } from "./context/SidebarContext";
 import { PrestamosProfesoresIndex } from "./modules/Prestamos/pages/PrestamosProfesoresIndex";
 import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
@@ -58,7 +58,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/prestamos",
-        element: <PrestamosIndex />,
+        element: <PrestamosAlumnosIndex />,
       },
       {
         path: "/prestamosProfesores",

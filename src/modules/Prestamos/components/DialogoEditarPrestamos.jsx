@@ -148,12 +148,10 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
   const [fotoUrl, setFotoUrl] = useState(null);
 
   useEffect(() => {
-    console.log ("Alunno en diálogo: ", usuario);
     if (!usuario?.uid) return;
 
     const extensiones = ["jpg", "jpeg", "png"];
     const baseUrl = `https://localhost:5000/uploads/alumnos/${usuario.uid}`;
-    console.log ("Foto: ", baseUrl);
     let encontrada = false;
 
     (async () => {

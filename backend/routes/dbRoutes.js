@@ -32,7 +32,7 @@ const {
   getPrestamosAgrupados,
   devolverPrestamos,
   prestarPrestamos,
-  prestarUnAlumno,
+  prestarUsuario,
   eliminarPrestamosAlumno,
 } = require("../controllers/db/prestamosController");
 
@@ -41,7 +41,7 @@ router.get("/prestamos/agrupados", getPrestamosAgrupados);
 router.post("/prestamos/devolver", devolverPrestamos);
 router.post("/prestamos/prestar", prestarPrestamos);
 router.post ("/prestamos/insertarMasivo", insertarPrestamosMasivo);
-router.post("/prestamos/prestarUnAlumno", prestarUnAlumno);
+router.post("/prestamos/prestarUsuario", prestarUsuario);
 router.post ("/prestamos/eliminarUnAlumno", eliminarPrestamosAlumno);
 
 module.exports = router;

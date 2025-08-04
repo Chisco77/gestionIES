@@ -3,7 +3,6 @@ const LDAP_URL = process.env.LDAP_URL;
 
 // ✅ Función reutilizable para obtener grupos desde LDAP
 async function obtenerGruposDesdeLdap(ldapSession, filtroGroupType = null) {
-  console.log ("LDAP: ".LDAP_URL);
   return new Promise((resolve, reject) => {
     if (!ldapSession) {
       return reject(new Error("No autenticado: falta sesión LDAP"));
@@ -115,7 +114,6 @@ exports.buscarPorUid = (ldapSession, uid, callback) => {
 
       res.on("searchEntry", (entry) => {
         const attrs = {};
-        console.log("🔍 entry.attributes:");
         entry.attributes.forEach((attr) => {
           attrs[attr.type] = attr.vals;
         });
@@ -128,7 +126,6 @@ exports.buscarPorUid = (ldapSession, uid, callback) => {
 
       res.on("end", () => {
         client.unbind();
-        console.log (alumno);
         callback(null, alumno);
       });
 

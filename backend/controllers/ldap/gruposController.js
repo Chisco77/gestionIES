@@ -50,9 +50,22 @@ exports.getLdapGrupos = (req, res) => {
           attrs[attr.type] = attr.vals;
         });
 
-        if (attrs.cn && attrs.gidNumber) {
+        /*if (attrs.cn && attrs.gidNumber) {
           grupos.push({
             cn: attrs.cn[0],
+          });
+        }*/
+        if (
+          attrs.cn &&
+          attrs.gidNumber &&
+          attrs.groupType &&
+          attrs.groupType?.[0] === groupType
+        ) {
+          grupos.push({
+            cn: attrs.cn[0],
+            description: attrs.description?.[0] || "",
+            gidNumber: attrs.gidNumber[0],
+            groupType: attrs.groupType[0],
           });
         }
       });

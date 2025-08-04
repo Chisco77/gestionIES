@@ -128,7 +128,7 @@ async function getPrestamosAgrupados(req, res) {
 
     const { rows: libros } = await pool.query("SELECT * FROM libros");
 
-    const tipoGrupo = esAlumnoBool ? "school_class" : "school_department"; // o lo que uses para profesores
+    const tipoGrupo = esAlumnoBool ? "school_class" : "school_department"; // filtramos grupo
     const grupos = await obtenerGruposDesdeLdap(ldapSession, tipoGrupo);
 
     const agrupado = {};
@@ -140,7 +140,7 @@ async function getPrestamosAgrupados(req, res) {
       const grupo = grupos.find(
         (g) => Array.isArray(g.memberUid) && g.memberUid.includes(p.uid)
       );
-      console.log ("Grupos: ", grupos);
+
       const curso = grupo?.cn || (esAlumnoBool ? "Curso desconocido" : "Departamento desconocido");
 
       if (!agrupado[p.uid]) {
@@ -323,7 +323,7 @@ async function insertarPrestamosMasivo(req, res) {
 }
 
 //
-async function prestarUnAlumno(req, res) {
+/*async function prestarUnAlumno(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) {
@@ -355,7 +355,7 @@ async function prestarUnAlumno(req, res) {
           devuelto: false,
           fechaentrega,
           fechadevolucion: null,
-          esalumno: true,
+          esAlumno: true,
         });
       }
     }
@@ -393,7 +393,80 @@ async function prestarUnAlumno(req, res) {
     console.error("❌ Error al prestar libros individualmente:", error.message);
     res.status(500).json({ error: "Error al prestar libros" });
   }
+}*/
+
+async function prestarUsuario(req, res) {
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession) {
+      return res.status(401).json({ error: "No autenticado" });
+    }
+
+    const { uid, libros, esAlumno } = req.body;
+
+    if (!uid || !Array.isArray(libros) || libros.length === 0 || typeof esAlumno !== "boolean") {
+      return res.status(400).json({ error: "Datos incompletos o inválidos" });
+    }
+
+    const fechaentrega = new Date();
+    const valoresAInsertar = [];
+    const descartados = [];
+
+    for (const idlibro of libros) {
+      const resultado = await pool.query(
+        `SELECT 1 FROM prestamos WHERE uid = $1 AND idlibro = $2 AND devuelto = false`,
+        [uid, idlibro]
+      );
+
+      if (resultado.rowCount > 0) {
+        descartados.push({ uid, idlibro });
+      } else {
+        valoresAInsertar.push({
+          uid,
+          idlibro,
+          devuelto: false,
+          fechaentrega,
+          fechadevolucion: null,
+          esAlumno,
+        });
+      }
+    }
+
+    if (valoresAInsertar.length > 0) {
+      const insertValues = valoresAInsertar
+        .map(
+          (_, i) =>
+            `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${i * 6 + 5}, $${i * 6 + 6})`
+        )
+        .join(", ");
+
+      const parametros = valoresAInsertar.flatMap((v) => [
+        v.uid,
+        v.idlibro,
+        v.devuelto,
+        v.fechaentrega,
+        v.fechadevolucion,
+        v.esAlumno,
+      ]);
+
+      await pool.query(
+        `INSERT INTO prestamos (uid, idlibro, devuelto, fechaentrega, fechadevolucion, esalumno)
+         VALUES ${insertValues}`,
+        parametros
+      );
+    }
+
+    res.json({
+      success: true,
+      insertados: valoresAInsertar.length,
+      descartados,
+    });
+  } catch (error) {
+    console.error("❌ Error al prestar libros:", error.message);
+    res.status(500).json({ error: "Error al prestar libros" });
+  }
 }
+
 
 async function eliminarPrestamosAlumno(req, res) {
   try {
@@ -423,6 +496,6 @@ module.exports = {
   insertarPrestamosMasivo,
   devolverPrestamos,
   prestarPrestamos,
-  prestarUnAlumno,
+  prestarUsuario,
   eliminarPrestamosAlumno,
 };
