@@ -20,8 +20,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-export function DialogoEtiquetas({ alumnos, open, onOpenChange }) {
-  const [etiquetasPorAlumno, setEtiquetasPorAlumno] = useState("1");
+export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
+  const [etiquetasPorUsuario, setEtiquetasPorUsuario] = useState("1");
   const [cursoSeleccionado, setCursoSeleccionado] = useState("2024-25");
   const [nombrePdf, setNombrePdf] = useState("etiquetasbecarios");
   const [tamanoEtiqueta, setTamanoEtiqueta] = useState("40");
@@ -49,16 +49,16 @@ export function DialogoEtiquetas({ alumnos, open, onOpenChange }) {
     });
 
     let etiquetas = [];
-    alumnos.forEach((alumno) => {
-      for (let i = 0; i < Number(etiquetasPorAlumno); i++) {
-        etiquetas.push(alumno);
+    usuarios.forEach((usuario) => {
+      for (let i = 0; i < Number(etiquetasPorUsuario); i++) {
+        etiquetas.push(usuario);
       }
     });
 
     const total = etiquetas.length;
 
     for (let i = 0; i < total; i++) {
-      const alumno = etiquetas[i];
+      const usuario = etiquetas[i];
       if (i > 0 && i % labelsPerPage === 0) doc.addPage();
 
       const indexInPage = i % labelsPerPage;
@@ -72,7 +72,7 @@ export function DialogoEtiquetas({ alumnos, open, onOpenChange }) {
 
       doc.addImage(image, "JPEG", logoX, logoY, logoWidth, logoHeight);
 
-      let nombreCompleto = `${alumno.nombreAlumno}`;
+      let nombreCompleto = `${usuario.nombreUsuario}`;
       if (nombreCompleto.length > 25)
         nombreCompleto = nombreCompleto.slice(0, 22) + "…";
 
@@ -81,7 +81,7 @@ export function DialogoEtiquetas({ alumnos, open, onOpenChange }) {
 
       doc.setFontSize(8);
       doc.text(
-        `Curso: ${alumno.curso} - ${cursoSeleccionado}`,
+        `Curso: ${usuario.curso} - ${cursoSeleccionado}`,
         centerX,
         y + 21,
         { align: "center" }
@@ -114,8 +114,8 @@ export function DialogoEtiquetas({ alumnos, open, onOpenChange }) {
                 Número de etiquetas por alumno
               </label>
               <Select
-                value={etiquetasPorAlumno}
-                onValueChange={setEtiquetasPorAlumno}
+                value={etiquetasPorUsuario}
+                onValueChange={setEtiquetasPorUsuario}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleccionar" />

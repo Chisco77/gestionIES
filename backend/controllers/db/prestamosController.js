@@ -158,7 +158,7 @@ async function getPrestamosAgrupados(req, res) {
 
         agrupado[p.uid] = {
           uid: p.uid,
-          nombreAlumno: persona,
+          nombreUsuario: persona,
           curso,
           prestamos: [],
         };

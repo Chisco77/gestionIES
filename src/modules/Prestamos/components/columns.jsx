@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 
 export const columns = [
   {
-    accessorKey: "nombreAlumno",
+    accessorKey: "nombreUsuario",
     header: ({ column }) => (
       <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
         Alumno

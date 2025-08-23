@@ -101,14 +101,14 @@ export function DialogoDocumentoPrestamo({ open, onOpenChange, alumnos = [] }) {
       let yTexto = marginTop + 35;
       doc.setFontSize(11);
 
-      const nombreAlumno = alumno.nombreAlumno ?? "";
+      const nombreUsuario = alumno.nombreUsuario ?? "";
       const curso = alumno.curso ?? "";
 
       const texto1 = `D/Dª _____________________________________________________________ con DNI: ________________, como padre/madre/tutor legal del alumno/alumna  `;
       const texto2 = ` del curso `;
       const texto3 = `, se responsabiliza junto con su hijo/hija del correcto uso de los libros de texto abajo indicados, comprometiéndose a devolverlos en la fecha que se le indique y sabiendo que en caso de pérdida o deterioro de los libros tendrán que pagar una cantidad determinada por el Consejo Escolar del Centro.`;
 
-      const fullText = texto1 + nombreAlumno + texto2 + curso + texto3;
+      const fullText = texto1 + nombreUsuario + texto2 + curso + texto3;
       const lineas = doc.splitTextToSize(fullText, pageWidth - 2 * marginLeft);
 
       let cursor = 0; // para saber por dónde vamos en el texto total
@@ -129,11 +129,11 @@ export function DialogoDocumentoPrestamo({ open, onOpenChange, alumnos = [] }) {
           // ¿Está en el rango del nombre del alumno?
           const enNombre =
             globalOffset >= texto1.length &&
-            globalOffset < texto1.length + nombreAlumno.length;
+            globalOffset < texto1.length + nombreUsuario.length;
 
           // ¿Está en el rango del curso?
           const cursoOffset =
-            texto1.length + nombreAlumno.length + texto2.length;
+            texto1.length + nombreUsuario.length + texto2.length;
           const enCurso =
             globalOffset >= cursoOffset &&
             globalOffset < cursoOffset + curso.length;

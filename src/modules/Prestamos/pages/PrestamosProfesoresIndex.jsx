@@ -145,7 +145,7 @@ export function PrestamosProfesoresIndex() {
       />
 
       <DialogoEtiquetas
-        alumnos={prestamosFiltrados}
+        usuarios={prestamosFiltrados}
         open={abrirDialogoEtiquetas}
         onOpenChange={setAbrirDialogoEtiquetas}
       />

@@ -31,7 +31,7 @@ export function TablaPrestamos({
   informes,
   acciones,
 }) {
-  const [sorting, setSorting] = useState([{ id: "nombreAlumno", desc: false }]);
+  const [sorting, setSorting] = useState([{ id: "nombreUsuario", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [textoFiltro, setTextoFiltro] = useState("");
   const [filtroCurso, setFiltroCurso] = useState("");
@@ -54,7 +54,7 @@ export function TablaPrestamos({
   });
 
   useEffect(() => {
-    table.getColumn("nombreAlumno")?.setFilterValue(textoFiltro);
+    table.getColumn("nombreUsuario")?.setFilterValue(textoFiltro);
   }, [textoFiltro]);
 
   useEffect(() => {

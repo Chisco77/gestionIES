@@ -17,7 +17,8 @@ import { PrestamosAlumnosIndex } from "./modules/Prestamos/pages/PrestamosAlumno
 import { SidebarProviderCustom } from "./context/SidebarContext";
 import { PrestamosProfesoresIndex } from "./modules/Prestamos/pages/PrestamosProfesoresIndex";
 import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
-
+import { PrestamosLlavesIndex } from "./modules/Llaves/pages/PrestamosLlavesIndex";
+import { PlanoPlanta } from "./modules/Llaves/pages/PlanoPlanta";
 
 const router = createBrowserRouter([
   {
@@ -64,10 +65,25 @@ const router = createBrowserRouter([
         path: "/prestamosProfesores",
         element: <PrestamosProfesoresIndex />,
       },
+      {
+        path: "/llavesPrestadas",
+        element: <PrestamosLlavesIndex />,
+      },
+      {
+        path: "/llavesPlantaBaja",
+        element: <PlanoPlanta planta="baja" />,
+      },
+      {
+        path: "/llavesPlantaPrimera",
+        element: <PlanoPlanta planta="primera" />,
+      },
+      {
+        path: "/llavesPlantaSegunda",
+        element: <PlanoPlanta planta="segunda" />,
+      },
     ],
   },
 ]);
-
 
 const queryClient = new QueryClient();
 

@@ -58,7 +58,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
       title: "Máquinas",
       url: "#",
       icon: SquareTerminal,
-      isActive: true,
       items: [
         { title: "Red Troncal", url: "/alumnos" },
         { title: "Profesores", url: "/profesores" },
@@ -76,6 +75,18 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         { title: "Cursos", url: "/cursos" },
       ],
     },
+    {
+      title: "Préstamo Llaves",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        { title: "Llaves prestadas", url: "/llavesPrestadas" },
+        { title: "Planta BAJA", url: "/llavesPlantaBaja" },
+        { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
+        { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
+      ],
+    },
+
     {
       title: "Utilidades",
       url: "#",

@@ -328,7 +328,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
               No se encontró imagen
             </div>
           )}
-          <DialogTitle>{usuario?.nombreAlumno}</DialogTitle>
+          <DialogTitle>{usuario?.nombreUsuario}</DialogTitle>
 
           
         </DialogHeader>

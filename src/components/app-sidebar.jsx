@@ -1,4 +1,4 @@
-import * as React from "react";
+/*import * as React from "react";
 import { DialogoEtiquetasGenericas } from "@/modules/Utilidades/components/DialogoEtiquetasGenericas";
 
 import {
@@ -60,7 +60,6 @@ export function AppSidebar({ onOpenEtiquetas, ...props }) {
       title: "Personas",
       url: "#",
       icon: SquareTerminal,
-      isActive: true,
       items: [
         { title: "Alumnos", url: "/alumnos" },
         { title: "Profesores", url: "/profesores" },
@@ -68,10 +67,9 @@ export function AppSidebar({ onOpenEtiquetas, ...props }) {
       ],
     },
     {
-      title: "Máquinas",
+      title: "Máquinass",
       url: "#",
       icon: SquareTerminal,
-      isActive: true,
       items: [
         { title: "Red Troncal", url: "/alumnos" },
         { title: "Profesores", url: "/profesores" },
@@ -86,6 +84,17 @@ export function AppSidebar({ onOpenEtiquetas, ...props }) {
         { title: "Préstamos", url: "/prestamos" },
         { title: "Libros", url: "/libros" },
         { title: "Cursos", url: "/cursos" },
+      ],
+    },
+     {
+      title: "Préstamo Llaves",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        { title: "Préstamos", url: "/prestamos" },
+        { title: "Planta Baja", url: "/libros" },
+        { title: "Planta Primera", url: "/cursos" },
+        { title: "Planta Segunda", url: "/cursos" },
       ],
     },
     {
@@ -132,3 +141,4 @@ export function AppSidebar({ onOpenEtiquetas, ...props }) {
     </Sidebar>
   );
 }
+*/
