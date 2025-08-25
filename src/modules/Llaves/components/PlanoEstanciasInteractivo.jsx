@@ -1,23 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
- * PlanoEstanciasInteractivo.jsx
+ * PlanoEstanciasInteractivo.jsx (actualizado para API backend con VITE_API_URL)
  *
- * Props:
- *  - planta: "baja" | "primera" | "segunda"  (opcional, default "baja")
- *
- * Uso:
- *  <PlanoEstanciasInteractivo planta="baja" />
- *
- * Requisitos:
- *  - Coloca los SVGs en public/: PLANTA_BAJA.svg, PLANTA_PRIMERA.svg, PLANTA_SEGUNDA.svg
- *  - Para producción, sustituye localStorage por llamadas a tu API (useZonas/useEstancias)
- *
- * Descripción:
- *  - Modo edición: dibuja polígonos (click para añadir punto, doble-click para cerrar),
- *    asigna nombre y nº de llaves y guarda la estancia.
- *  - Modo operación: clic en estancia abre modal para prestar llaves.
- *  - Las estancias se guardan en localStorage por planta (clave: estancias_<planta>).
+ * Propósito:
+ *  - Usa import.meta.env.VITE_API_URL si está definida, si no, usa rutas relativas (/db/...)
+ *  - Añade credentials: "include" (consistente con CursosIndex)
+ *  - Maneja varias formas de respuesta JSON (array directo, { ok:true, estancias }, { rows })
  */
 
 // ------------------------------
@@ -29,6 +18,72 @@ const PROFESORES_MOCK = [
   { uid: "mruiz", nombre: "María Ruiz" },
   { uid: "fsantos", nombre: "Francisco Santos" },
 ];
+
+// Base API desde env (igual que en CursosIndex)
+const API_URL = import.meta.env.VITE_API_URL || ""; // ejemplo: "http://localhost:3000"
+const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
+
+// util para parsear respuestas variadas del backend
+async function parseListResponse(resp) {
+  // intenta parsear JSON y normalizar a array de estancias [{ id,nombre,keysTotales,puntos }]
+  const j = await resp.json().catch(() => null);
+  if (!j) throw new Error(`Respuesta no JSON (${resp.status})`);
+  // varios formatos posibles:
+  // 1) { ok: true, estancias: [...] }
+  if (j && j.ok && Array.isArray(j.estancias)) return j.estancias;
+  // 2) array directo: [...]
+  if (Array.isArray(j)) return j;
+  // 3) { rows: [...] }
+  if (Array.isArray(j.rows)) return j.rows;
+  // 4) { estancias: [...] }
+  if (Array.isArray(j.estancias)) return j.estancias;
+  // fallback: si devuelve un objeto único (por ejemplo row con campos), devuélvelo envuelto
+  if (typeof j === "object") return [j];
+  throw new Error("Formato de respuesta desconocido");
+}
+
+// ------------------------------
+// API helpers (usando API_BASE)
+// ------------------------------
+async function apiListarEstancias(planta) {
+  const url = `${API_BASE}/planos/estancias?planta=${encodeURIComponent(planta)}`;
+  const r = await fetch(url, { credentials: "include" });
+  if (!r.ok) {
+    // intenta leer body para dar un mensaje más claro
+    let text = await r.text().catch(() => "");
+    throw new Error(`Error listando estancias (${r.status}) ${text}`);
+  }
+  return parseListResponse(r);
+}
+
+async function apiGuardarEstancia(planta, estancia) {
+  const url = `${API_BASE}/planos/estancias`;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ planta, ...estancia }),
+  });
+  if (!r.ok) {
+    let txt = await r.text().catch(() => "");
+    throw new Error(`Error guardando estancia (${r.status}) ${txt}`);
+  }
+  // la respuesta puede ser fila creada u objeto; normalizamos:
+  const j = await r.json().catch(() => null);
+  if (!j) throw new Error("Respuesta inválida al guardar");
+  if (j.ok && j.estancia) return j.estancia;
+  if (Array.isArray(j)) return j[0]; // improbable pero por si el server devuelve array
+  if (j.codigo || j.id || j.descripcion) {
+    // adaptamos a forma front: id, nombre, keysTotales, puntos
+    return {
+      id: j.codigo || j.id,
+      nombre: j.descripcion || j.nombre,
+      keysTotales: j.totalllaves || j.keysTotales || 1,
+      puntos: j.coordenadas_json || j.puntos || j.coordenadas || [],
+    };
+  }
+  return j;
+}
 
 // ------------------------------
 // Componente
@@ -42,23 +97,10 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       ? "/PLANTA_SEGUNDA.svg"
       : "/PLANTA_BAJA.svg";
 
-  // key localStorage por planta
-  const storageKey = `estancias_${planta}`;
-
   // estancias: { id, nombre, keysTotales, puntos: [[x,y],...] }
-  const [estancias, setEstancias] = useState(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(estancias));
-    } catch {}
-  }, [estancias, storageKey]);
+  const [estancias, setEstancias] = useState([]);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState("");
 
   // préstamos activos (en memoria demo): [{ estanciaId, uid, nombre, unidades, ts }]
   const [prestamos, setPrestamos] = useState([]);
@@ -83,6 +125,34 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
     return () => ro.disconnect();
   }, []);
 
+  // cargar estancias desde la API cuando cambia la planta
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      setCargando(true);
+      setError("");
+      try {
+        const data = await apiListarEstancias(planta);
+        if (!cancelado) {
+          // normalizamos campos si es necesario (si vienen con nombres DB)
+          const normal = data.map((r) => ({
+            id: r.id || r.codigo,
+            nombre: r.nombre || r.descripcion,
+            keysTotales: r.keysTotales || r.totalllaves || 1,
+            puntos: r.puntos || r.coordenadas_json || r.coordenadas || [],
+          }));
+          setEstancias(normal);
+        }
+      } catch (e) {
+        if (!cancelado) setError(e?.message || "Error cargando estancias");
+        console.error("[PlanoEstancias] apiListarEstancias:", e);
+      } finally {
+        if (!cancelado) setCargando(false);
+      }
+    })();
+    return () => { cancelado = true; };
+  }, [planta]);
+
   // util: mapa de prestadas por estancia
   const prestamosPorEstancia = useMemo(() => {
     const m = new Map();
@@ -103,7 +173,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   // dibujo: click -> add point; doble click -> close
   const startOrAddPoint = (evt) => {
     if (!modoEdicion) return;
-    // obtener coords relativas al svg overlay
+    // coords relativas al overlay
     const rect = evt.currentTarget.getBoundingClientRect();
     const x = evt.clientX - rect.left;
     const y = evt.clientY - rect.top;
@@ -111,18 +181,42 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
     else setDraw((d) => ({ ...d, puntos: [...d.puntos, [x, y]] }));
   };
 
-  const finishPolygon = () => {
+  const finishPolygon = async () => {
     if (!modoEdicion || !draw.activo || draw.puntos.length < 3) return;
     const id = slugify(nuevo.nombre || `estancia-${estancias.length + 1}`);
-    const est = {
+    const estNueva = {
       id,
       nombre: nuevo.nombre || id,
       keysTotales: Math.max(1, Number(nuevo.keysTotales) || 1),
       puntos: draw.puntos,
     };
-    setEstancias((s) => [...s, est]);
-    setDraw({ activo: false, puntos: [] });
-    setNuevo({ nombre: "", keysTotales: 1 });
+
+    try {
+      setCargando(true);
+      setError("");
+      const guardada = await apiGuardarEstancia(planta, estNueva);
+      // normalizar respuesta guardada (puede venir con nombres DB)
+      const norma = {
+        id: guardada.id || guardada.codigo,
+        nombre: guardada.nombre || guardada.descripcion,
+        keysTotales: guardada.keysTotales || guardada.totalllaves || estNueva.keysTotales,
+        puntos: guardada.puntos || guardada.coordenadas_json || guardada.coordenadas || estNueva.puntos,
+      };
+      setEstancias((prev) => {
+        const i = prev.findIndex((e) => e.id === norma.id);
+        if (i === -1) return [...prev, norma];
+        const copia = prev.slice();
+        copia[i] = norma;
+        return copia;
+      });
+      setDraw({ activo: false, puntos: [] });
+      setNuevo({ nombre: "", keysTotales: 1 });
+    } catch (e) {
+      setError(e?.message || "Error guardando la estancia");
+      console.error("[PlanoEstancias] apiGuardarEstancia:", e);
+    } finally {
+      setCargando(false);
+    }
   };
 
   const cancelDraw = () => setDraw({ activo: false, puntos: [] });
@@ -134,7 +228,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   };
   const cerrarModal = () => setModal({ open: false, estancia: null });
 
-  // prestar
+  // prestar (demo en memoria)
   const prestar = () => {
     if (!modal.estancia || !form.uid) return alert("Introduce uid y cantidad.");
     const { prestadas } = estadoEstancia(modal.estancia);
@@ -218,9 +312,12 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                   <input type="number" min={1} value={nuevo.keysTotales} onChange={(e) => setNuevo((n) => ({ ...n, keysTotales: Number(e.target.value) }))} />
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={finishPolygon} disabled={!draw.activo || draw.puntos.length < 3}>Guardar estancia</button>
-                  <button onClick={cancelDraw} disabled={!draw.activo}>Cancelar dibujo</button>
+                  <button onClick={finishPolygon} disabled={!draw.activo || draw.puntos.length < 3 || cargando}>
+                    {cargando ? "Guardando..." : "Guardar estancia"}
+                  </button>
+                  <button onClick={cancelDraw} disabled={!draw.activo || cargando}>Cancelar dibujo</button>
                 </div>
+                {error && <p style={{ color: "#b91c1c", fontSize: 12, marginTop: 6 }}>{error}</p>}
                 <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
                   Click en el plano para añadir puntos. Doble-click para cerrar el polígono.
                 </p>

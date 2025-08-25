@@ -36,6 +36,19 @@ const {
   eliminarPrestamosAlumno,
 } = require("../controllers/db/prestamosController");
 
+const {
+getEstanciasByPlanta,
+upsertEstancia,
+updateEstancia,
+deleteEstancia,
+} = require("../controllers/db/estanciasController");
+
+
+router.get("/planos/estancias", getEstanciasByPlanta); // ?planta=baja|primera|segunda
+router.post("/planos/estancias", upsertEstancia); // upsert por (planta,codigo)
+router.put("/planos/estancias/:planta/:id", updateEstancia); // :id = codigo
+router.delete("/planos/estancias/:planta/:id", deleteEstancia); // :id = codigo
+
 router.get("/prestamos/agrupados", getPrestamosAgrupados);
 //router.get("/prestamos", getPrestamosEnriquecidos);
 router.post("/prestamos/devolver", devolverPrestamos);
