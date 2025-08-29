@@ -18,7 +18,7 @@ async function getEstanciasByPlanta(req, res) {
   const planta = (req.query.planta || "baja").toLowerCase();
   try {
     const { rows } = await db.query(
-      `SELECT codigo, descripcion, totalllaves, coordenadas_json
+      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json
 FROM estancias
 WHERE planta = $1
 ORDER BY descripcion ASC`,
