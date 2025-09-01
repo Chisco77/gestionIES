@@ -1,13 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DialogoPrestarLlaves } from "./DialogoPrestarLlaves";
 
-const PROFESORES_MOCK = [
-  { uid: "aperez", nombre: "Ana Pérez" },
-  { uid: "jlopez", nombre: "Javier López" },
-  { uid: "mruiz", nombre: "María Ruiz" },
-  { uid: "fsantos", nombre: "Francisco Santos" },
-];
-
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
@@ -59,7 +52,6 @@ async function apiListarPrestamosLlaves() {
   const j = await r.json();
   return Array.isArray(j) ? j : [];
 }
-
 
 // ------------------- Componente -------------------
 export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
@@ -116,6 +108,9 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
           keysTotales: r.keysTotales || r.totalllaves || 1,
           puntos: r.puntos || r.coordenadas_json || r.coordenadas || [],
         }));
+
+        console.log("[DEBUG estancias]", dataEstancias); // lo que devuelve la API
+        console.log("[DEBUG normalizadas]", normal); // lo que usas en React
 
         if (!cancelado) setEstancias(normal);
 

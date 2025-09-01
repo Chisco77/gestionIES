@@ -26,7 +26,7 @@ ORDER BY descripcion ASC`,
     );
 
     const estancias = rows.map((r) => ({
-      id: r.codigo,
+      id: r.id,
       nombre: r.descripcion,
       keysTotales: r.totalllaves,
       puntos: r.coordenadas_json,
@@ -75,7 +75,7 @@ RETURNING planta, codigo, descripcion, totalllaves, coordenadas_json`,
     res.status(201).json({
       ok: true,
       estancia: {
-        id: r.codigo,
+        id: r.id,
         nombre: r.descripcion,
         keysTotales: r.totalllaves,
         puntos: r.coordenadas_json,
@@ -90,7 +90,7 @@ RETURNING planta, codigo, descripcion, totalllaves, coordenadas_json`,
 // body opcional: { nombre?, keysTotales?, puntos? }
 async function updateEstancia(req, res) {
   const planta = (req.params.planta || "baja").toLowerCase();
-  const codigo = req.params.id; // mantenemos :id en la ruta, pero es 'codigo' en DB
+  const id = req.params.id; 
   const { nombre, keysTotales, puntos } = req.body || {};
 
   if (typeof puntos !== "undefined" && !isValidCoordenadas(puntos)) {
@@ -124,7 +124,7 @@ async function updateEstancia(req, res) {
     const { rows } = await db.query(
       `UPDATE estancias
 SET ${sets.join(", ")}
-WHERE planta = $1 AND codigo = $2
+WHERE planta = $1 AND id = $2
 RETURNING codigo, descripcion, totalllaves, coordenadas_json`,
       [planta, codigo, ...vals]
     );
@@ -152,10 +152,10 @@ RETURNING codigo, descripcion, totalllaves, coordenadas_json`,
 // DELETE /db/planos/estancias/:planta/:codigo
 async function deleteEstancia(req, res) {
   const planta = (req.params.planta || "baja").toLowerCase();
-  const codigo = req.params.id; // param :id representa 'codigo'
+  const id = req.params.id; // param :id representa 'codigo'
   try {
     const { rowCount } = await db.query(
-      `DELETE FROM estancias WHERE planta = $1 AND codigo = $2`,
+      `DELETE FROM estancias WHERE planta = $1 AND id = $2`,
       [planta, codigo]
     );
     if (rowCount === 0)
