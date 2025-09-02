@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DialogoPrestarLlaves } from "./DialogoPrestarLlaves";
+import { DialogoDevolverLlaves } from "./DialogoDevolverLlaves";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -67,8 +68,8 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [draw, setDraw] = useState({ activo: false, puntos: [] });
-  const [nuevo, setNuevo] = useState({ nombre: "", keysTotales: 1 });
+  const [draw, setDraw] = useState({ activo: false, coordenadas: [] });
+  const [nuevo, setNuevo] = useState({ nombre: "", totalllaves: 1 });
 
   const [modalLlaves, setModalLlaves] = useState({
     open: false,
@@ -102,15 +103,12 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
         const dataEstancias = await apiListarEstancias(planta);
         console.log(modalLlaves.estancia);
         const normal = dataEstancias.map((r) => ({
-          id: r.id, // siempre el numérico de la BD
-          codigo: r.codigo, // opcional, si quieres mostrarlo
+          id: r.id, 
+          codigo: r.codigo, 
           nombre: r.nombre || r.descripcion,
-          keysTotales: r.keysTotales || r.totalllaves || 1,
-          puntos: r.puntos || r.coordenadas_json || r.coordenadas || [],
+          totalllaves: r.totalllaves || 1,
+          coordenadas: r.coordenadas || r.coordenadas_json || [],
         }));
-
-        console.log("[DEBUG estancias]", dataEstancias); // lo que devuelve la API
-        console.log("[DEBUG normalizadas]", normal); // lo que usas en React
 
         if (!cancelado) setEstancias(normal);
 
@@ -130,17 +128,23 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
 
   const prestamosPorEstancia = useMemo(() => {
     const m = new Map();
-    for (const p of prestamos)
-      m.set(p.estanciaId, (m.get(p.estanciaId) || 0) + p.unidades);
+    for (const prof of prestamos) {
+      for (const p of prof.prestamos) {
+        if (!p.fechadevolucion) {
+          // ✅ solo préstamos activos
+          m.set(p.idestancia, (m.get(p.idestancia) || 0) + p.unidades);
+        }
+      }
+    }
     return m;
   }, [prestamos]);
 
   const estadoEstancia = (e) => {
     const prestadas = prestamosPorEstancia.get(e.id) || 0;
-    const libres = Math.max(0, (e.keysTotales || 0) - prestadas);
+    const libres = Math.max(0, (e.totalllaves || 0) - prestadas);
     let estado = "none";
     if (prestadas === 0) estado = "none";
-    else if (prestadas < e.keysTotales) estado = "partial";
+    else if (prestadas < e.totalllaves) estado = "partial";
     else estado = "full";
     return { prestadas, libres, estado };
   };
@@ -151,33 +155,31 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
     const rect = evt.currentTarget.getBoundingClientRect();
     const x = (evt.clientX - rect.left) / rect.width;
     const y = (evt.clientY - rect.top) / rect.height;
-    if (!draw.activo) setDraw({ activo: true, puntos: [[x, y]] });
-    else setDraw((d) => ({ ...d, puntos: [...d.puntos, [x, y]] }));
+    if (!draw.activo) setDraw({ activo: true, coordenadas: [[x, y]] });
+    else setDraw((d) => ({ ...d, coordenadas: [...d.coordenadas, [x, y]] }));
   };
 
   const finishPolygon = async () => {
-    if (!modoEdicion || !draw.activo || draw.puntos.length < 3) return;
+    if (!modoEdicion || !draw.activo || draw.coordenadas.length < 3) return;
     const id = slugify(nuevo.nombre || `estancia-${estancias.length + 1}`);
     const estNueva = {
       id,
-      nombre: nuevo.nombre || id,
-      keysTotales: Math.max(1, Number(nuevo.keysTotales) || 1),
-      puntos: draw.puntos,
+      nombre: nuevo.nombre,
+      totalllaves: Math.max(1, Number(nuevo.totalllaves) || 1),
+      coordenadas: draw.coordenadas,
     };
     try {
       setCargando(true);
       setError("");
       const guardada = await apiGuardarEstancia(planta, estNueva);
       const norma = {
-        id: guardada.id || guardada.codigo,
+        id: guardada.id,
         nombre: guardada.nombre || guardada.descripcion,
-        keysTotales:
-          guardada.keysTotales || guardada.totalllaves || estNueva.keysTotales,
-        puntos:
-          guardada.puntos ||
+        totalllaves: guardada.totalllaves,
+        coordenadas:
           guardada.coordenadas_json ||
           guardada.coordenadas ||
-          estNueva.puntos,
+          estNueva.coordenadas,
       };
       setEstancias((prev) => {
         const i = prev.findIndex((e) => e.id === norma.id);
@@ -186,8 +188,8 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
         copia[i] = norma;
         return copia;
       });
-      setDraw({ activo: false, puntos: [] });
-      setNuevo({ nombre: "", keysTotales: 1 });
+      setDraw({ activo: false, coordenadas: [] });
+      setNuevo({ nombre: "", totalllaves: 1 });
     } catch (e) {
       setError(e?.message || "Error guardando la estancia");
       console.error(e);
@@ -196,7 +198,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
     }
   };
 
-  const cancelDraw = () => setDraw({ activo: false, puntos: [] });
+  const cancelDraw = () => setDraw({ activo: false, coordenadas: [] });
 
   // ------------------- Escalado y path -------------------
   const polyToPath = (pts) =>
@@ -207,13 +209,41 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   const scalePoints = (pts) => pts.map(([x, y]) => [x * size.w, y * size.h]);
 
   // ------------------- Modal de llaves -------------------
-  const abrirModalLlaves = (estancia) => {
+  /*const abrirModalLlaves = (estancia) => {
     console.log("👉 Estancia seleccionada:", estancia);
     setModalLlaves({ open: true, estancia });
   };
 
   const cerrarModalLlaves = () =>
     setModalLlaves({ open: false, estancia: null });
+
+  const refrescarPrestamos = async () => {
+    try {
+      const data = await apiListarPrestamosLlaves();
+      setPrestamos(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };*/
+
+  // ------------------- Modal de llaves -------------------
+  const abrirModalLlaves = (estancia) => {
+    // prestamos de esta estancia
+    const prestamosEstancia = prestamos.flatMap((p) =>
+      p.prestamos
+        .filter((pr) => pr.idestancia === estancia.id)
+        .map((pr) => ({
+          ...pr,
+          nombre: p.nombre, // profesor
+        }))
+    );
+
+    const modo = prestamosEstancia.length > 0 ? "devolver" : "prestar";
+    setModalLlaves({ open: true, estancia, modo });
+  };
+
+  const cerrarModalLlaves = () =>
+    setModalLlaves({ open: false, estancia: null, modo: "prestar" });
 
   const refrescarPrestamos = async () => {
     try {
@@ -272,6 +302,92 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
               />{" "}
               <strong>Modo edición</strong>
             </label>
+            {modoEdicion && (
+              <div
+                style={{
+                  marginTop: 8,
+                  border: "1px dashed #e6eef0",
+                  padding: 8,
+                  borderRadius: 6,
+                }}
+              >
+                <div style={{ marginBottom: 8 }}>
+                  <label style={{ display: "block", fontSize: 13 }}>
+                    Nombre de la estancia
+                  </label>
+                  <input
+                    placeholder="Aula 1.01"
+                    value={nuevo.nombre}
+                    onChange={(e) =>
+                      setNuevo((n) => ({ ...n, nombre: e.target.value }))
+                    }
+                  />
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <label style={{ display: "block", fontSize: 13 }}>
+                    Nº llaves totales
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={nuevo.totalllaves}
+                    onChange={(e) =>
+                      setNuevo((n) => ({
+                        ...n,
+                        totalllaves: Number(e.target.value),
+                      }))
+                    }
+                  />
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={finishPolygon}
+                    disabled={
+                      !draw.activo || draw.coordenadas.length < 3 || cargando
+                    }
+                  >
+                    {cargando ? "Guardando..." : "Guardar estancia"}
+                  </button>
+                  <button
+                    onClick={cancelDraw}
+                    disabled={!draw.activo || cargando}
+                  >
+                    Cancelar dibujo
+                  </button>
+                </div>
+                {error && (
+                  <p style={{ color: "#b91c1c", fontSize: 12, marginTop: 6 }}>
+                    {error}
+                  </p>
+                )}
+                <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
+                  Click en el plano para añadir coordenadas. Doble-click para
+                  cerrar el polígono.
+                </p>
+                <div
+                  style={{
+                    marginTop: 8,
+                    display: "flex",
+                    gap: 6,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {estancias.map((s) => (
+                    <span
+                      key={s.id}
+                      style={{
+                        background: "#eef2ff",
+                        padding: "4px 8px",
+                        borderRadius: 999,
+                        fontSize: 12,
+                      }}
+                    >
+                      {s.nombre}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -311,7 +427,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
           >
             {estancias.map((s) => {
               const { prestadas, estado } = estadoEstancia(s);
-              const absPts = scalePoints(s.puntos);
+              const absPts = scalePoints(s.coordenadas);
               const color =
                 estado === "none"
                   ? "rgba(200,200,200,0.95)"
@@ -370,10 +486,10 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
               );
             })}
 
-            {draw.activo && draw.puntos.length > 0 && (
+            {draw.activo && draw.coordenadas.length > 0 && (
               <g>
                 {(() => {
-                  const absDrawPts = scalePoints(draw.puntos);
+                  const absDrawPts = scalePoints(draw.coordenadas);
                   return (
                     <>
                       <path
@@ -436,12 +552,32 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       </div>
 
       {/* Dialogo Prestar Llaves */}
-      <DialogoPrestarLlaves
-        open={modalLlaves.open}
-        estancia={modalLlaves.estancia}
-        onClose={cerrarModalLlaves}
-        onSuccess={refrescarPrestamos}
-      />
+      {/* Diálogos */}
+      {modalLlaves.modo === "prestar" && (
+        <DialogoPrestarLlaves
+          open={modalLlaves.open}
+          estancia={modalLlaves.estancia}
+          onClose={cerrarModalLlaves}
+          onSuccess={refrescarPrestamos}
+        />
+      )}
+
+      {modalLlaves.modo === "devolver" && (
+        <DialogoDevolverLlaves
+          open={modalLlaves.open}
+          estancia={modalLlaves.estancia}
+          prestamos={prestamos.flatMap((p) =>
+            p.prestamos
+              .filter((pr) => pr.idestancia === modalLlaves.estancia?.id)
+              .map((pr) => ({
+                ...pr,
+                nombre: p.nombre,
+              }))
+          )}
+          onClose={cerrarModalLlaves}
+          onSuccess={refrescarPrestamos}
+        />
+      )}
     </div>
   );
 }

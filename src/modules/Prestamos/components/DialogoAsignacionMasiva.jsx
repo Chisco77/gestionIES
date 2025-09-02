@@ -54,7 +54,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   }, []);
 
   useEffect(() => {
-    fetch(`${API_URL}/ldap/grupos`, { credentials: "include" })
+    fetch(`${API_URL}/ldap/grupos?groupType=school_class`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setGrupos(data.sort((a, b) => a.cn.localeCompare(b.cn))))
       .catch(() => toast.error("Error al obtener grupos"));

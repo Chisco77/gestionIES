@@ -96,7 +96,7 @@ export function DialogoPrestarLlaves({ open, onClose, onSuccess, estancia }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={false}>
-      <DialogContent className="max-w-md">
+      <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-md">
         <DialogHeader>
           <DialogTitle>Prestar llave — {estancia?.nombre}</DialogTitle>
         </DialogHeader>

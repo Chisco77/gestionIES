@@ -27,9 +27,10 @@ ORDER BY descripcion ASC`,
 
     const estancias = rows.map((r) => ({
       id: r.id,
+      codigo: r.codigo,
       nombre: r.descripcion,
-      keysTotales: r.totalllaves,
-      puntos: r.coordenadas_json,
+      totalllaves: r.totalllaves,
+      coordenadas: r.coordenadas_json,
     }));
 
     res.json({ ok: true, planta, estancias });
@@ -46,15 +47,15 @@ async function upsertEstancia(req, res) {
     planta = "baja",
     id,
     nombre,
-    keysTotales = 1,
-    puntos,
+    totalllaves = 1,
+    coordenadas,
   } = req.body || {};
-  if (!id || !nombre || !isValidCoordenadas(puntos)) {
+  if (!id || !nombre || !isValidCoordenadas(coordenadas)) {
     return res
       .status(400)
       .json({
         ok: false,
-        error: "Datos inválidos (id, nombre, puntos>=3 obligatorios)",
+        error: "Datos inválidos (id, nombre, coordenadas>=3 obligatorios)",
       });
   }
   try {
@@ -66,8 +67,8 @@ RETURNING planta, codigo, descripcion, totalllaves, coordenadas_json`,
         planta.toLowerCase(),
         id,
         nombre,
-        Number(keysTotales),
-        JSON.stringify(puntos),
+        Number(totalllaves),
+        JSON.stringify(coordenadas),
       ]
     );
 
@@ -77,8 +78,8 @@ RETURNING planta, codigo, descripcion, totalllaves, coordenadas_json`,
       estancia: {
         id: r.id,
         nombre: r.descripcion,
-        keysTotales: r.totalllaves,
-        puntos: r.coordenadas_json,
+        totalllaves: r.totalllaves,
+        coordenadas: r.coordenadas_json,
       },
     });
   } catch (err) {
@@ -91,12 +92,12 @@ RETURNING planta, codigo, descripcion, totalllaves, coordenadas_json`,
 async function updateEstancia(req, res) {
   const planta = (req.params.planta || "baja").toLowerCase();
   const id = req.params.id; 
-  const { nombre, keysTotales, puntos } = req.body || {};
+  const { nombre, totalllaves, coordenadas } = req.body || {};
 
-  if (typeof puntos !== "undefined" && !isValidCoordenadas(puntos)) {
+  if (typeof coordenadas !== "undefined" && !isValidCoordenadas(coordenadas)) {
     return res
       .status(400)
-      .json({ ok: false, error: "puntos inválidos (>=3 y números)" });
+      .json({ ok: false, error: "coordenadas inválidas (>=3 y números)" });
   }
 
   const sets = [];
@@ -107,13 +108,13 @@ async function updateEstancia(req, res) {
     sets.push(`descripcion = $${++i}`);
     vals.push(nombre);
   }
-  if (typeof keysTotales !== "undefined") {
+  if (typeof totalllaves !== "undefined") {
     sets.push(`totalllaves = $${++i}`);
     vals.push(Number(keysTotales));
   }
-  if (typeof puntos !== "undefined") {
+  if (typeof coordenadas !== "undefined") {
     sets.push(`coordenadas_json = $${++i}`);
-    vals.push(JSON.stringify(puntos));
+    vals.push(JSON.stringify(coordenadas));
   }
 
   if (sets.length === 0) {
@@ -139,8 +140,8 @@ RETURNING codigo, descripcion, totalllaves, coordenadas_json`,
       estancia: {
         id: r.codigo,
         nombre: r.descripcion,
-        keysTotales: r.totalllaves,
-        puntos: r.coordenadas_json,
+        totalllaves: r.totalllaves,
+        coordenadas: r.coordenadas_json,
       },
     });
   } catch (err) {
@@ -156,7 +157,7 @@ async function deleteEstancia(req, res) {
   try {
     const { rowCount } = await db.query(
       `DELETE FROM estancias WHERE planta = $1 AND id = $2`,
-      [planta, codigo]
+      [planta, id]
     );
     if (rowCount === 0)
       return res
