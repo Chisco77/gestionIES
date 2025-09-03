@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { DialogoPrestarLlaves } from "./DialogoPrestarLlaves";
-import { DialogoDevolverLlaves } from "./DialogoDevolverLlaves";
+import { DialogoGestionLlaves } from "./DialogoGestionLlaves";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -69,7 +68,13 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   const [error, setError] = useState("");
   const [modoEdicion, setModoEdicion] = useState(false);
   const [draw, setDraw] = useState({ activo: false, coordenadas: [] });
-  const [nuevo, setNuevo] = useState({ nombre: "", totalllaves: 1 });
+
+  // Para guardar nueva estancia
+  const [nuevo, setNuevo] = useState({
+    codigo: "",
+    descripcion: "",
+    totalllaves: 1,
+  });
 
   const [modalLlaves, setModalLlaves] = useState({
     open: false,
@@ -101,10 +106,9 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       setError("");
       try {
         const dataEstancias = await apiListarEstancias(planta);
-        console.log(modalLlaves.estancia);
         const normal = dataEstancias.map((r) => ({
-          id: r.id, 
-          codigo: r.codigo, 
+          id: r.id,
+          codigo: r.codigo,
           nombre: r.nombre || r.descripcion,
           totalllaves: r.totalllaves || 1,
           coordenadas: r.coordenadas || r.coordenadas_json || [],
@@ -161,10 +165,10 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
 
   const finishPolygon = async () => {
     if (!modoEdicion || !draw.activo || draw.coordenadas.length < 3) return;
-    const id = slugify(nuevo.nombre || `estancia-${estancias.length + 1}`);
     const estNueva = {
-      id,
-      nombre: nuevo.nombre,
+      //id,
+      codigo: nuevo.codigo,
+      descripcion: nuevo.descripcion,
       totalllaves: Math.max(1, Number(nuevo.totalllaves) || 1),
       coordenadas: draw.coordenadas,
     };
@@ -174,7 +178,8 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       const guardada = await apiGuardarEstancia(planta, estNueva);
       const norma = {
         id: guardada.id,
-        nombre: guardada.nombre || guardada.descripcion,
+        codigo: guardada.codigo,
+        descripcion: guardada.descripcion,
         totalllaves: guardada.totalllaves,
         coordenadas:
           guardada.coordenadas_json ||
@@ -188,8 +193,9 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
         copia[i] = norma;
         return copia;
       });
+      // reseteamos despues de guardar
       setDraw({ activo: false, coordenadas: [] });
-      setNuevo({ nombre: "", totalllaves: 1 });
+      setNuevo({ codigo: "", descripcion: "", totalllaves: 1 });
     } catch (e) {
       setError(e?.message || "Error guardando la estancia");
       console.error(e);
@@ -208,38 +214,13 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
 
   const scalePoints = (pts) => pts.map(([x, y]) => [x * size.w, y * size.h]);
 
-  // ------------------- Modal de llaves -------------------
-  /*const abrirModalLlaves = (estancia) => {
-    console.log("👉 Estancia seleccionada:", estancia);
-    setModalLlaves({ open: true, estancia });
-  };
-
-  const cerrarModalLlaves = () =>
-    setModalLlaves({ open: false, estancia: null });
-
-  const refrescarPrestamos = async () => {
-    try {
-      const data = await apiListarPrestamosLlaves();
-      setPrestamos(data);
-    } catch (e) {
-      console.error(e);
-    }
-  };*/
-
-  // ------------------- Modal de llaves -------------------
   const abrirModalLlaves = (estancia) => {
-    // prestamos de esta estancia
     const prestamosEstancia = prestamos.flatMap((p) =>
       p.prestamos
-        .filter((pr) => pr.idestancia === estancia.id)
-        .map((pr) => ({
-          ...pr,
-          nombre: p.nombre, // profesor
-        }))
+        .filter((pr) => pr.idestancia === estancia.id && !pr.fechadevolucion)
+        .map((pr) => ({ ...pr, nombre: p.nombre }))
     );
-
-    const modo = prestamosEstancia.length > 0 ? "devolver" : "prestar";
-    setModalLlaves({ open: true, estancia, modo });
+    setModalLlaves({ open: true, estancia, prestamosEstancia });
   };
 
   const cerrarModalLlaves = () =>
@@ -253,6 +234,18 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       console.error(e);
     }
   };
+  // Sacar todos los préstamos de todos los profesores en un array plano
+  const prestamosPlanos = prestamos.flatMap((profesor) => profesor.prestamos);
+
+  // Filtra los que no tienen devolución: son los préstamos activos.
+  const prestamosActivos = prestamos.flatMap((profesor) =>
+    profesor.prestamos
+      .filter((p) => p.fechadevolucion === null)
+      .map((p) => ({ ...p, profesor: profesor.nombre }))
+  );
+
+  console.log("👉 Todos los préstamos planos:", prestamosPlanos);
+  console.log("👉 Préstamos activos:", prestamosActivos);
 
   return (
     <div style={{ padding: 12 }}>
@@ -262,11 +255,11 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
           {/* Préstamos */}
           <h3 style={{ margin: 0 }}>Préstamos activos</h3>
           <div style={{ marginTop: 8 }}>
-            {prestamos.length === 0 ? (
-              <p style={{ color: "#6b7280" }}>No hay préstamos.</p>
+            {prestamosActivos.length === 0 ? (
+              <p style={{ color: "#6b7280" }}>No hay préstamos activos.</p>
             ) : (
               <ul style={{ paddingLeft: 0 }}>
-                {prestamos.map((p, i) => (
+                {prestamosActivos.map((p, i) => (
                   <li
                     key={i}
                     style={{
@@ -278,11 +271,12 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                     }}
                   >
                     <div style={{ fontWeight: 700 }}>
-                      {estancias.find((e) => e.id === p.estanciaId)?.nombre ||
-                        p.estanciaId}
+                      {estancias.find((e) => e.id === p.idestancia)?.codigo ||
+                        p.codigoEstancia ||
+                        p.idestancia}
                     </div>
                     <div style={{ fontSize: 13, color: "#374151" }}>
-                      {p.nombre} · {p.unidades} llave(s)
+                      {p.codigoEstancia} · {p.unidades} llave(s) — {p.profesor}
                     </div>
                   </li>
                 ))}
@@ -313,13 +307,25 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
               >
                 <div style={{ marginBottom: 8 }}>
                   <label style={{ display: "block", fontSize: 13 }}>
-                    Nombre de la estancia
+                    Código de la estancia
                   </label>
                   <input
-                    placeholder="Aula 1.01"
-                    value={nuevo.nombre}
+                    placeholder="ej. Aula 1.01"
+                    value={nuevo.codigo}
                     onChange={(e) =>
-                      setNuevo((n) => ({ ...n, nombre: e.target.value }))
+                      setNuevo((n) => ({ ...n, codigo: e.target.value }))
+                    }
+                  />
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <label style={{ display: "block", fontSize: 13 }}>
+                    Descripción
+                  </label>
+                  <input
+                    placeholder="Ej: Aula de informática"
+                    value={nuevo.descripcion}
+                    onChange={(e) =>
+                      setNuevo((n) => ({ ...n, descripcion: e.target.value }))
                     }
                   />
                 </div>
@@ -551,43 +557,16 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
         </div>
       </div>
 
-      {/* Dialogo Prestar Llaves */}
-      {/* Diálogos */}
-      {modalLlaves.modo === "prestar" && (
-        <DialogoPrestarLlaves
+       {/* Diálogos */}
+      {modalLlaves.open && (
+        <DialogoGestionLlaves
           open={modalLlaves.open}
           estancia={modalLlaves.estancia}
-          onClose={cerrarModalLlaves}
-          onSuccess={refrescarPrestamos}
-        />
-      )}
-
-      {modalLlaves.modo === "devolver" && (
-        <DialogoDevolverLlaves
-          open={modalLlaves.open}
-          estancia={modalLlaves.estancia}
-          prestamos={prestamos.flatMap((p) =>
-            p.prestamos
-              .filter((pr) => pr.idestancia === modalLlaves.estancia?.id)
-              .map((pr) => ({
-                ...pr,
-                nombre: p.nombre,
-              }))
-          )}
+          prestamosActivos={modalLlaves.prestamosEstancia || []}
           onClose={cerrarModalLlaves}
           onSuccess={refrescarPrestamos}
         />
       )}
     </div>
   );
-}
-
-// ------------------- Helper -------------------
-function slugify(s) {
-  return String(s || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 }

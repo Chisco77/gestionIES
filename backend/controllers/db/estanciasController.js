@@ -45,28 +45,28 @@ ORDER BY descripcion ASC`,
 async function upsertEstancia(req, res) {
   const {
     planta = "baja",
-    id,
-    nombre,
+    codigo,
+    descripcion,
     totalllaves = 1,
     coordenadas,
   } = req.body || {};
-  if (!id || !nombre || !isValidCoordenadas(coordenadas)) {
+  if (!codigo || !descripcion || !isValidCoordenadas(coordenadas)) {
     return res
       .status(400)
       .json({
         ok: false,
-        error: "Datos inválidos (id, nombre, coordenadas>=3 obligatorios)",
+        error: "Datos inválidos (codigo, descripcion, coordenadas>=3 obligatorios)",
       });
   }
   try {
     const { rows } = await db.query(
       `INSERT INTO estancias (planta, codigo, descripcion, totalllaves, coordenadas_json)
 VALUES ($1,$2,$3,$4,$5)
-RETURNING planta, codigo, descripcion, totalllaves, coordenadas_json`,
+RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json`,
       [
         planta.toLowerCase(),
-        id,
-        nombre,
+        codigo,
+        descripcion,
         Number(totalllaves),
         JSON.stringify(coordenadas),
       ]
@@ -77,7 +77,8 @@ RETURNING planta, codigo, descripcion, totalllaves, coordenadas_json`,
       ok: true,
       estancia: {
         id: r.id,
-        nombre: r.descripcion,
+        codigo: r.codigo,
+        descripcion: r.descripcion,
         totalllaves: r.totalllaves,
         coordenadas: r.coordenadas_json,
       },
