@@ -72,17 +72,35 @@ exports.updateLibro = async (req, res) => {
   }
 };
 
+
 // Eliminar un libro
 exports.deleteLibro = async (req, res) => {
   const { id } = req.params;
+
   try {
+    // 1. Comprobar si el libro tiene préstamos activos
+    const prestamosActivos = await db.query(
+      "SELECT COUNT(*) FROM prestamos WHERE idlibro = $1",
+      [id]
+    );
+
+    if (parseInt(prestamosActivos.rows[0].count, 10) > 0) {
+      return res.status(400).json({
+        message: "No se puede eliminar el libro porque tiene préstamos activos",
+      });
+    }
+
+    // 2. Eliminar el libro si no tiene préstamos activos
     const result = await db.query("DELETE FROM libros WHERE id = $1", [id]);
+
     if (result.rowCount === 0) {
       return res.status(404).json({ message: "Libro no encontrado" });
     }
+
     res.sendStatus(204);
   } catch (error) {
     console.error("❌ Error al eliminar libro:", error);
     res.status(500).json({ message: "Error interno al eliminar libro" });
   }
 };
+

@@ -15,25 +15,34 @@ export function DialogoEliminarCurso({
   onSuccess,
 }) {
   const API_URL = import.meta.env.VITE_API_URL;
+
   const handleEliminar = async () => {
     try {
       const res = await fetch(
         `${API_URL}/db/cursos/${cursoSeleccionado.id}`,
-        //fetch(
-        //`/api/db/cursos/${cursoSeleccionado.id}`,
         {
           method: "DELETE",
           credentials: "include",
         }
       );
 
-      if (!res.ok) throw new Error("Error al eliminar");
+      if (!res.ok) {
+        // Intentar leer mensaje del backend
+        let errorMsg = "Error al eliminar curso";
+        try {
+          const data = await res.json();
+          if (data?.message) errorMsg = data.message;
+        } catch {
+          // Si no es JSON, dejamos el mensaje genérico
+        }
+        throw new Error(errorMsg);
+      }
 
       toast.success("Curso eliminado");
       onSuccess?.();
       onClose();
     } catch (err) {
-      toast.error("Error al eliminar curso");
+      toast.error(err.message || "Error al eliminar curso");
       console.error(err);
     }
   };

@@ -8,7 +8,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-
 export function DialogoEliminarLibro({
   open,
   onClose,
@@ -18,21 +17,28 @@ export function DialogoEliminarLibro({
   const API_URL = import.meta.env.VITE_API_URL;
   const handleEliminar = async () => {
     try {
-      const res = await fetch(
-        `${API_URL}/db/libros/${libroSeleccionado.id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/db/libros/${libroSeleccionado.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
 
-      if (!res.ok) throw new Error("Error al eliminar");
+      if (!res.ok) {
+        // Intentamos leer el mensaje que manda el backend
+        let errorMsg = "Error al eliminar libro";
+        try {
+          const data = await res.json();
+          if (data?.message) errorMsg = data.message;
+        } catch {
+          // si no se puede parsear JSON, dejamos el mensaje genérico
+        }
+        throw new Error(errorMsg);
+      }
 
       toast.success("Libro eliminado");
       onSuccess?.();
       onClose();
     } catch (err) {
-      toast.error("Error al eliminar libro");
+      toast.error(err.message || "Error al eliminar libro");
       console.error(err);
     }
   };
