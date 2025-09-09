@@ -66,6 +66,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
         ...p,
         devuelto: p.devuelto === true || p.devuelto === "true",
       }));
+      console.log ("Normalizados: ", normalizados);
       setPrestamos(normalizados);
       setSeleccionadosIzquierda([]);
       setSeleccionadosDerecha([]);
@@ -79,7 +80,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
   const [draggingItem, setDraggingItem] = useState(null);
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const toggleSeleccion = (id, lado) => {
+  const toggleSeleccion = (id_item, lado) => {
     const setSeleccionados =
       lado === "izquierda"
         ? setSeleccionadosIzquierda
@@ -88,22 +89,22 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
       lado === "izquierda" ? seleccionadosIzquierda : seleccionadosDerecha;
 
     setSeleccionados(
-      seleccionados.includes(id)
-        ? seleccionados.filter((x) => x !== id)
-        : [...seleccionados, id]
+      seleccionados.includes(id_item)
+        ? seleccionados.filter((x) => x !== id_item)
+        : [...seleccionados, id_item]
     );
   };
 
   // Prestamo seleccionado único izquierda
   const prestamoSeleccionado =
     seleccionadosIzquierda.length === 1
-      ? noDevueltos.find((p) => p.id === seleccionadosIzquierda[0])
+      ? noDevueltos.find((p) => p.id_item === seleccionadosIzquierda[0])
       : null;
 
   // Prestamo seleccionado único derecha (devueltos)
   const prestamoDevueltoSeleccionado =
     seleccionadosDerecha.length === 1
-      ? devueltos.find((p) => p.id === seleccionadosDerecha[0])
+      ? devueltos.find((p) => p.id_item === seleccionadosDerecha[0])
       : null;
 
   // Abrir diálogo cambiar fecha préstamo
@@ -136,7 +137,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
     setFechaPrestamoModalAbierto(false);
     setPrestamos((prev) =>
       prev.map((p) =>
-        p.id === prestamoSeleccionado.id
+        p.id === prestamoSeleccionado.id_item
           ? { ...p, fechaentrega: fechaNuevaPrestamo }
           : p
       )
@@ -188,7 +189,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
     setFechaDevolucionModalAbierto(false);
     setPrestamos((prev) =>
       prev.map((p) =>
-        p.id === prestamoDevueltoSeleccionado.id
+        p.id === prestamoDevueltoSeleccionado.id_item
           ? { ...p, fechadevolucion: fechaNuevaDevolucion }
           : p
       )
@@ -221,7 +222,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
       toast.success("Préstamos devueltos correctamente");
       setPrestamos((prev) =>
         prev.map((p) =>
-          ids.includes(p.id)
+          ids.includes(p.id_item)
             ? {
                 ...p,
                 devuelto: true,
@@ -251,7 +252,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
       toast.success("Préstamos reactivados correctamente");
       setPrestamos((prev) =>
         prev.map((p) =>
-          ids.includes(p.id)
+          ids.includes(p.id_item)
             ? { ...p, devuelto: false, fechadevolucion: null }
             : p
         )
@@ -272,7 +273,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
     }
 
     // Aquí en el frontend solo se eliminan visualmente
-    setPrestamos((prev) => prev.filter((p) => !ids.includes(p.id)));
+    setPrestamos((prev) => prev.filter((p) => !ids.includes(p.id_item)));
     setSeleccionadosIzquierda([]);
     toast.success("Préstamos eliminados del listado (frontend)");
   };
@@ -286,7 +287,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
   };
 
   const prestarTodos = () => {
-    const ids = devueltos.map((p) => p.id);
+    const ids = devueltos.map((p) => p.id_item);
     if (ids.length === 0) {
       toast.error("No hay préstamos devueltos");
       return;
@@ -303,7 +304,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
   };
 
   const devolverTodos = () => {
-    const ids = noDevueltos.map((p) => p.id);
+    const ids = noDevueltos.map((p) => p.id_item);
     if (ids.length === 0) {
       toast.error("No hay préstamos por devolver");
       return;
@@ -364,7 +365,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        const ids = noDevueltos.map((p) => p.id);
+                        const ids = noDevueltos.map((p) => p.id_item);
                         if (ids.length === 0) {
                           toast.error("No hay préstamos por devolver");
                           return;
@@ -431,7 +432,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
 
                             setPrestamos((prev) =>
                               prev.filter(
-                                (p) => !seleccionadosIzquierda.includes(p.id)
+                                (p) => !seleccionadosIzquierda.includes(p.id_item)
                               )
                             );
                             setSeleccionadosIzquierda([]);
@@ -458,10 +459,10 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
               )}
               <ul className="space-y-2">
                 {noDevueltos.map((p) => {
-                  const seleccionado = seleccionadosIzquierda.includes(p.id);
+                  const seleccionado = seleccionadosIzquierda.includes(p.id_item);
                   return (
                     <li
-                      key={p.id}
+                      key={p.id_item}
                       className={`border p-2 rounded transition-all ${
                         seleccionado
                           ? "bg-green-100 border-green-500"
@@ -470,7 +471,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div
-                          onClick={() => toggleSeleccion(p.id, "izquierda")}
+                          onClick={() => toggleSeleccion(p.id_item, "izquierda")}
                           className="cursor-pointer"
                         >
                           <div>
@@ -491,7 +492,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                                 setFechaNuevaPrestamo(
                                   p.fechaentrega?.slice(0, 10) || ""
                                 );
-                                setSeleccionadosIzquierda([p.id]);
+                                setSeleccionadosIzquierda([p.id_item]);
                                 setFechaPrestamoModalAbierto(true);
                               }}
                             >
@@ -544,7 +545,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                           toast.error("No hay préstamos devueltos");
                           return;
                         }
-                        prestar(devueltos.map((p) => p.id));
+                        prestar(devueltos.map((p) => p.id_item));
                       }}
                       disabled={devueltos.length === 0}
                     >
@@ -563,10 +564,10 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
               )}
               <ul className="space-y-2">
                 {devueltos.map((p) => {
-                  const seleccionado = seleccionadosDerecha.includes(p.id);
+                  const seleccionado = seleccionadosDerecha.includes(p.id_item);
                   return (
                     <li
-                      key={p.id}
+                      key={p.id_item}
                       className={`border p-2 rounded transition-all ${
                         seleccionado
                           ? "bg-green-100 border-green-500"
@@ -575,7 +576,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div
-                          onClick={() => toggleSeleccion(p.id, "derecha")}
+                          onClick={() => toggleSeleccion(p.id_item, "derecha")}
                           className="cursor-pointer"
                         >
                           <div>
@@ -600,7 +601,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                                 setFechaNuevaDevolucion(
                                   p.fechadevolucion?.slice(0, 10) || ""
                                 );
-                                setSeleccionadosDerecha([p.id]);
+                                setSeleccionadosDerecha([p.id_item]);
                                 setFechaDevolucionModalAbierto(true);
                               }}
                             >

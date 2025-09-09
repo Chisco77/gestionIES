@@ -351,18 +351,17 @@ async function insertarPrestamosMasivo(req, res) {
     for (const uid of alumnos) {
       // Insertar cabecera de préstamo
       const resultPrestamo = await pool.query(
-        `INSERT INTO prestamos (uid, esalumno, fechaentrega) 
-         VALUES ($1, true, $2) 
-         RETURNING id_prestamo`,
-        [uid, fechaentrega]
+        `INSERT INTO prestamos (uid, esalumno, doc_compromiso) 
+         VALUES ($1, true, 0) RETURNING id`,
+        [uid]
       );
-      const idPrestamo = resultPrestamo.rows[0].id_prestamo;
+      const idPrestamo = resultPrestamo.rows[0].id;
 
       // Preparar valores a insertar en prestamos_items
       const itemsAInsertar = [];
       for (const idlibro of libros) {
         const existe = await pool.query(
-          `SELECT 1 FROM prestamos_items WHERE id_prestamo = $1 AND idlibro = $2`,
+          `SELECT 1 FROM prestamos_items WHERE idprestamo = $1 AND idlibro = $2`,
           [idPrestamo, idlibro]
         );
         if (existe.rowCount > 0) {
@@ -382,7 +381,7 @@ async function insertarPrestamosMasivo(req, res) {
           .join(", ");
         const params = itemsAInsertar.flat();
         await pool.query(
-          `INSERT INTO prestamos_items (id_prestamo, idlibro, devuelto, fechaentrega, fechadevolucion)
+          `INSERT INTO prestamos_items (idprestamo, idlibro, devuelto, fechaentrega, fechadevolucion)
            VALUES ${valuesStr}`,
           params
         );
