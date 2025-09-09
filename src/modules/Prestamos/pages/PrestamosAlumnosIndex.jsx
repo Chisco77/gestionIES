@@ -35,7 +35,12 @@ export function PrestamosAlumnosIndex() {
     useState(false);
   const [abrirDialogoEtiquetas, setAbrirDialogoEtiquetas] = useState(false);
 
-  const { data: prestamos, isLoading, error, refetch } = usePrestamos({esAlumno:true});
+  const {
+    data: prestamos,
+    isLoading,
+    error,
+    refetch,
+  } = usePrestamos({ esAlumno: true });
 
   const handleEditar = (seleccionado) => {
     if (!seleccionado) return;
@@ -63,6 +68,7 @@ export function PrestamosAlumnosIndex() {
         columns={columns}
         data={prestamos}
         onFilteredChange={(rows) => setPrestamosFiltrados(rows)}
+        onSelectUsuario={(usuario) => setAlumnoSeleccionado(usuario)} // NUEVO
         acciones={(seleccionado) => (
           <>
             <Button
@@ -70,6 +76,7 @@ export function PrestamosAlumnosIndex() {
               title="Prestar libros"
               variant="outline"
               size="icon"
+              disabled={!seleccionado}
             >
               <Plus className="w-4 h-4" />
             </Button>
@@ -82,7 +89,7 @@ export function PrestamosAlumnosIndex() {
               <LibraryBig className="w-4 h-4" />
             </Button>
             <Button
-              onClick={() => handleEditar(seleccionado)}
+              onClick={() => setAbrirEditar(true)}
               disabled={!seleccionado}
               title="Editar préstamos"
               variant="outline"

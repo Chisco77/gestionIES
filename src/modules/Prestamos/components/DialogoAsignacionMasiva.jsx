@@ -29,6 +29,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   const [descartes, setDescartes] = useState([]);
   const [mostrarInforme, setMostrarInforme] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
+  
   // Estados iniciales en la carga del formulario
   useEffect(() => {
     if (open) {
