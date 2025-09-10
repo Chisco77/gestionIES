@@ -9,22 +9,25 @@ const {
   deleteCurso,
 } = require("../controllers/db/cursosController");
 
-const {
-  getLibros,
-  insertLibro,
-  updateLibro,
-  deleteLibro,
-} = require("../controllers/db/librosController");
-
 router.get("/cursos", getCursos);
 router.post("/cursos", insertCurso);
 router.put("/cursos/:id", updateCurso);
 router.delete("/cursos/:id", deleteCurso);
 
+const {
+  getLibros,
+  insertLibro,
+  updateLibro,
+  deleteLibro,
+  getLibrosDisponibles,
+} = require("../controllers/db/librosController");
+
 router.get("/libros", getLibros);
 router.post("/libros", insertLibro);
 router.put("/libros/:id", updateLibro);
 router.delete("/libros/:id", deleteLibro);
+router.get("/libros/disponibles/:curso/:uid", getLibrosDisponibles);
+
 
 const {
   asignarLibrosMasivo,
@@ -33,7 +36,7 @@ const {
   getPrestamosAgrupados,
   devolverPrestamos,
   prestarPrestamos,
-  prestarUsuario,
+  asignarUsuario,
   eliminarPrestamosAlumno,
 } = require("../controllers/db/prestamosController");
 
@@ -61,7 +64,7 @@ router.post("/prestamos/prestar", prestarPrestamos);
 router.post ("/prestamos/asignarLibrosMasivo", asignarLibrosMasivo);
 router.post("/prestamos/accionDocCompromisoMasivo", accionDocCompromisoMasivo);
 router.post("/prestamos/accionLibrosMasivo", accionLibrosMasivo);
-router.post("/prestamos/prestarUsuario", prestarUsuario);
+router.post("/prestamos/asignarUsuario", asignarUsuario);
 router.post ("/prestamos/eliminarUnAlumno", eliminarPrestamosAlumno);
 
 // --- Prestamos llaves ---

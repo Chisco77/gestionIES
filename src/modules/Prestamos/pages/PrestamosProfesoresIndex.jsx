@@ -2,7 +2,7 @@ import { useState } from "react";
 import { columns } from "../components/columns";
 import { TablaPrestamos } from "../components/TablaPrestamos";
 import { DialogoEditarPrestamos } from "../components/DialogoEditarPrestamos";
-import { DialogoPrestarLibros } from "../components/DialogoPrestarLibros";
+import { DialogoAsignarLibros } from "../components/DialogoAsignarLibros";
 import { DialogoDocumentoPrestamo } from "../components/DialogoDocumentoPrestamo";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 import {
@@ -127,7 +127,7 @@ export function PrestamosProfesoresIndex() {
         onSuccess={refetch}
       />
 
-      <DialogoPrestarLibros
+      <DialogoAsignarLibros
         open={abrirDialogoPrestar}
         onClose={() => setAbrirDialogoPrestar(false)}
         onSuccess={() => {

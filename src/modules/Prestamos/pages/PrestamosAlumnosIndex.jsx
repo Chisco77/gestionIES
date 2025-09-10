@@ -3,7 +3,7 @@ import { columns } from "../components/columns";
 import { TablaPrestamos } from "../components/TablaPrestamos";
 import { DialogoAsignacionMasiva } from "../components/DialogoAsignacionMasiva";
 import { DialogoEditarPrestamos } from "../components/DialogoEditarPrestamos";
-import { DialogoPrestarLibros } from "../components/DialogoPrestarLibros";
+import { DialogoAsignarLibros } from "../components/DialogoAsignarLibros";
 import { DialogoDocumentoPrestamo } from "../components/DialogoDocumentoPrestamo";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 import { DialogoAccionMasiva } from "../components/DialogoAccionMasiva";
@@ -49,7 +49,15 @@ export function PrestamosAlumnosIndex() {
     error,
     refetch,
   } = usePrestamos({ esAlumno: true });
-  const uidsConPrestamo = prestamos?.map((p) => p.uid) || [];
+
+  //const uidsConPrestamo = prestamos?.map((p) => p.uid) || [];
+// 
+  const uidsConPrestamo =
+    prestamos?.map((p) => ({
+      uid: p.uid,
+      iniciocurso: p.iniciocurso,
+    })) || [];
+console.log ("uids con prestamo: ", uidsConPrestamo);
   // Sincroniza los filtrados con los datos actualizados
   useEffect(() => {
     setPrestamosFiltrados(prestamos || []);
@@ -90,17 +98,17 @@ export function PrestamosAlumnosIndex() {
               {/* Grupo 1: acciones individuales del alumno */}
               <Button
                 onClick={() => setAbrirDialogoPrestar(true)}
-                title="Prestar libros"
+                title="Asignar libros"
                 variant="outline"
                 size="icon"
-                disabled={!alumno}
+                //disabled={!alumno}
               >
                 <Plus className="w-4 h-4" />
               </Button>
 
               <Button
                 onClick={() => handleEditar(alumno)}
-                title="Editar préstamos"
+                title="Editar registro"
                 variant="outline"
                 size="icon"
                 disabled={!alumno}
@@ -110,7 +118,7 @@ export function PrestamosAlumnosIndex() {
 
               <Button
                 onClick={() => handleEliminar(alumno)}
-                title="Eliminar préstamos"
+                title="Eliminar registro"
                 variant="outline"
                 size="icon"
                 disabled={!alumno}
@@ -200,7 +208,7 @@ export function PrestamosAlumnosIndex() {
               <DropdownMenuItem
                 onClick={() => setAbrirDialogoDocumentoPrestamo(true)}
               >
-                <Tag className="mr-2 h-4 w-4" /> Documento Préstamo Libros
+                <Tag className="mr-2 h-4 w-4" /> Documento compromiso préstamo
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setAbrirDialogoEtiquetas(true)}>
                 <Tag className="mr-2 h-4 w-4" /> Etiquetas libros
@@ -224,7 +232,7 @@ export function PrestamosAlumnosIndex() {
         onSuccess={refetch}
       />
 
-      <DialogoPrestarLibros
+      <DialogoAsignarLibros
         open={abrirDialogoPrestar}
         onClose={() => setAbrirDialogoPrestar(false)}
         onSuccess={() => {
@@ -252,7 +260,7 @@ export function PrestamosAlumnosIndex() {
         open={abrirAccionMasiva.open}
         tipo={abrirAccionMasiva.tipo}
         onClose={() => setAbrirDialogoAccionMasiva({ open: false, tipo: null })}
-        alumnos={prestamos} 
+        alumnos={prestamos}
         onSuccess={refetch}
       />
     </div>

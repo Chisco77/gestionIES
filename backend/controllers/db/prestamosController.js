@@ -20,11 +20,13 @@ async function getPrestamosAgrupados(req, res) {
          p.id AS prestamo_id, 
          p.uid, 
          p.esalumno,
-         p.doc_compromiso, 
+         p.doc_compromiso,
+         p.iniciocurso, 
          pi.id AS item_id, 
          pi.fechaentrega, 
          pi.fechadevolucion, 
          pi.devuelto,
+         pi.entregado,
          l.libro AS nombre_libro
        FROM prestamos p
        JOIN prestamos_items pi ON p.id = pi.idprestamo
@@ -69,6 +71,7 @@ async function getPrestamosAgrupados(req, res) {
           id_prestamo: p.prestamo_id,
           uid: p.uid,
           doc_compromiso: p.doc_compromiso,
+          iniciocurso: p.iniciocurso,
           nombreUsuario: persona,
           curso,
           prestamos: [],
@@ -79,6 +82,7 @@ async function getPrestamosAgrupados(req, res) {
         id_item: p.item_id,
         libro: nombreLibro,
         devuelto: p.devuelto,
+        entregado: p.entregado,
         fechaentrega: p.fechaentrega,
         fechadevolucion: p.fechadevolucion,
       });
@@ -138,16 +142,18 @@ async function prestarPrestamos(req, res) {
     if (!Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ error: "No se especificaron préstamos" });
     }
+    const fechaEntrega = new Date();
 
     // Revertimos la devolución: devuelto = false, fechadevolucion = null
     const query = `
       UPDATE prestamos_items
       SET devuelto = false,
-          fechadevolucion = NULL
-      WHERE id = ANY($1::int[])
+          entregado = true, 
+          fechaentrega = $1
+      WHERE id = ANY($2::int[])
     `;
 
-    await pool.query(query, [ids]);
+    await pool.query(query, [fechaEntrega, ids]);
 
     res.json({ success: true, cantidad: ids.length });
   } catch (error) {
@@ -155,7 +161,7 @@ async function prestarPrestamos(req, res) {
     res.status(500).json({ error: "Error al prestar préstamos" });
   }
 }
-
+// Crea asignaciones de libros de inicio de curso (iniciocurso = true en prestamos)
 async function asignarLibrosMasivo(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -177,16 +183,10 @@ async function asignarLibrosMasivo(req, res) {
         [uid]
       );
 
-      /*if (existePrestamo.rowCount > 0) {
-        // No se crea ningún registro, informar al frontend
-        descartados.push({ uidalumno: uid, motivo: "Ya existe un préstamo" });
-        continue;
-      }*/
-
       if (existePrestamo.rowCount > 0) {
         descartados.push({
           uidalumno: uid,
-          idlibros: libros, // 👈 añadimos también los libros que intentaba asignar
+          idlibros: libros, // añadimos también los libros que intentaba asignar
           motivo: "Ya existe un préstamo",
         });
         continue;
@@ -194,8 +194,8 @@ async function asignarLibrosMasivo(req, res) {
 
       // Insertar cabecera de préstamo
       const resultPrestamo = await pool.query(
-        `INSERT INTO prestamos (uid, esalumno, doc_compromiso) 
-         VALUES ($1, true, 0) RETURNING id`,
+        `INSERT INTO prestamos (uid, esalumno, doc_compromiso, iniciocurso) 
+         VALUES ($1, true, 0, true) RETURNING id`,
         [uid]
       );
       const idPrestamo = resultPrestamo.rows[0].id;
@@ -233,7 +233,8 @@ async function asignarLibrosMasivo(req, res) {
   }
 }
 
-// Marcar documento compromiso de prestamos de libros de alumnos de forma masiva, como entregado o recibido
+// Marcar documento compromiso de prestamos de libros de alumnos de forma masiva, como entregado o recibido.
+// Solo para prestamos de inicio de curso
 async function accionDocCompromisoMasivo(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -254,7 +255,7 @@ async function accionDocCompromisoMasivo(req, res) {
     for (const uid of alumnos) {
       // Buscar préstamo del usuario
       const { rows } = await pool.query(
-        `SELECT id, doc_compromiso FROM prestamos WHERE uid = $1`,
+        `SELECT id, doc_compromiso FROM prestamos WHERE uid = $1 and iniciocurso = true`,
         [uid]
       );
       if (rows.length === 0) continue;
@@ -288,7 +289,7 @@ async function accionDocCompromisoMasivo(req, res) {
   }
 }
 
-// Prestar o devolver libros de forma masiva a alumnos. Libros previamente asignados.
+// Prestar o devolver libros de forma masiva a alumnos. Para prestamos con iniciocurso = true.
 async function accionLibrosMasivo(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -307,7 +308,7 @@ async function accionLibrosMasivo(req, res) {
     for (const uid of alumnos) {
       // Obtener id del préstamo del usuario
       const { rows } = await pool.query(
-        `SELECT id FROM prestamos WHERE uid = $1`,
+        `SELECT id FROM prestamos WHERE uid = $1 and iniciocurso = true`,
         [uid]
       );
       if (rows.length === 0) continue; // Si no hay préstamo, saltar
@@ -345,77 +346,10 @@ async function accionLibrosMasivo(req, res) {
   }
 }
 
-/*async function accionLibrosMasivo(req, res) {
-  try {
-    const ldapSession = req.session?.ldap;
-    if (!ldapSession) return res.status(401).json({ error: "No autenticado" });
-
-    const { tipo, alumnos } = req.body;
-
-    if (
-      !Array.isArray(alumnos) ||
-      alumnos.length === 0 ||
-
-    ) {
-      return res.status(400).json({ error: "Datos inválidos" });
-    }
-
-    const fecha = new Date();
-    const insertados = [];
-    const actualizados = [];
-    const descartados = [];
-
-    for (const uid of alumnos) {
-      // Obtener id del préstamo del usuario
-      const { rows } = await pool.query(
-        `SELECT id FROM prestamos WHERE uid = $1`,
-        [uid]
-      );
-      if (rows.length === 0) continue;
-      const idprestamo = rows[0].id;
-
-      for (const idlibro of libros) {
-        if (tipo === "entregar") {
-          // Verificar si ya existe un préstamo activo
-          const { rowCount } = await pool.query(
-            `SELECT 1 FROM prestamos_items WHERE idprestamo = $1 AND idlibro = $2 AND devuelto = false`,
-            [idprestamo, idlibro]
-          );
-          if (rowCount > 0) {
-            descartados.push({ uid, idlibro });
-            continue;
-          }
-
-          const { rows: insertRow } = await pool.query(
-            `INSERT INTO prestamos_items (idprestamo, idlibro, fechaentrega, fechadevolucion, devuelto)
-             VALUES ($1, $2, $3, NULL, false)
-             RETURNING id`,
-            [idprestamo, idlibro, fecha]
-          );
-          insertados.push({ uid, idlibro });
-        } else if (tipo === "devolver") {
-          const { rowCount } = await pool.query(
-            `UPDATE prestamos_items
-             SET devuelto = true, fechadevolucion = $1
-             WHERE idprestamo = $2 AND idlibro = $3 AND devuelto = false`,
-            [fecha, idprestamo, idlibro]
-          );
-          if (rowCount > 0) actualizados.push({ uid, idlibro });
-        }
-      }
-    }
-
-    res.json({ success: true, insertados, actualizados, descartados });
-  } catch (error) {
-    console.error("❌ Error en acción de libros:", error);
-    res.status(500).json({ error: "Error en el servidor" });
-  }
-}*/
-
 /*
     Funcion para asignar libros a un usuario.
 */
-async function prestarUsuario(req, res) {
+async function asignarUsuario(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) {
@@ -443,7 +377,7 @@ async function prestarUsuario(req, res) {
     const prestamoExistente = await pool.query(
       `SELECT id, doc_compromiso 
        FROM prestamos 
-       WHERE uid = $1`,
+       WHERE uid = $1 and iniciocurso = false and doc_compromiso = 0`,
       [uid]
     );
 
@@ -502,7 +436,7 @@ async function prestarUsuario(req, res) {
       descartados,
     });
   } catch (error) {
-    console.error("Error en prestarUsuario:", error);
+    console.error("Error en asignarUsuario:", error);
     res.status(500).json({ error: "Error en el servidor" });
   }
 }
@@ -538,6 +472,6 @@ module.exports = {
   accionLibrosMasivo,
   devolverPrestamos,
   prestarPrestamos,
-  prestarUsuario,
+  asignarUsuario,
   eliminarPrestamosAlumno,
 };

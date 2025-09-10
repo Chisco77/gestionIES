@@ -187,13 +187,25 @@ export function TablaPrestamos({
                         <TableRow key={item.id_item} className="bg-gray-50">
                           <TableCell></TableCell>
                           <TableCell className="pl-10">{item.libro}</TableCell>
+
+                          {/* Nueva columna ENTREGADO */}
+                          <TableCell className="text-center">
+                            {item.entregado ? (
+                              <Check className="text-green-600 w-4 h-4 mx-auto" />
+                            ) : (
+                              <X className="text-red-600 w-4 h-4 mx-auto" />
+                            )}
+                          </TableCell>
+
+                          {/* Columna DEVUELTO */}
                           <TableCell className="text-center">
                             {item.devuelto ? (
                               <Check className="text-green-600 w-4 h-4 mx-auto" />
                             ) : (
                               <X className="text-red-600 w-4 h-4 mx-auto" />
                             )}
-                          </TableCell>{" "}
+                          </TableCell>
+
                           <TableCell></TableCell>
                         </TableRow>
                       ))}

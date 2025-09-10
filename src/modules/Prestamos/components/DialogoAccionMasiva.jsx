@@ -322,9 +322,14 @@ export function DialogoAccionMasiva({ open, onClose, onSuccess, tipo }) {
       }
 
       // Toast y cierre de diálogo al finalizar
-      toast.success("Libros actualizados correctamente");
-      onSuccess?.(); // Para que el padre recargue datos si es necesario
-      onClose?.();
+      //toast.success("Libros actualizados correctamente");
+      if (data.actualizados == 0) {
+        toast.error(`Se actualizaron ${data.actualizados} préstamos.`);
+      } else {
+        toast.success(`Se actualizaron ${data.actualizados} préstamos.`);
+        onSuccess?.(); // Para que el padre recargue datos si es necesario
+        onClose?.();
+      }
     } catch (err) {
       toast.error("Error al realizar la acción masiva");
       console.error(err);
