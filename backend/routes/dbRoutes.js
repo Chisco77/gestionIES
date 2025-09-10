@@ -27,8 +27,9 @@ router.put("/libros/:id", updateLibro);
 router.delete("/libros/:id", deleteLibro);
 
 const {
- // getPrestamosEnriquecidos,
-  insertarPrestamosMasivo,
+  asignarLibrosMasivo,
+  accionDocCompromisoMasivo,
+  accionLibrosMasivo,
   getPrestamosAgrupados,
   devolverPrestamos,
   prestarPrestamos,
@@ -55,10 +56,11 @@ router.put("/planos/estancias/:planta/:id", updateEstancia); // :id = codigo
 router.delete("/planos/estancias/:planta/:id", deleteEstancia); // :id = codigo
 
 router.get("/prestamos/agrupados", getPrestamosAgrupados);
-//router.get("/prestamos", getPrestamosEnriquecidos);
 router.post("/prestamos/devolver", devolverPrestamos);
 router.post("/prestamos/prestar", prestarPrestamos);
-router.post ("/prestamos/insertarMasivo", insertarPrestamosMasivo);
+router.post ("/prestamos/asignarLibrosMasivo", asignarLibrosMasivo);
+router.post("/prestamos/accionDocCompromisoMasivo", accionDocCompromisoMasivo);
+router.post("/prestamos/accionLibrosMasivo", accionLibrosMasivo);
 router.post("/prestamos/prestarUsuario", prestarUsuario);
 router.post ("/prestamos/eliminarUnAlumno", eliminarPrestamosAlumno);
 

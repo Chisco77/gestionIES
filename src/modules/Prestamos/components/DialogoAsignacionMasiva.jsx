@@ -29,7 +29,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   const [descartes, setDescartes] = useState([]);
   const [mostrarInforme, setMostrarInforme] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
-  
+
   // Estados iniciales en la carga del formulario
   useEffect(() => {
     if (open) {
@@ -55,7 +55,9 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   }, []);
 
   useEffect(() => {
-    fetch(`${API_URL}/ldap/grupos?groupType=school_class`, { credentials: "include" })
+    fetch(`${API_URL}/ldap/grupos?groupType=school_class`, {
+      credentials: "include",
+    })
       .then((res) => res.json())
       .then((data) => setGrupos(data.sort((a, b) => a.cn.localeCompare(b.cn))))
       .catch(() => toast.error("Error al obtener grupos"));
@@ -142,6 +144,8 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
       agrupados[item.alumno].push(item.libro);
     });
 
+    console.log("Descarges: ", descartes);
+
     // Guardamos las posiciones donde debemos poner el pie de página luego
     const paginas = [];
 
@@ -193,10 +197,10 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   };
 
   const handleAsignar = async () => {
-    console.log ("Alumnos: ", alumnos);
-    console.log ("Libros: ", libros);
+    console.log("Alumnos: ", alumnos);
+    console.log("Libros: ", libros);
     try {
-      const res = await fetch(`${API_URL}/db/prestamos/insertarMasivo`, {
+      const res = await fetch(`${API_URL}/db/prestamos/asignarLibrosMasivo`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -210,7 +214,8 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
       if (!res.ok) throw new Error(json.error || "Falló la asignación");
 
-      toast.success(`Se insertaron ${json.insertados} préstamos.`);
+      //toast.success(`Se insertaron ${json.insertados} préstamos.`);
+      toast.success(`Se insertaron ${json.insertados.length} préstamos.`);
 
       if (json.descartados?.length > 0) {
         const mapaAlumnos = Object.fromEntries(
@@ -220,11 +225,20 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
           libros.map((l) => [l.id, l.libro])
         );
 
-        const enriquecidos = json.descartados.map(({ uidalumno, idlibro }) => ({
+        /*const enriquecidos = json.descartados.map(({ uidalumno, idlibro }) => ({
           alumno: mapaAlumnos[uidalumno] || uidalumno,
           uid: uidalumno,
           libro: mapaLibros[idlibro] || `ID ${idlibro}`,
-        }));
+        }));*/
+        const enriquecidos = json.descartados.map((d) => {
+          return {
+            alumno: mapaAlumnos[d.uidalumno] || d.uidalumno,
+            uid: d.uidalumno,
+            libro: d.idlibro
+              ? mapaLibros[d.idlibro] || `ID ${d.idlibro}`
+              : d.motivo, // 👈 fallback al motivo
+          };
+        });
 
         setDescartes(enriquecidos);
         setMostrarInforme(true);
