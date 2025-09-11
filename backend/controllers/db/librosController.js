@@ -78,7 +78,7 @@ exports.deleteLibro = async (req, res) => {
   try {
     // 1. Comprobar si el libro tiene préstamos activos
     const prestamosActivos = await db.query(
-      "SELECT COUNT(*) FROM prestamos WHERE idlibro = $1",
+      "SELECT COUNT(*) FROM prestamos WHERE id = $1",
       [id]
     );
 

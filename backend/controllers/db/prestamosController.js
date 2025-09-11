@@ -129,7 +129,7 @@ async function devolverPrestamos(req, res) {
   }
 }
 
-// Marca deuvelto a false de prestamos
+// Marca deuvelto a false y entregado a true de prestamos
 async function prestarPrestamos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -347,7 +347,8 @@ async function accionLibrosMasivo(req, res) {
 }
 
 /*
-    Funcion para asignar libros a un usuario.
+    Funcion para asignar libros a un usuario. Si el usuario tiene item en tabla prestamos con doc_compromiso = 0, los libros se asignarán a este item.
+    Si no, se creará un nuevo item en prestamos.
 */
 async function asignarUsuario(req, res) {
   try {
@@ -373,17 +374,21 @@ async function asignarUsuario(req, res) {
     const descartados = [];
     const insertados = [];
 
-    // 1. Buscar si ya existe un préstamo para este usuario
+    // 1. Buscar si ya existe un préstamo para este usuario.
+    // Mientras no se haya entregado el documento de compromiso, puedo asignarle libros nuevos.
+    // antes: WHERE uid = $1 and iniciocurso = false and doc_compromiso = 0
     const prestamoExistente = await pool.query(
       `SELECT id, doc_compromiso 
        FROM prestamos 
-       WHERE uid = $1 and iniciocurso = false and doc_compromiso = 0`,
+       WHERE uid = $1 and doc_compromiso = 0`,
       [uid]
     );
 
     let idprestamo;
-
+    console.log("Prestamo existente: ", prestamoExistente);
+    console.log ("Uid: ", uid);
     if (prestamoExistente.rowCount === 0) {
+      console.log ("No existe");
       // No existe → crear uno nuevo
       const nuevoPrestamo = await pool.query(
         `INSERT INTO prestamos (uid, esalumno, doc_compromiso, fechaentregadoc, fecharecepciondoc)
@@ -393,6 +398,7 @@ async function asignarUsuario(req, res) {
       );
       idprestamo = nuevoPrestamo.rows[0].id;
     } else {
+      console.log ("Ya existe el prsetamo");
       const { id, doc_compromiso } = prestamoExistente.rows[0];
       idprestamo = id;
 
@@ -404,7 +410,8 @@ async function asignarUsuario(req, res) {
         });
       }
     }
-
+    console.log ("Recorro libros");
+    console.log ("Libros: ", libros);
     // 2. Recorrer libros y añadirlos en prestamos_items
     for (const idlibro of libros) {
       // Comprobar si ya hay un préstamo activo (no devuelto) de ese libro para este usuario
@@ -412,7 +419,7 @@ async function asignarUsuario(req, res) {
         `SELECT 1
          FROM prestamos_items pi
          INNER JOIN prestamos p ON p.id = pi.idprestamo
-         WHERE p.uid = $1 AND pi.idlibro = $2 AND pi.devuelto = false`,
+         WHERE p.uid = $1 AND pi.idlibro = $2 AND pi.entregado = true`,
         [uid, idlibro]
       );
 
@@ -420,10 +427,10 @@ async function asignarUsuario(req, res) {
         descartados.push({ uid, idlibro });
       } else {
         const insertado = await pool.query(
-          `INSERT INTO prestamos_items (idprestamo, idlibro, fechaentrega, fechadevolucion, devuelto)
-           VALUES ($1, $2, $3, NULL, false)
+          `INSERT INTO prestamos_items (idprestamo, idlibro, fechaentrega, fechadevolucion, entregado, devuelto)
+           VALUES ($1, $2, NULL, NULL, false, false)
            RETURNING id, idlibro`,
-          [idprestamo, idlibro, fechaentrega]
+          [idprestamo, idlibro]
         );
         insertados.push(insertado.rows[0]);
       }
@@ -442,6 +449,7 @@ async function asignarUsuario(req, res) {
 }
 
 async function eliminarPrestamosAlumno(req, res) {
+  console.log("llega a liminar alumno");
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) {
@@ -465,6 +473,66 @@ async function eliminarPrestamosAlumno(req, res) {
   }
 }
 
+// Actualizar campos de un item de préstamo (fechaentrega, fechadevolucion, devuelto, entregado...)
+async function actualizarPrestamoItem(req, res) {
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession) {
+      return res.status(401).json({ error: "No autenticado" });
+    }
+
+    const { id_item, fechaentrega, fechadevolucion, devuelto, entregado } =
+      req.body;
+
+    if (!id_item) {
+      return res.status(400).json({ error: "Falta id_item" });
+    }
+
+    // Construimos dinámicamente los campos a actualizar
+    const updates = [];
+    const values = [id_item];
+    let idx = 2;
+
+    if (fechaentrega !== undefined) {
+      updates.push(`fechaentrega = $${idx++}`);
+      values.push(fechaentrega);
+    }
+    if (fechadevolucion !== undefined) {
+      updates.push(`fechadevolucion = $${idx++}`);
+      values.push(fechadevolucion);
+    }
+    if (devuelto !== undefined) {
+      updates.push(`devuelto = $${idx++}`);
+      values.push(devuelto);
+    }
+    if (entregado !== undefined) {
+      updates.push(`entregado = $${idx++}`);
+      values.push(entregado);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: "No hay campos para actualizar" });
+    }
+
+    const query = `
+      UPDATE prestamos_items
+      SET ${updates.join(", ")}
+      WHERE id = $1
+      RETURNING *
+    `;
+
+    const { rows } = await pool.query(query, values);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Préstamo no encontrado" });
+    }
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("❌ Error al actualizar préstamo:", error.message);
+    res.status(500).json({ error: "Error al actualizar préstamo" });
+  }
+}
+
 module.exports = {
   getPrestamosAgrupados,
   asignarLibrosMasivo,
@@ -474,4 +542,5 @@ module.exports = {
   prestarPrestamos,
   asignarUsuario,
   eliminarPrestamosAlumno,
+  actualizarPrestamoItem,
 };
