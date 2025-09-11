@@ -1,3 +1,4 @@
+// prueba
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -855,6 +856,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                       <TooltipContent>Prestar seleccionado(s)</TooltipContent>
                     </Tooltip>
                     <Tooltip>
+
                       <TooltipTrigger asChild>
                         <Button
                           variant="ghost"
