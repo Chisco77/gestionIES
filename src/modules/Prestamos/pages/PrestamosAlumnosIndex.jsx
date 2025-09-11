@@ -57,8 +57,8 @@ export function PrestamosAlumnosIndex() {
       uid: p.uid,
       iniciocurso: p.iniciocurso,
     })) || [];
-console.log ("uids con prestamo: ", uidsConPrestamo);
-  // Sincroniza los filtrados con los datos actualizados
+
+    // Sincroniza los filtrados con los datos actualizados
   useEffect(() => {
     setPrestamosFiltrados(prestamos || []);
   }, [prestamos]);

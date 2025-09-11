@@ -144,7 +144,6 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
       agrupados[item.alumno].push(item.libro);
     });
 
-    console.log("Descarges: ", descartes);
 
     // Guardamos las posiciones donde debemos poner el pie de página luego
     const paginas = [];
@@ -197,8 +196,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   };
 
   const handleAsignar = async () => {
-    console.log("Alumnos: ", alumnos);
-    console.log("Libros: ", libros);
+
     try {
       const res = await fetch(`${API_URL}/db/prestamos/asignarLibrosMasivo`, {
         method: "POST",

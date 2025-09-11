@@ -58,7 +58,6 @@ async function prestarLlave(req, res) {
     if (!ldapSession) return res.status(401).json({ error: "No autenticado" });
 
     const { uid, idestancia, unidades = 1 } = req.body;
-    console.log (req.body);
     if (!uid || !idestancia)
       return res.status(400).json({ error: "Datos incompletos" });
 
@@ -89,14 +88,6 @@ async function prestarLlave(req, res) {
         .json({ error: "No hay suficientes llaves disponibles" });
 
     const fechaentrega = new Date();
-    console.log("➡️ Insertando préstamo:", {
-      query: `
-    INSERT INTO prestamos_llaves (idestancia, uid, unidades, fechaentrega)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *
-  `,
-      values: [idestancia, uid, unidades, fechaentrega],
-    });
 
     const {
       rows: [nuevoPrestamo],

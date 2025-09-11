@@ -244,9 +244,6 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       .map((p) => ({ ...p, profesor: profesor.nombre }))
   );
 
-  console.log("👉 Todos los préstamos planos:", prestamosPlanos);
-  console.log("👉 Préstamos activos:", prestamosActivos);
-
   return (
     <div style={{ padding: 12 }}>
       {/* Panel lateral y plano */}

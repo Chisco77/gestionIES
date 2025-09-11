@@ -152,7 +152,7 @@ export function DialogoAsignarLibros({
   };
 
   // Enviar préstamo
-  const handlePrestar = async () => {
+  const handleAsignar = async () => {
     if (!alumnoSeleccionado) {
       toast.error("Selecciona un alumno");
       return;
@@ -176,7 +176,7 @@ export function DialogoAsignarLibros({
 
       if (!res.ok) throw new Error("Error al prestar libros");
 
-      toast.success("Libros prestados correctamente");
+      toast.success("Libros asignados correctamente");
       onSuccess?.();
       onClose();
     } catch (error) {
@@ -184,7 +184,7 @@ export function DialogoAsignarLibros({
       console.error(error);
     }
   };
-  console.log("Libros disponibles:", libros);
+
   return (
     <Dialog open={open} onOpenChange={onClose} modal={false}>
       <DialogContent
@@ -192,7 +192,7 @@ export function DialogoAsignarLibros({
         className="max-w-3xl"
       >
         <DialogHeader>
-          <DialogTitle>Prestar libros a un alumno</DialogTitle>
+          <DialogTitle>Asignar libros a un usuario</DialogTitle>
         </DialogHeader>
 
         {/* Paso 1: Grupo y alumno */}
@@ -305,7 +305,7 @@ export function DialogoAsignarLibros({
               </Button>
               <Button
                 disabled={librosSeleccionados.length === 0}
-                onClick={handlePrestar}
+                onClick={handleAsignar}
               >
                 Prestar libros
               </Button>

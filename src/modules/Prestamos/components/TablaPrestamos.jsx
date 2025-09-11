@@ -81,7 +81,7 @@ export function TablaPrestamos({
   const cursosUnicos = Array.from(
     new Set(data.map((p) => p.curso).filter(Boolean))
   ).sort();
-  console.log(data);
+  
   return (
     <div>
       {/* Filtros */}

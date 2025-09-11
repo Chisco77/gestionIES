@@ -105,7 +105,7 @@ async function devolverPrestamos(req, res) {
     }
 
     const { ids } = req.body; // ids = array de ids de préstamos a devolver
-    console.log(req.body);
+
     if (!Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ error: "No se especificaron préstamos" });
     }
@@ -223,8 +223,6 @@ async function asignarLibrosMasivo(req, res) {
         insertados.push({ uidalumno: uid, idlibros: libros });
       }
     }
-    console.log("Insertados: ", insertados);
-    console.log("Descartados: ", descartados);
 
     res.json({ success: true, insertados, descartados });
   } catch (error) {
@@ -359,8 +357,6 @@ async function asignarUsuario(req, res) {
 
     const { uid, libros, esAlumno } = req.body;
 
-    console.log("uid:", uid, "libros:", libros);
-
     if (
       !uid ||
       !Array.isArray(libros) ||
@@ -370,7 +366,6 @@ async function asignarUsuario(req, res) {
       return res.status(400).json({ error: "Datos incompletos o inválidos" });
     }
 
-    const fechaentrega = new Date();
     const descartados = [];
     const insertados = [];
 
@@ -385,11 +380,9 @@ async function asignarUsuario(req, res) {
     );
 
     let idprestamo;
-    console.log("Prestamo existente: ", prestamoExistente);
-    console.log ("Uid: ", uid);
+
     if (prestamoExistente.rowCount === 0) {
-      console.log ("No existe");
-      // No existe → crear uno nuevo
+      // No existe -> crear uno nuevo
       const nuevoPrestamo = await pool.query(
         `INSERT INTO prestamos (uid, esalumno, doc_compromiso, fechaentregadoc, fecharecepciondoc)
          VALUES ($1, $2, 0, NULL, NULL)
@@ -398,7 +391,6 @@ async function asignarUsuario(req, res) {
       );
       idprestamo = nuevoPrestamo.rows[0].id;
     } else {
-      console.log ("Ya existe el prsetamo");
       const { id, doc_compromiso } = prestamoExistente.rows[0];
       idprestamo = id;
 
@@ -410,8 +402,7 @@ async function asignarUsuario(req, res) {
         });
       }
     }
-    console.log ("Recorro libros");
-    console.log ("Libros: ", libros);
+
     // 2. Recorrer libros y añadirlos en prestamos_items
     for (const idlibro of libros) {
       // Comprobar si ya hay un préstamo activo (no devuelto) de ese libro para este usuario
@@ -448,8 +439,8 @@ async function asignarUsuario(req, res) {
   }
 }
 
+// Elimina items de prestamo.
 async function eliminarPrestamosAlumno(req, res) {
-  console.log("llega a liminar alumno");
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) {
