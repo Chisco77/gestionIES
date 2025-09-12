@@ -81,7 +81,7 @@ export function TablaPrestamos({
   const cursosUnicos = Array.from(
     new Set(data.map((p) => p.curso).filter(Boolean))
   ).sort();
-  
+
   return (
     <div>
       {/* Filtros */}
@@ -182,33 +182,49 @@ export function TablaPrestamos({
                     </TableRow>
 
                     {/* Filas expandidas */}
-                    {isExpanded &&
-                      usuario.prestamos.map((item) => (
-                        <TableRow key={item.id_item} className="bg-gray-50">
+                    {isExpanded && (
+                      <Fragment>
+                        <TableRow className="bg-gray-100 font-semibold">
                           <TableCell></TableCell>
-                          <TableCell className="pl-10">{item.libro}</TableCell>
-
-                          {/* Nueva columna ENTREGADO */}
+                          <TableCell className="pl-10">Libro</TableCell>
                           <TableCell className="text-center">
-                            {item.entregado ? (
-                              <Check className="text-green-600 w-4 h-4 mx-auto" />
-                            ) : (
-                              <X className="text-red-600 w-4 h-4 mx-auto" />
-                            )}
+                            Entregado
                           </TableCell>
-
-                          {/* Columna DEVUELTO */}
                           <TableCell className="text-center">
-                            {item.devuelto ? (
-                              <Check className="text-green-600 w-4 h-4 mx-auto" />
-                            ) : (
-                              <X className="text-red-600 w-4 h-4 mx-auto" />
-                            )}
+                            Devuelto
                           </TableCell>
-
                           <TableCell></TableCell>
                         </TableRow>
-                      ))}
+                        {usuario.prestamos.map((item) => (
+                          <TableRow key={item.id_item} className="bg-gray-50">
+                            <TableCell></TableCell>
+                            <TableCell className="pl-10">
+                              {item.libro}
+                            </TableCell>
+
+                            {/* Nueva columna ENTREGADO */}
+                            <TableCell className="text-center">
+                              {item.entregado ? (
+                                <Check className="text-green-600 w-4 h-4 mx-auto" />
+                              ) : (
+                                <X className="text-red-600 w-4 h-4 mx-auto" />
+                              )}
+                            </TableCell>
+
+                            {/* Columna DEVUELTO */}
+                            <TableCell className="text-center">
+                              {item.devuelto ? (
+                                <Check className="text-green-600 w-4 h-4 mx-auto" />
+                              ) : (
+                                <X className="text-red-600 w-4 h-4 mx-auto" />
+                              )}
+                            </TableCell>
+
+                            <TableCell></TableCell>
+                          </TableRow>
+                        ))}
+                      </Fragment>
+                    )}
                   </Fragment>
                 );
               })

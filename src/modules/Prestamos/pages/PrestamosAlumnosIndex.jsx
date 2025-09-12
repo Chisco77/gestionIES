@@ -58,6 +58,8 @@ export function PrestamosAlumnosIndex() {
       iniciocurso: p.iniciocurso,
     })) || [];
 
+
+    
     // Sincroniza los filtrados con los datos actualizados
   useEffect(() => {
     setPrestamosFiltrados(prestamos || []);

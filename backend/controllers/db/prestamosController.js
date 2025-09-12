@@ -31,7 +31,7 @@ async function getPrestamosAgrupados(req, res) {
        FROM prestamos p
        JOIN prestamos_items pi ON p.id = pi.idprestamo
        LEFT JOIN libros l ON l.id = pi.idlibro
-       WHERE p.esalumno = $1`,
+       WHERE p.esalumno = $1 `,
       [esAlumnoBool]
     );
 

@@ -65,13 +65,15 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
   useEffect(() => {
     if (cursoSeleccionado) {
-      setLibros([]); // ← limpia inmediatamente la lista
-      setLibrosSeleccionados([]); // ← limpia los checks
+      setLibros([]);
+      setLibrosSeleccionados([]);
       fetch(`${API_URL}/db/libros?curso=${cursoSeleccionado}`, {
         credentials: "include",
       })
         .then((res) => res.json())
-        .then(setLibros)
+        .then((data) =>
+          setLibros(data.sort((a, b) => a.libro.localeCompare(b.libro)))
+        )
         .catch(() => toast.error("Error al obtener libros"));
     } else {
       setLibros([]);
@@ -85,7 +87,15 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
         credentials: "include",
       })
         .then((res) => res.json())
-        .then(setAlumnos)
+        .then((data) =>
+          setAlumnos(
+            data.sort((a, b) => {
+              const apellidos = a.sn.localeCompare(b.sn);
+              if (apellidos !== 0) return apellidos;
+              return a.givenName.localeCompare(b.givenName);
+            })
+          )
+        )
         .catch(() => toast.error("Error al obtener alumnos"));
     } else {
       setAlumnos([]);
@@ -144,7 +154,6 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
       agrupados[item.alumno].push(item.libro);
     });
 
-
     // Guardamos las posiciones donde debemos poner el pie de página luego
     const paginas = [];
 
@@ -196,7 +205,6 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
   };
 
   const handleAsignar = async () => {
-
     try {
       const res = await fetch(`${API_URL}/db/prestamos/asignarLibrosMasivo`, {
         method: "POST",
@@ -404,7 +412,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
                       No hay alumnos
                     </p>
                   )}
-                  {alumnos.map((a) => (
+                  {/*alumnos.map((a) => (
                     <div
                       key={a.uid}
                       className="flex items-center space-x-2 py-1"
@@ -427,7 +435,34 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
                         {a.sn}, {a.givenName} ({a.uid})
                       </label>
                     </div>
-                  ))}
+                  ))*/}
+                  {alumnos.map((a, index) => {
+                    const alias = `Alumno ${index + 1}`; // Alias anónimo
+                    return (
+                      <div
+                        key={a.uid}
+                        className="flex items-center space-x-2 py-1"
+                      >
+                        <Checkbox
+                          id={`alumno-${a.uid}`}
+                          checked={alumnosSeleccionados.includes(a.uid)}
+                          onCheckedChange={(checked) =>
+                            setAlumnosSeleccionados((prev) =>
+                              checked
+                                ? [...prev, a.uid]
+                                : prev.filter((uid) => uid !== a.uid)
+                            )
+                          }
+                        />
+                        <label
+                          htmlFor={`alumno-${a.uid}`}
+                          className="text-sm select-none cursor-pointer"
+                        >
+                          {alias}
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}
