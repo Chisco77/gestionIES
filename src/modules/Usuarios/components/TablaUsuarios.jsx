@@ -26,6 +26,9 @@ import {
   getFilteredRowModel,
 } from "@tanstack/react-table";
 
+import { ofuscarTexto } from "@/utils/ofuscar";
+
+
 export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
   const [sorting, setSorting] = useState([{ id: "grupo", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -60,6 +63,18 @@ export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
 
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
+
+  const renderCell = (cell) => {
+    const colId = cell.column.id;
+    const value = cell.getValue();
+
+    if (colId === "apellidos") return ofuscarTexto(value, { tipo: "nombre" });
+    if (colId === "uid") return ofuscarTexto(value, { tipo: "usuario" });
+    if (colId === "givenName") return ofuscarTexto(value, { tipo: "nombre" });
+    //if (colId === "grupo") return ofuscarTexto(value, { tipo: "curso" });
+
+    return flexRender(cell.column.columnDef.cell, cell.getContext());
+  };
 
   return (
     <div className="space-y-4">
@@ -144,10 +159,11 @@ export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
+                      {/* {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
-                      )}
+                      )} */}
+                      {renderCell(cell)}
                     </TableCell>
                   ))}
                 </TableRow>

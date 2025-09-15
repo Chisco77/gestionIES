@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { usePrestamos } from "@/hooks/usePrestamos";
 
+
 export function PrestamosAlumnosIndex() {
   const [prestamosFiltrados, setPrestamosFiltrados] = useState([]);
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);

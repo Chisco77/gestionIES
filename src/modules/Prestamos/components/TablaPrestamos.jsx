@@ -26,6 +26,9 @@ import {
   Check,
   X,
 } from "lucide-react";
+import { ofuscarTexto } from "@/utils/ofuscar";
+
+
 
 export function TablaPrestamos({
   columns,
@@ -165,8 +168,9 @@ export function TablaPrestamos({
                         </Button>
                       </TableCell>
 
-                      {/* 2ª columna: Alumno */}
-                      <TableCell>{usuario.nombreUsuario}</TableCell>
+                      {/* 2ª columna: Alumno
+                      <TableCell>{usuario.nombreUsuario}</TableCell>*/}
+                      <TableCell>{ofuscarTexto(usuario.nombreUsuario, { tipo: "nombre" })}</TableCell>
 
                       {/* 3ª columna: Doc compromiso */}
                       <TableCell>
@@ -294,3 +298,5 @@ export function TablaPrestamos({
     </div>
   );
 }
+
+
