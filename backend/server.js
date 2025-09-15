@@ -19,7 +19,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
 const path = require("path");
 
 
-// 🔐 Pool de conexión a PostgreSQL (para sesiones y otras operaciones si lo deseas)
+// Pool de conexión a PostgreSQL (para sesiones y otras operaciones si lo deseas)
 const pgPool = new Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
@@ -28,10 +28,10 @@ const pgPool = new Pool({
   database: process.env.DB_NAME,
 });
 
-// 🔧 Confía en proxy (por ejemplo, NGINX en producción)
+//  Confía en proxy (NGINX en producción)
 app.set("trust proxy", 1);
 
-// 🛡️ CORS
+// CORS
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -46,10 +46,10 @@ app.use(
   })
 );
 
-// 🛠️ Body parser
+// Body parser
 app.use(express.json());
 
-// 🧠 Sesiones con almacenamiento en PostgreSQL
+// Sesiones con almacenamiento en PostgreSQL
 app.use(
   session({
     store: new pgSession({
@@ -69,14 +69,14 @@ app.use(
   })
 );
 
-// 🔁 Rutas
+// Rutas
 app.use("/api", authRoutes);
 app.use("/api/ldap", ldapRoutes);
 app.use("/api/db", dbRoutes);
 // sirve rutas de fotos de alumnos para que puedan obtenerse por GET
 app.use('/uploads/alumnos', express.static(path.join(__dirname, 'uploads/alumnos')));
 
-// 🚀 Servidor
+// Servidor
 const PORT = process.env.PORT || 5000;
 
 if (!isProduction) {

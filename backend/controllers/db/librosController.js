@@ -1,3 +1,34 @@
+/**
+ * ================================================================
+ *  Controller: librosController.js
+ *  Proyecto: gestionIES
+ * ================================================================
+ *
+ *  Descripción:
+ *    Controlador para la gestión de libros.
+ *    Proporciona operaciones CRUD sobre la tabla "libros"
+ *    de la base de datos PostgreSQL, así como consultas adicionales
+ *    para obtener libros disponibles según usuario y curso.
+ *
+ *  Funcionalidades:
+ *    - Obtener todos los libros, con filtro opcional por curso (getLibros)
+ *    - Insertar un nuevo libro (insertLibro)
+ *    - Actualizar un libro existente (updateLibro)
+ *    - Eliminar un libro con validación de préstamos activos (deleteLibro)
+ *    - Obtener libros disponibles para asignar a un usuario (getLibrosDisponibles)
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
+ * ================================================================
+ */
+
+
+
 const db = require("../../db");
 
 exports.getLibros = async (req, res) => {

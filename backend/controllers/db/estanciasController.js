@@ -1,5 +1,31 @@
-// controllers/db/estanciasController.js
-const db = require("../../db"); // Debe exponer db.query(sql, params)
+/**
+ * ================================================================
+ *  Controller: estanciasController.js
+ *  Proyecto: gestionIES
+ * ================================================================
+ *
+ *  Descripción:
+ *    Controlador para la gestión de estancias.
+ *    Proporciona operaciones CRUD sobre la tabla "estancias"
+ *    de la base de datos PostgreSQL, utilizadas en los planos del centro.
+ *
+ *  Funcionalidades:
+ *    - Obtener estancias filtradas por planta (getEstanciasByPlanta)
+ *    - Insertar estancia (insertEstancia)
+ *    - Actualizar parcialmente una estancia (updateEstancia)
+ *    - Eliminar una estancia (deleteEstancia)
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
+ * ================================================================
+ */
+
+const db = require("../../db"); 
 
 function isValidCoordenadas(coords) {
   return (
@@ -42,7 +68,7 @@ ORDER BY descripcion ASC`,
 
 // POST /db/planos/estancias (upsert por (planta,codigo))
 // body: { planta, id (=>codigo), nombre(=>descripcion), keysTotales(=>totalllaves), puntos(=>coordenadas_json) }
-async function upsertEstancia(req, res) {
+async function insertEstancia(req, res) {
   const {
     planta = "baja",
     codigo,
@@ -51,12 +77,11 @@ async function upsertEstancia(req, res) {
     coordenadas,
   } = req.body || {};
   if (!codigo || !descripcion || !isValidCoordenadas(coordenadas)) {
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: "Datos inválidos (codigo, descripcion, coordenadas>=3 obligatorios)",
-      });
+    return res.status(400).json({
+      ok: false,
+      error:
+        "Datos inválidos (codigo, descripcion, coordenadas>=3 obligatorios)",
+    });
   }
   try {
     const { rows } = await db.query(
@@ -84,7 +109,7 @@ RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json`,
       },
     });
   } catch (err) {
-    console.error("[upsertEstancia] Error:", err);
+    console.error("[insertEstancia] Error:", err);
     res.status(500).json({ ok: false, error: "Error guardando estancia" });
   }
 }
@@ -92,7 +117,7 @@ RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json`,
 // body opcional: { nombre?, keysTotales?, puntos? }
 async function updateEstancia(req, res) {
   const planta = (req.params.planta || "baja").toLowerCase();
-  const id = req.params.id; 
+  const id = req.params.id;
   const { nombre, totalllaves, coordenadas } = req.body || {};
 
   if (typeof coordenadas !== "undefined" && !isValidCoordenadas(coordenadas)) {
@@ -173,7 +198,7 @@ async function deleteEstancia(req, res) {
 
 module.exports = {
   getEstanciasByPlanta,
-  upsertEstancia,
+  insertEstancia,
   updateEstancia,
   deleteEstancia,
 };

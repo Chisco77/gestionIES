@@ -1,3 +1,37 @@
+/**
+ * ================================================================
+ *  Controller: prestamosController.js
+ *  Proyecto: gestionIES
+ * ================================================================
+ *
+ *  Descripción:
+ *    Controlador para la gestión de préstamos de libros.
+ *    Integra operaciones sobre las tablas "prestamos" y
+ *    "prestamos_items" de PostgreSQL, combinadas con datos
+ *    de usuarios y grupos obtenidos desde LDAP.
+ *
+ *  Funcionalidades:
+ *    - Obtener préstamos agrupados por usuario y curso/departamento (getPrestamosAgrupados)
+ *    - Marcar préstamos como devueltos (devolverPrestamos)
+ *    - Marcar préstamos como prestados (prestarPrestamos)
+ *    - Asignar libros de forma masiva a alumnos en inicio de curso (asignarLibrosMasivo)
+ *    - Actualizar estado del documento de compromiso de forma masiva (accionDocCompromisoMasivo)
+ *    - Prestar o devolver todos los libros de forma masiva (accionLibrosMasivo)
+ *    - Asignar libros a un usuario individual (asignarUsuario)
+ *    - Eliminar items de préstamo de un alumno (eliminarPrestamosAlumno)
+ *    - Actualizar campos de un item de préstamo (actualizarPrestamoItem)
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
+ * ================================================================
+ */
+
+
 const pool = require("../../db");
 const {
   obtenerGruposDesdeLdap,

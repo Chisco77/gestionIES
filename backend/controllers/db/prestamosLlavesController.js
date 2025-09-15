@@ -1,3 +1,32 @@
+/**
+ * ================================================================
+ *  Controller: prestamosLlavesController.js
+ *  Proyecto: gestionIES
+ * ================================================================
+ *
+ *  Descripción:
+ *    Controlador para la gestión de préstamos de llaves.
+ *    Maneja operaciones sobre la tabla "prestamos_llaves"
+ *    de PostgreSQL, vinculando estancias con usuarios
+ *    obtenidos desde LDAP.
+ *
+ *  Funcionalidades:
+ *    - Obtener préstamos de llaves agrupados por profesor (getPrestamosLlavesAgrupados)
+ *    - Registrar un nuevo préstamo de llave para un profesor (prestarLlave)
+ *    - Devolver llaves y marcar fecha de devolución (devolverLlave)
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
+ * ================================================================
+ */
+
+
+
 const pool = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
 

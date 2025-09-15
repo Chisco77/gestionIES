@@ -1,3 +1,31 @@
+/**
+ * ================================================================
+ *  Controller: cursosController.js
+ *  Proyecto: gestionIES
+ * ================================================================
+ *
+ *  Descripción:
+ *    Controlador para la gestión de cursos.
+ *    Proporciona operaciones CRUD sobre la tabla "cursos"
+ *    de la base de datos PostgreSQL.
+ *
+ *  Funcionalidades:
+ *    - Obtener todos los cursos (getCursos)
+ *    - Insertar un nuevo curso (insertCurso)
+ *    - Actualizar un curso existente (updateCurso)
+ *    - Eliminar un curso (deleteCurso) con validación de libros asociados
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
+ * ================================================================
+ */
+
+
 const db = require("../../db");
 
 exports.getCursos = async (req, res) => {

@@ -1,7 +1,36 @@
+/**
+ * ================================================================
+ *  Controller: usuariosController.js
+ *  Proyecto: gestionIES
+ * ================================================================
+ *
+ *  Descripción:
+ *    Controlador para gestión de usuarios mediante LDAP.
+ *    Permite obtener información de usuarios, grupos y miembros de grupos.
+ *
+ *  Funcionalidades:
+ *    - obtenerGruposDesdeLdap: obtener grupos LDAP filtrando por groupType.
+ *    - obtenerGruposPeople: endpoint HTTP para obtener grupos LDAP.
+ *    - buscarPorUid: busca un usuario en LDAP dado su uid.
+ *    - getLdapUsuarios: obtiene todos los usuarios o filtrados por tipo (students/teachers).
+ *    - obtenerAlumnosPorGrupo: obtiene alumnos pertenecientes a un grupo específico.
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
+ * ================================================================
+ */
+
+
+
 const ldap = require("ldapjs");
 const LDAP_URL = process.env.LDAP_URL;
 
-// ✅ Función reutilizable para obtener grupos desde LDAP
+// obtener grupos desde LDAP
 async function obtenerGruposDesdeLdap(ldapSession, filtroGroupType = null) {
   return new Promise((resolve, reject) => {
     if (!ldapSession) {
@@ -69,7 +98,7 @@ async function obtenerGruposDesdeLdap(ldapSession, filtroGroupType = null) {
 
 exports.obtenerGruposDesdeLdap = obtenerGruposDesdeLdap;
 
-// ✅ Versión HTTP para uso en rutas
+// obtener grupos de ldap
 exports.obtenerGruposPeople = async (req, res) => {
   try {
     const ldapSession = req.session?.ldap;
@@ -85,7 +114,6 @@ exports.obtenerGruposPeople = async (req, res) => {
 
 exports.buscarPorUid = (ldapSession, uid, callback) => {
   const client = ldap.createClient({
-    //url: "ldap://172.16.218.2:389",
        url: LDAP_URL,
 
   });
@@ -137,7 +165,7 @@ exports.buscarPorUid = (ldapSession, uid, callback) => {
   });
 };
 
-// ✅ Función existente sin cambios
+// Obtener usuarios de LDAP (estudiantes, profesores o todos)
 exports.getLdapUsuarios = (req, res) => {
   const ldapSession = req.session.ldap;
   const tipo = req.query.tipo || "all";
@@ -149,7 +177,6 @@ exports.getLdapUsuarios = (req, res) => {
   }
 
   const client = ldap.createClient({
-    //url: "ldap://172.16.218.2:389",
        url: LDAP_URL,
 
   });
@@ -274,7 +301,6 @@ exports.obtenerAlumnosPorGrupo = (req, res) => {
     input.replace(/([\\\*\(\)\0])/g, "\\$1");
 
   const client = ldap.createClient({
-    //url: "ldap://172.16.218.2:389",
         url: LDAP_URL,
 
   });

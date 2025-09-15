@@ -1,3 +1,30 @@
+/**
+ * ================================================================
+ *  Controller: gruposController.js
+ *  Proyecto: gestionIES
+ * ================================================================
+ *
+ *  Descripción:
+ *    Controlador para la gestión de grupos en LDAP.
+ *    Permite obtener información de los grupos almacenados en 
+ *    el directorio y sus miembros asociados.
+ *
+ *  Funcionalidades:
+ *    - Obtener grupos filtrados por `groupType` (getLdapGrupos)
+ *    - Obtener los miembros (People) de un grupo dado su `gidNumber` (getMiembrosPorGidNumber)
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
+ * ================================================================
+ */
+
+
+
 const ldap = require("ldapjs");
 
 const BASE_DN = "dc=instituto,dc=extremadura,dc=es";
@@ -16,7 +43,6 @@ exports.getLdapGrupos = (req, res) => {
   }
 
   const client = ldap.createClient({
-    //url: "ldap://172.16.218.2:389",
     url: LDAP_URL,
   });
 
@@ -50,11 +76,6 @@ exports.getLdapGrupos = (req, res) => {
           attrs[attr.type] = attr.vals;
         });
 
-        /*if (attrs.cn && attrs.gidNumber) {
-          grupos.push({
-            cn: attrs.cn[0],
-          });
-        }*/
         if (
           attrs.cn &&
           attrs.gidNumber &&
@@ -95,7 +116,6 @@ exports.getMiembrosPorGidNumber = (req, res) => {
 
   const client = ldap.createClient({
     url: LDAP_URL,
-    //url: "ldap://172.16.218.2:389",
   });
 
   client.bind(ldapSession.dn, ldapSession.password, (err) => {
