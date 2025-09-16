@@ -1,7 +1,7 @@
 /**
  * Componente: DialogoAsignacionMasiva
- * 
- *  
+ *
+ *
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
  * Email: adminies.franciscodeorellana@educarex.es
@@ -9,16 +9,16 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Este componente muestra un diálogo para la asignación masiva de libros a alumnos de un grupo.
  * Permite seleccionar primero el curso y los libros disponibles, y luego seleccionar el grupo y los alumnos que recibirán los préstamos.
  * Al finalizar, se pueden asignar los préstamos y generar un informe PDF de los préstamos que no se pudieron insertar.
- * 
+ *
  * Props:
  *   - open: boolean → controla si el diálogo está abierto.
  *   - onClose: function → callback para cerrar el diálogo.
  *   - onSuccess: function → callback que se ejecuta cuando la asignación masiva se completa correctamente.
- * 
+ *
  * Estados internos principales:
  *   - cursos: array → lista de cursos obtenidos desde la API.
  *   - grupos: array → lista de grupos escolares obtenidos desde LDAP.
@@ -29,7 +29,7 @@
  *   - paso: number → controla la navegación entre pasos (1: curso/libros, 2: grupo/alumnos).
  *   - descartes: array → almacena préstamos que no se pudieron asignar.
  *   - mostrarInforme: boolean → controla la visualización del bloque de informe PDF.
- * 
+ *
  * Librerías/componentes usados:
  *   - React: useState, useEffect para estado y efectos.
  *   - Dialog/DialogContent/DialogHeader/DialogTitle/DialogFooter: componentes de diálogo UI.
@@ -37,7 +37,7 @@
  *   - toast (sonner): para notificaciones de error o éxito.
  *   - Check, X (lucide-react): iconos para selección/deselección masiva.
  *   - jsPDF: para generar informes PDF de préstamos omitidos.
- * 
+ *
  * Flujo de uso:
  *   1. Usuario abre el diálogo (open=true).
  *   2. Se cargan cursos y grupos.
@@ -48,16 +48,15 @@
  *       - Se procesan descartes y se almacena información para generar informe PDF si corresponde.
  *   6. Se muestra informe de asignaciones omitidas y opción de descargar PDF.
  *   7. Se ejecutan callbacks onSuccess y onClose según corresponda.
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
  * Notas:
- * 
+ *
  *  Este componente crea un registro en la tabla prestamos por cada alumno. Está pensado para ejecutarse al inicio de cada
- *  curso. Este registro se marca con el atributo iniciocurso a true. 
+ *  curso. Este registro se marca con el atributo iniciocurso a true.
  */
-
 
 import { useEffect, useState } from "react";
 import {
@@ -218,7 +217,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
     // Guardamos las posiciones donde debemos poner el pie de página luego
     const paginas = [];
 
-    // Función para dibujar pie de página 
+    // Función para dibujar pie de página
     function dibujarPiePagina(pageNum, totalPages) {
       const yPie = 285; // posición fija vertical para la línea y texto pie
       doc.setLineWidth(0.5);
@@ -291,14 +290,13 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
           libros.map((l) => [l.id, l.libro])
         );
 
-
         const enriquecidos = json.descartados.map((d) => {
           return {
             alumno: mapaAlumnos[d.uidalumno] || d.uidalumno,
             uid: d.uidalumno,
             libro: d.idlibro
               ? mapaLibros[d.idlibro] || `ID ${d.idlibro}`
-              : d.motivo, 
+              : d.motivo,
           };
         });
 
@@ -470,7 +468,6 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
                   )}
 
                   {alumnos.map((a, index) => {
-                    const alias = `Alumno ${index + 1}`; // Alias anónimo
                     return (
                       <div
                         key={a.uid}
@@ -491,7 +488,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
                           htmlFor={`alumno-${a.uid}`}
                           className="text-sm select-none cursor-pointer"
                         >
-                          {alias}
+                          {a.sn}, {a.givenName} ({a.uid}){" "}
                         </label>
                       </div>
                     );

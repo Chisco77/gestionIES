@@ -101,8 +101,6 @@ import {
   Check,
   X,
 } from "lucide-react";
-import { ofuscarTexto } from "@/utils/ofuscar";
-
 
 
 export function TablaPrestamos({
@@ -244,7 +242,7 @@ export function TablaPrestamos({
                       </TableCell>
 
                       {/* 2ª columna: Alumno*/}
-                      <TableCell>{ofuscarTexto(usuario.nombreUsuario, { tipo: "nombre" })}</TableCell>
+                      <TableCell>{usuario.nombreUsuario}</TableCell>
 
                       {/* 3ª columna: Doc compromiso */}
                       <TableCell>

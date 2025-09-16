@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Componente de tabla para visualizar usuarios (alumnos o profesores)
  * con filtrado, ordenación y paginación.
  *
@@ -30,10 +30,8 @@
  * - @tanstack/react-table para la lógica de la tabla
  * - Componentes UI: Table, Card, Input, Button, MultiSelect
  * - Iconos: lucide-react
- * - Utilidades: ofuscarTexto
  *
  */
-
 
 import {
   Table,
@@ -62,9 +60,6 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
 } from "@tanstack/react-table";
-
-import { ofuscarTexto } from "@/utils/ofuscar";
-
 
 export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
   const [sorting, setSorting] = useState([{ id: "grupo", desc: false }]);
@@ -104,11 +99,6 @@ export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
   const renderCell = (cell) => {
     const colId = cell.column.id;
     const value = cell.getValue();
-
-    if (colId === "apellidos") return ofuscarTexto(value, { tipo: "nombre" });
-    if (colId === "uid") return ofuscarTexto(value, { tipo: "usuario" });
-    if (colId === "givenName") return ofuscarTexto(value, { tipo: "nombre" });
-    //if (colId === "grupo") return ofuscarTexto(value, { tipo: "curso" });
 
     return flexRender(cell.column.columnDef.cell, cell.getContext());
   };

@@ -96,7 +96,7 @@ export function LoginForm({ className, ...props }) {
                 />
               </div>
               <Button type="submit" className="w-full">
-                Login
+                Acceder
               </Button>
             </div>
           </form>

@@ -60,7 +60,6 @@
  * - Se calculan llaves disponibles en tiempo real restando las prestadas del total.
  */
 
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -68,6 +67,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -214,12 +214,15 @@ export function DialogoGestionLlaves({
       >
         <DialogHeader>
           <DialogTitle>Gestión de llaves · {estancia.nombre}</DialogTitle>
+          <DialogDescription>
+            Ubicación llave: Número X. Armario Y.
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="prestar" className="mt-4">
           <TabsList>
-            <TabsTrigger value="prestar">Préstamos</TabsTrigger>
-            <TabsTrigger value="devolver">Devoluciones</TabsTrigger>
+            <TabsTrigger value="prestar">Entregar llave</TabsTrigger>
+            <TabsTrigger value="devolver">Pendientes devolver</TabsTrigger>
           </TabsList>
 
           {/* --- PRESTAR --- */}

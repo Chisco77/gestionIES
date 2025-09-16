@@ -1,6 +1,6 @@
 /**
  * Componente: DialogoAccionMasiva
- * 
+ *
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
  * Email: adminies.franciscodeorellana@educarex.es
@@ -8,15 +8,15 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
- * 
+ *
+ *
  * Este componente muestra un diálogo para ejecutar acciones masivas sobre alumnos de un grupo.
  * Las acciones pueden ser:
  *   - Entregar documento de compromiso
  *   - Recibir documento de compromiso
- *   - Entregar libros 
+ *   - Entregar libros
  *   - Devolver libros
- * 
+ *
  * Props:
  *   - open: boolean → controla si el diálogo está abierto.
  *   - onClose: function → callback para cerrar el diálogo.
@@ -26,20 +26,20 @@
  *       * "recibirDoc"
  *       * "entregarLibros"
  *       * "devolverLibros"
- * 
+ *
  * Estados internos:
  *   - grupos: array → lista de grupos obtenidos desde LDAP.
  *   - alumnos: array → lista de alumnos del grupo seleccionado.
  *   - grupoSeleccionado: string → grupo actualmente seleccionado.
  *   - alumnosSeleccionados: array → uids de alumnos seleccionados para la acción.
- * 
+ *
  * Librerías/componentes usados:
  *   - React: useState, useEffect para gestionar estado y efectos.
  *   - Dialog/DialogContent/DialogHeader/DialogTitle: componentes de diálogo UI.
  *   - Button, Checkbox: componentes UI para acciones y selección.
  *   - toast (sonner): para notificaciones de error o éxito.
  *   - Check, X (lucide-react): iconos para botones de selección/deselección masiva.
- * 
+ *
  * Flujo de uso:
  *   1. El usuario abre el diálogo (prop open=true).
  *   2. Se cargan los grupos desde LDAP.
@@ -48,7 +48,6 @@
  *   5. Al hacer clic en "Confirmar", se envía la acción masiva al backend según el tipo.
  *   6. Se muestran notificaciones de éxito o error y se cierra el diálogo si corresponde.
  */
-
 
 import { useEffect, useState } from "react";
 import {
@@ -237,7 +236,7 @@ export function DialogoAccionMasiva({ open, onClose, onSuccess, tipo }) {
                 {alumnos.length === 0 && (
                   <p className="text-xs italic text-gray-500">No hay alumnos</p>
                 )}
-                {/*alumnos.map((a) => (
+                {alumnos.map((a) => (
                   <div key={a.uid} className="flex items-center space-x-2 py-1">
                     <Checkbox
                       id={`alumno-${a.uid}`}
@@ -257,36 +256,7 @@ export function DialogoAccionMasiva({ open, onClose, onSuccess, tipo }) {
                       {a.sn}, {a.givenName} ({a.uid})
                     </label>
                   </div>
-                ))*/}
-                {alumnos.map((a, index) => {
-                  // Alias anónimo
-                  const alias = `Alumno ${index + 1}`;
-
-                  return (
-                    <div
-                      key={a.uid}
-                      className="flex items-center space-x-2 py-1"
-                    >
-                      <Checkbox
-                        id={`alumno-${a.uid}`}
-                        checked={alumnosSeleccionados.includes(a.uid)}
-                        onCheckedChange={(checked) =>
-                          setAlumnosSeleccionados((prev) =>
-                            checked
-                              ? [...prev, a.uid]
-                              : prev.filter((uid) => uid !== a.uid)
-                          )
-                        }
-                      />
-                      <label
-                        htmlFor={`alumno-${a.uid}`}
-                        className="text-sm select-none cursor-pointer"
-                      >
-                        {alias}
-                      </label>
-                    </div>
-                  );
-                })}
+                ))}
               </div>
             </>
           )}
