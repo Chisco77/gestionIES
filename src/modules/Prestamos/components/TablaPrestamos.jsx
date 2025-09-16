@@ -1,3 +1,78 @@
+/**
+ * Componente: TablaPrestamos
+ * 
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Este componente renderiza una tabla interactiva de préstamos de libros,
+ * con funcionalidades de:
+ *   - Filtrado por curso y nombre de alumno
+ *   - Ordenamiento por columnas
+ *   - Paginación
+ *   - Filas expandibles para ver detalle de préstamos
+ *   - Selección de fila
+ *   - Acciones dinámicas basadas en la fila seleccionada
+ * 
+ * Props:
+ *   - columns: array → definición de columnas (para React Table)
+ *   - data: array → lista de préstamos, cada objeto debe incluir:
+ *       - id_prestamo: identificador único
+ *       - nombreUsuario: nombre del alumno
+ *       - curso: curso del alumno
+ *       - doc_compromiso: estado del documento de compromiso (1=Entregado, 2=Recibido)
+ *       - prestamos: array de objetos con detalle de libros:
+ *           - id_item: identificador del préstamo del libro
+ *           - libro: nombre del libro
+ *           - entregado: boolean
+ *           - devuelto: boolean
+ *   - informes: JSX opcional que se muestra en la cabecera (por ejemplo, botones de export)
+ *   - acciones: función que recibe el usuario seleccionado y devuelve botones/acciones
+ *   - onSelectUsuario: función callback al seleccionar una fila (usuario)
+ *   - onFilteredChange: función callback que recibe el array de usuarios filtrados
+ * 
+ * Estados internos:
+ *   - sorting: array → columnas por las que se ordena
+ *   - columnFilters: array → filtros aplicados a columnas
+ *   - expandedRows: objeto → mapea id_prestamo a booleano para saber si la fila está expandida
+ *   - selectedId: id del usuario seleccionado
+ * 
+ * Funciones principales:
+ *   - toggleRow(id): expande o colapsa la fila de detalle
+ *   - handleRowClick(usuario): selecciona la fila y llama a onSelectUsuario
+ *   - toggleExpandClick(id, e): evita propagación del click y expande/colapsa fila
+ * 
+ * React Table:
+ *   - Se usa useReactTable con:
+ *       - getCoreRowModel
+ *       - getPaginationRowModel
+ *       - getSortedRowModel
+ *       - getFilteredRowModel
+ *   - Se sincroniza sorting y columnFilters en el estado
+ *   - Se habilita selección de fila (single row)
+ * 
+ * Filtrado:
+ *   - Select para curso → filtra columna "curso"
+ *   - Input para nombre → filtra columna "nombreUsuario"
+ *   - Se notifica a onFilteredChange con los resultados filtrados
+ * 
+ * Render:
+ *   - Cabecera con filtros
+ *   - Tabla con:
+ *       - Fila principal: nombre alumno, documento compromiso, curso
+ *       - Fila expandida: detalle de libros con columnas "Entregado" y "Devuelto"
+ *         usando iconos Check (verde) o X (rojo)
+ *   - Paginación con botones (primera, anterior, siguiente, última)
+ *   - Total de registros filtrados
+ *   - Acciones dinámicas según usuario seleccionado
+ * 
+ */
+
+
 import { useState, Fragment, useEffect } from "react";
 import {
   flexRender,
@@ -59,7 +134,7 @@ export function TablaPrestamos({
     enableMultiRowSelection: false,
   });
 
-  // --- NUEVO: efecto para enviar filas filtradas ---
+  // --- efecto para enviar filas filtradas ---
   useEffect(() => {
     const filtered = table
       .getFilteredRowModel()
@@ -168,8 +243,7 @@ export function TablaPrestamos({
                         </Button>
                       </TableCell>
 
-                      {/* 2ª columna: Alumno
-                      <TableCell>{usuario.nombreUsuario}</TableCell>*/}
+                      {/* 2ª columna: Alumno*/}
                       <TableCell>{ofuscarTexto(usuario.nombreUsuario, { tipo: "nombre" })}</TableCell>
 
                       {/* 3ª columna: Doc compromiso */}

@@ -1,3 +1,44 @@
+/**
+ * DialogoEliminarCurso.jsx - Diálogo de confirmación para eliminar un curso
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Componente que muestra un cuadro de diálogo de confirmación para eliminar
+ * un curso seleccionado de la base de datos.
+ *
+ * Props:
+ * - open: boolean, controla la visibilidad del diálogo.
+ * - onClose: función que cierra el diálogo.
+ * - cursoSeleccionado: objeto con la información del curso (id, curso).
+ * - onSuccess: callback opcional que se ejecuta tras la eliminación con éxito.
+ *
+ * Funcionalidad:
+ * - Envía una petición DELETE a la API para eliminar el curso seleccionado.
+ * - Si la eliminación es exitosa:
+ *   - Muestra una notificación de éxito.
+ *   - Ejecuta el callback `onSuccess`.
+ *   - Cierra el diálogo.
+ * - Si ocurre un error:
+ *   - Intenta leer el mensaje de error del backend.
+ *   - Muestra una notificación con el error detectado.
+ *
+ * Dependencias:
+ * - @/components/ui/dialog
+ * - @/components/ui/button
+ * - sonner (toast)
+ *
+  */
+
+
 import {
   Dialog,
   DialogContent,

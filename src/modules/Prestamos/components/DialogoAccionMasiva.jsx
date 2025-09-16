@@ -1,3 +1,55 @@
+/**
+ * Componente: DialogoAccionMasiva
+ * 
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * 
+ * Este componente muestra un diálogo para ejecutar acciones masivas sobre alumnos de un grupo.
+ * Las acciones pueden ser:
+ *   - Entregar documento de compromiso
+ *   - Recibir documento de compromiso
+ *   - Entregar libros 
+ *   - Devolver libros
+ * 
+ * Props:
+ *   - open: boolean → controla si el diálogo está abierto.
+ *   - onClose: function → callback para cerrar el diálogo.
+ *   - onSuccess: function → callback que se ejecuta cuando la acción masiva se completa correctamente.
+ *   - tipo: string → indica el tipo de acción masiva a realizar:
+ *       * "entregarDoc"
+ *       * "recibirDoc"
+ *       * "entregarLibros"
+ *       * "devolverLibros"
+ * 
+ * Estados internos:
+ *   - grupos: array → lista de grupos obtenidos desde LDAP.
+ *   - alumnos: array → lista de alumnos del grupo seleccionado.
+ *   - grupoSeleccionado: string → grupo actualmente seleccionado.
+ *   - alumnosSeleccionados: array → uids de alumnos seleccionados para la acción.
+ * 
+ * Librerías/componentes usados:
+ *   - React: useState, useEffect para gestionar estado y efectos.
+ *   - Dialog/DialogContent/DialogHeader/DialogTitle: componentes de diálogo UI.
+ *   - Button, Checkbox: componentes UI para acciones y selección.
+ *   - toast (sonner): para notificaciones de error o éxito.
+ *   - Check, X (lucide-react): iconos para botones de selección/deselección masiva.
+ * 
+ * Flujo de uso:
+ *   1. El usuario abre el diálogo (prop open=true).
+ *   2. Se cargan los grupos desde LDAP.
+ *   3. Al seleccionar un grupo, se cargan los alumnos correspondientes.
+ *   4. El usuario selecciona alumnos individualmente o todos a la vez.
+ *   5. Al hacer clic en "Confirmar", se envía la acción masiva al backend según el tipo.
+ *   6. Se muestran notificaciones de éxito o error y se cierra el diálogo si corresponde.
+ */
+
+
 import { useEffect, useState } from "react";
 import {
   Dialog,

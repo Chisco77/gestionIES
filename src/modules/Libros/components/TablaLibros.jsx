@@ -1,3 +1,55 @@
+/**
+ * TablaLibros.jsx - Componente de tabla interactiva para la gestión de libros
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Componente de tabla reutilizable para mostrar libros.
+ * - Permite ordenar, filtrar por texto y por curso.
+ * - Permite seleccionar una única fila para habilitar acciones.
+ * - Soporta paginación integrada de @tanstack/react-table.
+ * - Permite mostrar elementos de acción (informes o botones) adicionales.
+ *
+ * Props:
+ * - columns: array de definiciones de columnas para la tabla.
+ * - data: array de libros a mostrar.
+ * - cursos: array de cursos disponibles para el filtro.
+ * - onFilteredChange: callback que recibe los libros filtrados actualmente visibles.
+ * - informes: JSX opcional para mostrar elementos de informes o estadísticas.
+ * - acciones: función que recibe el libro seleccionado y devuelve los botones de acción.
+ *
+ * Estado interno:
+ * - sorting: array que almacena la columna por la que se está ordenando y el sentido.
+ * - columnFilters: array con los filtros activos de cada columna.
+ * - textoFiltro: string para filtrar por nombre del libro.
+ * - filtroCurso: string con el id del curso seleccionado para filtrar.
+ * - selectedId: id del libro seleccionado actualmente.
+ *
+ * Funcionalidad:
+ * - Integración completa con @tanstack/react-table para ordenación, filtros y paginación.
+ * - Aplicación de filtros manuales para curso y texto.
+ * - Selección de fila única, resaltando la fila activa en azul.
+ * - Notificación al padre de los libros filtrados mediante `onFilteredChange`.
+ * - Renderizado de la tabla con cabecera, cuerpo y paginación.
+ *
+ * Dependencias:
+ * - React (useState, useEffect)
+ * - @tanstack/react-table
+ * - @/components/ui/table
+ * - @/components/ui/button
+ * - lucide-react (iconos de navegación de paginación)
+ *
+ */
+
+
 import {
   flexRender,
   getCoreRowModel,
@@ -38,6 +90,7 @@ export function TablaLibros({
   const [columnFilters, setColumnFilters] = useState([]);
   const [textoFiltro, setTextoFiltro] = useState("");
   const [filtroCurso, setFiltroCurso] = useState("");
+  const [selectedId, setSelectedId] = useState(null);
 
   const table = useReactTable({
     data,
@@ -136,9 +189,13 @@ export function TablaLibros({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  onClick={() => row.toggleSelected()}
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${
+                    row.getIsSelected() ? "bg-blue-100" : ""
+                  } hover:bg-gray-100 transition-colors`}
+                  onClick={() => {
+                    row.toggleSelected(); // para notificar al padre y habilitar/desabilitar editar y eliminar
+                    setSelectedId(row.original.id); 
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

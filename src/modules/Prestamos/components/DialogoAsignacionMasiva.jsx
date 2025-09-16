@@ -1,3 +1,64 @@
+/**
+ * Componente: DialogoAsignacionMasiva
+ * 
+ *  
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Este componente muestra un diálogo para la asignación masiva de libros a alumnos de un grupo.
+ * Permite seleccionar primero el curso y los libros disponibles, y luego seleccionar el grupo y los alumnos que recibirán los préstamos.
+ * Al finalizar, se pueden asignar los préstamos y generar un informe PDF de los préstamos que no se pudieron insertar.
+ * 
+ * Props:
+ *   - open: boolean → controla si el diálogo está abierto.
+ *   - onClose: function → callback para cerrar el diálogo.
+ *   - onSuccess: function → callback que se ejecuta cuando la asignación masiva se completa correctamente.
+ * 
+ * Estados internos principales:
+ *   - cursos: array → lista de cursos obtenidos desde la API.
+ *   - grupos: array → lista de grupos escolares obtenidos desde LDAP.
+ *   - libros: array → libros disponibles del curso seleccionado.
+ *   - alumnos: array → alumnos del grupo seleccionado.
+ *   - cursoSeleccionado, grupoSeleccionado: string → curso y grupo actualmente seleccionados.
+ *   - librosSeleccionados, alumnosSeleccionados: array → IDs de libros y uids de alumnos seleccionados.
+ *   - paso: number → controla la navegación entre pasos (1: curso/libros, 2: grupo/alumnos).
+ *   - descartes: array → almacena préstamos que no se pudieron asignar.
+ *   - mostrarInforme: boolean → controla la visualización del bloque de informe PDF.
+ * 
+ * Librerías/componentes usados:
+ *   - React: useState, useEffect para estado y efectos.
+ *   - Dialog/DialogContent/DialogHeader/DialogTitle/DialogFooter: componentes de diálogo UI.
+ *   - Button, Checkbox: componentes UI para acciones y selección.
+ *   - toast (sonner): para notificaciones de error o éxito.
+ *   - Check, X (lucide-react): iconos para selección/deselección masiva.
+ *   - jsPDF: para generar informes PDF de préstamos omitidos.
+ * 
+ * Flujo de uso:
+ *   1. Usuario abre el diálogo (open=true).
+ *   2. Se cargan cursos y grupos.
+ *   3. Paso 1: Usuario selecciona curso y libros a asignar.
+ *   4. Paso 2: Usuario selecciona grupo y alumnos para las asignaciones de libros.
+ *   5. Usuario confirma la asignación:
+ *       - Se envía petición POST al backend con libros y alumnos seleccionados.
+ *       - Se procesan descartes y se almacena información para generar informe PDF si corresponde.
+ *   6. Se muestra informe de asignaciones omitidas y opción de descargar PDF.
+ *   7. Se ejecutan callbacks onSuccess y onClose según corresponda.
+ * 
+ * 
+ * 
+ * 
+ * Notas:
+ * 
+ *  Este componente crea un registro en la tabla prestamos por cada alumno. Está pensado para ejecutarse al inicio de cada
+ *  curso. Este registro se marca con el atributo iniciocurso a true. 
+ */
+
+
 import { useEffect, useState } from "react";
 import {
   Dialog,
@@ -129,7 +190,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
     let y = margenSuperior;
 
-    // 🕓 Fecha y hora actual
+    // Fecha y hora actual
     const fecha = new Date();
     const fechaTexto = fecha.toLocaleDateString();
     const horaTexto = fecha.toLocaleTimeString();
@@ -145,7 +206,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
     doc.line(margenIzquierdo, y, margenDerecho, y);
     y += altoLinea;
 
-    // 🔃 Agrupar descartes por alumno
+    // Agrupar descartes por alumno
     const agrupados = {};
     descartes.forEach((item) => {
       if (!agrupados[item.alumno]) {
@@ -157,7 +218,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
     // Guardamos las posiciones donde debemos poner el pie de página luego
     const paginas = [];
 
-    // Función para dibujar pie de página (se llamará tras crear todo el contenido)
+    // Función para dibujar pie de página 
     function dibujarPiePagina(pageNum, totalPages) {
       const yPie = 285; // posición fija vertical para la línea y texto pie
       doc.setLineWidth(0.5);
@@ -220,7 +281,6 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
 
       if (!res.ok) throw new Error(json.error || "Falló la asignación");
 
-      //toast.success(`Se insertaron ${json.insertados} préstamos.`);
       toast.success(`Se insertaron ${json.insertados.length} préstamos.`);
 
       if (json.descartados?.length > 0) {
@@ -231,18 +291,14 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
           libros.map((l) => [l.id, l.libro])
         );
 
-        /*const enriquecidos = json.descartados.map(({ uidalumno, idlibro }) => ({
-          alumno: mapaAlumnos[uidalumno] || uidalumno,
-          uid: uidalumno,
-          libro: mapaLibros[idlibro] || `ID ${idlibro}`,
-        }));*/
+
         const enriquecidos = json.descartados.map((d) => {
           return {
             alumno: mapaAlumnos[d.uidalumno] || d.uidalumno,
             uid: d.uidalumno,
             libro: d.idlibro
               ? mapaLibros[d.idlibro] || `ID ${d.idlibro}`
-              : d.motivo, // 👈 fallback al motivo
+              : d.motivo, 
           };
         });
 
@@ -412,30 +468,7 @@ export function DialogoAsignacionMasiva({ open, onClose, onSuccess }) {
                       No hay alumnos
                     </p>
                   )}
-                  {/*alumnos.map((a) => (
-                    <div
-                      key={a.uid}
-                      className="flex items-center space-x-2 py-1"
-                    >
-                      <Checkbox
-                        id={`alumno-${a.uid}`}
-                        checked={alumnosSeleccionados.includes(a.uid)}
-                        onCheckedChange={(checked) => {
-                          setAlumnosSeleccionados((prev) =>
-                            checked
-                              ? [...prev, a.uid]
-                              : prev.filter((uid) => uid !== a.uid)
-                          );
-                        }}
-                      />
-                      <label
-                        htmlFor={`alumno-${a.uid}`}
-                        className="text-sm select-none cursor-pointer"
-                      >
-                        {a.sn}, {a.givenName} ({a.uid})
-                      </label>
-                    </div>
-                  ))*/}
+
                   {alumnos.map((a, index) => {
                     const alias = `Alumno ${index + 1}`; // Alias anónimo
                     return (

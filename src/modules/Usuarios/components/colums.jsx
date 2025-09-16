@@ -1,3 +1,43 @@
+/**
+ * columns.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Definición de las columnas de la tabla de usuarios (alumnos/profesores)
+ * utilizada en el módulo de gestión de usuarios.
+ *
+ * Funcionalidades:
+ * - Columnas principales:
+ *     • Grupo
+ *     • Nombre
+ *     • Apellidos
+ *     • Usuario (uid)
+ *     • Acciones (menú desplegable)
+ * - Cada columna soporta:
+ *     • Ordenación ascendente/descendente
+ *     • Filtrado (texto o multi-select según columna)
+ * - La columna de acciones incluye un menú desplegable con:
+ *     • Copiar ID
+ *     • Ver alumno
+ *     • Ver detalles
+ *
+ * Filtros personalizados:
+ * - fuzzyTextFilter: filtro de apellidos (basado en `sn`)
+ *
+ * Dependencias:
+ * - Componentes UI: Button, DropdownMenu, DropdownMenuContent,
+ *   DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator
+ * - Iconos: lucide-react (MoreHorizontal, ArrowUpDown)
+ *
+ */
+
+
 import { MoreHorizontal, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,23 +56,6 @@ const fuzzyTextFilter = (row, columnId, filterValue) => {
 };
 
 export const columns = [
- /*{
-    id: "tipo",
-    accessorFn: (row) => row.groups?.[0] ?? "",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Tipo
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    filterFn: (row, columnId, filterValue) => {
-      if (!filterValue || filterValue.length === 0) return true;
-      return filterValue.includes(row.getValue(columnId));
-    },
-  },*/
   {
     id: "grupo",
     accessorFn: (row) => {

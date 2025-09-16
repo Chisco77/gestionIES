@@ -1,29 +1,33 @@
-/*import { ArrowUpDown, Check, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+/**
+ * columns.jsx - Definición de columnas para tabla de préstamos
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Configuración de las columnas para la tabla de préstamos de alumnos.
+ * Incluye columnas para:
+ *  - Expansión de filas (para detalles del préstamo)
+ *  - Nombre del alumno (con filtro y ordenación)
+ *  - Documento de compromiso (mapeado a "Entregado"/"Recibido")
+ *  - Curso del alumno (con filtro y ordenación)
+ *
+ * Uso:
+ * import { columns } from './columns';
+ * 
+ * Dependencias:
+ * - React
+ * - lucide-react (Iconos)
+ * - @/components/ui/button (Botón de cabecera)
+ */
 
-export const columns = [
-  {
-    accessorKey: "nombreUsuario",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Alumno
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    filterFn: (row, columnId, value) =>
-      row.getValue(columnId)?.toLowerCase().includes(value.toLowerCase()),
-  },
-  {
-    accessorKey: "curso",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Curso
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-  },
- 
-];*/
 
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -1,3 +1,63 @@
+/**
+ * LibrosIndex.jsx - Página de gestión de libros
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Página principal de administración de libros.
+ * - Muestra una tabla interactiva de libros (TablaLibros) con filtros por curso y texto.
+ * - Permite insertar, editar y eliminar libros mediante diálogos controlados.
+ * - Integra selección de fila única, paginación y acciones adicionales (informes).
+ * - Enriquecer los libros con el nombre del curso correspondiente.
+ *
+ * Estado interno:
+ * - libros: array con todos los libros cargados desde la API.
+ * - librosFiltrados: array con los libros actualmente filtrados y visibles en la tabla.
+ * - cursos: array con los cursos disponibles para filtrado y selección.
+ * - libroSeleccionado: objeto con el libro actualmente seleccionado.
+ * - abrirInsertar / abrirEditar / abrirEliminar: booleanos para controlar la visibilidad de los diálogos.
+ *
+ * Funcionalidad:
+ * - fetchCursos(): obtiene los cursos desde la API, ordenados alfabéticamente.
+ * - fetchLibros(): obtiene los libros desde la API y les añade el nombre del curso correspondiente.
+ * - onSuccess(): callback que recarga los datos y cierra los diálogos tras insertar, editar o eliminar un libro.
+ * - handleEditar / handleEliminar: abren los diálogos de edición o eliminación solo si hay un libro seleccionado.
+ * - Pasa los datos, filtros y callbacks a TablaLibros, incluyendo las acciones sobre la fila seleccionada.
+ *
+ * Props de TablaLibros:
+ * - columns: definiciones de columnas.
+ * - data: array de libros.
+ * - cursos: array de cursos.
+ * - onFilteredChange: callback que recibe los libros filtrados.
+ * - informes: elementos adicionales para la zona de filtros (ej. botones de PDF o listados).
+ * - acciones: función que recibe el libro seleccionado y devuelve los botones de acción.
+ *
+ * Dependencias:
+ * - React (useState, useEffect)
+ * - @tanstack/react-table (a través de TablaLibros)
+ * - @/components/ui/button
+ * - lucide-react (iconos)
+ * - @/components/ui/dropdown-menu
+ * - ../components/TablaLibros
+ * - ../components/DialogoInsertarLibro
+ * - ../components/DialogoEditarLibro
+ * - ../components/DialogoEliminarLibro
+ *
+ * Notas:
+ * - Solo se permite seleccionar una fila a la vez en la tabla.
+ * - Los botones de acción (Insertar, Editar, Eliminar) se habilitan según el libro seleccionado.
+ * - Los diálogos se abren de forma controlada mediante el estado correspondiente.
+ */
+
+
 import { useEffect, useState } from "react";
 import { columns } from "../components/columns";
 import { TablaLibros } from "../components/TablaLibros";
@@ -153,7 +213,6 @@ export function LibrosIndex() {
                 <Users className="mr-2 h-4 w-4" />
                 Alumnos por grupo
               </DropdownMenuItem>
-              {/* Aquí puedes añadir más opciones */}
               {/* <DropdownMenuItem>Otro documento</DropdownMenuItem> */}
             </DropdownMenuContent>
           </DropdownMenu>

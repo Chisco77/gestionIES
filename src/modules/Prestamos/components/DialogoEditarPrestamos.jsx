@@ -1,4 +1,107 @@
-// Edicion de prestamos
+/**
+ * Componente: DialogoEditarPrestamos
+ * 
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Este componente muestra un diálogo para la edición de asignaciones y préstamos de libros de un usuario
+ * (alumno o tutor). Permite:
+ *   - Visualizar foto y datos del usuario.
+ *   - Gestionar asignaciones.
+ *   - Prestar libros, devolverlos o "desprestar" libros devueltos.
+ *   - Cambiar fechas de préstamo y devolución individualmente.
+ *   - Asignar libros disponibles a un usuario.
+ *   - Eliminar préstamos seleccionados.
+ *   - Controlar el documento de compromiso y mostrar información de inicio de curso.
+ * 
+ * Props:
+ *   - open: boolean → indica si el diálogo está abierto.
+ *   - onClose: function → callback para cerrar el diálogo.
+ *   - usuario: object → usuario seleccionado, con propiedades:
+ *       - uid: string
+ *       - nombreUsuario: string
+ *       - rol: string ('alumno' | 'tutor' | ...)
+ *       - prestamos: array → lista de préstamos del usuario
+ *       - doc_compromiso: number → estado del documento de compromiso (0,1,2)
+ *       - iniciocurso: boolean → indica si ha comenzado el curso
+ *   - onSuccess: function → callback que se ejecuta tras cualquier acción exitosa.
+ * 
+ * Estados internos:
+ *   - state: objeto con:
+ *       - prestamos: lista de préstamos normalizados
+ *       - seleccionadosIzquierda: ids seleccionados en lista izquierda
+ *       - seleccionadosDerecha: ids seleccionados en lista derecha
+ *       - librosDisponibles: libros disponibles según curso seleccionado
+ *       - librosDisponiblesSeleccionados: ids seleccionados de libros disponibles
+ *       - cursos: lista de cursos para el select
+ *       - cursoSeleccionado: id del curso seleccionado
+ *   - modals: controla la apertura de sub-diálogos:
+ *       - confirmarEliminacionAbierto
+ *       - fechaPrestamoModalAbierto
+ *       - fechaDevolucionModalAbierto
+ *   - dates: fechas seleccionadas en modales de edición
+ *       - fechaNuevaPrestamo
+ *       - fechaNuevaDevolucion
+ *   - fotoUrl: URL de la foto del usuario (si existe)
+ *   - activeTab: string → pestaña activa ('asignaciones' | 'prestamos')
+ * 
+ * Funciones principales:
+ *   - apiCall(endpoint, method, body, successMsg, errorMsg): realiza fetch al backend,
+ *     muestra toasts y llama a onSuccess si es exitoso.
+ *   - toggleSeleccion(id, side): selecciona/deselecciona un préstamo en la lista izquierda/derecha.
+ *   - toggleSeleccionDisponible(id): selecciona/deselecciona un libro disponible.
+ *   - filtrarPrestamos(entregado, devuelto): filtra los préstamos según su estado.
+ *   - updatePrestamosState(ids, updates): actualiza el estado de los préstamos localmente.
+ *   - handleAction(endpoint, ids, successMsg, errorMsg, updates): envía acción al backend
+ *     (prestar, devolver, reactivar o eliminar) y actualiza el estado.
+ *   - entregarSeleccionados / entregarTodos: marcan como entregados los préstamos seleccionados.
+ *   - devolverSeleccionados / devolverTodos: marcan como devueltos los préstamos seleccionados.
+ *   - prestarSeleccionados / prestarTodos: reactivan préstamos devueltos.
+ *   - handleDateChange(dateType): actualiza fecha de préstamo o devolución de un préstamo individual.
+ *   - asignarLibros: asigna libros seleccionados disponibles al usuario.
+ *   - eliminarAsignacion: elimina los préstamos seleccionados de un usuario.
+ * 
+ * Subcomponentes:
+ *   - ListSection: componente reutilizable que muestra listas con scroll,
+ *     selección múltiple y acciones.
+ *   - Tabs: separa vistas entre "Asignaciones" y "Préstamos".
+ *   - Dialogs internos: para cambiar fecha de préstamo y devolución.
+ *   - AlertDialog: confirmación de eliminación de préstamos.
+ * 
+ * Flujo de uso:
+ *   1. Abrir diálogo con un usuario seleccionado.
+ *   2. El componente carga foto, normaliza préstamos y resetea selecciones.
+ *   3. El usuario puede:
+ *       - Seleccionar libros disponibles y asignarlos.
+ *       - Prestar libros pendientes, devolver libros prestados o reactivar devueltos.
+ *       - Cambiar fechas de préstamo y devolución individualmente.
+ *       - Eliminar préstamos seleccionados.
+ *   4. Se muestran toasts de éxito/error tras cada acción.
+ *   5. Se actualiza el estado local para reflejar cambios sin recargar.
+ *   6. Cerrar el diálogo al finalizar.
+ * 
+ * Librerías/componentes usados:
+ *   - React: useState, useEffect
+ *   - sonner: toast notifications
+ *   - lucide-react: iconos
+ *   - Componentes UI: Dialog, Button, Tooltip, ScrollArea, AlertDialog, Select, Tabs
+ * 
+ * 
+ * Notas:
+ *    Una vez el documento de compromiso pasa del estado "No entregado" a cualquier otro, no se
+ *    pueden realizar modificaciones en asignaciones ni prestar nuevos libros.
+ * 
+ *    Para hacer nuevos préstamos, hay que crear un nuevo registro utilizando la opción "+" del
+ *    pie de la tabla de préstamos.
+ */
+
+
+
 import { useState, useEffect } from "react";
 import {
   Dialog,

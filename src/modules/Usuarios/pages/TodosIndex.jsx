@@ -1,4 +1,34 @@
-// BecariosIndex.jsx
+/**
+ * TodosIndex.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente principal para visualizar todos los usuarios (alumnos y profesores) desde LDAP.
+ *
+ * Funcionalidades:
+ * - Obtiene todos los usuarios mediante fetch a la API (`/ldap/usuarios?tipo=all`)
+ * - Muestra los usuarios en `TablaUsuarios` con:
+ *     • Filtrado por grupo, apellidos y usuario
+ *     • Ordenación y paginación
+ *     • Ofuscación de datos sensibles
+ *
+ * Estados principales:
+ * - data: todos los usuarios obtenidos desde la API
+ * - alumnosFiltrados: usuarios visibles tras filtrado en la tabla
+ *
+ * Dependencias:
+ * - TablaUsuarios: tabla con filtros, ordenación y paginación
+ * - Componentes UI: Button, Input, MultiSelect (internos en TablaUsuarios)
+ * - Iconos: lucide-react (internos en TablaUsuarios)
+ *
+ */
+
 import { useEffect, useState } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";

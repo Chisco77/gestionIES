@@ -1,4 +1,40 @@
-// Con react query. Usa hook useAlumnosLdap.jsx
+/**
+ * AlumnosIndex.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente principal para visualizar y gestionar alumnos desde LDAP.
+ *
+ * Funcionalidades:
+ * - Obtiene alumnos mediante el hook `useAlumnosLdap` (React Query)
+ * - Muestra los alumnos en `TablaUsuarios` con:
+ *     • Filtrado por grupo, apellidos y usuario
+ *     • Ordenación y paginación
+ *     • Ofuscación de datos sensibles
+ * - Permite generar un listado PDF de alumnos por curso a través de:
+ *     - `DialogoListadoCurso`
+ * - Sincroniza los alumnos filtrados para su uso en el diálogo de listado
+ *
+ * Estados principales:
+ * - abrirDialogoListadoCurso: control de apertura del diálogo de listado por curso
+ * - alumnosFiltrados: alumnos visibles tras filtrado en la tabla
+ *
+ * Dependencias:
+ * - TablaUsuarios: tabla con filtros, ordenación y paginación
+ * - DialogoListadoCurso: generación de PDF con listado de alumnos por curso
+ * - Componentes UI: Button, DropdownMenu
+ * - Iconos: lucide-react
+ * - Hook: useAlumnosLdap
+ *
+ */
+
+
 import { useState } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";

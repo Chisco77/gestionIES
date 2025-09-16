@@ -1,4 +1,74 @@
-// components/DialogoEtiquetas.jsx
+/**
+ * Componente: DialogoEtiquetas
+ * 
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Este componente muestra un diálogo para configurar y generar etiquetas en PDF
+ * para una lista de usuarios (alumnos, becarios, etc.).
+ * Permite:
+ *   - Seleccionar el número de etiquetas por usuario (1-12)
+ *   - Seleccionar el curso académico
+ *   - Elegir tamaño de etiqueta (40 o 24 por página)
+ *   - Personalizar el nombre del archivo PDF
+ *   - Visualizar barra de progreso mientras se genera el PDF
+ *   - Generar un PDF con la información de los usuarios y el logo institucional
+ * 
+ * Props:
+ *   - usuarios: array → lista de usuarios que tendrán etiquetas
+ *       - Cada usuario debe contener al menos:
+ *           - nombreUsuario: string
+ *           - curso: string
+ *   - open: boolean → indica si el diálogo está abierto
+ *   - onOpenChange: function → callback para abrir/cerrar el diálogo
+ * 
+ * Estados internos:
+ *   - etiquetasPorUsuario: string → número de etiquetas por usuario seleccionado
+ *   - cursoSeleccionado: string → curso académico seleccionado
+ *   - nombrePdf: string → nombre del archivo PDF
+ *   - tamanoEtiqueta: string → tamaño de etiqueta seleccionado (40 o 24)
+ *   - loading: boolean → indica si se está generando el PDF
+ *   - progress: number → porcentaje de progreso de generación del PDF
+ *   - showSuccessToast: boolean → muestra un toast de éxito al finalizar
+ * 
+ * Funciones principales:
+ *   - generatePdfLabels():
+ *       - Crea un objeto jsPDF con formato A4
+ *       - Calcula el layout de la etiqueta según el tamaño elegido
+ *       - Dibuja el logo y nombre de usuario centrado en cada etiqueta
+ *       - Ajusta el texto si el nombre es demasiado largo
+ *       - Añade información del curso académico
+ *       - Controla saltos de página automáticamente
+ *       - Actualiza el estado `progress` para mostrar la barra de progreso
+ *       - Guarda el PDF con la extensión .pdf automáticamente
+ * 
+ * Uso de librerías:
+ *   - jsPDF → generación de PDF
+ *   - React → useState, useEffect
+ *   - Componentes UI: Dialog, Select, Input, Button
+ *   - Logo importado desde `/src/images/logo.png`
+ * 
+ * Flujo de uso:
+ *   1. Abrir el diálogo con `open={true}`.
+ *   2. Configurar:
+ *       - Número de etiquetas por usuario
+ *       - Curso académico
+ *       - Tamaño de etiqueta
+ *       - Nombre del PDF
+ *   3. Pulsar "Confirmar y generar":
+ *       - Muestra barra de progreso
+ *       - Genera el PDF
+ *       - Al finalizar, muestra un toast de éxito
+ *       - Cierra el diálogo
+ * 
+ */
+
+
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import logo from "/src/images/logo.png";

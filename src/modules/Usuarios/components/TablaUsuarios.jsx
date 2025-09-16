@@ -1,3 +1,40 @@
+/**
+ * TablaUsuarios.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente de tabla para visualizar usuarios (alumnos o profesores)
+ * con filtrado, ordenación y paginación.
+ *
+ * Funcionalidades:
+ * - Filtros por:
+ *     • Grupo (MultiSelect)
+ *     • Apellidos (Input de texto)
+ *     • Usuario (Input de texto)
+ * - Ordenación por columnas usando `@tanstack/react-table`
+ * - Paginación con navegación a primera, anterior, siguiente y última página
+ * - Actualización automática de los usuarios filtrados mediante `onFilteredChange`
+ * - Soporte para acciones externas pasadas como prop `acciones`
+ *
+ * Estados principales:
+ * - sorting: columnas ordenadas
+ * - columnFilters: filtros aplicados a las columnas
+ *
+ * Dependencias:
+ * - @tanstack/react-table para la lógica de la tabla
+ * - Componentes UI: Table, Card, Input, Button, MultiSelect
+ * - Iconos: lucide-react
+ * - Utilidades: ofuscarTexto
+ *
+ */
+
+
 import {
   Table,
   TableBody,

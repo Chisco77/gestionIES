@@ -1,4 +1,56 @@
-// components/TablaCursos.jsx
+/**
+ * TablaCursos.jsx - Tabla interactiva de cursos
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Componente que renderiza una tabla de cursos utilizando @tanstack/react-table.
+ * - Permite ordenar, filtrar y paginar los datos.
+ * - Selección de fila única con resaltado azul.
+ * - Filtros dinámicos mediante MultiSelect para la columna "curso".
+ * - Integración de acciones externas (Editar, Eliminar, etc.) sobre la fila seleccionada.
+ *
+ * Props:
+ * - columns: array de definiciones de columnas (columnDef) para react-table.
+ * - data: array de objetos con los cursos a mostrar.
+ * - onFilteredChange: callback que devuelve los datos filtrados tras cambios en filtros.
+ * - acciones: función que recibe el item seleccionado y renderiza botones de acción.
+ *
+ * Estado interno:
+ * - sorting: estado del orden de columnas.
+ * - columnFilters: estado de filtros aplicados.
+ * - selectedId: id de la fila seleccionada actualmente.
+ *
+ * Funcionalidad:
+ * - Renderiza la tabla con react-table y ShadCN Table.
+ * - Permite ordenar al hacer click en los encabezados de columnas.
+ * - Permite filtrar cursos mediante MultiSelect.
+ * - Resalta la fila seleccionada con color azul.
+ * - Permite paginación completa con botones de primero, anterior, siguiente y último.
+ * - Llama a `onFilteredChange` solo cuando los datos filtrados cambian.
+ *
+ * Dependencias:
+ * - @tanstack/react-table
+ * - @/components/ui/table
+ * - @/components/ui/button
+ * - @/components/ui/multiselect
+ * - lucide-react
+ * - react
+ *
+ * Notas:
+ * - Solo se permite seleccionar una fila a la vez.
+ * - `acciones(selectedItem)` se renderiza dinámicamente según la fila seleccionada.
+ * - La paginación se calcula con `table.getPageCount()` y `table.getState().pagination`.
+ */
+
 import {
   flexRender,
   getCoreRowModel,
@@ -30,29 +82,30 @@ import { useEffect, useState } from "react";
 export function TablaCursos({ columns, data, onFilteredChange, acciones }) {
   const [sorting, setSorting] = useState([{ id: "curso", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
 
   const table = useReactTable({
-  data,
-  columns,
-  getCoreRowModel: getCoreRowModel(),
-  getPaginationRowModel: getPaginationRowModel(),
-  onSortingChange: setSorting,
-  getSortedRowModel: getSortedRowModel(),
-  onColumnFiltersChange: setColumnFilters,
-  getFilteredRowModel: getFilteredRowModel(),
-  enableRowSelection: true, // permite seleccionar filas
-  state: {
-    sorting,
-    columnFilters,
-  },
-  // 🔒 permite solo una fila seleccionada a la vez
-  enableMultiRowSelection: false,
-});
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    enableRowSelection: true, // permite seleccionar filas
+    state: {
+      sorting,
+      columnFilters,
+    },
+    // permite solo una fila seleccionada a la vez
+    enableMultiRowSelection: false,
+  });
 
   const selectedRow = table.getSelectedRowModel().rows[0];
   const selectedItem = selectedRow?.original;
 
-  // ✅ Solo llamar a onFilteredChange cuando cambien los datos filtrados realmente
+  // Solo llamar a onFilteredChange cuando cambien los datos filtrados realmente
   useEffect(() => {
     const filtered = table
       .getFilteredRowModel()
@@ -116,9 +169,13 @@ export function TablaCursos({ columns, data, onFilteredChange, acciones }) {
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  onClick={() => row.toggleSelected()}
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${
+                    row.getIsSelected() ? "bg-blue-100" : ""
+                  } hover:bg-gray-100 transition-colors`}
+                  onClick={() => {
+                    row.toggleSelected(); 
+                    setSelectedId(row.original.id); 
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

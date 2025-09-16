@@ -59,6 +59,8 @@ exports.insertCurso = async (req, res) => {
 exports.updateCurso = async (req, res) => {
   const { id } = req.params;
   const { curso } = req.body;
+  console.log ("Id: ", id);
+  console.log ("Curso: ", curso);
 
   if (!curso) {
     return res.status(400).json({ message: 'El campo "curso" es obligatorio' });
@@ -70,6 +72,7 @@ exports.updateCurso = async (req, res) => {
       [curso, id]
     );
     if (result.rowCount === 0) {
+      console.log ("hay");
       return res.status(404).json({ message: "Curso no encontrado" });
     }
     res.json(result.rows[0]);

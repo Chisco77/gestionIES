@@ -1,3 +1,48 @@
+/**
+ * PrestamosAlumnosIndex.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente principal del módulo de gestión de préstamos de alumnos.
+ *
+ * Funcionalidades:
+ * - Visualiza los préstamos de alumnos en una tabla filtrable y paginable.
+ * - Permite seleccionar un alumno para realizar acciones individuales:
+ *     • Asignar libros
+ *     • Editar registro
+ *     • Eliminar registro
+ * - Proporciona acciones masivas sobre todos o varios alumnos:
+ *     • Asignación masiva de libros
+ *     • Entrega o recepción de documentos de compromiso
+ *     • Entrega o devolución de libros
+ * - Ofrece generación de informes:
+ *     • Documento de compromiso de préstamo
+ *     • Etiquetas PDF para libros
+ * - Mantiene sincronización entre la tabla filtrada y los diálogos (etiquetas/documentos).
+ * - Utiliza el hook personalizado `usePrestamos` para la carga y actualización de datos.
+ *
+ * Estados principales:
+ * - prestamosFiltrados: préstamos visibles tras filtrado
+ * - alumnoSeleccionado: fila seleccionada en la tabla
+ * - abrir*: control de apertura de los distintos diálogos
+ * - abrirAccionMasiva: estado y tipo de acción masiva en curso
+ *
+ * Dependencias:
+ * - TablaPrestamos: tabla con filtros, selección y acciones
+ * - Diálogos: DialogoAsignacionMasiva, DialogoEditarPrestamos, DialogoAsignarLibros,
+ *            DialogoDocumentoPrestamo, DialogoEtiquetas, DialogoAccionMasiva
+ * - Componentes UI: Button, DropdownMenu
+ * - Iconos: lucide-react
+ *
+ */
+
+
 import { useState, useEffect } from "react";
 import { columns } from "../components/columns";
 import { TablaPrestamos } from "../components/TablaPrestamos";
@@ -51,8 +96,6 @@ export function PrestamosAlumnosIndex() {
     refetch,
   } = usePrestamos({ esAlumno: true });
 
-  //const uidsConPrestamo = prestamos?.map((p) => p.uid) || [];
-// 
   const uidsConPrestamo =
     prestamos?.map((p) => ({
       uid: p.uid,
@@ -79,7 +122,7 @@ export function PrestamosAlumnosIndex() {
 
   const handleEliminar = async (alumno) => {
     if (!alumno) return;
-    // lógica de eliminar préstamos del backend
+    // lógica de eliminar préstamos del backend - pendiente
   };
 
   const handleEditar = (alumno) => {
@@ -104,7 +147,6 @@ export function PrestamosAlumnosIndex() {
                 title="Asignar libros"
                 variant="outline"
                 size="icon"
-                //disabled={!alumno}
               >
                 <Plus className="w-4 h-4" />
               </Button>

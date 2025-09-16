@@ -1,3 +1,68 @@
+/**
+ * Componente: DialogoAsignarLibros
+ * *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Este componente muestra un diálogo para asignar libros a un único usuario (alumno o profesor).
+ * Permite seleccionar primero el grupo y alumno, y luego seleccionar el curso y los libros disponibles.
+ * Envía los préstamos seleccionados al backend y notifica al usuario.
+ * 
+ * Props:
+ *   - open: boolean → controla si el diálogo está abierto.
+ *   - onClose: function → callback para cerrar el diálogo.
+ *   - onSuccess: function → callback que se ejecuta cuando la asignación se realiza correctamente.
+ *   - uidsConPrestamo: array → lista de objetos con uids de usuarios que ya tienen asignaciones, usado para filtrar alumnos.
+ *   - esAlumno: boolean → indica si el usuario a seleccionar es alumno (true) o profesor (false).
+ * 
+ * Estados internos principales:
+ *   - grupos: array → grupos escolares/department del LDAP según el tipo de usuario.
+ *   - grupoSeleccionado: string → grupo actualmente seleccionado.
+ *   - alumnos: array → alumnos disponibles del grupo seleccionado, filtrados por uidsConPrestamo.
+ *   - filtroAlumno: string → texto para filtrar alumnos por apellido, nombre o uid.
+ *   - alumnoSeleccionado: string|null → uid del alumno seleccionado.
+ *   - cursos: array → cursos disponibles para la asignación de libros.
+ *   - cursoSeleccionado: string → curso actualmente seleccionado.
+ *   - libros: array → libros disponibles para el curso y alumno seleccionados.
+ *   - librosSeleccionados: array → IDs de libros seleccionados.
+ *   - paso: number → controla el flujo del diálogo (1: grupo/alumno, 2: curso/libros).
+ * 
+ * Librerías/componentes usados:
+ *   - React: useState, useEffect para estado y efectos.
+ *   - Dialog/DialogContent/DialogHeader/DialogTitle/DialogFooter: componentes de diálogo UI.
+ *   - Button, Input: componentes UI para acciones y filtrado.
+ *   - toast (sonner): para notificaciones de error o éxito.
+ * 
+ * Flujo de uso:
+ *   1. Usuario abre el diálogo (open=true).
+ *   2. Se cargan grupos y cursos desde API y LDAP.
+ *   3. Paso 1: Usuario selecciona grupo y alumno.
+ *       - Se filtran alumnos que ya tienen préstamos (según uidsConPrestamo).
+ *       - Se puede filtrar por texto.
+ *   4. Paso 2: Usuario selecciona curso y libros disponibles para el alumno.
+ *       - Se resaltan libros seleccionados.
+ *   5. Usuario confirma la asignación:
+ *       - Se envía petición POST al backend con uid del alumno, libros seleccionados y tipo de usuario.
+ *       - Se muestra notificación de éxito o error.
+ *   6. Se ejecutan callbacks onSuccess y onClose según corresponda.
+ * 
+ * 
+ *  Notas:
+ * 
+ *     Se permite seguir asignando libros a un alumno siempre que el estado del documento_prestamo sea 0 en
+ *     su registro de asignacion al inicio de curso. Si no es así, se creará un registro nuevo en la tabla
+ *     prestamos para este alumno con iniciocurso false. Está pensado así por si más adelante de la asignación
+ *     inicial del curso escolar se le prestan otros libros. Cada préstamo ha de estar documentado con su
+ *     documento de préstamo.
+ *     
+ */
+
+
 import { useEffect, useState } from "react";
 import {
   Dialog,
@@ -76,9 +141,9 @@ export function DialogoAsignarLibros({
           const filtrados = data.filter((a) => {
             const prestamo = uidsConPrestamo.find((p) => p.uid === a.uid);
 
-            if (!prestamo) return true; // no tiene préstamo → incluir
-            if (prestamo.iniciocurso) return true; // tiene préstamo pero es de inicio de curso → incluir
-            return false; // tiene préstamo y no es de inicio de curso → excluir
+            if (!prestamo) return true; // no tiene préstamo -> incluir
+            if (prestamo.iniciocurso) return true; // tiene préstamo pero es de inicio de curso -> incluir
+            return false; // tiene préstamo y no es de inicio de curso -> excluir
           });
 
           // Ordenamos por apellido y nombre
@@ -151,7 +216,7 @@ export function DialogoAsignarLibros({
     );
   };
 
-  // Enviar préstamo
+  // Enviar asignacion
   const handleAsignar = async () => {
     if (!alumnoSeleccionado) {
       toast.error("Selecciona un alumno");
