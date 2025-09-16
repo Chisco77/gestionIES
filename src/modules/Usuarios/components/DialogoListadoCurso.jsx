@@ -1,4 +1,42 @@
-// components/DialogoEtiquetas.jsx
+/**
+ * DialogoListadoCurso.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente de diálogo para la generación de listados PDF de alumnos
+ * agrupados por curso.
+ *
+ * Funcionalidades:
+ * - Configuración del nombre del archivo PDF
+ * - Agrupación de alumnos por curso y ordenación por apellidos
+ * - Creación de páginas A4 con:
+ *     • Título del curso
+ *     • Encabezado de columnas: Apellidos, Nombre, Usuario
+ *     • Filas de alumnos con sus datos
+ * - Manejo de paginación interna para evitar desbordes
+ * - Visualización de barra de progreso durante la generación del PDF
+ * - Notificación visual al finalizar la generación
+ *
+ * Estados principales:
+ * - nombrePdf: nombre del archivo PDF a generar
+ * - loading: indica si se está generando el PDF
+ * - progress: porcentaje de progreso de la generación
+ * - showSuccessToast: muestra un toast al finalizar
+ *
+ * Dependencias:
+ * - jsPDF para generación de PDFs
+ * - Componentes UI: Dialog, Input, Button
+ * - Imagen de logo: /src/images/logo.png
+ *
+ */
+
+
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import logo from "/src/images/logo.png";
@@ -22,7 +60,7 @@ import { Button } from "@/components/ui/button";
 
 export function DialogoListadoCurso({ alumnos, open, onOpenChange }) {
   //const [open, setOpen] = useState(false);
-  const [nombrePdf, setNombrePdf] = useState("etiquetasbecarios");
+  const [nombrePdf, setNombrePdf] = useState("listado_alumnos_curso");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showSuccessToast, setShowSuccessToast] = useState(false);

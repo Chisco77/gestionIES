@@ -1,3 +1,38 @@
+/**
+ * TablaUsuarios.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Componente de tabla para visualizar usuarios (alumnos o profesores)
+ * con filtrado, ordenación y paginación.
+ *
+ * Funcionalidades:
+ * - Filtros por:
+ *     • Grupo (MultiSelect)
+ *     • Apellidos (Input de texto)
+ *     • Usuario (Input de texto)
+ * - Ordenación por columnas usando `@tanstack/react-table`
+ * - Paginación con navegación a primera, anterior, siguiente y última página
+ * - Actualización automática de los usuarios filtrados mediante `onFilteredChange`
+ * - Soporte para acciones externas pasadas como prop `acciones`
+ *
+ * Estados principales:
+ * - sorting: columnas ordenadas
+ * - columnFilters: filtros aplicados a las columnas
+ *
+ * Dependencias:
+ * - @tanstack/react-table para la lógica de la tabla
+ * - Componentes UI: Table, Card, Input, Button, MultiSelect
+ * - Iconos: lucide-react
+ *
+ */
+
 import {
   Table,
   TableBody,
@@ -60,6 +95,13 @@ export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
 
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
+
+  const renderCell = (cell) => {
+    const colId = cell.column.id;
+    const value = cell.getValue();
+
+    return flexRender(cell.column.columnDef.cell, cell.getContext());
+  };
 
   return (
     <div className="space-y-4">
@@ -144,10 +186,11 @@ export function TablaUsuarios({ columns, data, onFilteredChange, acciones }) {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
+                      {/* {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
-                      )}
+                      )} */}
+                      {renderCell(cell)}
                     </TableCell>
                   ))}
                 </TableRow>

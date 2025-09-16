@@ -1,3 +1,54 @@
+/**
+ * Componente: DialogoDocumentoPrestamo
+  * 
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Este componente muestra un diálogo para generar un PDF de documentos de préstamo
+ * de libros para varios alumnos. Cada alumno genera una página con su información,
+ * lista de préstamos y normativa de uso de libros.
+ * 
+ * Props:
+ *   - open: boolean → indica si el diálogo está abierto.
+ *   - onOpenChange: function → callback que se ejecuta al abrir/cerrar el diálogo.
+ *   - alumnos: array → lista de objetos de alumnos, cada uno con propiedades:
+ *       - nombreUsuario: string → nombre completo del alumno.
+ *       - curso: string → curso del alumno.
+ *       - prestamos: array → lista de libros prestados con:
+ *           - libro: string → nombre del libro.
+ *           - devuelto: boolean → indica si el libro fue devuelto.
+ * 
+ * Estados internos:
+ *   - nombrePdf: string → nombre del archivo PDF a generar.
+ *   - loading: boolean → indica si se está generando el PDF.
+ *   - progress: number → porcentaje de progreso de generación.
+ *   - showSuccessToast: boolean → controla la visualización del toast de éxito.
+ * 
+ * Funciones principales:
+ *   - toBase64(url): Promise → convierte una imagen desde URL a base64 para usar en jsPDF.
+ *   - generarPdfPorAlumnos(): genera un PDF usando jsPDF:
+ *       1. Añade cabecera con logos y datos del centro.
+ *       2. Inserta texto legal incluyendo nombre y curso del alumno en negrita.
+ *       3. Genera tabla con libros, marcas de entregado/devuelto.
+ *       4. Añade secciones de firma y normativa de uso de libros.
+ *       5. Maneja múltiples páginas si el contenido excede una página.
+ *       6. Actualiza progreso mientras recorre los alumnos.
+ *       7. Guarda el archivo con el nombre indicado en `nombrePdf`.
+ * 
+ * Librerías/componentes usados:
+ *   - React: useState, useEffect
+ *   - jsPDF: generación de documentos PDF
+ *   - Dialog/DialogContent/DialogHeader/DialogTitle/DialogFooter
+ *   - Input, Button: componentes UI
+ * 
+ */
+
+
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import {
@@ -26,7 +77,6 @@ function toBase64(url) {
     img.src = url;
   });
 }
-
 
 export function DialogoDocumentoPrestamo({ open, onOpenChange, alumnos = [] }) {
   const [nombrePdf, setNombrePdf] = useState("documento_prestamo");
@@ -98,10 +148,10 @@ export function DialogoDocumentoPrestamo({ open, onOpenChange, alumnos = [] }) {
       });
 
       // Texto legal
-      let yTexto = marginTop + 35;
+      let yTexto = marginTop + 37;
       doc.setFontSize(11);
 
-      const nombreUsuario = alumno.nombreUsuario ?? "";
+      const nombreUsuario = " " + alumno.nombreUsuario ?? "";
       const curso = alumno.curso ?? "";
 
       const texto1 = `D/Dª _____________________________________________________________ con DNI: ________________, como padre/madre/tutor legal del alumno/alumna  `;
@@ -215,6 +265,86 @@ export function DialogoDocumentoPrestamo({ open, onOpenChange, alumnos = [] }) {
       doc.text("DNI: _________________", pageWidth - marginLeft, y, {
         align: "right",
       });
+
+      doc.addPage();
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(
+        "Normas de uso de los libros de texto",
+        pageWidth / 2,
+        marginTop,
+        {
+          align: "center",
+        }
+      );
+
+      y = marginTop + 15;
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+
+      // Párrafo inicial
+      const textoIntro =
+        "El libro de texto adquirido es un bien común y social, tú lo disfrutarás este curso y el próximo curso, otro alumno debe recibirlo en perfecto estado.";
+      const lineasIntro = doc.splitTextToSize(
+        textoIntro,
+        pageWidth - 2 * marginLeft
+      );
+      lineasIntro.forEach((linea) => {
+        doc.text(linea, marginLeft, y);
+        y += lineHeight;
+      });
+
+      y += 5;
+
+      // Subtítulo
+      doc.setFont("helvetica", "bold");
+      doc.text("El alumno está obligado a:", marginLeft, y);
+      y += lineHeight + 2;
+
+      // Lista con viñetas y sangría
+      const obligaciones = [
+        "Forrar los libros para una mejor conservación de los mismos.",
+        "Custodiar correctamente sus libros y material escolar.",
+        "Comunicar su pérdida o extravío al tutor o a la educadora social de manera inmediata.",
+        "Abonar la cantidad de 40 euros acordada en reunión del Consejo Escolar en caso de pérdida o deterioro total.",
+      ];
+
+      doc.setFont("helvetica", "normal");
+      obligaciones.forEach((item) => {
+        const texto = "• " + item; // viñeta con punto
+        const lineas = doc.splitTextToSize(
+          texto,
+          pageWidth - 2 * marginLeft - 10
+        );
+
+        lineas.forEach((linea, index) => {
+          const x = index === 0 ? marginLeft + 5 : marginLeft + 10; // sangría
+          doc.text(linea, x, y);
+          y += lineHeight;
+        });
+
+        y += 2; // espacio entre puntos
+      });
+
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      const textoFinal =
+        "Educando en la responsabilidad conseguiremos unos adultos socialmente competentes.";
+      const lineasFinal = doc.splitTextToSize(
+        textoFinal,
+        pageWidth - 2 * marginLeft
+      );
+      lineasFinal.forEach((linea) => {
+        doc.text(linea, marginLeft, y);
+        y += lineHeight;
+      });
+
+      y += 10;
+
+      // Línea centrada
+      doc.setFont("helvetica", "bold");
+      doc.text("ES TAREA DE TODOS.", pageWidth / 2, y, { align: "center" });
 
       // Progreso
       setProgress(Math.round(((i + 1) / alumnos.length) * 100));

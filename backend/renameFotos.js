@@ -1,3 +1,14 @@
+/*
+
+Renombra ficheros de fotos de alumnos de nie.extension a login.extension. Usa archivo Alumnos.xml descargado de rayuela con datos de alumnos.
+Deja archivos renombrados en ./uploads/alumnos
+
+Salida: csv con archivos no renombrados.
+
+Ejecucion: node renameFotos.js
+
+*/
+
 const fs = require('fs');
 const path = require('path');
 const xml2js = require('xml2js');

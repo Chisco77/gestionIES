@@ -1,3 +1,28 @@
+/**
+ * ================================================================
+ *  Controller: loginController.js
+ *  Proyecto: gestionIES
+ * ================================================================
+ *
+ *  Descripción:
+ *    Controlador para autenticación mediante LDAP.
+ *    Permite iniciar sesión validando credenciales en el directorio LDAP.
+ *
+ *  Funcionalidades:
+ *    - loginLdap: valida usuario y contraseña en LDAP y crea sesión.
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
+ * ================================================================
+ */
+
+
+
 const ldap = require('ldapjs');
 //const LDAP_URL = import.meta.env.LDAP_URL;
 

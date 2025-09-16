@@ -1,3 +1,65 @@
+/**
+ * DialogoGestionLlaves.jsx - Diálogo para gestión de préstamo y devolución de llaves
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Componente que muestra un cuadro de diálogo para gestionar el préstamo y la devolución
+ * de llaves a profesores para una estancia determinada.
+ * - Permite prestar llaves disponibles a profesores filtrables por nombre, apellido o uid.
+ * - Permite devolver llaves a partir de la lista de préstamos activos.
+ * - Calcula dinámicamente llaves disponibles y prestadas.
+ * - Integra pestañas para diferenciar operaciones de "Préstamos" y "Devoluciones".
+ *
+ * Props:
+ * - open: boolean que controla la visibilidad del diálogo.
+ * - estancia: objeto con la información de la estancia (id, nombre, totalllaves/keysTotales).
+ * - prestamosActivos: array con los préstamos actuales de la estancia.
+ * - onClose: función que cierra el diálogo.
+ * - onSuccess: callback opcional que se ejecuta tras realizar un préstamo o devolución con éxito.
+ *
+ * Estado interno:
+ * - profesores: array de profesores obtenidos desde LDAP.
+ * - profesorSeleccionado: uid del profesor seleccionado para préstamo.
+ * - filtroProfesor: string para filtrar la lista de profesores.
+ * - seleccionados: array de ids de préstamos seleccionados para devolución.
+ *
+ * Funcionalidad:
+ * - Al abrir, se resetean los estados internos (profesorSeleccionado, filtro, seleccionados).
+ * - fetch de profesores desde LDAP filtrando por tipo "teachers", ordenados por apellido y nombre.
+ * - Filtrado dinámico de profesores según búsqueda en apellido, nombre o uid.
+ * - handlePrestar(): realiza el préstamo de una unidad de llave al profesor seleccionado mediante POST a la API.
+ * - handleDevolver(): devuelve las llaves seleccionadas mediante POST a la API.
+ * - toggleSeleccion(): añade o quita préstamos seleccionados para la devolución.
+ *
+ * UI/UX:
+ * - Pestañas para separar "Préstamos" y "Devoluciones".
+ * - Listados con scroll y selección resaltada:
+ *   - verde claro para profesor seleccionado en préstamos
+ *   - rojo claro para préstamos seleccionados en devoluciones
+ * - Indicadores de total de llaves y llaves prestadas en cada pestaña.
+ * - Botones de acción habilitados según selección.
+ *
+ * Dependencias:
+ * - React (useState, useEffect)
+ * - @/components/ui/dialog
+ * - @/components/ui/tabs
+ * - @/components/ui/button
+ * - @/components/ui/input
+ * - sonner (toast)
+ *
+ * Notas:
+ * - Se calculan llaves disponibles en tiempo real restando las prestadas del total.
+ */
+
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -5,6 +67,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -151,12 +214,15 @@ export function DialogoGestionLlaves({
       >
         <DialogHeader>
           <DialogTitle>Gestión de llaves · {estancia.nombre}</DialogTitle>
+          <DialogDescription>
+            Ubicación llave: Número X. Armario Y.
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="prestar" className="mt-4">
           <TabsList>
-            <TabsTrigger value="prestar">Préstamos</TabsTrigger>
-            <TabsTrigger value="devolver">Devoluciones</TabsTrigger>
+            <TabsTrigger value="prestar">Entregar llave</TabsTrigger>
+            <TabsTrigger value="devolver">Pendientes devolver</TabsTrigger>
           </TabsList>
 
           {/* --- PRESTAR --- */}

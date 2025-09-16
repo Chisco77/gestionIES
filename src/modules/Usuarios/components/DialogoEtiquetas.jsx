@@ -1,4 +1,45 @@
-// components/DialogoEtiquetas.jsx
+/**
+ * DialogoEtiquetas.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente de diálogo para la configuración y generación de etiquetas
+ * PDF de alumnos o profesores.
+ *
+ * Funcionalidades:
+ * - Selección de número de etiquetas por usuario (1 a 12)
+ * - Selección de curso académico (2020-21 a 2030-31)
+ * - Personalización del nombre del archivo PDF
+ * - Generación de etiquetas en formato A4 con:
+ *     • Logo institucional
+ *     • Nombre del usuario (limitado a 25 caracteres)
+ *     • Curso y curso académico seleccionado
+ * - Visualización de barra de progreso durante la generación del PDF
+ * - Notificación visual al finalizar la generación
+ *
+ * Estados principales:
+ * - etiquetasPorUsuario: número de etiquetas por cada usuario
+ * - cursoSeleccionado: curso académico a mostrar en la etiqueta
+ * - nombrePdf: nombre del archivo PDF a generar
+ * - loading: indica si se está generando el PDF
+ * - progress: porcentaje de progreso de la generación
+ * - showSuccessToast: muestra un toast al finalizar
+ *
+ * Dependencias:
+ * - jsPDF para generación de PDFs
+ * - Componentes UI: Dialog, Select, Input, Button
+ * - Imagen de logo: /src/images/logo.png
+ *
+ */
+
+
+
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import logo from "/src/images/logo.png";
@@ -21,7 +62,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
-  //const [open, setOpen] = useState(false);
   const [etiquetasPorUsuario, setEtiquetasPorUsuario] = useState("1");
   const [cursoSeleccionado, setCursoSeleccionado] = useState("2024-25");
   const [nombrePdf, setNombrePdf] = useState("etiquetasbecarios");

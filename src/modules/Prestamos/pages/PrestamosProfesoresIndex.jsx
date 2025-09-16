@@ -1,8 +1,48 @@
+/**
+ * PrestamosProfesoresIndex.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente principal del módulo de gestión de préstamos de profesores.
+ *
+ * Funcionalidades:
+ * - Visualiza los préstamos de profesores en una tabla filtrable y paginable.
+ * - Permite seleccionar un profesor para realizar acciones individuales:
+ *     • Prestar libros
+ *     • Editar registro
+ *     • Eliminar registro
+ * - Ofrece generación de informes:
+ *     • Documento de préstamo de libros
+ *     • Etiquetas PDF para libros
+ * - Mantiene sincronización entre la tabla filtrada y los diálogos (etiquetas/documentos).
+ * - Utiliza el hook personalizado `usePrestamos` para la carga y actualización de datos.
+ *
+ * Estados principales:
+ * - prestamosFiltrados: préstamos visibles tras filtrado
+ * - profesorSeleccionado: fila seleccionada en la tabla
+ * - abrir*: control de apertura de los distintos diálogos
+ *
+ * Dependencias:
+ * - TablaPrestamos: tabla con filtros, selección y acciones
+ * - Diálogos: DialogoEditarPrestamos, DialogoAsignarLibros,
+ *            DialogoDocumentoPrestamo, DialogoEtiquetas
+ * - Componentes UI: Button, DropdownMenu
+ * - Iconos: lucide-react
+ *
+ */
+
+
 import { useState } from "react";
 import { columns } from "../components/columns";
 import { TablaPrestamos } from "../components/TablaPrestamos";
 import { DialogoEditarPrestamos } from "../components/DialogoEditarPrestamos";
-import { DialogoPrestarLibros } from "../components/DialogoPrestarLibros";
+import { DialogoAsignarLibros } from "../components/DialogoAsignarLibros";
 import { DialogoDocumentoPrestamo } from "../components/DialogoDocumentoPrestamo";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 import {
@@ -127,7 +167,7 @@ export function PrestamosProfesoresIndex() {
         onSuccess={refetch}
       />
 
-      <DialogoPrestarLibros
+      <DialogoAsignarLibros
         open={abrirDialogoPrestar}
         onClose={() => setAbrirDialogoPrestar(false)}
         onSuccess={() => {

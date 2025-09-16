@@ -1,3 +1,30 @@
+/**
+ * PrestamosLlavesIndex.jsx - Visualización de llaves prestadas
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Componente que muestra la lista de llaves prestadas actualmente.
+ * En esta versión inicial muestra un mensaje informativo y servirá
+ * como base para conectarlo posteriormente con el hook `usePrestamosLlaves()`.
+ * Permitirá gestionar devoluciones y consultar préstamos activos.
+ *
+ * Uso:
+ * <PrestamosLlavesIndex />
+ *
+ * Dependencias:
+ * - React
+ */
+
+
 import React from "react";
 
 export function PrestamosLlavesIndex(){

@@ -1,7 +1,83 @@
+/**
+ * Componente: TablaPrestamos
+ * 
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Este componente renderiza una tabla interactiva de préstamos de libros,
+ * con funcionalidades de:
+ *   - Filtrado por curso y nombre de alumno
+ *   - Ordenamiento por columnas
+ *   - Paginación
+ *   - Filas expandibles para ver detalle de préstamos
+ *   - Selección de fila
+ *   - Acciones dinámicas basadas en la fila seleccionada
+ * 
+ * Props:
+ *   - columns: array → definición de columnas (para React Table)
+ *   - data: array → lista de préstamos, cada objeto debe incluir:
+ *       - id_prestamo: identificador único
+ *       - nombreUsuario: nombre del alumno
+ *       - curso: curso del alumno
+ *       - doc_compromiso: estado del documento de compromiso (1=Entregado, 2=Recibido)
+ *       - prestamos: array de objetos con detalle de libros:
+ *           - id_item: identificador del préstamo del libro
+ *           - libro: nombre del libro
+ *           - entregado: boolean
+ *           - devuelto: boolean
+ *   - informes: JSX opcional que se muestra en la cabecera (por ejemplo, botones de export)
+ *   - acciones: función que recibe el usuario seleccionado y devuelve botones/acciones
+ *   - onSelectUsuario: función callback al seleccionar una fila (usuario)
+ *   - onFilteredChange: función callback que recibe el array de usuarios filtrados
+ * 
+ * Estados internos:
+ *   - sorting: array → columnas por las que se ordena
+ *   - columnFilters: array → filtros aplicados a columnas
+ *   - expandedRows: objeto → mapea id_prestamo a booleano para saber si la fila está expandida
+ *   - selectedId: id del usuario seleccionado
+ * 
+ * Funciones principales:
+ *   - toggleRow(id): expande o colapsa la fila de detalle
+ *   - handleRowClick(usuario): selecciona la fila y llama a onSelectUsuario
+ *   - toggleExpandClick(id, e): evita propagación del click y expande/colapsa fila
+ * 
+ * React Table:
+ *   - Se usa useReactTable con:
+ *       - getCoreRowModel
+ *       - getPaginationRowModel
+ *       - getSortedRowModel
+ *       - getFilteredRowModel
+ *   - Se sincroniza sorting y columnFilters en el estado
+ *   - Se habilita selección de fila (single row)
+ * 
+ * Filtrado:
+ *   - Select para curso → filtra columna "curso"
+ *   - Input para nombre → filtra columna "nombreUsuario"
+ *   - Se notifica a onFilteredChange con los resultados filtrados
+ * 
+ * Render:
+ *   - Cabecera con filtros
+ *   - Tabla con:
+ *       - Fila principal: nombre alumno, documento compromiso, curso
+ *       - Fila expandida: detalle de libros con columnas "Entregado" y "Devuelto"
+ *         usando iconos Check (verde) o X (rojo)
+ *   - Paginación con botones (primera, anterior, siguiente, última)
+ *   - Total de registros filtrados
+ *   - Acciones dinámicas según usuario seleccionado
+ * 
+ */
+
+
+import { useState, Fragment, useEffect } from "react";
 import {
   flexRender,
-  getCoreRowModel,
   useReactTable,
+  getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   getFilteredRowModel,
@@ -17,59 +93,63 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
-  ChevronsLeft,
-  ChevronLeft,
+  ChevronDown,
   ChevronRight,
+  ChevronLeft,
   ChevronsRight,
+  ChevronsLeft,
+  Check,
+  X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+
 
 export function TablaPrestamos({
   columns,
   data,
-  onFilteredChange,
   informes,
   acciones,
+  onSelectUsuario,
+  onFilteredChange, // <-- agregamos prop
 }) {
-  const [sorting, setSorting] = useState([{ id: "nombreUsuario", desc: false }]);
+  const [sorting, setSorting] = useState([
+    { id: "nombreUsuario", desc: false },
+  ]);
   const [columnFilters, setColumnFilters] = useState([]);
-  const [textoFiltro, setTextoFiltro] = useState("");
-  const [filtroCurso, setFiltroCurso] = useState("");
+  const [expandedRows, setExpandedRows] = useState({});
+  const [selectedId, setSelectedId] = useState(null);
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    state: { sorting, columnFilters },
     enableRowSelection: true,
     enableMultiRowSelection: false,
-    state: {
-      sorting,
-      columnFilters,
-    },
   });
 
-  useEffect(() => {
-    table.getColumn("nombreUsuario")?.setFilterValue(textoFiltro);
-  }, [textoFiltro]);
-
-  useEffect(() => {
-    table.getColumn("curso")?.setFilterValue(filtroCurso || undefined);
-  }, [filtroCurso]);
-
+  // --- efecto para enviar filas filtradas ---
   useEffect(() => {
     const filtered = table
       .getFilteredRowModel()
       .rows.map((row) => row.original);
     onFilteredChange?.(filtered);
-  }, [columnFilters, data]);
+  }, [table.getFilteredRowModel().rows]);
 
-  const selectedRow = table.getSelectedRowModel().rows[0];
-  const selectedItem = selectedRow?.original;
+  const toggleRow = (id) =>
+    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+  const handleRowClick = (usuario) => {
+    setSelectedId(usuario.id_prestamo);
+    onSelectUsuario?.(usuario);
+  };
+  const toggleExpandClick = (id, e) => {
+    e.stopPropagation();
+    toggleRow(id);
+  };
 
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
@@ -80,13 +160,17 @@ export function TablaPrestamos({
 
   return (
     <div>
+      {/* Filtros */}
       <div className="flex flex-wrap gap-4 py-2 text-sm text-muted-foreground items-end">
         <div className="space-y-1">
           <label className="block font-medium text-xs">Curso</label>
           <select
             className="border p-2 rounded text-sm"
-            value={filtroCurso}
-            onChange={(e) => setFiltroCurso(e.target.value)}
+            onChange={(e) =>
+              table
+                .getColumn("curso")
+                ?.setFilterValue(e.target.value || undefined)
+            }
           >
             <option value="">Todos</option>
             {cursosUnicos.map((curso) => (
@@ -103,49 +187,123 @@ export function TablaPrestamos({
             type="text"
             className="border p-2 rounded text-sm"
             placeholder="Buscar por nombre"
-            value={textoFiltro}
-            onChange={(e) => setTextoFiltro(e.target.value)}
+            onChange={(e) =>
+              table.getColumn("nombreUsuario")?.setFilterValue(e.target.value)
+            }
           />
         </div>
+
         {informes && <div className="ml-auto">{informes}</div>}
       </div>
+
+      {/* Tabla */}
       <div className="rounded-md border mt-4">
         <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  onClick={() => row.toggleSelected()}
-                  className="cursor-pointer"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const usuario = row.original;
+                const isExpanded = expandedRows[usuario.id_prestamo] || false;
+
+                return (
+                  <Fragment key={usuario.id_prestamo}>
+                    <TableRow
+                      className={`cursor-pointer ${
+                        selectedId === usuario.id_prestamo ? "bg-blue-100" : ""
+                      } hover:bg-gray-200`}
+                      onClick={() => handleRowClick(usuario)}
+                    >
+                      {/* 1ª columna: expandir/colapsar */}
+                      <TableCell className="w-10 text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) =>
+                            toggleExpandClick(usuario.id_prestamo, e)
+                          }
+                        >
+                          {isExpanded ? <ChevronDown /> : <ChevronRight />}
+                        </Button>
+                      </TableCell>
+
+                      {/* 2ª columna: Alumno*/}
+                      <TableCell>{usuario.nombreUsuario}</TableCell>
+
+                      {/* 3ª columna: Doc compromiso */}
+                      <TableCell>
+                        {usuario.doc_compromiso === 1
+                          ? "Entregado"
+                          : usuario.doc_compromiso === 2
+                            ? "Recibido"
+                            : ""}
+                      </TableCell>
+
+                      {/* 4ª columna: Curso */}
+                      <TableCell>{usuario.curso}</TableCell>
+                    </TableRow>
+
+                    {/* Filas expandidas */}
+                    {isExpanded && (
+                      <Fragment>
+                        <TableRow className="bg-gray-100 font-semibold">
+                          <TableCell></TableCell>
+                          <TableCell className="pl-10">Libro</TableCell>
+                          <TableCell className="text-center">
+                            Entregado
+                          </TableCell>
+                          <TableCell className="text-center">
+                            Devuelto
+                          </TableCell>
+                          <TableCell></TableCell>
+                        </TableRow>
+                        {usuario.prestamos.map((item) => (
+                          <TableRow key={item.id_item} className="bg-gray-50">
+                            <TableCell></TableCell>
+                            <TableCell className="pl-10">
+                              {item.libro}
+                            </TableCell>
+
+                            {/* Nueva columna ENTREGADO */}
+                            <TableCell className="text-center">
+                              {item.entregado ? (
+                                <Check className="text-green-600 w-4 h-4 mx-auto" />
+                              ) : (
+                                <X className="text-red-600 w-4 h-4 mx-auto" />
+                              )}
+                            </TableCell>
+
+                            {/* Columna DEVUELTO */}
+                            <TableCell className="text-center">
+                              {item.devuelto ? (
+                                <Check className="text-green-600 w-4 h-4 mx-auto" />
+                              ) : (
+                                <X className="text-red-600 w-4 h-4 mx-auto" />
+                              )}
+                            </TableCell>
+
+                            <TableCell></TableCell>
+                          </TableRow>
+                        ))}
+                      </Fragment>
+                    )}
+                  </Fragment>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell
@@ -159,9 +317,15 @@ export function TablaPrestamos({
           </TableBody>
         </Table>
       </div>
+
       {/* Acciones + Paginación */}
       <div className="flex flex-col sm:flex-row sm:justify-between items-center py-6 space-y-4 sm:space-y-0">
-        <div className="flex gap-2">{acciones(selectedItem)}</div>
+        <div className="flex gap-2">
+          {acciones &&
+            acciones(
+              selectedId ? data.find((u) => u.id_prestamo === selectedId) : null
+            )}
+        </div>
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
@@ -179,11 +343,9 @@ export function TablaPrestamos({
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-
           <span className="text-xs text-muted-foreground px-2">
             Página {currentPage} de {totalPages}
           </span>
-
           <Button
             variant="outline"
             size="icon"
@@ -208,3 +370,5 @@ export function TablaPrestamos({
     </div>
   );
 }
+
+

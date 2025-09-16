@@ -1,3 +1,78 @@
+/**
+ * PlanoEstanciasInteractivo.jsx - Plano interactivo de estancias con gestión de llaves
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Componente que muestra un plano interactivo de estancias
+ * con la posibilidad de:
+ * - Visualizar estancias y su número de llaves prestadas y disponibles.
+ * - Abrir un diálogo para gestionar préstamos y devoluciones de llaves a profesores.
+ * - Modo de edición para crear nuevas estancias mediante dibujo de polígonos sobre el plano.
+ * - Escalado dinámico del plano SVG según tamaño del contenedor.
+ *
+ * Funcionalidad principal:
+ * - Carga las estancias de una planta determinada desde la API.
+ * - Carga los préstamos de llaves agrupados por profesor.
+ * - Calcula el estado de cada estancia (ninguna llave prestada, parcial o todas prestadas).
+ * - Permite dibujar nuevas estancias en modo edición y guardarlas en la API.
+ * - Muestra un panel lateral con:
+ *     - Lista de préstamos activos.
+ *     - Controles para activar el modo edición y crear nuevas estancias.
+ * - Dibuja polígonos para cada estancia en el plano SVG, coloreando según el estado de las llaves.
+ * - Permite hacer click sobre una estancia para abrir el diálogo de gestión de llaves (`DialogoGestionLlaves`).
+ *
+ * Props:
+ * - planta: string que indica la planta a mostrar ("baja", "primera", "segunda"). Por defecto "baja".
+ *
+ * Estado interno:
+ * - estancias: array con todas las estancias cargadas de la planta.
+ * - prestamos: array con los préstamos agrupados por profesor.
+ * - cargando: boolean para indicar carga de datos.
+ * - error: string con mensaje de error de carga o guardado.
+ * - modoEdicion: boolean para activar la creación de nuevas estancias.
+ * - draw: objeto con estado de dibujo activo y coordenadas del polígono en edición.
+ * - nuevo: objeto con datos de la nueva estancia (código, descripción, totalllaves).
+ * - modalLlaves: objeto para controlar la apertura del diálogo de gestión de llaves.
+ * - size: dimensiones actuales del plano para escalar los polígonos correctamente.
+ *
+ * Funciones auxiliares:
+ * - parseListResponse(resp): normaliza respuestas JSON de la API.
+ * - apiListarEstancias(planta): obtiene estancias de la API para la planta.
+ * - apiGuardarEstancia(planta, estancia): guarda una nueva estancia mediante POST a la API.
+ * - apiListarPrestamosLlaves(): obtiene préstamos de llaves agrupados por profesor.
+ * - estadoEstancia(estancia): calcula llaves prestadas, libres y estado visual de la estancia.
+ * - startOrAddPoint(evt), finishPolygon(), cancelDraw(): manejan la creación de polígonos de estancias.
+ * - polyToPath(pts), scalePoints(pts): convierten coordenadas relativas en paths SVG escalados.
+ * - abrirModalLlaves(estancia), cerrarModalLlaves(): controlan el diálogo de préstamos de llaves.
+ * - refrescarPrestamos(): recarga la lista de préstamos activos tras cambios.
+ *
+ * UI/UX:
+ * - Plano SVG escalable con polígonos interactivos para cada estancia.
+ * - Círculo de color en cada estancia indicando estado de llaves:
+ *     - Gris: ninguna llave prestada.
+ *     - Amarillo: parcial.
+ *     - Rojo: todas prestadas.
+ * - Panel lateral con listado de préstamos activos y controles de edición.
+ * - Modo edición permite dibujar polígonos, ingresar código, descripción y número de llaves.
+ * - Click en plano fuera de modo edición abre `DialogoGestionLlaves`.
+ *
+ * Dependencias:
+ * - React (useState, useEffect, useMemo, useRef)
+ * - DialogoGestionLlaves.jsx
+ * - Fetch API para llamadas a backend
+ *
+ */
+
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DialogoGestionLlaves } from "./DialogoGestionLlaves";
 
@@ -135,7 +210,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
     for (const prof of prestamos) {
       for (const p of prof.prestamos) {
         if (!p.fechadevolucion) {
-          // ✅ solo préstamos activos
+          // solo préstamos activos
           m.set(p.idestancia, (m.get(p.idestancia) || 0) + p.unidades);
         }
       }
@@ -166,7 +241,6 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   const finishPolygon = async () => {
     if (!modoEdicion || !draw.activo || draw.coordenadas.length < 3) return;
     const estNueva = {
-      //id,
       codigo: nuevo.codigo,
       descripcion: nuevo.descripcion,
       totalllaves: Math.max(1, Number(nuevo.totalllaves) || 1),
@@ -243,9 +317,6 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       .filter((p) => p.fechadevolucion === null)
       .map((p) => ({ ...p, profesor: profesor.nombre }))
   );
-
-  console.log("👉 Todos los préstamos planos:", prestamosPlanos);
-  console.log("👉 Préstamos activos:", prestamosActivos);
 
   return (
     <div style={{ padding: 12 }}>
