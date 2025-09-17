@@ -30,6 +30,8 @@ En esta carpeta encontrarás las guías de instalación y despliegue:
 **Francisco Damián Méndez Palma**  
 IES Francisco de Orellana  
 📧 [fmendezpalma@gmail.com](mailto:fmendezpalma@gmail.com)
+📧 [adminies.fcodeorellana@educarex.es](mailto:adminies.fcodeorellana@educarex.es)
+
 
 ## 📜 Licencia
 
@@ -37,10 +39,5 @@ Este proyecto está licenciado bajo los términos de la **GNU General Public Lic
 Esto significa que puedes usar, copiar, modificar y distribuir este software, siempre que cualquier versión derivada se publique bajo la misma licencia.  
 
 Ver el archivo [LICENSE](./LICENSE) para más información.
-
-## 🙌 Créditos
-
-- Proyecto desarrollado en el marco de la gestión académica y bibliográfica en **IES Francisco de Orellana**.  
-- Inspirado en la necesidad de contar con herramientas libres y abiertas para la comunidad educativa.  
 
 ✍️ Para más detalles consulta las guías de despliegue en la carpeta [`docs`](./docs).
