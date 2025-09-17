@@ -39,7 +39,7 @@ export function LoginForm({ className, ...props }) {
       const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // ⬅️ Mantiene la sesión
+        credentials: "include", //  Mantiene la sesión
         body: JSON.stringify(usuario),
       });
 

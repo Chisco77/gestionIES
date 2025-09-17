@@ -37,6 +37,7 @@
 const express = require("express");
 const router = express.Router();
 const { loginLdap } = require("../controllers/ldap/loginController");
+const { loginExterno } = require ("../controllers/ldap/loginControllerExterno");
 
 router.post(
   "/login",
@@ -45,6 +46,18 @@ router.post(
   },
   loginLdap
 );
+
+
+router.post(
+  "/login-externo",
+  (req, res, next) => {
+    // middleware opcional para futuras validaciones
+    next();
+  },
+  loginExterno
+);
+
+
 
 router.get("/check-auth", (req, res) => {
   if (req.session.ldap) {

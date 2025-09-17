@@ -90,7 +90,7 @@ export function NavMain({ items }) {
                             onClick={(e) => {
                               e.preventDefault();
                               subItem.onClick();
-                              setTituloActivo(subItem.title); // También actualiza el título si quieres
+                              setTituloActivo(subItem.title); 
                             }}
                             className="w-full text-left"
                           >
