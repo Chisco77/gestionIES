@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,31 +29,38 @@ export function LoginForm({ className, ...props }) {
     });
   };
 
-  const handleSubmit = (e) => {
-  e.preventDefault();
-    //const url = "/api/login";  // CORRECTO
 
-  const API_URL = import.meta.env.VITE_API_URL;
-  fetch(`${API_URL}/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include", // ⬅️ ¡IMPORTANTE para mantener sesión!
-    body: JSON.stringify(usuario),
-  })
-    .then((response) => {
-      if (response.status === 200) {
-        navigate("/alumnos"); 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    try {
+      const response = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // ⬅️ Mantiene la sesión
+        body: JSON.stringify(usuario),
+      });
+
+      if (response.ok) {
+        navigate("/alumnos");
       } else {
-        alert("Usuario o Password incorrectos");
+        // leer JSON del backend
+        const errorData = await response.json().catch(() => null);
+        const mensaje = errorData?.error || "Usuario o contraseña incorrectos"; 
+        alert(`❌ Error: ${mensaje}`);
       }
-    })
-    .catch(() => alert("Error de conexión con el servidor"));
-};
+    } catch (error) {
+      alert("Error de conexión con el servidor");
+    }
+  };
 
   return (
-    <div className={`flex flex-col gap-6 mx-auto max-w-sm ${className}`} {...props}>
+    <div
+      className={`flex flex-col gap-6 mx-auto max-w-sm ${className}`}
+      {...props}
+    >
       <Card>
         <CardHeader className="flex flex-col items-center justify-center text-center">
           <CardTitle className="text-2xl">gestionIES</CardTitle>

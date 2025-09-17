@@ -93,7 +93,7 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
       doc.setFont("helvetica", "normal");
       doc.text(prefijo, startX, centerY, { baseline: "middle" });
 
-      // Dibujar número (negrita, tamaño 30) ligeramente más arriba (compensación visual)
+      // Dibujar número (negrita, tamaño 30)
       doc.setFontSize(30);
       doc.setFont("helvetica", "bold");
       doc.text(`${numero}`, startX + prefijoWidth, centerY - 1.2, {
@@ -139,7 +139,7 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="40">40 (10x4)</SelectItem>
+                <SelectItem value="40">40 (Apli 01286 10x4)</SelectItem>
                 <SelectItem value="24">24 (Apli 01293 8x3)</SelectItem>
               </SelectContent>
             </Select>

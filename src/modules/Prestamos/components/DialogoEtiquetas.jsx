@@ -1,6 +1,6 @@
 /**
  * Componente: DialogoEtiquetas
- * 
+ *
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
  * Email: adminies.franciscodeorellana@educarex.es
@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Este componente muestra un diálogo para configurar y generar etiquetas en PDF
  * para una lista de usuarios (alumnos, becarios, etc.).
  * Permite:
@@ -18,7 +18,7 @@
  *   - Personalizar el nombre del archivo PDF
  *   - Visualizar barra de progreso mientras se genera el PDF
  *   - Generar un PDF con la información de los usuarios y el logo institucional
- * 
+ *
  * Props:
  *   - usuarios: array → lista de usuarios que tendrán etiquetas
  *       - Cada usuario debe contener al menos:
@@ -26,7 +26,7 @@
  *           - curso: string
  *   - open: boolean → indica si el diálogo está abierto
  *   - onOpenChange: function → callback para abrir/cerrar el diálogo
- * 
+ *
  * Estados internos:
  *   - etiquetasPorUsuario: string → número de etiquetas por usuario seleccionado
  *   - cursoSeleccionado: string → curso académico seleccionado
@@ -35,7 +35,7 @@
  *   - loading: boolean → indica si se está generando el PDF
  *   - progress: number → porcentaje de progreso de generación del PDF
  *   - showSuccessToast: boolean → muestra un toast de éxito al finalizar
- * 
+ *
  * Funciones principales:
  *   - generatePdfLabels():
  *       - Crea un objeto jsPDF con formato A4
@@ -46,13 +46,13 @@
  *       - Controla saltos de página automáticamente
  *       - Actualiza el estado `progress` para mostrar la barra de progreso
  *       - Guarda el PDF con la extensión .pdf automáticamente
- * 
+ *
  * Uso de librerías:
  *   - jsPDF → generación de PDF
  *   - React → useState, useEffect
  *   - Componentes UI: Dialog, Select, Input, Button
  *   - Logo importado desde `/src/images/logo.png`
- * 
+ *
  * Flujo de uso:
  *   1. Abrir el diálogo con `open={true}`.
  *   2. Configurar:
@@ -65,9 +65,8 @@
  *       - Genera el PDF
  *       - Al finalizar, muestra un toast de éxito
  *       - Cierra el diálogo
- * 
+ *
  */
-
 
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
@@ -98,7 +97,6 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-
 
   const generatePdfLabels = async () => {
     const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -225,15 +223,15 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">
-                Tamaño de etiqueta
+                Formato de etiqueta
               </label>
               <Select value={tamanoEtiqueta} onValueChange={setTamanoEtiqueta}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="40">40 (10x4)</SelectItem>
-                  <SelectItem value="24">24 (8x3)</SelectItem>
+                  <SelectItem value="40">40 (Apli 01286 10x4)</SelectItem>
+                  <SelectItem value="24">24 (Apli 01293 8x3)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
