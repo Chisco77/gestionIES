@@ -2,16 +2,18 @@
 
 # gestionIES
 
-Aplicación para la gestión de préstamos de libros, usuarios y documentación en un entorno escolar.
+Gestión de préstamos de libros de texto a alumnos y préstamos de llaves a profesores. Se añadirán más funciones con LDAP y otras.
 
 ## 🚀 Documentación de despliegue
 
 En esta carpeta encontrarás las guías de instalación y despliegue:
 
-- [Guía de despliegue en desarrollo](docs/DespliegueDesarrollo.pdf)
-- [Guía de despliegue en producción](docs/DespliegueProduccion.pdf)
+- [Guía de despliegue en desarrollo](doc/DespliegueDesarrollo.pdf)
+- [Guía de despliegue en producción](doc/DespliegueProduccion.pdf)
 
 ## 📂 Estructura del proyecto
+
+
 
 
 ## 🛠️ Tecnologías principales
@@ -22,5 +24,23 @@ En esta carpeta encontrarás las guías de instalación y despliegue:
 - **Autenticación**: LDAP  
 
 ---
+
+## 👤 Autor
+
+**Francisco Damián Méndez Palma**  
+IES Francisco de Orellana  
+📧 [fmendezpalma@gmail.com](mailto:fmendezpalma@gmail.com)
+
+## 📜 Licencia
+
+Este proyecto está licenciado bajo los términos de la **GNU General Public License v3.0 (GPL-3.0)**.  
+Esto significa que puedes usar, copiar, modificar y distribuir este software, siempre que cualquier versión derivada se publique bajo la misma licencia.  
+
+Ver el archivo [LICENSE](./LICENSE) para más información.
+
+## 🙌 Créditos
+
+- Proyecto desarrollado en el marco de la gestión académica y bibliográfica en **IES Francisco de Orellana**.  
+- Inspirado en la necesidad de contar con herramientas libres y abiertas para la comunidad educativa.  
 
 ✍️ Para más detalles consulta las guías de despliegue en la carpeta [`docs`](./docs).
