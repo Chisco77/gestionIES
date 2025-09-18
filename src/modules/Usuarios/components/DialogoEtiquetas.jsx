@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Componente de diálogo para la configuración y generación de etiquetas
  * PDF de alumnos o profesores.
  *
@@ -38,8 +38,6 @@
  *
  */
 
-
-
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import logo from "/src/images/logo.png";
@@ -64,7 +62,7 @@ import { Button } from "@/components/ui/button";
 export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
   const [etiquetasPorUsuario, setEtiquetasPorUsuario] = useState("1");
   const [cursoSeleccionado, setCursoSeleccionado] = useState("2024-25");
-  const [nombrePdf, setNombrePdf] = useState("etiquetasbecarios");
+  const [nombrePdf, setNombrePdf] = useState("etiquetas_portatiles");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -133,103 +131,114 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
   };*/
 
   const generatePdfLabels = async () => {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-  const labelWidth = 52.5;
-  const labelHeight = 29.7;
-  const cols = 4;
-  const rows = 10;
-  const labelsPerPage = cols * rows;
-  const logoWidth = 18;
-  const logoHeight = 8;
+    const labelWidth = 52.5;
+    const labelHeight = 29.7;
+    const cols = 4;
+    const rows = 10;
+    const labelsPerPage = cols * rows;
+    const imageWidth = 12;
+    const imageHeight = 8;
 
-  // fallback logo institucional
-  const fallbackLogo = await new Promise((resolve) => {
-    const img = new Image();
-    img.src = logo;
-    img.onload = () => resolve(img);
-  });
+    // fallback logo institucional
+    const fallbackLogo = await new Promise((resolve) => {
+      const img = new Image();
+      img.src = logo;
+      img.onload = () => resolve(img);
+    });
 
-  // función para cargar foto del usuario
-  const loadUserImage = async (uid) => {
-    const API_URL = import.meta.env.VITE_API_URL;
-    const extensions = ["jpg", "jpeg", "png"];
+    // función para cargar foto del usuario
+    const loadUserImage = async (uid) => {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
-    for (const ext of extensions) {
-      try {
-        const res = await fetch(`${API_URL}/uploads/alumnos/${uid}.${ext}`, {
-          credentials: "include",
-        });
-        if (res.ok) {
-          const blob = await res.blob();
-          return await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result); // Base64
-            reader.readAsDataURL(blob);
-          });
+      const extensions = ["jpg", "jpeg", "png"];
+
+      for (const ext of extensions) {
+        try {
+          const res = await fetch(
+            `${SERVER_URL}/uploads/alumnos/${uid}.${ext}`,
+            {
+              credentials: "include",
+            }
+          );
+          if (res.ok) {
+            const blob = await res.blob();
+            return await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result); // Base64
+              reader.readAsDataURL(blob);
+            });
+          }
+        } catch (e) {
+          console.warn(`No se pudo cargar ${uid}.${ext}`);
         }
-      } catch (e) {
-        console.warn(`No se pudo cargar ${uid}.${ext}`);
       }
+      return null;
+    };
+
+    // construir lista de etiquetas según nº elegido
+    let etiquetas = [];
+    usuarios.forEach((usuario) => {
+      for (let i = 0; i < Number(etiquetasPorUsuario); i++) {
+        etiquetas.push(usuario);
+      }
+    });
+
+    const total = etiquetas.length;
+
+    for (let i = 0; i < total; i++) {
+      const usuario = etiquetas[i];
+      if (i > 0 && i % labelsPerPage === 0) doc.addPage();
+
+      const indexInPage = i % labelsPerPage;
+      const col = indexInPage % cols;
+      const row = Math.floor(indexInPage / cols);
+      const x = col * labelWidth;
+      const y = row * labelHeight;
+      const centerX = x + labelWidth / 2;
+      const logoX = centerX - imageWidth / 2;
+      const logoY = y + 3;
+
+      // cargar imagen del alumno
+      const userImage = await loadUserImage(usuario.uid);
+
+      if (userImage) {
+        doc.addImage(userImage, "JPEG", logoX, logoY, imageWidth, imageHeight);
+      } else {
+        // si no tiene foto -> logo por defecto
+        doc.addImage(
+          fallbackLogo,
+          "JPEG",
+          logoX,
+          logoY,
+          imageWidth,
+          imageHeight
+        );
+      }
+
+      let nombreCompleto = `${usuario.givenName} ${usuario.sn}`;
+      if (nombreCompleto.length > 25)
+        nombreCompleto = nombreCompleto.slice(0, 22) + "…";
+
+      doc.setFontSize(9);
+      doc.text(nombreCompleto, centerX, y + 15, { align: "center" });
+
+      doc.setFontSize(8);
+      doc.text(
+        `Curso: ${usuario.groups[1]} - ${cursoSeleccionado}`,
+        centerX,
+        y + 18,
+        { align: "center" }
+      );
+
+      if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
+      setProgress(Math.round(((i + 1) / total) * 100));
     }
-    return null;
+
+    doc.save(nombrePdf.endsWith(".pdf") ? nombrePdf : `${nombrePdf}.pdf`);
   };
-
-  // construir lista de etiquetas según nº elegido
-  let etiquetas = [];
-  usuarios.forEach((usuario) => {
-    for (let i = 0; i < Number(etiquetasPorUsuario); i++) {
-      etiquetas.push(usuario);
-    }
-  });
-
-  const total = etiquetas.length;
-
-  for (let i = 0; i < total; i++) {
-    const usuario = etiquetas[i];
-    if (i > 0 && i % labelsPerPage === 0) doc.addPage();
-
-    const indexInPage = i % labelsPerPage;
-    const col = indexInPage % cols;
-    const row = Math.floor(indexInPage / cols);
-    const x = col * labelWidth;
-    const y = row * labelHeight;
-    const centerX = x + labelWidth / 2;
-    const logoX = centerX - logoWidth / 2;
-    const logoY = y + 3;
-
-    // cargar imagen del alumno
-    const userImage = await loadUserImage(usuario.uid);
-
-    if (userImage) {
-      doc.addImage(userImage, "JPEG", logoX, logoY, logoWidth, logoHeight);
-    } else {
-      // si no tiene foto -> logo por defecto
-      doc.addImage(fallbackLogo, "JPEG", logoX, logoY, logoWidth, logoHeight);
-    }
-
-    let nombreCompleto = `${usuario.givenName} ${usuario.sn}`;
-    if (nombreCompleto.length > 25)
-      nombreCompleto = nombreCompleto.slice(0, 22) + "…";
-
-    doc.setFontSize(9);
-    doc.text(nombreCompleto, centerX, y + 15, { align: "center" });
-
-    doc.setFontSize(8);
-    doc.text(
-      `Curso: ${usuario.groups[1]} - ${cursoSeleccionado}`,
-      centerX,
-      y + 21,
-      { align: "center" }
-    );
-
-    if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
-    setProgress(Math.round(((i + 1) / total) * 100));
-  }
-
-  doc.save(nombrePdf.endsWith(".pdf") ? nombrePdf : `${nombrePdf}.pdf`);
-};
-
 
   useEffect(() => {
     if (showSuccessToast) {
@@ -237,7 +246,6 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
       return () => clearTimeout(timeout);
     }
   }, [showSuccessToast]);
-
 
   return (
     <>

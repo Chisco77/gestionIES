@@ -107,7 +107,7 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
     }[tamanoEtiqueta];
 
     const labelsPerPage = layout.cols * layout.rows;
-    const logoWidth = 18;
+    const logoWidth = 12;
     const logoHeight = 8;
 
     const image = await new Promise((resolve) => {
@@ -151,7 +151,7 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
       doc.text(
         `Curso: ${usuario.curso} - ${cursoSeleccionado}`,
         centerX,
-        y + 21,
+        y + 18,
         { align: "center" }
       );
 
