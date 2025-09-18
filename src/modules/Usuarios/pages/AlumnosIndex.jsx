@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Componente principal para visualizar y gestionar alumnos desde LDAP.
  *
  * Funcionalidades:
@@ -34,11 +34,11 @@
  *
  */
 
-
 import { useState } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
 import { DialogoListadoCurso } from "../components/DialogoListadoCurso";
+import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 import { Loader, Printer, Users } from "lucide-react";
 import {
   DropdownMenu,
@@ -50,7 +50,9 @@ import { Button } from "@/components/ui/button";
 import { useAlumnosLdap } from "@/hooks/useAlumnosLdap";
 
 export function AlumnosIndex() {
-  const [abrirDialogoListadoCurso, setAbrirDialogoListadoCurso] = useState(false);
+  const [abrirDialogoListadoCurso, setAbrirDialogoListadoCurso] =
+    useState(false);
+  const [abrirDialogoEtiquetas, setAbrirDialogoEtiquetas] = useState(false);
   const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
 
   const { data: alumnos, isLoading, error } = useAlumnosLdap();
@@ -84,6 +86,12 @@ export function AlumnosIndex() {
                   <Users className="mr-2 h-4 w-4" />
                   Alumnos por grupo
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setAbrirDialogoEtiquetas(true)}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  Etiquetas para portátiles
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           }
@@ -94,6 +102,12 @@ export function AlumnosIndex() {
         alumnos={alumnosFiltrados}
         open={abrirDialogoListadoCurso}
         onOpenChange={setAbrirDialogoListadoCurso}
+      />
+
+      <DialogoEtiquetas
+        usuarios={alumnosFiltrados}
+        open={abrirDialogoEtiquetas}
+        onOpenChange={setAbrirDialogoEtiquetas}
       />
     </div>
   );
