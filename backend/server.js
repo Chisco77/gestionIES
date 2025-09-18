@@ -83,19 +83,6 @@ const ipRangeCheck = require("ip-range-check");
 // rango interno permitido
 const INTERNAL_RANGE = "172.16.218.0/23";
 
-app.get("/api/config", (req, res) => {
-  const ip =
-    req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket.remoteAddress;
-
-  console.log("Cliente con IP:", ip);
-
-  if (ipRangeCheck(ip, INTERNAL_RANGE)) {
-    res.json({ loginMode: "interno" });
-  } else {
-    res.json({ loginMode: "externo" });
-  }
-});
-
 
 // Servidor
 const PORT = process.env.PORT || 5000;

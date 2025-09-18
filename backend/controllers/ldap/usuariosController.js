@@ -25,10 +25,9 @@
  * ================================================================
  */
 
-
-
 const ldap = require("ldapjs");
-const LDAP_URL = process.env.LDAP_URL;
+
+//const LDAP_URL = process.env.LDAP_URL;
 
 // obtener grupos desde LDAP
 async function obtenerGruposDesdeLdap(ldapSession, filtroGroupType = null) {
@@ -37,10 +36,14 @@ async function obtenerGruposDesdeLdap(ldapSession, filtroGroupType = null) {
       return reject(new Error("No autenticado: falta sesión LDAP"));
     }
 
-    const client = ldap.createClient({
-     // url: "ldap://172.16.218.2:389",
-         url: LDAP_URL,
+    // Login externo o interno
+    const LDAP_URL = ldapSession.external
+      ? `ldap://${ldapSession.ldapHost}`
+      : process.env.LDAP_URL;
 
+    const client = ldap.createClient({
+      // url: "ldap://172.16.218.2:389",
+      url: LDAP_URL,
     });
 
     client.bind(ldapSession.dn, ldapSession.password, (err) => {
@@ -113,9 +116,13 @@ exports.obtenerGruposPeople = async (req, res) => {
 };
 
 exports.buscarPorUid = (ldapSession, uid, callback) => {
-  const client = ldap.createClient({
-       url: LDAP_URL,
+  // Login externo o interno
+  const LDAP_URL = ldapSession.external
+    ? `ldap://${ldapSession.ldapHost}`
+    : process.env.LDAP_URL;
 
+  const client = ldap.createClient({
+    url: LDAP_URL,
   });
 
   client.bind(ldapSession.dn, ldapSession.password, (err) => {
@@ -176,9 +183,13 @@ exports.getLdapUsuarios = (req, res) => {
     return res.status(401).json({ error: "No autenticado" });
   }
 
-  const client = ldap.createClient({
-       url: LDAP_URL,
+  // Login externo o interno
+  const LDAP_URL = ldapSession.external
+    ? `ldap://${ldapSession.ldapHost}`
+    : process.env.LDAP_URL;
 
+  const client = ldap.createClient({
+    url: LDAP_URL,
   });
 
   client.bind(ldapSession.dn, ldapSession.password, (err) => {
@@ -287,7 +298,6 @@ exports.obtenerAlumnosPorGrupo = (req, res) => {
   const ldapSession = req.session.ldap;
   const grupo = req.query.grupo;
 
-
   if (!grupo || grupo.trim() === "") {
     return res.status(400).json({ error: "Parámetro 'grupo' requerido" });
   }
@@ -297,12 +307,15 @@ exports.obtenerAlumnosPorGrupo = (req, res) => {
   }
 
   // Función para escapar caracteres especiales en filtro LDAP
-  const escapeLDAP = (input) =>
-    input.replace(/([\\\*\(\)\0])/g, "\\$1");
+  const escapeLDAP = (input) => input.replace(/([\\\*\(\)\0])/g, "\\$1");
+
+  // Login externo o interno
+  const LDAP_URL = ldapSession.external
+    ? `ldap://${ldapSession.ldapHost}`
+    : process.env.LDAP_URL;
 
   const client = ldap.createClient({
-        url: LDAP_URL,
-
+    url: LDAP_URL,
   });
 
   client.bind(ldapSession.dn, ldapSession.password, (err) => {
@@ -338,26 +351,30 @@ exports.obtenerAlumnosPorGrupo = (req, res) => {
 
       groupRes.on("error", (err) => {
         client.unbind();
-        return res.status(500).json({ error: "Error en búsqueda de grupo", details: err.message });
+        return res
+          .status(500)
+          .json({ error: "Error en búsqueda de grupo", details: err.message });
       });
 
       groupRes.on("end", () => {
         // Filtrar valores válidos
-        memberUids = memberUids.filter(uid => typeof uid === "string" && uid.trim() !== "");
+        memberUids = memberUids.filter(
+          (uid) => typeof uid === "string" && uid.trim() !== ""
+        );
 
         if (memberUids.length === 0) {
           client.unbind();
           return res.json([]);
         }
 
-        const filterParts = memberUids.map(uid => `(uid=${escapeLDAP(uid)})`);
+        const filterParts = memberUids.map((uid) => `(uid=${escapeLDAP(uid)})`);
 
         if (filterParts.length === 0) {
           client.unbind();
           return res.json([]);
         }
 
-        const filter = `(|${filterParts.join('')})`;
+        const filter = `(|${filterParts.join("")})`;
 
         const peopleOptions = {
           scope: "sub",
@@ -365,42 +382,48 @@ exports.obtenerAlumnosPorGrupo = (req, res) => {
           attributes: ["uid", "givenName", "sn"],
         };
 
-        client.search(`ou=People,${baseDN}`, peopleOptions, (err, peopleRes) => {
-          if (err) {
-            client.unbind();
-            return res.status(500).json({
-              error: "Error al buscar alumnos",
-              details: err.message,
+        client.search(
+          `ou=People,${baseDN}`,
+          peopleOptions,
+          (err, peopleRes) => {
+            if (err) {
+              client.unbind();
+              return res.status(500).json({
+                error: "Error al buscar alumnos",
+                details: err.message,
+              });
+            }
+
+            const alumnos = [];
+
+            peopleRes.on("searchEntry", (entry) => {
+              const attrs = {};
+              entry.attributes.forEach((attr) => {
+                attrs[attr.type] = attr.vals;
+              });
+
+              alumnos.push({
+                uid: attrs.uid?.[0] || null,
+                givenName: attrs.givenName?.[0] || null,
+                sn: attrs.sn?.[0] || null,
+              });
+            });
+
+            peopleRes.on("error", (err) => {
+              client.unbind();
+              return res.status(500).json({
+                error: "Error en búsqueda de alumnos",
+                details: err.message,
+              });
+            });
+
+            peopleRes.on("end", () => {
+              client.unbind();
+              res.json(alumnos);
             });
           }
-
-          const alumnos = [];
-
-          peopleRes.on("searchEntry", (entry) => {
-            const attrs = {};
-            entry.attributes.forEach((attr) => {
-              attrs[attr.type] = attr.vals;
-            });
-
-            alumnos.push({
-              uid: attrs.uid?.[0] || null,
-              givenName: attrs.givenName?.[0] || null,
-              sn: attrs.sn?.[0] || null,
-            });
-          });
-
-          peopleRes.on("error", (err) => {
-            client.unbind();
-            return res.status(500).json({ error: "Error en búsqueda de alumnos", details: err.message });
-          });
-
-          peopleRes.on("end", () => {
-            client.unbind();
-            res.json(alumnos);
-          });
-        });
+        );
       });
     });
   });
 };
-

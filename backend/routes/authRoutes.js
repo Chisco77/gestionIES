@@ -37,7 +37,7 @@
 const express = require("express");
 const router = express.Router();
 const { loginLdap } = require("../controllers/ldap/loginController");
-const { loginExterno } = require ("../controllers/ldap/loginControllerExterno");
+const {loginExternoLdap } = require ("../controllers/ldap/loginExternoController");
 
 router.post(
   "/login",
@@ -46,17 +46,6 @@ router.post(
   },
   loginLdap
 );
-
-
-router.post(
-  "/login-externo",
-  (req, res, next) => {
-    // middleware opcional para futuras validaciones
-    next();
-  },
-  loginExterno
-);
-
 
 
 router.get("/check-auth", (req, res) => {
@@ -74,5 +63,9 @@ router.post("/logout", (req, res) => {
     res.status(200).json({ mensaje: "Sesión cerrada correctamente" });
   });
 });
+
+// Ruta para login externo
+router.post("/login-externo", loginExternoLdap);
+
 
 module.exports = router;

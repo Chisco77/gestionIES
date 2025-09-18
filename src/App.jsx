@@ -33,7 +33,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./layout/Layout";
 import { Dashboard } from "./modules/Dashboard/pages/Dashboard";
-import Login from "./modules/Login/pages/Login";
+import Login from "./modules/Login/Login";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { TaskProvider } from "./context/TaskContext";
 import { Provider } from "react-redux";

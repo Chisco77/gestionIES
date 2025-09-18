@@ -1,5 +1,5 @@
 /**
- * useAlumnosLdap.js - Hook para obtener y cachear alumnos LDAP. 
+ * useAlumnosLdap.js - Hook para obtener y cachear alumnos LDAP.
  *                   - Mejora rendimiento, ya que mantiene datos en caché
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
@@ -21,7 +21,6 @@
  * Dependencias:
  * - @tanstack/react-query
  */
-
 
 import { useQuery } from "@tanstack/react-query";
 

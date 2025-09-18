@@ -6,7 +6,7 @@
  *
  *  Descripción:
  *    Controlador para la gestión de grupos en LDAP.
- *    Permite obtener información de los grupos almacenados en 
+ *    Permite obtener información de los grupos almacenados en
  *    el directorio y sus miembros asociados.
  *
  *  Funcionalidades:
@@ -23,16 +23,15 @@
  * ================================================================
  */
 
-
-
 const ldap = require("ldapjs");
 
 const BASE_DN = "dc=instituto,dc=extremadura,dc=es";
 const GROUP_DN = `ou=Group,${BASE_DN}`;
 const PEOPLE_DN = `ou=People,${BASE_DN}`;
-const LDAP_URL = process.env.LDAP_URL;
 
-// ✅ 1. Obtener grupos filtrando por groupType
+//const LDAP_URL = process.env.LDAP_URL;
+
+// 1. Obtener grupos filtrando por groupType
 exports.getLdapGrupos = (req, res) => {
   const ldapSession = req.session.ldap;
   const groupType = req.query.groupType || null;
@@ -41,7 +40,10 @@ exports.getLdapGrupos = (req, res) => {
     console.warn("⚠️ No hay sesión LDAP en req.session");
     return res.status(401).json({ error: "No autenticado" });
   }
-
+  // Login externo o interno
+  const LDAP_URL = ldapSession.external
+    ? `ldap://${ldapSession.ldapHost}`
+    : process.env.LDAP_URL;
   const client = ldap.createClient({
     url: LDAP_URL,
   });
@@ -104,7 +106,7 @@ exports.getLdapGrupos = (req, res) => {
   });
 };
 
-// ✅ 2. Obtener miembros de People dado un gidNumber
+// 2. Obtener miembros de People dado un gidNumber
 exports.getMiembrosPorGidNumber = (req, res) => {
   const ldapSession = req.session.ldap;
   const { gidNumber } = req.params;
@@ -113,6 +115,11 @@ exports.getMiembrosPorGidNumber = (req, res) => {
     console.warn("⚠️ No hay sesión LDAP en req.session");
     return res.status(401).json({ error: "No autenticado" });
   }
+
+  // Login externo o interno
+  const LDAP_URL = ldapSession.external
+    ? `ldap://${ldapSession.ldapHost}`
+    : process.env.LDAP_URL;
 
   const client = ldap.createClient({
     url: LDAP_URL,

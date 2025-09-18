@@ -33,7 +33,8 @@ exports.loginLdap = (req, res) => {
   }
 
   const userDN = `uid=${username},ou=People,dc=instituto,dc=extremadura,dc=es`;
-
+  
+  console.log ("LDAP: ", LDAP_URL);
   const client = ldap.createClient({
     url: LDAP_URL,
   });
