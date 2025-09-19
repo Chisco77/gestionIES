@@ -66,6 +66,7 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [formato, setFormato] = useState("40"); // valor por defecto
 
   /*const generatePdfLabels = async () => {
     const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -133,15 +134,35 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
   const generatePdfLabels = async () => {
     const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-    const labelWidth = 52.5;
-    const labelHeight = 29.7;
-    const cols = 4;
-    const rows = 10;
-    const labelsPerPage = cols * rows;
+    // Layout según el formato de etiquetas seleccionado
+    const layout = {
+      40: {
+        cols: 4,
+        rows: 10,
+        width: 52.5,
+        height: 29.7,
+        marginX: 0,
+        marginY: 0,
+        spacingX: 0,
+        spacingY: 0,
+      },
+      24: {
+        cols: 3,
+        rows: 8,
+        width: 70,
+        height: 33.8,
+        marginX: 7,
+        marginY: 12.7,
+        spacingX: 2.5,
+        spacingY: 0,
+      },
+    }[formato]; // estado
+
+    const labelsPerPage = layout.cols * layout.rows;
     const imageWidth = 12;
     const imageHeight = 8;
 
-    // fallback logo institucional
+    // fallback logo IES
     const fallbackLogo = await new Promise((resolve) => {
       const img = new Image();
       img.src = logo;
@@ -150,18 +171,13 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
 
     // función para cargar foto del usuario
     const loadUserImage = async (uid) => {
-      const API_URL = import.meta.env.VITE_API_URL;
       const SERVER_URL = import.meta.env.VITE_SERVER_URL;
-
       const extensions = ["jpg", "jpeg", "png"];
-
       for (const ext of extensions) {
         try {
           const res = await fetch(
             `${SERVER_URL}/uploads/alumnos/${uid}.${ext}`,
-            {
-              credentials: "include",
-            }
+            { credentials: "include" }
           );
           if (res.ok) {
             const blob = await res.blob();
@@ -190,24 +206,23 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
 
     for (let i = 0; i < total; i++) {
       const usuario = etiquetas[i];
+
       if (i > 0 && i % labelsPerPage === 0) doc.addPage();
 
       const indexInPage = i % labelsPerPage;
-      const col = indexInPage % cols;
-      const row = Math.floor(indexInPage / cols);
-      const x = col * labelWidth;
-      const y = row * labelHeight;
-      const centerX = x + labelWidth / 2;
+      const col = indexInPage % layout.cols;
+      const row = Math.floor(indexInPage / layout.cols);
+      const x = layout.marginX + col * (layout.width + layout.spacingX);
+      const y = layout.marginY + row * (layout.height + layout.spacingY);
+      const centerX = x + layout.width / 2;
       const logoX = centerX - imageWidth / 2;
       const logoY = y + 3;
 
       // cargar imagen del alumno
       const userImage = await loadUserImage(usuario.uid);
-
       if (userImage) {
         doc.addImage(userImage, "JPEG", logoX, logoY, imageWidth, imageHeight);
       } else {
-        // si no tiene foto -> logo por defecto
         doc.addImage(
           fallbackLogo,
           "JPEG",
@@ -233,6 +248,7 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
         { align: "center" }
       );
 
+      // actualizar progreso
       if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
       setProgress(Math.round(((i + 1) / total) * 100));
     }
@@ -256,6 +272,21 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
           </DialogHeader>
           <div className="space-y-4">
             <div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Formato de etiquetas
+                </label>
+                <Select value={formato} onValueChange={setFormato}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="40">40 (Apli 01286 10x4)</SelectItem>
+                    <SelectItem value="24">24 (Apli 01293 8x3)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <label className="block text-sm font-medium mb-1">
                 Número de etiquetas por alumno
               </label>
