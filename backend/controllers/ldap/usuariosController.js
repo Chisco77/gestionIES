@@ -135,7 +135,7 @@ exports.buscarPorUid = (ldapSession, uid, callback) => {
     const options = {
       scope: "sub",
       filter: `(uid=${uid})`,
-      attributes: ["givenName", "sn", "uid"],
+      attributes: ["givenName", "sn", "uid", "gidNumber"],
     };
 
     client.search(`ou=People,${baseDN}`, options, (err, res) => {
@@ -156,6 +156,7 @@ exports.buscarPorUid = (ldapSession, uid, callback) => {
           uid: attrs.uid?.[0] || null,
           givenName: attrs.givenName?.[0] || null,
           sn: attrs.sn?.[0] || null,
+          gidNumber: attrs.gidNumber?.[0] || null,
         };
       });
 
@@ -276,6 +277,7 @@ exports.getLdapUsuarios = (req, res) => {
                   givenName: p.givenName,
                   sn: p.sn,
                   uid: p.uid,
+                  gidNumber: p.gidNumber,
                   groups: userGroups,
                 };
               })

@@ -22,7 +22,7 @@
  * ================================================================
  */
 
-const ldap = require("ldapjs");
+/*const ldap = require("ldapjs");
 
 exports.loginLdap = (req, res) => {
   const { username, password } = req.body;
@@ -94,6 +94,98 @@ exports.loginLdap = (req, res) => {
           password: password,
         };
 
+        res.json({ message: "Login correcto (grupo teachers)" });
+      });
+    });
+  });
+};
+*/
+
+const ldap = require("ldapjs");
+
+exports.loginLdap = (req, res) => {
+  const { username, password } = req.body;
+  const LDAP_URL = process.env.LDAP_URL;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "Usuario o contraseña faltantes" });
+  }
+
+  // Definir DN según usuario
+  console.log ("Username", username);
+  let userDN;
+  if (username === "admin") {
+    userDN = `cn=admin,ou=People,dc=instituto,dc=extremadura,dc=es`;
+  } else {
+    userDN = `uid=${username},ou=People,dc=instituto,dc=extremadura,dc=es`;
+  }
+
+
+  console.log("LDAP URL:", LDAP_URL);
+  console.log("Usuario DN para bind:", userDN);
+
+  const client = ldap.createClient({ url: LDAP_URL });
+
+  // bind con credenciales del usuario
+  client.bind(userDN, password, (err) => {
+    if (err) {
+      console.error("🔒 Error en bind LDAP:", err.message);
+      return res
+        .status(401)
+        .json({ error: "Credenciales inválidas", details: err.message });
+    }
+
+    // Caso especial: si es admin, no comprobamos grupo
+    if (username === "admin") {
+      console.log("✅ Login correcto como admin");
+      req.session.ldap = { dn: userDN, password };
+      client.unbind();
+      return res.json({ message: "Login correcto (usuario admin)" });
+    }
+
+    // Búsqueda normal para grupo teachers
+    const baseDN = "dc=instituto,dc=extremadura,dc=es";
+    const groupDN = `ou=Group,${baseDN}`;
+    const groupOptions = {
+      scope: "sub",
+      filter: "(&(objectClass=lisAclGroup)(cn=teachers))",
+      attributes: ["memberUid"],
+    };
+
+    client.search(groupDN, groupOptions, (err, searchRes) => {
+      if (err) {
+        client.unbind();
+        return res.status(500).json({
+          error: "Error buscando grupo teachers",
+          details: err.message,
+        });
+      }
+
+      let autorizado = false;
+
+      searchRes.on("searchEntry", (entry) => {
+        const members = entry.attributes
+          .find((attr) => attr.type === "memberUid")
+          ?.vals || [];
+        if (members.includes(username)) {
+          autorizado = true;
+        }
+      });
+
+      searchRes.on("end", () => {
+        client.unbind();
+
+        if (!autorizado) {
+          console.warn("⚠️ Acceso denegado: usuario no pertenece a teachers");
+          return res.status(403).json({
+            error: "Acceso denegado",
+            details: "El usuario no pertenece al grupo teachers",
+          });
+        }
+
+        // Guardar sesión solo si pertenece a teachers
+        console.log("✅ Login correcto como teacher");
+        req.session.ldap = { dn: userDN, password };
         res.json({ message: "Login correcto (grupo teachers)" });
       });
     });

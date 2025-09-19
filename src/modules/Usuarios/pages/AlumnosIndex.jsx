@@ -34,34 +34,55 @@
  *
  */
 
+
 import { useState } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
 import { DialogoListadoCurso } from "../components/DialogoListadoCurso";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
-import { Loader, Printer, Users } from "lucide-react";
+import { DialogoEditarUsuario } from "../components/DialogoEditarUsuario";
+import { Button } from "@/components/ui/button";
+import { Plus, Pencil, Trash2, Printer, Users, Tag } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { useAlumnosLdap } from "@/hooks/useAlumnosLdap";
 
+const handleInsertar = () => alert("Inserción de alumno: No implementado");
+const handleEliminar = (seleccionado) => {
+  if (!seleccionado) {
+    alert("Selecciona un alumno para eliminar.");
+    return;
+  }
+  alert(`Eliminación de alumno ${seleccionado.uid}: No implementado`);
+};
+
 export function AlumnosIndex() {
-  const [abrirDialogoListadoCurso, setAbrirDialogoListadoCurso] =
-    useState(false);
+  const [abrirDialogoListadoCurso, setAbrirDialogoListadoCurso] = useState(false);
   const [abrirDialogoEtiquetas, setAbrirDialogoEtiquetas] = useState(false);
   const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
+  const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);
+  const [abrirEditar, setAbrirEditar] = useState(false);
 
   const { data: alumnos, isLoading, error } = useAlumnosLdap();
+
+  const handleEditar = (seleccionado) => {
+    if (!seleccionado) {
+      alert("Selecciona un alumno para editar.");
+      return;
+    }
+    setAlumnoSeleccionado(seleccionado);
+    setAbrirEditar(true);
+  };
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
       {isLoading ? (
         <div className="flex justify-center py-24">
-          <Loader className="h-10 w-10 animate-spin text-primary" />
+          <div className="animate-spin h-10 w-10 border-4 border-primary rounded-full"></div>
         </div>
       ) : error ? (
         <div className="text-red-500 text-center">
@@ -71,8 +92,8 @@ export function AlumnosIndex() {
         <TablaUsuarios
           columns={columns}
           data={alumnos}
-          onFilteredChange={(rows) => setAlumnosFiltrados(rows)}
-          acciones={
+          onFilteredChange={(filtrados) => setAlumnosFiltrados(filtrados)}
+          informes={
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon">
@@ -80,21 +101,40 @@ export function AlumnosIndex() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => setAbrirDialogoListadoCurso(true)}
-                >
+                <DropdownMenuItem onClick={() => setAbrirDialogoEtiquetas(true)}>
+                  <Tag className="mr-2 h-4 w-4" />
+                  Etiquetas para portátiles
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setAbrirDialogoListadoCurso(true)}>
                   <Users className="mr-2 h-4 w-4" />
                   Alumnos por grupo
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setAbrirDialogoEtiquetas(true)}
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  Etiquetas para portátiles
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           }
+          acciones={(seleccionado) => (
+            <>
+              <Button variant="outline" size="icon" onClick={handleInsertar}>
+                <Plus className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleEditar(seleccionado)}
+                disabled={!seleccionado}
+              >
+                <Pencil className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleEliminar(seleccionado)}
+                disabled={!seleccionado}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </>
+          )}
         />
       )}
 
@@ -108,6 +148,13 @@ export function AlumnosIndex() {
         usuarios={alumnosFiltrados}
         open={abrirDialogoEtiquetas}
         onOpenChange={setAbrirDialogoEtiquetas}
+      />
+
+      <DialogoEditarUsuario
+        open={abrirEditar}
+        onClose={() => setAbrirEditar(false)}
+        usuarioSeleccionado={alumnoSeleccionado}
+        esAlumno={true} // muestra foto en la cabecera
       />
     </div>
   );

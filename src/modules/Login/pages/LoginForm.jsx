@@ -70,6 +70,7 @@ export function LoginForm({ className, ...props }) {
         // limpiar cache de hooks
         queryClient.invalidateQueries(["alumnos-ldap"]);
         queryClient.invalidateQueries(["profesores-ldap"]);
+        queryClient.invalidateQueries(["todos-ldap"]);
         queryClient.invalidateQueries(["prestamos"]);
 
         navigate("/alumnos");
