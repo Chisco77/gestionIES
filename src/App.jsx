@@ -32,7 +32,7 @@
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./layout/Layout";
-import { Dashboard } from "./modules/Dashboard/pages/Dashboard";
+import { DashboardProfesor } from "./modules/Dashboard/pages/DashboardProfesor";
 import Login from "./modules/Login/Login";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { TaskProvider } from "./context/TaskContext";
@@ -65,8 +65,8 @@ const router = createBrowserRouter([
     ),
     children: [
       {
-        path: "/",
-        element: <Dashboard />, 
+        index: true,
+        element: <DashboardProfesor />, 
       },
       {
         path: "/alumnos",

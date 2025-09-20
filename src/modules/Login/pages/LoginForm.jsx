@@ -73,7 +73,7 @@ export function LoginForm({ className, ...props }) {
         queryClient.invalidateQueries(["todos-ldap"]);
         queryClient.invalidateQueries(["prestamos"]);
 
-        navigate("/alumnos");
+        navigate("/");
       } else {
         // leer JSON del backend
         const errorData = await response.json().catch(() => null);

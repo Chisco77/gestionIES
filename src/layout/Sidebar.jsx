@@ -86,6 +86,18 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
   };
 
   const navMain = [
+
+     {
+      title: "Inicio", // Panel resumen del usuario (profesor) con info de aulas y armarios reservados en el día y sus asuntos propios pedidos.
+      url: "/",
+      icon: SquareTerminal,
+      isActive: true,
+      /*items: [
+        { title: "Alumnos", url: "/alumnos" },
+        { title: "Profesores", url: "/profesores" },
+        { title: "Todos", url: "/todos" },
+      ],*/
+    },
     {
       title: "Personas",
       url: "#",
@@ -107,6 +119,25 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         { title: "Todos", url: "/todos" },
       ],
     },
+     {
+      title: "Reserva de recursos",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        { title: "Aulas", url: "/llavesPrestadas" },
+        { title: "Armarios de Portátiles", url: "/llavesPlantaBaja" },
+      ],
+    },
+     {
+      title: "Asuntos Propios",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        { title: "Mis asuntos propios", url: "/llavesPrestadas" },
+        { title: "Solicitar", url: "/llavesPlantaBaja" },
+      ],
+    },
+
     {
       title: "Préstamo Libros",
       url: "#",

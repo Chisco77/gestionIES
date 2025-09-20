@@ -77,7 +77,7 @@ export function LoginFormExterno({ className, ...props }) {
         queryClient.invalidateQueries(["todos-ldap"]);
         queryClient.invalidateQueries(["prestamos"]);
 
-        navigate("/alumnos");
+        navigate("/");
       } else {
         const errorData = await response.json().catch(() => null);
         const mensaje = errorData?.error || "Error en login externo";
