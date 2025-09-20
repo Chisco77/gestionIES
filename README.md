@@ -33,7 +33,7 @@ En esta carpeta encontrarás las guías de instalación y despliegue:
 **Francisco Damián Méndez Palma**  
 IES Francisco de Orellana  
 📧 [fmendezpalma@gmail.com](mailto:fmendezpalma@gmail.com)
-📧 [adminies.fcodeorellana@educarex.es](mailto:adminies.franciscodeorellana@educarex.es)
+📧 [adminies.franciscodeorellana@educarex.es](mailto:adminies.franciscodeorellana@educarex.es)
 
 
 ## 📜 Licencia
