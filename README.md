@@ -2,7 +2,10 @@
 
 # gestionIES
 
-Gestión de préstamos de libros de texto a alumnos y préstamos de llaves a profesores. Se añadirán más funciones con LDAP y otras.
+Aplicación de gestión para un IES de Extremadura. Actualmente, implementa módulos de préstamos de libros de texto a alumnos, préstamos de llaves a profesores y diferentes listados para alumnos y utilidades.
+Se añadirán módulos para reserva de aulas/armarios de portátiles y asuntos propios de profesores.
+Se distinguirá entre perfiles de administrador (informático), profesor, educador, ordenanza y directiva para permitir acceso a los diferentes módulos.
+Se mostrará dashboard tras loguin del usuario, en función de su perfil (actualmente, se muestra dashboard de profesor).
 
 ## 🚀 Documentación de despliegue
 
