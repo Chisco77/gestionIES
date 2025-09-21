@@ -65,6 +65,7 @@ export default function Layout(props) {
       "/todos": "Todos",
       "/cursos": "Cursos",
       "/libros": "Libros",
+      "/perfilesUsuario": "Administrar  Usuarios",
       "/prestamos": "Préstamos",
     };
 

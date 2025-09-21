@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Componente principal de la aplicación React.
  *
  * Funcionalidades:
@@ -28,7 +28,6 @@
  * - ProtectedRoute: seguridad de rutas
  *
  */
-
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./layout/Layout";
@@ -50,6 +49,7 @@ import { PrestamosProfesoresIndex } from "./modules/Prestamos/pages/PrestamosPro
 import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
 import { PrestamosLlavesIndex } from "./modules/Llaves/pages/PrestamosLlavesIndex";
 import { PlanoPlanta } from "./modules/Llaves/pages/PlanoPlanta";
+import { PerfilesUsuarioIndex } from "./modules/PerfilesUsuario/pages/PerfilesUsuarioIndex";
 
 const router = createBrowserRouter([
   {
@@ -66,7 +66,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <DashboardProfesor />, 
+        element: <DashboardProfesor />,
       },
       {
         path: "/alumnos",
@@ -112,6 +112,10 @@ const router = createBrowserRouter([
         path: "/llavesPlantaSegunda",
         element: <PlanoPlanta planta="segunda" />,
       },
+      {
+        path: "/perfiles",
+        element: <PerfilesUsuarioIndex />,
+      },
     ],
   },
 ]);
@@ -121,12 +125,12 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-        <TaskProvider>
-          <SidebarProviderCustom>
-            <Toaster richColors />
-            <RouterProvider router={router} />
-          </SidebarProviderCustom>
-        </TaskProvider>
+      <TaskProvider>
+        <SidebarProviderCustom>
+          <Toaster richColors />
+          <RouterProvider router={router} />
+        </SidebarProviderCustom>
+      </TaskProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

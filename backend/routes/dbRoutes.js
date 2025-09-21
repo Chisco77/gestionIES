@@ -113,6 +113,16 @@ const {
   devolverLlave,
 } = require("../controllers/db/prestamosLlavesController"); 
 
+// Importar controlador de perfiles
+const {
+  getPerfiles,
+  getPerfilUsuario,
+  setPerfilUsuario,
+  updatePerfilUsuario,
+  deletePerfilUsuario,
+} = require("../controllers/db/perfilesUsuarioController");
+
+
 router.get("/planos/estancias", getEstanciasByPlanta); 
 router.post("/planos/estancias", insertEstancia); 
 router.put("/planos/estancias/:planta/:id", updateEstancia); 
@@ -132,5 +142,22 @@ router.post("/prestamos/update", actualizarPrestamoItem);
 router.get("/prestamos-llaves/agrupados", getPrestamosLlavesAgrupados);
 router.post("/prestamos-llaves/prestar", prestarLlave);
 router.post("/prestamos-llaves/devolver", devolverLlave);
+
+// --- Rutas de Perfiles de usuario ---
+// Obtener todos los perfiles
+router.get("/perfiles", getPerfiles);
+
+// Obtener perfil de un usuario por uid
+router.get("/perfiles/:uid", getPerfilUsuario);
+
+// Crear o actualizar perfil (UPSERT)
+router.post("/perfiles", setPerfilUsuario);
+
+// Actualizar perfil existente
+router.put("/perfiles/:uid", updatePerfilUsuario);
+
+// Eliminar perfil
+router.delete("/perfiles/:uid", deletePerfilUsuario);
+
 
 module.exports = router;

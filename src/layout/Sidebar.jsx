@@ -40,7 +40,6 @@
  * - El pie del sidebar incluye un botón de logout y la información del usuario activo.
  */
 
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -86,8 +85,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
   };
 
   const navMain = [
-
-     {
+    {
       title: "Inicio", // Panel resumen del usuario (profesor) con info de aulas y armarios reservados en el día y sus asuntos propios pedidos.
       url: "/",
       icon: SquareTerminal,
@@ -119,7 +117,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         { title: "Todos", url: "/todos" },
       ],
     },
-     {
+    {
       title: "Reserva de recursos",
       url: "#",
       icon: BookOpen,
@@ -128,7 +126,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         { title: "Armarios de Portátiles", url: "/llavesPlantaBaja" },
       ],
     },
-     {
+    {
       title: "Asuntos Propios",
       url: "#",
       icon: BookOpen,
@@ -173,6 +171,12 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
           onClick: () => setOpenEtiquetas(true),
         },
       ],
+    },
+    {
+      title: "Administrador",
+      url: "#",
+      icon: Settings2,
+      items: [{ title: "Perfiles de Usuario", url: "/perfiles" }],
     },
   ];
 
