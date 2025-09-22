@@ -16,13 +16,31 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
+import {
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
+} from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-export function TablaPerfilesUsuario({ columns, data, onFilteredChange, acciones }) {
+export function TablaPerfilesUsuario({
+  columns,
+  data,
+  onFilteredChange,
+  acciones,
+}) {
   const [sorting, setSorting] = useState([{ id: "uid", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
-  const [textoFiltro, setTextoFiltro] = useState("");
+  const [filtroUid, setFiltroUid] = useState("");
+  const [filtroPerfil, setFiltroPerfil] = useState("");
   const [selectedId, setSelectedId] = useState(null);
 
   const table = useReactTable({
@@ -39,15 +57,23 @@ export function TablaPerfilesUsuario({ columns, data, onFilteredChange, acciones
     state: { sorting, columnFilters },
   });
 
-  // Filtro manual por texto
+  // Filtro uid
   useEffect(() => {
-    table.getColumn("uid")?.setFilterValue(textoFiltro || undefined);
-    table.getColumn("perfil")?.setFilterValue(textoFiltro || undefined);
-  }, [textoFiltro]);
+    table.getColumn("uid")?.setFilterValue(filtroUid || undefined);
+  }, [filtroUid]);
+
+  // filtro perfil
+  useEffect(() => {
+    table
+      .getColumn("perfil")
+      ?.setFilterValue(filtroPerfil === "all" ? undefined : filtroPerfil);
+  }, [filtroPerfil]);
 
   // Callback al padre con los datos filtrados
   useEffect(() => {
-    const filtered = table.getFilteredRowModel().rows.map((row) => row.original);
+    const filtered = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
     onFilteredChange?.(filtered);
   }, [columnFilters, data]);
 
@@ -59,18 +85,36 @@ export function TablaPerfilesUsuario({ columns, data, onFilteredChange, acciones
 
   return (
     <div>
-      {/* Filtro de texto */}
+      {/* Filtros */}
       <div className="flex flex-wrap gap-4 py-2 text-sm text-muted-foreground items-end">
         <div className="space-y-1">
-          <label className="block font-medium text-xs">Buscar</label>
+          <label className="block font-medium text-xs">Buscar por UID</label>
           <input
             type="text"
-            placeholder="UID o perfil"
+            placeholder="UID"
             className="border p-2 rounded text-sm"
-            value={textoFiltro}
-            onChange={(e) => setTextoFiltro(e.target.value)}
+            value={filtroUid}
+            onChange={(e) => setFiltroUid(e.target.value)}
           />
         </div>
+
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">
+            Filtrar por perfil
+          </label>
+          <Select value={filtroPerfil} onValueChange={setFiltroPerfil}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="directiva">Directiva</SelectItem>
+              <SelectItem value="educadora">Educadora</SelectItem>
+              <SelectItem value="ordenanza">Ordenanza</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {acciones && <div className="ml-auto">{acciones(selectedItem)}</div>}
       </div>
 
@@ -84,7 +128,10 @@ export function TablaPerfilesUsuario({ columns, data, onFilteredChange, acciones
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -105,14 +152,20 @@ export function TablaPerfilesUsuario({ columns, data, onFilteredChange, acciones
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No hay resultados.
                 </TableCell>
               </TableRow>

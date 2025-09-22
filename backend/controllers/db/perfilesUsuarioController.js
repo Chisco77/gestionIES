@@ -51,30 +51,40 @@ exports.getPerfilUsuario = async (req, res) => {
   }
 };
 
-// Crear o actualizar perfil (UPSERT)
+// Crear o actualizar perfil (UPSERT múltiple)
 exports.setPerfilUsuario = async (req, res) => {
-  const { uid, perfil } = req.body;
+  const { uid, uids, perfil } = req.body;
 
-  if (!uid || !perfil) {
-    return res.status(400).json({ message: 'Los campos "uid" y "perfil" son obligatorios' });
+  // Normalizamos: puede venir uid (string) o uids (array)
+  const listaUids = Array.isArray(uids) ? uids : uid ? [uid] : [];
+
+  if (listaUids.length === 0 || !perfil) {
+    return res
+      .status(400)
+      .json({ message: 'Debes enviar al menos un "uid" o "uids" y un "perfil"' });
   }
 
   try {
-    const result = await db.query(
-      `INSERT INTO perfiles_usuario (uid, perfil)
-       VALUES ($1, $2)
-       ON CONFLICT (uid)
-       DO UPDATE SET perfil = EXCLUDED.perfil
-       RETURNING *`,
-      [uid, perfil]
-    );
+    const results = [];
+    for (const u of listaUids) {
+      const result = await db.query(
+        `INSERT INTO perfiles_usuario (uid, perfil)
+         VALUES ($1, $2)
+         ON CONFLICT (uid)
+         DO UPDATE SET perfil = EXCLUDED.perfil
+         RETURNING *`,
+        [u, perfil]
+      );
+      results.push(result.rows[0]);
+    }
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(results);
   } catch (error) {
-    console.error(`❌ Error al crear o actualizar perfil de ${uid}:`, error);
-    res.status(500).json({ message: "Error interno al guardar perfil" });
+    console.error("❌ Error al crear o actualizar perfiles:", error);
+    res.status(500).json({ message: "Error interno al guardar perfiles" });
   }
 };
+
 
 // Actualizar perfil existente
 exports.updatePerfilUsuario = async (req, res) => {
