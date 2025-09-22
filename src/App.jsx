@@ -28,10 +28,11 @@
  * - ProtectedRoute: seguridad de rutas
  *
  */
-
+/*
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./layout/Layout";
 import { DashboardProfesor } from "./modules/Dashboard/pages/DashboardProfesor";
+import { DashboardAdmin } from "./modules/Dashboard/pages/DashboardAdmin";
 import Login from "./modules/Login/Login";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { TaskProvider } from "./context/TaskContext";
@@ -50,6 +51,8 @@ import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
 import { PrestamosLlavesIndex } from "./modules/Llaves/pages/PrestamosLlavesIndex";
 import { PlanoPlanta } from "./modules/Llaves/pages/PlanoPlanta";
 import { PerfilesUsuarioIndex } from "./modules/PerfilesUsuario/pages/PerfilesUsuarioIndex";
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 
 const router = createBrowserRouter([
   {
@@ -125,13 +128,145 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TaskProvider>
-        <SidebarProviderCustom>
-          <Toaster richColors />
-          <RouterProvider router={router} />
-        </SidebarProviderCustom>
-      </TaskProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
+      <AuthProvider>
+        <TaskProvider>
+          <SidebarProviderCustom>
+            <Toaster richColors />
+            <RouterProvider router={router} />
+          </SidebarProviderCustom>
+        </TaskProvider>
+
+        <ReactQueryDevtools initialIsOpen={false} />
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
+
+function DashboardSelector() {
+  const { user } = useAuth();
+
+  if (!user) return <div>Cargando...</div>;
+
+  switch (user.perfil) {
+    case "profesor":
+      return <DashboardProfesor />;
+    case "admin":
+      return <DashboardAdmin />;
+    case "alumno":
+      return <DashboardAlumno />;
+    default:
+      return <div>Perfil no reconocido</div>;
+  }
+}
+
+export default App;
+*/
+
+
+/**
+ * App.jsx
+ *
+ * Componente principal de la aplicación React.
+ * - Configura el router principal con React Router v6.
+ * - Protege rutas mediante `ProtectedRoute`.
+ * - Dashboard dinámico según perfil de usuario.
+ * - Proporciona contextos globales y React Query Client.
+ */
+
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import Layout from "./layout/Layout";
+import Login from "./modules/Login/Login";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import { TaskProvider } from "./context/TaskContext";
+import { Toaster } from "sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+
+import { DashboardProfesor } from "./modules/Dashboard/pages/DashboardProfesor";
+import { DashboardAdmin } from "./modules/Dashboard/pages/DashboardAdmin";
+
+import { AlumnosIndex } from "./modules/Usuarios/pages/AlumnosIndex";
+import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
+import { TodosIndex } from "./modules/Usuarios/pages/TodosIndex";
+import { CursosIndex } from "./modules/Cursos/pages/CursosIndex";
+import { LibrosIndex } from "./modules/Libros/pages/LibrosIndex";
+import { PrestamosAlumnosIndex } from "./modules/Prestamos/pages/PrestamosAlumnosIndex";
+import { PrestamosProfesoresIndex } from "./modules/Prestamos/pages/PrestamosProfesoresIndex";
+import { PrestamosLlavesIndex } from "./modules/Llaves/pages/PrestamosLlavesIndex";
+import { PlanoPlanta } from "./modules/Llaves/pages/PlanoPlanta";
+import { PerfilesUsuarioIndex } from "./modules/PerfilesUsuario/pages/PerfilesUsuarioIndex";
+
+import { SidebarProviderCustom } from "./context/SidebarContext";
+
+const queryClient = new QueryClient();
+
+// Selector de dashboard según perfil
+function DashboardSelector() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <div>Cargando...</div>;
+  if (!user) return <div>No autenticado</div>;
+  console.log ("Usuario: ", user);
+  switch (user.perfil) {
+    case "profesor":
+      return <DashboardProfesor />;
+    case "admin":
+      return <DashboardAdmin />;
+    case "alumno":
+      return <DashboardAlumno />;
+    default:
+      return <div>Perfil no reconocido</div>;
+  }
+}
+
+
+// Configuración del router
+const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: <DashboardSelector />, // ← Dashboard dinámico
+      },
+      { path: "alumnos", element: <AlumnosIndex /> },
+      { path: "profesores", element: <ProfesoresIndex /> },
+      { path: "todos", element: <TodosIndex /> },
+      { path: "cursos", element: <CursosIndex /> },
+      { path: "libros", element: <LibrosIndex /> },
+      { path: "prestamos", element: <PrestamosAlumnosIndex /> },
+      { path: "prestamosProfesores", element: <PrestamosProfesoresIndex /> },
+      { path: "llavesPrestadas", element: <PrestamosLlavesIndex /> },
+      { path: "llavesPlantaBaja", element: <PlanoPlanta planta="baja" /> },
+      { path: "llavesPlantaPrimera", element: <PlanoPlanta planta="primera" /> },
+      { path: "llavesPlantaSegunda", element: <PlanoPlanta planta="segunda" /> },
+      { path: "perfiles", element: <PerfilesUsuarioIndex /> },
+    ],
+  },
+]);
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TaskProvider>
+          <SidebarProviderCustom>
+            <Toaster richColors />
+            <RouterProvider router={router} />
+          </SidebarProviderCustom>
+        </TaskProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

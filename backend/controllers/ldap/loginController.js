@@ -112,17 +112,13 @@ exports.loginLdap = (req, res) => {
   }
 
   // Definir DN según usuario
-  console.log ("Username", username);
-  let userDN;
+    let userDN;
   if (username === "admin") {
     userDN = `cn=admin,ou=People,dc=instituto,dc=extremadura,dc=es`;
   } else {
     userDN = `uid=${username},ou=People,dc=instituto,dc=extremadura,dc=es`;
   }
 
-
-  console.log("LDAP URL:", LDAP_URL);
-  console.log("Usuario DN para bind:", userDN);
 
   const client = ldap.createClient({ url: LDAP_URL });
 

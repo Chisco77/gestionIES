@@ -40,22 +40,9 @@
  * - El pie del sidebar incluye un botón de logout y la información del usuario activo.
  */
 
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
-  SidebarMenu,
-} from "@/components/ui/sidebar";
-import { Power, User, BookOpen, SquareTerminal, Settings2 } from "lucide-react";
-import { NavMain } from "@/components/nav-main";
 
-const API_URL = import.meta.env.VITE_API_URL;
 
-function SidebarComponent({ onOpenEtiquetas, ...props }) {
+/*function SidebarComponent({ onOpenEtiquetas, ...props }) {
   const navigate = useNavigate();
   const [username, setUsername] = React.useState("Usuario");
   const [openEtiquetas, setOpenEtiquetas] = React.useState(false);
@@ -94,7 +81,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         { title: "Alumnos", url: "/alumnos" },
         { title: "Profesores", url: "/profesores" },
         { title: "Todos", url: "/todos" },
-      ],*/
+      ],
     },
     {
       title: "Personas",
@@ -204,6 +191,125 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
             />
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">{username}</span>
+              <User className="h-5 w-5 text-gray-500" />
+            </div>
+          </div>
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  );
+}
+*/
+
+import { useAuth } from "@/context/AuthContext";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
+  SidebarMenu,
+} from "@/components/ui/sidebar";
+import { Power, User, BookOpen, SquareTerminal, Settings2 } from "lucide-react";
+import { NavMain } from "@/components/nav-main";
+
+
+
+const API_URL = import.meta.env.VITE_API_URL;
+function SidebarComponent({ onOpenEtiquetas, ...props }) {
+  const navigate = useNavigate();
+  const [openEtiquetas, setOpenEtiquetas] = React.useState(false);
+  const { user, setUser, loading } = useAuth();
+
+  // Menús por perfil
+  const menusPorPerfil = {
+    profesor: [
+      {
+        title: "Personas",
+        url: "#",
+        icon: SquareTerminal,
+        items: [
+          { title: "Alumnos", url: "/alumnos" },
+          { title: "Profesores", url: "/profesores" },
+          { title: "Todos", url: "/todos" },
+        ],
+      },
+      {
+        title: "Reserva de recursos",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Aulas", url: "/llavesPrestadas" },
+          { title: "Armarios de Portátiles", url: "/llavesPlantaBaja" },
+        ],
+      },
+      {
+        title: "Asuntos Propios",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Mis asuntos propios", url: "/llavesPrestadas" },
+          { title: "Solicitar", url: "/llavesPlantaBaja" },
+        ],
+      },
+    ],
+    admin: [
+      {
+        title: "Administrador",
+        url: "#",
+        icon: Settings2,
+        items: [{ title: "Perfiles de Usuario", url: "/perfiles" }],
+      },
+    ],
+    alumno: [
+      {
+        title: "Asuntos Propios",
+        url: "#",
+        icon: BookOpen,
+        items: [{ title: "Mis asuntos propios", url: "/llavesPrestadas" }],
+      },
+    ],
+  };
+const navMain = user ? menusPorPerfil[user.perfil] ?? [] : [];
+
+  const handleClickLogout = () => {
+    fetch(`${API_URL}/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).finally(() => {
+      setUser(null);
+      navigate("/login");
+    });
+  };
+
+  // Cuando se abre etiquetas, notificar al padre
+  React.useEffect(() => {
+    if (openEtiquetas && onOpenEtiquetas) {
+      onOpenEtiquetas();
+      setOpenEtiquetas(false);
+    }
+  }, [openEtiquetas, onOpenEtiquetas]);
+return (
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader />
+      <SidebarContent>
+        {loading ? (
+          <div>Cargando...</div>
+        ) : !user ? (
+          <div>No autenticado</div>
+        ) : (
+          <NavMain items={navMain} />
+        )}
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu className="border-t p-4">
+          <div className="flex items-center justify-between w-full">
+            <Power className="cursor-pointer" color="red" onClick={handleClickLogout} />
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{user?.username}</span>
               <User className="h-5 w-5 text-gray-500" />
             </div>
           </div>

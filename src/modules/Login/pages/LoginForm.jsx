@@ -1,6 +1,5 @@
 /**
- * LoginForm.jsx - Página de login de la aplicación, para conexiones
- *   internas de la subred del orellana
+ * LoginForm.jsx - Página de login de la aplicación
  *
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
@@ -10,13 +9,10 @@
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
  *
- * Fecha de creación: 2025
- *
  * Descripción:
- * Esta página renderiza el formulario de inicio de sesión en subred
- * solo pide usuario y password ya que en variables de entorno .env
- * están declaradas el resto.
- * 
+ * - Renderiza el formulario de inicio de sesión.
+ * - Actualiza el contexto de usuario después de login.
+ * - Mantiene sesión mediante cookies.
  */
 
 import { Button } from "@/components/ui/button";
@@ -33,55 +29,60 @@ import { Avatar, AvatarImage } from "@radix-ui/react-avatar";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext"; // <-- Importar contexto
 
 export function LoginForm({ className, ...props }) {
   const queryClient = useQueryClient();
-
-  const [usuario, setUsuario] = useState({
-    username: "",
-    password: "",
-  });
-
+  const { setUser } = useAuth(); // <-- Para actualizar contexto
+  const [usuario, setUsuario] = useState({ username: "", password: "" });
   const navigate = useNavigate();
-
-  // para guardar nombre de usuario en contexto de usuario
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const handleChange = (e) => {
-    setUsuario({
-      ...usuario,
-      [e.target.name]: e.target.value,
-    });
+    setUsuario({ ...usuario, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const API_URL = import.meta.env.VITE_API_URL;
-
     try {
+      // 1️⃣ Intentar login
       const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", //  Mantiene la sesión
+        credentials: "include", // Mantener sesión
         body: JSON.stringify(usuario),
       });
 
-      if (response.ok) {
-        // limpiar cache de hooks
-        queryClient.invalidateQueries(["alumnos-ldap"]);
-        queryClient.invalidateQueries(["profesores-ldap"]);
-        queryClient.invalidateQueries(["todos-ldap"]);
-        queryClient.invalidateQueries(["prestamos"]);
-
-        navigate("/");
-      } else {
-        // leer JSON del backend
+      if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         const mensaje = errorData?.error || "Usuario o contraseña incorrectos";
         alert(`❌ Error: ${mensaje}`);
+        return;
       }
+
+      // 2️⃣ Limpiar cache de React Query
+      queryClient.invalidateQueries(["alumnos-ldap"]);
+      queryClient.invalidateQueries(["profesores-ldap"]);
+      queryClient.invalidateQueries(["todos-ldap"]);
+      queryClient.invalidateQueries(["prestamos"]);
+
+      // 3️⃣ Obtener usuario y perfil actual desde check-auth
+      const data = await fetch(`${API_URL}/check-auth`, {
+        credentials: "include",
+      }).then((res) => res.json());
+
+      // 4️⃣ Actualizar contexto
+      setUser({
+        username: data.username,
+        perfil: data.perfil ?? "profesor",
+      });
+
+      // 5️⃣ Redirigir al dashboard
+      navigate("/");
     } catch (error) {
       alert("Error de conexión con el servidor");
+      console.error(error);
     }
   };
 
@@ -106,27 +107,24 @@ export function LoginForm({ className, ...props }) {
                 />
               </Avatar>
               <div className="grid gap-2">
-                <Label htmlFor="email">Usuario</Label>
+                <Label htmlFor="username">Usuario</Label>
                 <Input
                   id="username"
                   name="username"
                   type="text"
                   onChange={handleChange}
                   value={usuario.username}
-                  placeholder=""
                   required
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   name="password"
+                  type="password"
                   onChange={handleChange}
                   value={usuario.password}
-                  type="password"
                   required
                 />
               </div>
