@@ -239,13 +239,13 @@ export function DialogoAsignarLibros({
         }),
       });
 
-      if (!res.ok) throw new Error("Error al prestar libros");
+      if (!res.ok) throw new Error("Error al asignar libros");
 
       toast.success("Libros asignados correctamente");
       onSuccess?.();
       onClose();
     } catch (error) {
-      toast.error("Error al prestar libros");
+      toast.error("Error al asignar libros");
       console.error(error);
     }
   };
@@ -372,7 +372,7 @@ export function DialogoAsignarLibros({
                 disabled={librosSeleccionados.length === 0}
                 onClick={handleAsignar}
               >
-                Prestar libros
+                Asignar libros
               </Button>
             </div>
           </div>

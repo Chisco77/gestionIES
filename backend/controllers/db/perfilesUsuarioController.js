@@ -27,6 +27,7 @@ exports.getPerfiles = async (req, res) => {
   try {
     const result = await db.query("SELECT * FROM perfiles_usuario ORDER BY uid");
     res.json(result.rows);
+    console.log (res);
   } catch (error) {
     console.error("❌ Error al obtener perfiles:", error);
     res.status(500).json({ message: "Error interno del servidor" });
@@ -45,6 +46,7 @@ exports.getPerfilUsuario = async (req, res) => {
     }
 
     res.json(result.rows[0]);
+    console.log (res);
   } catch (error) {
     console.error(`❌ Error al obtener perfil del usuario ${uid}:`, error);
     res.status(500).json({ message: "Error interno al obtener perfil" });

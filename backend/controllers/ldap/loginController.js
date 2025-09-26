@@ -106,9 +106,9 @@ const ldap = require("ldapjs");
 exports.loginLdap = (req, res) => {
   const { username, password } = req.body;
   const LDAP_URL = process.env.LDAP_URL;
-
+  
   if (!username || !password) {
-    return res.status(400).json({ error: "Usuario o contraseña faltantes" });
+    return res.status(400).json({ error: "Debe indicar usuario y contraseña" });
   }
 
   // Definir DN según usuario
@@ -144,7 +144,7 @@ exports.loginLdap = (req, res) => {
     const groupDN = `ou=Group,${baseDN}`;
     const groupOptions = {
       scope: "sub",
-      filter: "(&(objectClass=lisAclGroup)(cn=teachers))",
+      filter: "(&(objectClass=lisAclGroup)(|(cn=teachers)(cn=staff)))",
       attributes: ["memberUid"],
     };
 

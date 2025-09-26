@@ -72,9 +72,10 @@
  *
  */
 
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DialogoGestionLlaves } from "./DialogoGestionLlaves";
+
+import { useAuth } from "@/context/AuthContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -143,6 +144,9 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   const [error, setError] = useState("");
   const [modoEdicion, setModoEdicion] = useState(false);
   const [draw, setDraw] = useState({ activo: false, coordenadas: [] });
+
+  // Para filtrar que modo edición de estancias es solo para el admin
+  const { user } = useAuth();
 
   // Para guardar nueva estancia
   const [nuevo, setNuevo] = useState({
@@ -321,161 +325,15 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   return (
     <div style={{ padding: 12 }}>
       {/* Panel lateral y plano */}
-      <div style={{ display: "flex", gap: 12 }}>
-        <div style={{ width: 340 }}>
-          {/* Préstamos */}
-          <h3 style={{ margin: 0 }}>Préstamos activos</h3>
-          <div style={{ marginTop: 8 }}>
-            {prestamosActivos.length === 0 ? (
-              <p style={{ color: "#6b7280" }}>No hay préstamos activos.</p>
-            ) : (
-              <ul style={{ paddingLeft: 0 }}>
-                {prestamosActivos.map((p, i) => (
-                  <li
-                    key={i}
-                    style={{
-                      listStyle: "none",
-                      marginBottom: 10,
-                      border: "1px solid #e5e7eb",
-                      padding: 8,
-                      borderRadius: 6,
-                    }}
-                  >
-                    <div style={{ fontWeight: 700 }}>
-                      {estancias.find((e) => e.id === p.idestancia)?.codigo ||
-                        p.codigoEstancia ||
-                        p.idestancia}
-                    </div>
-                    <div style={{ fontSize: 13, color: "#374151" }}>
-                      {p.codigoEstancia} · {p.unidades} llave(s) — {p.profesor}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <hr style={{ margin: "12px 0" }} />
-
-          {/* Edición */}
-          <div>
-            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={modoEdicion}
-                onChange={(e) => setModoEdicion(e.target.checked)}
-              />{" "}
-              <strong>Modo edición</strong>
-            </label>
-            {modoEdicion && (
-              <div
-                style={{
-                  marginTop: 8,
-                  border: "1px dashed #e6eef0",
-                  padding: 8,
-                  borderRadius: 6,
-                }}
-              >
-                <div style={{ marginBottom: 8 }}>
-                  <label style={{ display: "block", fontSize: 13 }}>
-                    Código de la estancia
-                  </label>
-                  <input
-                    placeholder="ej. Aula 1.01"
-                    value={nuevo.codigo}
-                    onChange={(e) =>
-                      setNuevo((n) => ({ ...n, codigo: e.target.value }))
-                    }
-                  />
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <label style={{ display: "block", fontSize: 13 }}>
-                    Descripción
-                  </label>
-                  <input
-                    placeholder="Ej: Aula de informática"
-                    value={nuevo.descripcion}
-                    onChange={(e) =>
-                      setNuevo((n) => ({ ...n, descripcion: e.target.value }))
-                    }
-                  />
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <label style={{ display: "block", fontSize: 13 }}>
-                    Nº llaves totales
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={nuevo.totalllaves}
-                    onChange={(e) =>
-                      setNuevo((n) => ({
-                        ...n,
-                        totalllaves: Number(e.target.value),
-                      }))
-                    }
-                  />
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    onClick={finishPolygon}
-                    disabled={
-                      !draw.activo || draw.coordenadas.length < 3 || cargando
-                    }
-                  >
-                    {cargando ? "Guardando..." : "Guardar estancia"}
-                  </button>
-                  <button
-                    onClick={cancelDraw}
-                    disabled={!draw.activo || cargando}
-                  >
-                    Cancelar dibujo
-                  </button>
-                </div>
-                {error && (
-                  <p style={{ color: "#b91c1c", fontSize: 12, marginTop: 6 }}>
-                    {error}
-                  </p>
-                )}
-                <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
-                  Click en el plano para añadir coordenadas. Doble-click para
-                  cerrar el polígono.
-                </p>
-                <div
-                  style={{
-                    marginTop: 8,
-                    display: "flex",
-                    gap: 6,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {estancias.map((s) => (
-                    <span
-                      key={s.id}
-                      style={{
-                        background: "#eef2ff",
-                        padding: "4px 8px",
-                        borderRadius: 999,
-                        fontSize: 12,
-                      }}
-                    >
-                      {s.nombre}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {/* Plano */}
         <div
           ref={wrapperRef}
           style={{
             position: "relative",
             flex: 1,
-            maxWidth: "1014px",
-            maxHeight: "860px",
+            maxWidth: "1400px", // antes 1014px
+            maxHeight: "1200px", // antes 860px
             border: "1px solid #e5e7eb",
             borderRadius: 8,
             overflow: "hidden",
@@ -626,9 +484,163 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
             </g>
           </svg>
         </div>
+        <div style={{ width: 340 }}>
+          {/* Préstamos */}
+          <h3 style={{ margin: 0 }}>Préstamos activos</h3>
+          <div style={{ marginTop: 8 }}>
+            {prestamosActivos.length === 0 ? (
+              <p style={{ color: "#6b7280" }}>No hay préstamos activos.</p>
+            ) : (
+              <ul style={{ paddingLeft: 0 }}>
+                {prestamosActivos.map((p, i) => (
+                  <li
+                    key={i}
+                    style={{
+                      listStyle: "none",
+                      marginBottom: 10,
+                      border: "1px solid #e5e7eb",
+                      padding: 8,
+                      borderRadius: 6,
+                    }}
+                  >
+                    <div style={{ fontWeight: 700 }}>
+                      {estancias.find((e) => e.id === p.idestancia)?.codigo ||
+                        p.codigoEstancia ||
+                        p.idestancia}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#374151" }}>
+                      {p.codigoEstancia} · {p.unidades} llave(s) — {p.profesor}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <hr style={{ margin: "12px 0" }} />
+
+          {/* Edición */}
+          {user?.perfil === "administrador" && (
+            <div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={modoEdicion}
+                  onChange={(e) => setModoEdicion(e.target.checked)}
+                />{" "}
+                <strong>Modo edición</strong>
+              </label>
+
+              {modoEdicion && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    border: "1px dashed #e6eef0",
+                    padding: 8,
+                    borderRadius: 6,
+                  }}
+                >
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ display: "block", fontSize: 13 }}>
+                      Código de la estancia
+                    </label>
+                    <input
+                      placeholder="ej. Aula 1.01"
+                      value={nuevo.codigo}
+                      onChange={(e) =>
+                        setNuevo((n) => ({ ...n, codigo: e.target.value }))
+                      }
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ display: "block", fontSize: 13 }}>
+                      Descripción
+                    </label>
+                    <input
+                      placeholder="Ej: Aula de informática"
+                      value={nuevo.descripcion}
+                      onChange={(e) =>
+                        setNuevo((n) => ({ ...n, descripcion: e.target.value }))
+                      }
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ display: "block", fontSize: 13 }}>
+                      Nº llaves totales
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={nuevo.totalllaves}
+                      onChange={(e) =>
+                        setNuevo((n) => ({
+                          ...n,
+                          totalllaves: Number(e.target.value),
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={finishPolygon}
+                      disabled={
+                        !draw.activo || draw.coordenadas.length < 3 || cargando
+                      }
+                    >
+                      {cargando ? "Guardando..." : "Guardar estancia"}
+                    </button>
+                    <button
+                      onClick={cancelDraw}
+                      disabled={!draw.activo || cargando}
+                    >
+                      Cancelar dibujo
+                    </button>
+                  </div>
+
+                  {error && (
+                    <p style={{ color: "#b91c1c", fontSize: 12, marginTop: 6 }}>
+                      {error}
+                    </p>
+                  )}
+
+                  <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
+                    Click en el plano para añadir coordenadas. Doble-click para
+                    cerrar el polígono.
+                  </p>
+
+                  <div
+                    style={{
+                      marginTop: 8,
+                      display: "flex",
+                      gap: 6,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {estancias.map((s) => (
+                      <span
+                        key={s.id}
+                        style={{
+                          background: "#eef2ff",
+                          padding: "4px 8px",
+                          borderRadius: 999,
+                          fontSize: 12,
+                        }}
+                      >
+                        {s.nombre}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-       {/* Diálogos */}
+      {/* Diálogos */}
       {modalLlaves.open && (
         <DialogoGestionLlaves
           open={modalLlaves.open}

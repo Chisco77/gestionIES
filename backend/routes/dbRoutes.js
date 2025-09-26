@@ -102,6 +102,7 @@ const {
 
 const {
 getEstanciasByPlanta,
+getAllEstancias,
 insertEstancia,
 updateEstancia,
 deleteEstancia,
@@ -126,7 +127,8 @@ const {
 router.get("/planos/estancias", getEstanciasByPlanta); 
 router.post("/planos/estancias", insertEstancia); 
 router.put("/planos/estancias/:planta/:id", updateEstancia); 
-router.delete("/planos/estancias/:planta/:id", deleteEstancia); 
+router.delete("/planos/estancias/:planta/:id", deleteEstancia);
+router.get("/estancias", getAllEstancias); 
 
 router.get("/prestamos/agrupados", getPrestamosAgrupados);
 router.post("/prestamos/devolver", devolverPrestamos);

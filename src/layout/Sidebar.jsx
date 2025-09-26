@@ -40,8 +40,6 @@
  * - El pie del sidebar incluye un botón de logout y la información del usuario activo.
  */
 
-
-
 /*function SidebarComponent({ onOpenEtiquetas, ...props }) {
   const navigate = useNavigate();
   const [username, setUsername] = React.useState("Usuario");
@@ -216,8 +214,6 @@ import {
 import { Power, User, BookOpen, SquareTerminal, Settings2 } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
 
-
-
 const API_URL = import.meta.env.VITE_API_URL;
 function SidebarComponent({ onOpenEtiquetas, ...props }) {
   const navigate = useNavigate();
@@ -228,7 +224,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
   const menusPorPerfil = {
     profesor: [
       {
-        title: "Personas",
+        title: "Usuarios",
         url: "#",
         icon: SquareTerminal,
         items: [
@@ -256,7 +252,74 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         ],
       },
     ],
-    admin: [
+    ordenanza: [
+      {
+        title: "Préstamo Llaves",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Llaves prestadas", url: "/llavesPrestadas" },
+          { title: "Planta BAJA", url: "/llavesPlantaBaja" },
+          { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
+          { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
+        ],
+      },
+    ],
+    administrador: [
+      {
+        title: "Usuarios",
+        url: "#",
+        icon: SquareTerminal,
+        isActive: true,
+        items: [
+          { title: "Alumnos", url: "/alumnos" },
+          { title: "Profesores", url: "/profesores" },
+          { title: "Todos", url: "/todos" },
+          { title: "Perfiles de Usuario", url: "/perfiles" },
+        ],
+      },
+     
+      {
+        title: "Reserva de recursos",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Aulas", url: "/llavesPrestadas" },
+          { title: "Armarios de Portátiles", url: "/llavesPlantaBaja" },
+        ],
+      },
+      {
+        title: "Asuntos Propios",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Mis asuntos propios", url: "/llavesPrestadas" },
+          { title: "Solicitar", url: "/llavesPlantaBaja" },
+        ],
+      },
+      {
+        title: "Préstamo Libros",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Alumnos", url: "/prestamos" },
+          { title: "Profesores", url: "/prestamosProfesores" },
+          { title: "Libros", url: "/libros" },
+          { title: "Cursos", url: "/cursos" },
+        ],
+      },
+      {
+        title: "Préstamo Llaves",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Llaves prestadas", url: "/llavesPrestadas" },
+          { title: "Estancias", url: "/estancias" },
+          { title: "Planta BAJA", url: "/llavesPlantaBaja" },
+          { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
+          { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
+        ],
+      },
       {
         title: "Administrador",
         url: "#",
@@ -264,16 +327,63 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         items: [{ title: "Perfiles de Usuario", url: "/perfiles" }],
       },
     ],
-    alumno: [
+    educador: [
+      {
+        title: "Usuarios",
+        url: "#",
+        icon: SquareTerminal,
+        isActive: true,
+        items: [
+          { title: "Alumnos", url: "/alumnos" },
+          { title: "Profesores", url: "/profesores" },
+          { title: "Todos", url: "/todos" },
+        ],
+      },
+
+      {
+        title: "Reserva de recursos",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Aulas", url: "/llavesPrestadas" },
+          { title: "Armarios de Portátiles", url: "/llavesPlantaBaja" },
+        ],
+      },
       {
         title: "Asuntos Propios",
         url: "#",
         icon: BookOpen,
-        items: [{ title: "Mis asuntos propios", url: "/llavesPrestadas" }],
+        items: [
+          { title: "Mis asuntos propios", url: "/llavesPrestadas" },
+          { title: "Solicitar", url: "/llavesPlantaBaja" },
+        ],
+      },
+
+      {
+        title: "Préstamo Libros",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Alumnos", url: "/prestamos" },
+          { title: "Profesores", url: "/prestamosProfesores" },
+          { title: "Libros", url: "/libros" },
+          { title: "Cursos", url: "/cursos" },
+        ],
+      },
+      {
+        title: "Préstamo Llaves",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Llaves prestadas", url: "/llavesPrestadas" },
+          { title: "Planta BAJA", url: "/llavesPlantaBaja" },
+          { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
+          { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
+        ],
       },
     ],
   };
-const navMain = user ? menusPorPerfil[user.perfil] ?? [] : [];
+  const navMain = user ? (menusPorPerfil[user.perfil] ?? []) : [];
 
   const handleClickLogout = () => {
     fetch(`${API_URL}/logout`, {
@@ -292,7 +402,7 @@ const navMain = user ? menusPorPerfil[user.perfil] ?? [] : [];
       setOpenEtiquetas(false);
     }
   }, [openEtiquetas, onOpenEtiquetas]);
-return (
+  return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader />
       <SidebarContent>
@@ -307,7 +417,11 @@ return (
       <SidebarFooter>
         <SidebarMenu className="border-t p-4">
           <div className="flex items-center justify-between w-full">
-            <Power className="cursor-pointer" color="red" onClick={handleClickLogout} />
+            <Power
+              className="cursor-pointer"
+              color="red"
+              onClick={handleClickLogout}
+            />
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">{user?.username}</span>
               <User className="h-5 w-5 text-gray-500" />

@@ -26,6 +26,7 @@ const ldap = require("ldapjs");
 const { Pool } = require("pg");
 
 exports.loginExternoLdap = async (req, res) => {
+    
   // datos de conexion se pasan en el body, forman parte de la sesion ldap  
   const {
     username,
@@ -37,6 +38,7 @@ exports.loginExternoLdap = async (req, res) => {
     pgPassword,
   } = req.body;
 
+  
   if (!username || !password || !ldapHost || !pgHost || !pgDatabase) {
     return res.status(400).json({ error: "Faltan datos obligatorios" });
   }

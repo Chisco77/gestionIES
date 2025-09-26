@@ -196,8 +196,36 @@ async function deleteEstancia(req, res) {
   }
 }
 
+// GET /db/estancias
+// Devuelve todas las estancias sin filtrar por planta
+async function getAllEstancias(req, res) {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, planta, codigo, descripcion, totalllaves, coordenadas_json
+       FROM estancias
+       ORDER BY planta, descripcion ASC`
+    );
+
+    const estancias = rows.map((r) => ({
+      id: r.id,
+      planta: r.planta,
+      codigo: r.codigo,
+      descripcion: r.descripcion,
+      totalllaves: r.totalllaves,
+      coordenadas: r.coordenadas_json,
+    }));
+
+    res.json(estancias);
+  } catch (err) {
+    console.error("[getAllEstancias] Error:", err);
+    res.status(500).json({ ok: false, error: "Error obteniendo estancias" });
+  }
+}
+
+
 module.exports = {
   getEstanciasByPlanta,
+  getAllEstancias,
   insertEstancia,
   updateEstancia,
   deleteEstancia,

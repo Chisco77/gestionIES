@@ -196,6 +196,7 @@ import { PrestamosProfesoresIndex } from "./modules/Prestamos/pages/PrestamosPro
 import { PrestamosLlavesIndex } from "./modules/Llaves/pages/PrestamosLlavesIndex";
 import { PlanoPlanta } from "./modules/Llaves/pages/PlanoPlanta";
 import { PerfilesUsuarioIndex } from "./modules/PerfilesUsuario/pages/PerfilesUsuarioIndex";
+import { EstanciasIndex } from "./modules/Estancias/pages/EstanciasIndex";
 
 import { SidebarProviderCustom } from "./context/SidebarContext";
 
@@ -208,10 +209,11 @@ function DashboardSelector() {
   if (loading) return <div>Cargando...</div>;
   if (!user) return <div>No autenticado</div>;
   console.log ("Usuario: ", user);
+  console.log ("Perfil: ", user.perfil);
   switch (user.perfil) {
     case "profesor":
       return <DashboardProfesor />;
-    case "admin":
+    case "administrador":
       return <DashboardAdmin />;
     case "alumno":
       return <DashboardAlumno />;
@@ -251,6 +253,7 @@ const router = createBrowserRouter([
       { path: "llavesPlantaPrimera", element: <PlanoPlanta planta="primera" /> },
       { path: "llavesPlantaSegunda", element: <PlanoPlanta planta="segunda" /> },
       { path: "perfiles", element: <PerfilesUsuarioIndex /> },
+      { path: "estancias", element: <EstanciasIndex /> },
     ],
   },
 ]);

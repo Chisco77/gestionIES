@@ -32,51 +32,13 @@
  * ================================================================
  */
 
-
-
-/*const express = require("express");
-const router = express.Router();
-const { loginLdap } = require("../controllers/ldap/loginController");
-const {loginExternoLdap } = require ("../controllers/ldap/loginExternoController");
-
-router.post(
-  "/login",
-  (req, res, next) => {
-    next();
-  },
-  loginLdap
-);
-
-
-router.get("/check-auth", (req, res) => {
-  if (req.session.ldap) {
-    const uid = req.session.ldap.dn.split(",")[0].replace("uid=", "");
-    res.json({ authenticated: true, username: uid });
-  } else {
-    res.sendStatus(401);
-  }
-});
-
-router.post("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    res.clearCookie("connect.sid"); // Elimina la cookie del navegador
-    res.status(200).json({ mensaje: "Sesión cerrada correctamente" });
-  });
-});
-
-// Ruta para login externo
-router.post("/login-externo", loginExternoLdap);
-
-
-module.exports = router;
-*/
-
-
 // authRoutes.js
 const express = require("express");
 const router = express.Router();
 const { loginLdap } = require("../controllers/ldap/loginController");
-const { loginExternoLdap } = require("../controllers/ldap/loginExternoController");
+const {
+  loginExternoLdap,
+} = require("../controllers/ldap/loginExternoController");
 const pool = require("../db"); // conexión a PostgreSQL
 
 router.post("/login", loginLdap);
@@ -85,13 +47,17 @@ router.post("/login", loginLdap);
 router.get("/check-auth", async (req, res) => {
   if (req.session.ldap) {
     try {
-      const uid = req.session.ldap.dn.split(",")[0].replace("uid=", "");
+      const match = req.session.ldap.dn.match(/^(uid|cn)=(.+?),/);
+      const uid = match ? match[2] : req.session.ldap.dn;
 
+      console.log("Usuario: ", uid);
       // Consultar perfil en la tabla
       const result = await pool.query(
         "SELECT perfil FROM perfiles_usuario WHERE uid = $1 LIMIT 1",
         [uid]
       );
+
+      console.log("Usuario: ", uid);
 
       // Si no hay perfil en la tabla, asignar "profesor" por defecto
       const perfil =
