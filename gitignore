@@ -26,3 +26,8 @@ backend/uploads
 backend/Alumnos.xml
 subir_codigo.sh
 backend/.env
+Dockerfile.frontend
+backend/Dockerfile
+.env
+docker-compose.yml
+deploy_gestionIES.sh
