@@ -1,3 +1,6 @@
+# Eliminar restos de node_modules
+rm -rf node_modules
+
 # 1️⃣ Parar y eliminar solo contenedores gestionIES
 docker ps -a --filter "name=gestionIES" --format "{{.Names}}" | xargs -r docker rm -f
 
