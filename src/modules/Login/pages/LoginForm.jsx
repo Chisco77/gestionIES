@@ -46,7 +46,7 @@ export function LoginForm({ className, ...props }) {
     e.preventDefault();
 
     try {
-      // 1️⃣ Intentar login
+      // Intentar login
       const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -61,24 +61,24 @@ export function LoginForm({ className, ...props }) {
         return;
       }
 
-      // 2️⃣ Limpiar cache de React Query
+      // Limpiar cache de React Query
       queryClient.invalidateQueries(["alumnos-ldap"]);
       queryClient.invalidateQueries(["profesores-ldap"]);
       queryClient.invalidateQueries(["todos-ldap"]);
       queryClient.invalidateQueries(["prestamos"]);
 
-      // 3️⃣ Obtener usuario y perfil actual desde check-auth
+      // Obtener usuario y perfil actual desde check-auth
       const data = await fetch(`${API_URL}/check-auth`, {
         credentials: "include",
       }).then((res) => res.json());
 
-      // 4️⃣ Actualizar contexto
+      // Actualizar contexto
       setUser({
         username: data.username,
         perfil: data.perfil ?? "profesor",
       });
 
-      // 5️⃣ Redirigir al dashboard
+      // Redirigir al dashboard
       navigate("/");
     } catch (error) {
       alert("Error de conexión con el servidor");
@@ -101,7 +101,7 @@ export function LoginForm({ className, ...props }) {
             <div className="flex flex-col gap-6">
               <Avatar className="flex justify-center">
                 <AvatarImage
-                  src="/logo.png"
+                  src={`${import.meta.env.BASE_URL}logo.png`}
                   alt="Logo"
                   style={{ width: "25%", height: "25%" }}
                 />

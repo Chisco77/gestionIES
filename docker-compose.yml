@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # 1. Servicio de Base de Datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_gestionIES
+    restart: always
+    environment:
+      # Lee variables de entorno de .env
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    # Montar un volumen para persistir los datos de la base de datos
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d IESOrellana"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    # No es necesario exponer el puerto al host si solo el backend accede a él
+    # ports:
+    #   - "5432:5432"
+
+  # 2. Servicio de Backend (Node.js)
+  backend_app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: gestionies_backend_app:latest
+    container_name: node_gestionIES
+    restart: always
+    # Cargar variables de entorno del archivo .env del backend
+    env_file:
+      - backend/.env
+    # Mapeo de puertos, solo para pruebas o si necesitas acceder directamente. 
+    # Nginx hará el proxy, por lo que no es estrictamente necesario mapear 5000
+    # ports:
+    #   - "5000:5000"
+    depends_on:
+      - db # Asegura que la DB se inicie antes que el backend
+    environment:
+      # Sobrescribir el host de la DB para usar el nombre del servicio de docker-compose
+      DB_HOST: db
+      # NOTA: La configuración LDAP (`LDAP_URL`) no necesita cambiar si el servidor
+      # LDAP (172.16.218.2) está en la red física y Docker usa 'host' o una red 'bridge'
+      # que permite el acceso a la subred 172.16.X.X.
+      # Si da problemas, puedes añadir network_mode: "host" (solo en Linux).
+
+  # 3. Servicio de Frontend/Nginx
+  frontend_nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: nginx_gestionIES
+    restart: always
+    # Exponer al puerto 443 y 80 del host
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend_app
+    # Montar certificados SSL autofirmados desde el host
+    volumes:
+      - /etc/nginx/ssl/nginx.crt:/etc/nginx/ssl/nginx.crt:ro
+      - /etc/nginx/ssl/nginx.key:/etc/nginx/ssl/nginx.key:ro
+      
+volumes:
+  postgres_data:

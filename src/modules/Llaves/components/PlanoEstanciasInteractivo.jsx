@@ -131,12 +131,13 @@ async function apiListarPrestamosLlaves() {
 
 // ------------------- Componente -------------------
 export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
-  const svgUrl =
-    planta === "primera"
-      ? "/PLANTA_PRIMERA.svg"
-      : planta === "segunda"
-        ? "/PLANTA_SEGUNDA.svg"
-        : "/PLANTA_BAJA.svg";
+const svgUrl =
+  planta === "primera"
+    ? `${import.meta.env.BASE_URL}PLANTA_PRIMERA.svg`
+    : planta === "segunda"
+      ? `${import.meta.env.BASE_URL}PLANTA_SEGUNDA.svg`
+      : `${import.meta.env.BASE_URL}PLANTA_BAJA.svg`;
+
 
   const [estancias, setEstancias] = useState([]);
   const [prestamos, setPrestamos] = useState([]);

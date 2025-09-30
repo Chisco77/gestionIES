@@ -1,0 +1,1 @@
+rsync -av --exclude="Dockerfile.frontend" --exclude ="./backend/Dockerfile" --exclude="docker-compose.yml"   --exclude="node_modules" --exclude=".git" --exclude=".env" --exclude="./backend/.env"  root@even-pro:/var/home/local2/Desarrollo/gestionIES/ .
