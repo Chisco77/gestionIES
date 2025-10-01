@@ -133,7 +133,6 @@ exports.loginLdap = (req, res) => {
 
     // Caso especial: si es admin, no comprobamos grupo
     if (username === "admin") {
-      console.log("✅ Login correcto como admin");
       req.session.ldap = { dn: userDN, password };
       client.unbind();
       return res.json({ message: "Login correcto (usuario admin)" });

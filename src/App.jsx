@@ -44,8 +44,6 @@ function DashboardSelector() {
 
   if (loading) return <div>Cargando...</div>;
   if (!user) return <div>No autenticado</div>;
-  console.log("Usuario: ", user);
-  console.log("Perfil: ", user.perfil);
   switch (user.perfil) {
     case "profesor":
       return <DashboardProfesor />;

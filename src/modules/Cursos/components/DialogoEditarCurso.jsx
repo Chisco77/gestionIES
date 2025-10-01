@@ -70,7 +70,6 @@ export function DialogoEditarCurso({
   }, [cursoSeleccionado]);
 
   const handleEditar = async () => {
-    console.log ("Curso seleccionado: ",cursoSeleccionado.id);
   try {
     const res =  await fetch(`${API_URL}/db/cursos/${cursoSeleccionado.id}`, 
       {

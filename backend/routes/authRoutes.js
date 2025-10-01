@@ -36,9 +36,7 @@
 const express = require("express");
 const router = express.Router();
 const { loginLdap } = require("../controllers/ldap/loginController");
-const {
-  loginExternoLdap,
-} = require("../controllers/ldap/loginExternoController");
+
 const pool = require("../db"); // conexión a PostgreSQL
 
 router.post("/login", loginLdap);
@@ -50,14 +48,11 @@ router.get("/check-auth", async (req, res) => {
       const match = req.session.ldap.dn.match(/^(uid|cn)=(.+?),/);
       const uid = match ? match[2] : req.session.ldap.dn;
 
-      console.log("Usuario: ", uid);
       // Consultar perfil en la tabla
       const result = await pool.query(
         "SELECT perfil FROM perfiles_usuario WHERE uid = $1 LIMIT 1",
         [uid]
       );
-
-      console.log("Usuario: ", uid);
 
       // Si no hay perfil en la tabla, asignar "profesor" por defecto
       const perfil =
@@ -84,7 +79,5 @@ router.post("/logout", (req, res) => {
   });
 });
 
-// Ruta para login externo
-router.post("/login-externo", loginExternoLdap);
 
 module.exports = router;

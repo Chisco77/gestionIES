@@ -68,7 +68,6 @@ export function DialogoEditarUsuario({
 
   useEffect(() => {
     if (!usuarioSeleccionado || !open) return;
-    console.log("grpo: ", usuarioSeleccionado.gidNumber);
 
     setNombre(usuarioSeleccionado.givenName || "");
     setApellidos(usuarioSeleccionado.sn || "");
@@ -124,10 +123,6 @@ export function DialogoEditarUsuario({
         setGrupo(grupoValido.cn); // ahora coincide con value de SelectItem
       } else {
         setGrupo("");
-        console.log(
-          "Segundo grupo del usuario no está en grupos disponibles:",
-          segundoGrupoCN
-        );
       }
     } else {
       setGrupo("");
