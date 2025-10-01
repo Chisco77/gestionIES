@@ -5,7 +5,7 @@ set -e
 # Configuración
 # ===============================
 APP_NAME="gestionIES"
-DB_NAME="IESOrellana"
+DB_NAME="gestionIES"
 DB_USER="postgres"
 DB_DUMP="${DB_NAME}.sql"
 
@@ -17,12 +17,19 @@ FRONTEND_CONTAINER="nginx_gestionIES"
 # ===============================
 # Funciones auxiliares
 # ===============================
+create_db() {
+  echo "📦 Creando base de datos $DB_NAME (si no existe)..."
+  docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME';" | grep -q 1 \
+    || docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -c "CREATE DATABASE \"$DB_NAME\";"
+  echo "✅ Base de datos $DB_NAME disponible."
+}
+
 wait_for_db() {
   echo "⏳ Esperando a que la base de datos esté lista..."
-  until docker exec -i "$DB_CONTAINER" pg_isready -U "$DB_USER" -d "$DB_NAME" > /dev/null 2>&1; do
+  until docker exec -i "$DB_CONTAINER" pg_isready -U "$DB_USER" > /dev/null 2>&1; do
     sleep 2
   done
-  echo "✅ Base de datos lista."
+  echo "✅ Servicio PostgreSQL listo."
 }
 
 import_dump() {
@@ -48,11 +55,13 @@ docker-compose build
 echo "🟢 Iniciando contenedores..."
 docker-compose up -d
 
-# 3. Esperar a que la DB esté lista
+# 3. Esperar a que PostgreSQL esté arriba
 wait_for_db
 
-# 4. Importar dump
+# 4. Crear base de datos (si no existe)
+create_db
+
+# 5. Importar dump
 import_dump
 
 echo "🎉 Despliegue finalizado con éxito."
-```
