@@ -2,3 +2,9 @@ node_modules/
 backend/uploads
 backend/Alumnos.xml
 subir_codigo.sh
+Dockerfile.frontend
+backend/Dockerfile
+.env
+docker-compose.yml
+deploy_gestionIES.sh
+backend/.env
