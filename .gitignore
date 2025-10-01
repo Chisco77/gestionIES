@@ -2,4 +2,3 @@ node_modules/
 backend/uploads
 backend/Alumnos.xml
 subir_codigo.sh
-backend/.env
