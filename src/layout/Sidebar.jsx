@@ -112,6 +112,11 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
     ],
     administrador: [
       {
+        title: "Panel informativo",
+        url: "/",
+        icon: SquareTerminal,
+      },
+      {
         title: "Usuarios",
         url: "#",
         icon: SquareTerminal,
@@ -123,7 +128,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
           { title: "Perfiles de Usuario", url: "/perfiles" },
         ],
       },
-     
+
       {
         title: "Reserva de recursos",
         url: "#",
@@ -173,6 +178,11 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
       },
     ],
     educadora: [
+      {
+        title: "Panel informativo",
+        url: "/",
+        icon: SquareTerminal,
+      },
       {
         title: "Usuarios",
         url: "#",
