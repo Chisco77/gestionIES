@@ -423,6 +423,14 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
+--
+-- Insertar usuario administrador en perfiles_usuario
+--
+
+INSERT INTO public.perfiles_usuario (uid, perfil)
+VALUES ('admin', 'administrador');
+
+
 -- Completed on 2025-10-01 12:24:39 CEST
 
 --
@@ -430,4 +438,3 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 --
 
 \unrestrict BslpZ9zUeWNMXFUtRoSn8vnFBCOPk8K31WyK9nhVhm2oiPQbdrdrmSs2p1j718h
-
