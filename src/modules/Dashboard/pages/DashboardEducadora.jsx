@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 // Para evitar problemas con el tiempo UTC
 const formatDateKey = (date) => {
@@ -20,6 +22,8 @@ export function DashboardEducadora() {
     const timer = setInterval(() => setFechaHora(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const [mostrarTodas, setMostrarTodas] = useState(false);
 
   const todayStr = formatDateKey(new Date());
 
@@ -171,17 +175,33 @@ export function DashboardEducadora() {
                 ))}
               </tbody>
             </table>
-            {/* Leyenda */}
-            <div className="mt-4 flex justify-center gap-6 text-sm">
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-1 bg-green-500 rounded"></div> Aula
+
+            {/* Leyenda + Switch */}
+            <div className="mt-4 flex justify-between items-center text-sm">
+              {/* Leyenda */}
+              <div className="flex gap-6">
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-1 bg-green-500 rounded"></div> Aula
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-1 bg-blue-500 rounded"></div> Armario
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 bg-red-200 rounded"></div> Asuntos
+                  propios
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-1 bg-blue-500 rounded"></div> Armario
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-red-200 rounded"></div> Asuntos
-                propios
+
+              {/* Interruptor */}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="switch-reservas" className="text-sm">
+                  Mostrar todas las reservas
+                </Label>
+                <Switch
+                  id="switch-reservas"
+                  checked={mostrarTodas}
+                  onCheckedChange={setMostrarTodas}
+                />
               </div>
             </div>
           </CardContent>
