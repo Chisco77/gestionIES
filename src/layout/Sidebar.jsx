@@ -62,6 +62,71 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
 
   // Menús por perfil
   const menusPorPerfil = {
+    directiva: [
+      {
+        title: "Panel informativo",
+        url: "/",
+        icon: SquareTerminal,
+      },
+      {
+        title: "Usuarios",
+        url: "#",
+        icon: SquareTerminal,
+        items: [
+          { title: "Alumnos", url: "/alumnos" },
+          { title: "Profesores", url: "/profesores" },
+          { title: "Todos", url: "/todos" },
+        ],
+      },
+      {
+        title: "Reserva de recursos",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Aulas", url: "/" },
+          { title: "Armarios de Portátiles", url: "/" },
+        ],
+      },
+      {
+        title: "Asuntos Propios",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Configurar restricciones", url: "/asuntos_restricciones" },
+          { title: "Mis asuntos propios", url: "/" },
+          { title: "Solicitar", url: "/" },
+        ],
+      },
+        {
+        title: "Préstamo Libros",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Alumnos", url: "/prestamos" },
+          { title: "Profesores", url: "/prestamosProfesores" },
+          { title: "Libros", url: "/libros" },
+          { title: "Cursos", url: "/cursos" },
+        ],
+      },
+      {
+        title: "Préstamo Llaves",
+        url: "#",
+        icon: BookOpen,
+        items: [
+          { title: "Llaves prestadas", url: "/llavesPrestadas" },
+          { title: "Estancias", url: "/estancias" },
+          { title: "Planta BAJA", url: "/llavesPlantaBaja" },
+          { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
+          { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
+        ],
+      },
+      {
+        title: "Administrador",
+        url: "#",
+        icon: Settings2,
+        items: [{ title: "Perfiles de Usuario", url: "/perfiles" }],
+      },
+    ],
     profesor: [
       {
         title: "Panel informativo",
@@ -143,6 +208,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         url: "#",
         icon: BookOpen,
         items: [
+          { title: "Configurar restricciones", url: "/asuntos_restricciones" },
           { title: "Mis asuntos propios", url: "/" },
           { title: "Solicitar", url: "/" },
         ],

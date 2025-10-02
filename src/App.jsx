@@ -21,6 +21,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { DashboardProfesor } from "./modules/Dashboard/pages/DashboardProfesor";
 import { DashboardAdmin } from "./modules/Dashboard/pages/DashboardAdmin";
 import { DashboardEducadora } from "./modules/Dashboard/pages/DashboardEducadora";
+import { DashboardDirectiva } from "./modules/Dashboard/pages/DashboardDirectiva";
 
 import { AlumnosIndex } from "./modules/Usuarios/pages/AlumnosIndex";
 import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
@@ -33,7 +34,7 @@ import { PrestamosLlavesIndex } from "./modules/Llaves/pages/PrestamosLlavesInde
 import { PlanoPlanta } from "./modules/Llaves/pages/PlanoPlanta";
 import { PerfilesUsuarioIndex } from "./modules/PerfilesUsuario/pages/PerfilesUsuarioIndex";
 import { EstanciasIndex } from "./modules/Estancias/pages/EstanciasIndex";
-
+import { AsuntosRestricciones } from "./modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
 import { SidebarProviderCustom } from "./context/SidebarContext";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,8 @@ function DashboardSelector() {
   if (loading) return <div>Cargando...</div>;
   if (!user) return <div>No autenticado</div>;
   switch (user.perfil) {
+    case "directiva":
+      return <DashboardDirectiva />;
     case "profesor":
       return <DashboardProfesor />;
     case "administrador":
@@ -73,7 +76,7 @@ const router = createBrowserRouter(
       children: [
         {
           index: true,
-          element: <DashboardSelector />, // ← Dashboard dinámico
+          element: <DashboardSelector />, // Dashboard dinámico
         },
         { path: "alumnos", element: <AlumnosIndex /> },
         { path: "profesores", element: <ProfesoresIndex /> },
@@ -94,6 +97,7 @@ const router = createBrowserRouter(
         },
         { path: "perfiles", element: <PerfilesUsuarioIndex /> },
         { path: "estancias", element: <EstanciasIndex /> },
+        { path: "asuntos_restricciones", element: <AsuntosRestricciones /> },
       ],
     },
   ],
