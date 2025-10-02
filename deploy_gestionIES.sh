@@ -15,6 +15,46 @@ BACKEND_CONTAINER="node_gestionIES"
 FRONTEND_CONTAINER="nginx_gestionIES"
 
 # ===============================
+# Preguntas al usuario
+# ===============================
+read -sp "Introduce la contraseña para la base de datos ($DB_NAME): " DB_PASSWORD
+echo
+read -p "Introduce la IP del servidor que aloja la aplicación: " SERVER_IP
+read -p "Introduce la IP del servidor LDAP: " LDAP_IP
+
+# ===============================
+# Modificación de archivos .env
+# ===============================
+
+# Añadir DB_PASSWORD a ./.env
+if grep -q "^DB_PASSWORD=" ./.env 2>/dev/null; then
+  sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=${DB_PASSWORD}/" ./.env
+else
+  echo "DB_PASSWORD=${DB_PASSWORD}" >> ./.env
+fi
+
+# Añadir DB_PASSWORD a ./backend/.env
+if grep -q "^DB_PASSWORD=" ./backend/.env 2>/dev/null; then
+  sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=${DB_PASSWORD}/" ./backend/.env
+else
+  echo "DB_PASSWORD=${DB_PASSWORD}" >> ./backend/.env
+fi
+
+# Modificar ALLOWED_ORIGINS en ./backend/.env
+if grep -q "^ALLOWED_ORIGINS=" ./backend/.env 2>/dev/null; then
+  sed -i "s#^ALLOWED_ORIGINS=\(.*\)#ALLOWED_ORIGINS=\1,https://${SERVER_IP}#" ./backend/.env
+else
+  echo "ALLOWED_ORIGINS=http://localhost:5173,https://localhost:5173,https://${SERVER_IP}" >> ./backend/.env
+fi
+
+# Añadir LDAP_URL al final de ./backend/.env
+if grep -q "^LDAP_URL=" ./backend/.env 2>/dev/null; then
+  sed -i "s#^LDAP_URL=.*#LDAP_URL=ldap://${LDAP_IP}:389#" ./backend/.env
+else
+  echo "LDAP_URL=ldap://${LDAP_IP}:389" >> ./backend/.env
+fi
+
+# ===============================
 # Funciones auxiliares
 # ===============================
 create_db() {
@@ -48,12 +88,12 @@ import_dump() {
 echo "🚀 Iniciando despliegue de $APP_NAME..."
 
 # 1. Construir imágenes
-echo "🔨 Construyendo imágenes..."
-docker-compose build
+#echo "🔨 Construyendo imágenes..."
+docker compose build
 
 # 2. Levantar contenedores
-echo "🟢 Iniciando contenedores..."
-docker-compose up -d
+#echo "🟢 Iniciando contenedores..."
+docker compose up -d
 
 # 3. Esperar a que PostgreSQL esté arriba
 wait_for_db
