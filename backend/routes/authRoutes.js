@@ -58,19 +58,23 @@ router.get("/check-auth", async (req, res) => {
       const perfil =
         result.rows.length > 0 ? result.rows[0].perfil : "profesor";
 
-      res.json({
+      return res.json({
         authenticated: true,
         username: uid,
         perfil,
       });
     } catch (error) {
       console.error("Error consultando perfil:", error);
-      res.status(500).json({ error: "Error obteniendo perfil" });
+      return res.status(500).json({ error: "Error obteniendo perfil" });
     }
   } else {
-    res.sendStatus(401);
+    return res.status(401).json({
+      authenticated: false,
+      error: "No autenticado",
+    });
   }
 });
+
 
 router.post("/logout", (req, res) => {
   req.session.destroy((err) => {

@@ -67,10 +67,28 @@ export function LoginForm({ className, ...props }) {
       queryClient.invalidateQueries(["todos-ldap"]);
       queryClient.invalidateQueries(["prestamos"]);
 
+      // Pequeña función para hacer check-auth con reintento
+      const checkAuth = async (retries = 2) => {
+        for (let i = 0; i < retries; i++) {
+          const res = await fetch(`${API_URL}/check-auth`, {
+            credentials: "include",
+          });
+
+          if (res.ok) return res.json();
+
+          // si 401, esperar un poco y reintentar
+          if (res.status === 401) {
+            await new Promise((r) => setTimeout(r, 200));
+            continue;
+          }
+
+          throw new Error("Error en check-auth");
+        }
+        throw new Error("No autenticado");
+      };
+
       // Obtener usuario y perfil actual desde check-auth
-      const data = await fetch(`${API_URL}/check-auth`, {
-        credentials: "include",
-      }).then((res) => res.json());
+      const data = await checkAuth();
 
       // Actualizar contexto
       setUser({
