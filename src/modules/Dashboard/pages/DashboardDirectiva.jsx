@@ -1,8 +1,26 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // Para evitar problemas con el tiempo UTC
 const formatDateKey = (date) => {
@@ -17,13 +35,17 @@ export function DashboardDirectiva() {
   const [selectedDate, setSelectedDate] = useState(formatDateKey(new Date()));
   const [currentMonth, setCurrentMonth] = useState(fechaHora.getMonth());
   const [currentYear, setCurrentYear] = useState(fechaHora.getFullYear());
+  const [mostrarTodas, setMostrarTodas] = useState(false);
+
+  // Estado para modal de denegación
+  const [denegarAbierto, setDenegarAbierto] = useState(false);
+  const [motivoDenegacion, setMotivoDenegacion] = useState("");
+  const [solicitudActual, setSolicitudActual] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => setFechaHora(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-
-  const [mostrarTodas, setMostrarTodas] = useState(false);
 
   const todayStr = formatDateKey(new Date());
 
@@ -45,6 +67,29 @@ export function DashboardDirectiva() {
       asuntos: false,
     },
   };
+
+  // Datos de ejemplo para tablas
+  const asuntosPendientes = [
+    { id: 1, profesor: "María López", fechaInicio: "2025-10-10", dias: 2 },
+    { id: 2, profesor: "Juan Pérez", fechaInicio: "2025-10-15", dias: 1 },
+  ];
+
+  const extraescolaresPendientes = [
+    {
+      id: 1,
+      profesor: "Ana García",
+      fechaInicio: "2025-11-02",
+      dias: 3,
+      fechaFin: "2025-11-04",
+    },
+    {
+      id: 2,
+      profesor: "Carlos Ruiz",
+      fechaInicio: "2025-11-20",
+      dias: 2,
+      fechaFin: "2025-11-21",
+    },
+  ];
 
   const getDateKey = (y, m, d) => formatDateKey(new Date(y, m, d));
 
@@ -90,6 +135,17 @@ export function DashboardDirectiva() {
     aulas: [],
     armarios: [],
     asuntos: false,
+  };
+
+  const handleDenegar = (solicitud) => {
+    setSolicitudActual(solicitud);
+    setMotivoDenegacion("");
+    setDenegarAbierto(true);
+  };
+
+  const confirmarDenegacion = () => {
+    console.log("Denegada:", solicitudActual, "Motivo:", motivoDenegacion);
+    setDenegarAbierto(false);
   };
 
   return (
@@ -165,7 +221,7 @@ export function DashboardDirectiva() {
                               <div className="w-6 h-1 bg-green-500 rounded"></div>
                             )}
                             {info.armarios && info.armarios.length > 0 && (
-                              <div className="w-6 h-1 bg-blue-500 rounded"></div>
+                              <div className="w-6 h-1 bg-purple-500 rounded"></div>
                             )}
                           </div>
                         </td>
@@ -184,7 +240,7 @@ export function DashboardDirectiva() {
                   <div className="w-4 h-1 bg-green-500 rounded"></div> Aula
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-4 h-1 bg-blue-500 rounded"></div> Armario
+                  <div className="w-4 h-1 bg-purple-500 rounded"></div> Armario
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-4 h-4 bg-red-200 rounded"></div> Asuntos
@@ -238,6 +294,117 @@ export function DashboardDirectiva() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tablas de peticiones pendientes */}
+      <div className="mt-10 space-y-8">
+        {/* Tabla Asuntos Propios */}
+        <Card className="border border-red-300 shadow-md">
+          <CardHeader>
+            <CardTitle className="text-red-500">Asuntos propios pendientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableCaption>Solicitudes de días de asuntos propios</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Profesor</TableHead>
+                  <TableHead>Fecha inicio</TableHead>
+                  <TableHead>Días</TableHead>
+                  <TableHead className="text-center">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {asuntosPendientes.map((s) => (
+                  <TableRow key={s.id}>
+                    <TableCell>{s.profesor}</TableCell>
+                    <TableCell>{s.fechaInicio}</TableCell>
+                    <TableCell>{s.dias}</TableCell>
+                    <TableCell className="flex gap-2 justify-center">
+                      <Button size="sm" variant="outline" className="text-green-600">
+                        <Check className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600"
+                        onClick={() => handleDenegar(s)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Tabla Extraescolares */}
+        <Card className="border border-blue-300 shadow-md">
+          <CardHeader>
+            <CardTitle className="text-blue-500">
+              Extraescolares pendientes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableCaption>Solicitudes de actividades extraescolares</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Profesor</TableHead>
+                  <TableHead>Fecha inicio</TableHead>
+                  <TableHead>Días</TableHead>
+                  <TableHead>Fecha fin</TableHead>
+                  <TableHead className="text-center">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {extraescolaresPendientes.map((s) => (
+                  <TableRow key={s.id}>
+                    <TableCell>{s.profesor}</TableCell>
+                    <TableCell>{s.fechaInicio}</TableCell>
+                    <TableCell>{s.dias}</TableCell>
+                    <TableCell>{s.fechaFin}</TableCell>
+                    <TableCell className="flex gap-2 justify-center">
+                      <Button size="sm" variant="outline" className="text-green-600">
+                        <Check className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600"
+                        onClick={() => handleDenegar(s)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Modal de denegación */}
+      <Dialog open={denegarAbierto} onOpenChange={setDenegarAbierto} >
+        <DialogContent onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Motivo de la denegación</DialogTitle>
+          </DialogHeader>
+          <Input
+            placeholder="Escribe aquí el motivo..."
+            value={motivoDenegacion}
+            onChange={(e) => setMotivoDenegacion(e.target.value)}
+          />
+          <DialogFooter className="mt-4">
+            <Button variant="secondary" onClick={() => setDenegarAbierto(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarDenegacion}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
