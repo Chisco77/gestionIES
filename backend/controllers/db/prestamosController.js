@@ -130,7 +130,7 @@ async function getPrestamosAgrupados(req, res) {
   }
 }
 
-// Marta atributo devuelto a true de prestamos
+// Marca atributo devuelto a true de prestamos
 async function devolverPrestamos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -474,7 +474,7 @@ async function asignarUsuario(req, res) {
 }
 
 // Elimina items de prestamo.
-async function eliminarPrestamosAlumno(req, res) {
+async function eliminarPrestamosItems(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) {
@@ -484,7 +484,7 @@ async function eliminarPrestamosAlumno(req, res) {
     const { ids } = req.body;
 
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ error: "No se especificaron préstamos" });
+      return res.status(400).json({ error: "No se especificaron items" });
     }
 
     await pool.query(`DELETE FROM prestamos_items WHERE id = ANY($1::int[])`, [
@@ -493,8 +493,8 @@ async function eliminarPrestamosAlumno(req, res) {
 
     res.json({ success: true, eliminados: ids.length });
   } catch (error) {
-    console.error("❌ Error al eliminar préstamos:", error.message);
-    res.status(500).json({ error: "Error al eliminar préstamos" });
+    console.error("❌ Error al eliminar ítems de préstamos:", error.message);
+    res.status(500).json({ error: "Error al eliminar ítems de préstamos" });
   }
 }
 
@@ -558,6 +558,44 @@ async function actualizarPrestamoItem(req, res) {
   }
 }
 
+
+// Eliminar préstamo completo (cabecera + items)
+async function eliminarPrestamo(req, res) {
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession) {
+      return res.status(401).json({ error: "No autenticado" });
+    }
+
+    const { idprestamo } = req.body;
+    if (!idprestamo) {
+      return res.status(400).json({ error: "Falta idprestamo en body" });
+    }
+
+    // 1. Eliminar items asociados
+    await pool.query(`DELETE FROM prestamos_items WHERE idprestamo = $1`, [
+      idprestamo,
+    ]);
+
+    // 2. Eliminar cabecera del préstamo
+    const { rowCount } = await pool.query(
+      `DELETE FROM prestamos WHERE id = $1`,
+      [idprestamo]
+    );
+
+    if (rowCount === 0) {
+      return res.status(404).json({ error: "Préstamo no encontrado" });
+    }
+
+    res.json({ success: true, idprestamo });
+  } catch (error) {
+    console.error("❌ Error al eliminar préstamo:", error.message);
+    res.status(500).json({ error: "Error al eliminar préstamo" });
+  }
+}
+
+
+
 module.exports = {
   getPrestamosAgrupados,
   asignarLibrosMasivo,
@@ -566,6 +604,7 @@ module.exports = {
   devolverPrestamos,
   prestarPrestamos,
   asignarUsuario,
-  eliminarPrestamosAlumno,
+  eliminarPrestamosItems,
   actualizarPrestamoItem,
+  eliminarPrestamo,
 };

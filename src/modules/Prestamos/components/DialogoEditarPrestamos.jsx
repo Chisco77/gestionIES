@@ -527,8 +527,8 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
       "prestamos/eliminarUnAlumno",
       "POST",
       { ids: state.seleccionadosIzquierda },
-      "Préstamos eliminados correctamente",
-      "Error al eliminar préstamos"
+      "Asignación eliminada correctamente",
+      "Error al eliminar asignaciones"
     );
     if (result.success !== false) {
       setState((prev) => ({
@@ -689,16 +689,16 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                             </Button>
                           </AlertDialogTrigger>
                         </TooltipTrigger>
-                        <TooltipContent>Eliminar préstamo</TooltipContent>
+                        <TooltipContent>Eliminar asignación</TooltipContent>
                       </Tooltip>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>
-                            ¿Eliminar préstamo(s)?
+                            ¿Eliminar asignación(es)?
                           </AlertDialogTitle>
                           <AlertDialogDescription>
                             Esta acción no se puede deshacer. Se eliminarán
-                            definitivamente los préstamos seleccionados.
+                            definitivamente las asignaciones seleccionados.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

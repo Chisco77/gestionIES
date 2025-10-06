@@ -96,8 +96,9 @@ const {
   devolverPrestamos,
   prestarPrestamos,
   asignarUsuario,
-  eliminarPrestamosAlumno,
-  actualizarPrestamoItem,   
+  eliminarPrestamosItems,
+  actualizarPrestamoItem, 
+  eliminarPrestamo,  
 } = require("../controllers/db/prestamosController");
 
 const {
@@ -137,8 +138,10 @@ router.post ("/prestamos/asignarLibrosMasivo", asignarLibrosMasivo);
 router.post("/prestamos/accionDocCompromisoMasivo", accionDocCompromisoMasivo);
 router.post("/prestamos/accionLibrosMasivo", accionLibrosMasivo);
 router.post("/prestamos/asignarUsuario", asignarUsuario);
-router.post ("/prestamos/eliminarUnAlumno", eliminarPrestamosAlumno);
-router.post("/prestamos/update", actualizarPrestamoItem);  
+router.post ("/prestamos/eliminarUnAlumno", eliminarPrestamosItems);
+router.post("/prestamos/update", actualizarPrestamoItem);
+router.post("/prestamos/eliminar", eliminarPrestamo);
+
 
 // Prestamos llaves
 router.get("/prestamos-llaves/agrupados", getPrestamosLlavesAgrupados);

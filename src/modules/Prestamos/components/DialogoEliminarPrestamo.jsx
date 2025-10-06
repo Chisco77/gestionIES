@@ -1,5 +1,5 @@
 /**
- * DialogoEliminarCurso.jsx - Diálogo de confirmación para eliminar un curso
+ * DialogoEliminarPrestamo.jsx - Diálogo de confirmación para eliminar un préstamo
  *
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
@@ -13,22 +13,22 @@
  *
  * Descripción:
  * Componente que muestra un cuadro de diálogo de confirmación para eliminar
- * un curso seleccionado de la base de datos.
+ * un préstamo de la base de datos (cabecera + items).
  *
  * Props:
  * - open: boolean, controla la visibilidad del diálogo.
  * - onClose: función que cierra el diálogo.
- * - cursoSeleccionado: objeto con la información del curso (id, curso).
+ * - alumnoSeleccionado: objeto con info del préstamo (id_prestamo, nombreUsuario).
  * - onSuccess: callback opcional que se ejecuta tras la eliminación con éxito.
  *
  * Funcionalidad:
- * - Envía una petición DELETE a la API para eliminar el curso seleccionado.
+ * - Envía una petición POST a `/db/prestamos/eliminar` con idprestamo.
  * - Si la eliminación es exitosa:
  *   - Muestra una notificación de éxito.
  *   - Ejecuta el callback `onSuccess`.
  *   - Cierra el diálogo.
  * - Si ocurre un error:
- *   - Intenta leer el mensaje de error del backend.
+ *   - Intenta leer el mensaje del backend.
  *   - Muestra una notificación con el error detectado.
  *
  * Dependencias:
@@ -36,8 +36,7 @@
  * - @/components/ui/button
  * - sonner (toast)
  *
-  */
-
+ */
 
 import {
   Dialog,
@@ -49,40 +48,51 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-export function DialogoEliminarCurso({
+export function DialogoEliminarPrestamo({
   open,
   onClose,
-  cursoSeleccionado,
+  alumnoSeleccionado,
   onSuccess,
 }) {
   const API_URL = import.meta.env.VITE_API_URL;
 
   const handleEliminar = async () => {
-    try {
-      const res = await fetch(
-        `${API_URL}/db/cursos/${cursoSeleccionado.id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
+    if (!alumnoSeleccionado) {
+      toast.error("No se ha seleccionado ningún préstamo.");
+      return;
+    }
+
+    if (alumnoSeleccionado.doc_compromiso !== 0) {
+      toast.error(
+        `No se puede eliminar el préstamo de ${alumnoSeleccionado.nombreUsuario} porque tiene un documento de compromiso entregado.`
       );
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/db/prestamos/eliminar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ idprestamo: alumnoSeleccionado.id_prestamo }),
+      });
 
       if (!res.ok) {
-        // Intentar leer mensaje del backend
-        let errorMsg = "Error al eliminar curso";
+        let errorMsg = "Error al eliminar préstamo";
         try {
           const data = await res.json();
-          if (data?.message) errorMsg = data.message;
+          if (data?.error) errorMsg = data.error;
         } catch {
+          // si la respuesta no es JSON, dejamos el mensaje genérico
         }
         throw new Error(errorMsg);
       }
 
-      toast.success("Curso eliminado");
+      toast.success("Préstamo eliminado correctamente");
       onSuccess?.();
       onClose();
     } catch (err) {
-      toast.error(err.message || "Error al eliminar curso");
+      toast.error(err.message || "Error al eliminar préstamo");
       console.error(err);
     }
   };
@@ -91,9 +101,15 @@ export function DialogoEliminarCurso({
     <Dialog open={open} onOpenChange={onClose} modal={false}>
       <DialogContent onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>¿Eliminar curso?</DialogTitle>
+          <DialogTitle>¿Eliminar préstamo?</DialogTitle>
         </DialogHeader>
-        <p className="text-sm">Esta acción no se puede deshacer.</p>
+        <p className="text-sm">
+          Esta acción eliminará permanentemente el préstamo de{" "}
+          <span className="font-semibold">
+            {alumnoSeleccionado?.nombreUsuario}
+          </span>
+          .
+        </p>
         <DialogFooter>
           <Button variant="destructive" onClick={handleEliminar}>
             Eliminar

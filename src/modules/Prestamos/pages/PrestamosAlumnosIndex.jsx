@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Componente principal del módulo de gestión de préstamos de alumnos.
  *
  * Funcionalidades:
@@ -42,7 +42,6 @@
  *
  */
 
-
 import { useState, useEffect } from "react";
 import { columns } from "../components/columns";
 import { TablaPrestamos } from "../components/TablaPrestamos";
@@ -52,6 +51,7 @@ import { DialogoAsignarLibros } from "../components/DialogoAsignarLibros";
 import { DialogoDocumentoPrestamo } from "../components/DialogoDocumentoPrestamo";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 import { DialogoAccionMasiva } from "../components/DialogoAccionMasiva";
+import { DialogoEliminarPrestamo } from "../components/DialogoEliminarPrestamo";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -72,8 +72,8 @@ import {
   BookOpen,
   Book,
 } from "lucide-react";
-import { usePrestamos } from "@/hooks/usePrestamos";
 
+import { usePrestamos } from "@/hooks/usePrestamos";
 
 export function PrestamosAlumnosIndex() {
   const [prestamosFiltrados, setPrestamosFiltrados] = useState([]);
@@ -88,6 +88,7 @@ export function PrestamosAlumnosIndex() {
     open: false,
     tipo: null,
   });
+  const [abrirDialogoEliminar, setAbrirDialogoEliminar] = useState(false);
 
   const {
     data: prestamos,
@@ -102,9 +103,7 @@ export function PrestamosAlumnosIndex() {
       iniciocurso: p.iniciocurso,
     })) || [];
 
-
-    
-    // Sincroniza los filtrados con los datos actualizados
+  // Sincroniza los filtrados con los datos actualizados
   useEffect(() => {
     setPrestamosFiltrados(prestamos || []);
   }, [prestamos]);
@@ -120,9 +119,15 @@ export function PrestamosAlumnosIndex() {
     return <div className="text-red-500 text-center">{error.message}</div>;
   }
 
-  const handleEliminar = async (alumno) => {
-    if (!alumno) return;
-    // lógica de eliminar préstamos del backend - pendiente
+  // Eliminar registro de préstamo. Solo si doc_compromiso = 0
+  const handleEliminar = (alumno) => {
+    if (!alumno) {
+      alert("Selecciona un registro para eliminar.");
+      return;
+    }
+
+    setAlumnoSeleccionado(alumno);
+    setAbrirDialogoEliminar(true);
   };
 
   const handleEditar = (alumno) => {
@@ -306,6 +311,13 @@ export function PrestamosAlumnosIndex() {
         tipo={abrirAccionMasiva.tipo}
         onClose={() => setAbrirDialogoAccionMasiva({ open: false, tipo: null })}
         alumnos={prestamos}
+        onSuccess={refetch}
+      />
+
+      <DialogoEliminarPrestamo
+        open={abrirDialogoEliminar}
+        onClose={() => setAbrirDialogoEliminar(false)}
+        alumnoSeleccionado={alumnoSeleccionado}
         onSuccess={refetch}
       />
     </div>
