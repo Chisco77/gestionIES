@@ -104,6 +104,7 @@ async function apiListarEstancias(planta) {
 }
 
 async function apiGuardarEstancia(planta, estancia) {
+  console.log ("Estancia", estancia);
   const url = `${API_BASE}/planos/estancias`;
   const r = await fetch(url, {
     method: "POST",
@@ -131,13 +132,12 @@ async function apiListarPrestamosLlaves() {
 
 // ------------------- Componente -------------------
 export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
-const svgUrl =
-  planta === "primera"
-    ? `${import.meta.env.BASE_URL}PLANTA_PRIMERA.svg`
-    : planta === "segunda"
-      ? `${import.meta.env.BASE_URL}PLANTA_SEGUNDA.svg`
-      : `${import.meta.env.BASE_URL}PLANTA_BAJA.svg`;
-
+  const svgUrl =
+    planta === "primera"
+      ? `${import.meta.env.BASE_URL}PLANTA_PRIMERA.svg`
+      : planta === "segunda"
+        ? `${import.meta.env.BASE_URL}PLANTA_SEGUNDA.svg`
+        : `${import.meta.env.BASE_URL}PLANTA_BAJA.svg`;
 
   const [estancias, setEstancias] = useState([]);
   const [prestamos, setPrestamos] = useState([]);
@@ -154,6 +154,8 @@ const svgUrl =
     codigo: "",
     descripcion: "",
     totalllaves: 1,
+    armario: "",
+    codigollave: "",
   });
 
   const [modalLlaves, setModalLlaves] = useState({
@@ -250,6 +252,8 @@ const svgUrl =
       descripcion: nuevo.descripcion,
       totalllaves: Math.max(1, Number(nuevo.totalllaves) || 1),
       coordenadas: draw.coordenadas,
+      armario: nuevo.armario,
+      codigollave: nuevo.codigollave,
     };
     try {
       setCargando(true);
@@ -264,6 +268,8 @@ const svgUrl =
           guardada.coordenadas_json ||
           guardada.coordenadas ||
           estNueva.coordenadas,
+        armario: guardada.armario || "",
+        codigollave: guardada.codigollave || "",
       };
       setEstancias((prev) => {
         const i = prev.findIndex((e) => e.id === norma.id);
@@ -582,6 +588,34 @@ const svgUrl =
                         }))
                       }
                     />
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ display: "block", fontSize: 13 }}>
+                      Código de la llave
+                    </label>
+                    <input
+                      placeholder="Ej: Aula de informática"
+                      value={nuevo.codigollave}
+                      onChange={(e) =>
+                        setNuevo((n) => ({ ...n, codigollave: e.target.value }))
+                      }
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ display: "block", fontSize: 13 }}>
+                      Llavera
+                    </label>
+                    <select
+                      value={nuevo.armario}
+                      onChange={(e) =>
+                        setNuevo((n) => ({ ...n, armario: e.target.value }))
+                      }
+                    >
+                      <option value="">Selecciona un armario</option>
+                      <option value="Llavera 1">Llavera 1</option>
+                      <option value="Llavera 2">Llavera 2</option>
+                    </select>
                   </div>
 
                   <div style={{ display: "flex", gap: 8 }}>

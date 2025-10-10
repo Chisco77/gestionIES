@@ -75,7 +75,10 @@ async function insertEstancia(req, res) {
     descripcion,
     totalllaves = 1,
     coordenadas,
+    armario = "", 
+    codigollave = "",
   } = req.body || {};
+
   if (!codigo || !descripcion || !isValidCoordenadas(coordenadas)) {
     return res.status(400).json({
       ok: false,
@@ -83,17 +86,20 @@ async function insertEstancia(req, res) {
         "Datos inválidos (codigo, descripcion, coordenadas>=3 obligatorios)",
     });
   }
+
   try {
     const { rows } = await db.query(
-      `INSERT INTO estancias (planta, codigo, descripcion, totalllaves, coordenadas_json)
-VALUES ($1,$2,$3,$4,$5)
-RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json`,
+      `INSERT INTO estancias (planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave`,
       [
         planta.toLowerCase(),
         codigo,
         descripcion,
         Number(totalllaves),
         JSON.stringify(coordenadas),
+        armario,
+        codigollave,
       ]
     );
 
@@ -106,6 +112,7 @@ RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json`,
         descripcion: r.descripcion,
         totalllaves: r.totalllaves,
         coordenadas: r.coordenadas_json,
+        armario: r.armario, // <-- nuevo
       },
     });
   } catch (err) {
@@ -113,6 +120,7 @@ RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json`,
     res.status(500).json({ ok: false, error: "Error guardando estancia" });
   }
 }
+
 // PUT /db/planos/estancias/:planta/:codigo
 // body opcional: { nombre?, keysTotales?, puntos? }
 async function updateEstancia(req, res) {
