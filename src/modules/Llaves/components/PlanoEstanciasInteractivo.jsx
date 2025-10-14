@@ -191,9 +191,11 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
         const normal = dataEstancias.map((r) => ({
           id: r.id,
           codigo: r.codigo,
-          nombre: r.nombre || r.descripcion,
+          descripcion: r.descripcion,
           totalllaves: r.totalllaves || 1,
           coordenadas: r.coordenadas || r.coordenadas_json || [],
+          armario: r.armario,
+          codigollave: r.codigollave,
         }));
 
         if (!cancelado) setEstancias(normal);
@@ -664,7 +666,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                           fontSize: 12,
                         }}
                       >
-                        {s.nombre}
+                        {s.descripcion}
                       </span>
                     ))}
                   </div>

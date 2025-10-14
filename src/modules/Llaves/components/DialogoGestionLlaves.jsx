@@ -21,7 +21,7 @@
  *
  * Props:
  * - open: boolean que controla la visibilidad del diálogo.
- * - estancia: objeto con la información de la estancia (id, nombre, totalllaves/keysTotales).
+ * - estancia: objeto con la información de la estancia (id, nombre, totalllaves/totalllaves).
  * - prestamosActivos: array con los préstamos actuales de la estancia.
  * - onClose: función que cierra el diálogo.
  * - onSuccess: callback opcional que se ejecuta tras realizar un préstamo o devolución con éxito.
@@ -92,7 +92,7 @@ export function DialogoGestionLlaves({
 
   const disponibles = Math.max(
     0,
-    (estancia.totalllaves || estancia.keysTotales || 0) -
+    (estancia.totalllaves || estancia.totalllaves || 0) -
       (prestamosActivos?.reduce((acc, p) => acc + p.unidades, 0) || 0)
   );
   const hayPrestamos = prestamosActivos?.length > 0;
@@ -212,11 +212,41 @@ export function DialogoGestionLlaves({
         onInteractOutside={(e) => e.preventDefault()}
         className="max-w-lg"
       >
-        <DialogHeader>
-          <DialogTitle>Gestión de llaves · {estancia.nombre}</DialogTitle>
-          <DialogDescription>
-            Ubicación llave: Número X. Armario Y.
-          </DialogDescription>
+        <DialogHeader className="flex justify-between items-center">
+          {/* Izquierda: título y descripción */}
+          <div>
+            <DialogTitle>
+              Gestión de llaves · {estancia.descripcion}
+            </DialogTitle>
+            <DialogDescription>
+              {estancia?.codigollave || estancia?.armario ? (
+                <>
+                  {estancia?.codigollave && (
+                    <>
+                      Código llave: <strong>{estancia.codigollave}</strong>
+                    </>
+                  )}
+                  {estancia?.codigollave && estancia?.armario && " · "}
+                  {estancia?.armario && (
+                    <>
+                      Armario: <strong>{estancia.armario}</strong>
+                    </>
+                  )}
+                </>
+              ) : (
+                <span className="text-gray-500 italic">
+                  Sin información de ubicación.
+                </span>
+              )}
+            </DialogDescription>
+          </div>
+
+          {/* Derecha: número de llave grande */}
+          {estancia?.codigollave && estancia?.armario && (
+            <div className="text-4xl font-bold text-blue-600">
+              {estancia.codigollave}-A{estancia.armario.replace(/\D/g, "")}
+            </div>
+          )}
         </DialogHeader>
 
         <Tabs defaultValue="prestar" className="mt-4">
@@ -272,7 +302,7 @@ export function DialogoGestionLlaves({
                   <p>
                     Total llaves:{" "}
                     <strong>
-                      {estancia?.totalllaves || estancia?.keysTotales || 1}
+                      {estancia?.totalllaves || estancia?.totalllaves || 1}
                     </strong>
                   </p>
                   <p>
@@ -329,7 +359,7 @@ export function DialogoGestionLlaves({
                   <p>
                     Total llaves:{" "}
                     <strong>
-                      {estancia?.totalllaves || estancia?.keysTotales || 1}
+                      {estancia?.totalllaves || estancia?.totalllaves || 1}
                     </strong>
                   </p>
                   <p>

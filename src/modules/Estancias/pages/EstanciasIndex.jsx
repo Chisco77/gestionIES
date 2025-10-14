@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 // Aquí luego podrás importar los diálogos de insertar/editar/eliminar
 // import { DialogoInsertarEstancia } from "../components/DialogoInsertarEstancia";
-// import { DialogoEditarEstancia } from "../components/DialogoEditarEstancia";
+import { DialogoEditarEstancia } from "../components/DialogoEditarEstancia";
 // import { DialogoEliminarEstancia } from "../components/DialogoEliminarEstancia";
 
 export function EstanciasIndex() {
@@ -105,6 +105,12 @@ export function EstanciasIndex() {
       />
 
       {/* Diálogos (a implementar después) */}
+      <DialogoEditarEstancia
+        open={abrirEditar}
+        onClose={() => setAbrirEditar(false)}
+        estanciaSeleccionada={estanciaSeleccionada}
+        onSuccess={onSuccess}
+      />
       {/* <DialogoInsertarEstancia
         open={abrirInsertar}
         onClose={() => setAbrirInsertar(false)}

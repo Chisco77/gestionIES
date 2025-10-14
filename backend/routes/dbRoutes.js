@@ -127,7 +127,7 @@ const {
 
 router.get("/planos/estancias", getEstanciasByPlanta); 
 router.post("/planos/estancias", insertEstancia); 
-router.put("/planos/estancias/:planta/:id", updateEstancia); 
+router.put("/estancias/:id", updateEstancia);
 router.delete("/planos/estancias/:planta/:id", deleteEstancia);
 router.get("/estancias", getAllEstancias); 
 

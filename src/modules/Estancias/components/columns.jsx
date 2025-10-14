@@ -23,13 +23,12 @@ export const columns = [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    filterFn: (row, columnId, filterValue) => {
-      if (!filterValue) return true;
-      return row
+    filterFn: (row, columnId, filterValue) =>
+      !filterValue ||
+      row
         .getValue(columnId)
         ?.toLowerCase()
-        .includes(filterValue.toLowerCase());
-    },
+        .includes(filterValue.toLowerCase()),
   },
   {
     accessorKey: "descripcion",
@@ -44,13 +43,12 @@ export const columns = [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    filterFn: (row, columnId, filterValue) => {
-      if (!filterValue) return true;
-      return row
+    filterFn: (row, columnId, filterValue) =>
+      !filterValue ||
+      row
         .getValue(columnId)
         ?.toLowerCase()
-        .includes(filterValue.toLowerCase());
-    },
+        .includes(filterValue.toLowerCase()),
   },
   {
     accessorKey: "planta",
@@ -82,5 +80,45 @@ export const columns = [
       </Button>
     ),
     enableSorting: true,
+  },
+  {
+    accessorKey: "armario",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() =>
+          column.toggleSorting(column.getIsSorted() === "asc")
+        }
+      >
+        Armario
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    filterFn: (row, columnId, filterValue) =>
+      !filterValue ||
+      row
+        .getValue(columnId)
+        ?.toLowerCase()
+        .includes(filterValue.toLowerCase()),
+  },
+  {
+    accessorKey: "codigollave",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() =>
+          column.toggleSorting(column.getIsSorted() === "asc")
+        }
+      >
+        Código llave
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    filterFn: (row, columnId, filterValue) =>
+      !filterValue ||
+      row
+        .getValue(columnId)
+        ?.toLowerCase()
+        .includes(filterValue.toLowerCase()),
   },
 ];

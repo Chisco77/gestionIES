@@ -25,7 +25,7 @@
  * ================================================================
  */
 
-const db = require("../../db"); 
+const db = require("../../db");
 
 function isValidCoordenadas(coords) {
   return (
@@ -44,7 +44,7 @@ async function getEstanciasByPlanta(req, res) {
   const planta = (req.query.planta || "baja").toLowerCase();
   try {
     const { rows } = await db.query(
-      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json
+      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave
 FROM estancias
 WHERE planta = $1
 ORDER BY descripcion ASC`,
@@ -54,8 +54,10 @@ ORDER BY descripcion ASC`,
     const estancias = rows.map((r) => ({
       id: r.id,
       codigo: r.codigo,
-      nombre: r.descripcion,
+      descripcion: r.descripcion,
       totalllaves: r.totalllaves,
+      armario: r.armario,
+      codigollave: r.codigollave,
       coordenadas: r.coordenadas_json,
     }));
 
@@ -75,7 +77,7 @@ async function insertEstancia(req, res) {
     descripcion,
     totalllaves = 1,
     coordenadas,
-    armario = "", 
+    armario = "",
     codigollave = "",
   } = req.body || {};
 
@@ -112,7 +114,8 @@ async function insertEstancia(req, res) {
         descripcion: r.descripcion,
         totalllaves: r.totalllaves,
         coordenadas: r.coordenadas_json,
-        armario: r.armario, // <-- nuevo
+        armario: r.armario,
+        codigollave: r.codigollave,
       },
     });
   } catch (err) {
@@ -121,12 +124,17 @@ async function insertEstancia(req, res) {
   }
 }
 
-// PUT /db/planos/estancias/:planta/:codigo
-// body opcional: { nombre?, keysTotales?, puntos? }
+// PUT /db/estancias/:id
 async function updateEstancia(req, res) {
-  const planta = (req.params.planta || "baja").toLowerCase();
   const id = req.params.id;
-  const { nombre, totalllaves, coordenadas } = req.body || {};
+  const {
+    codigo,
+    descripcion,
+    totalllaves,
+    coordenadas,
+    armario,
+    codigollave,
+  } = req.body || {};
 
   if (typeof coordenadas !== "undefined" && !isValidCoordenadas(coordenadas)) {
     return res
@@ -136,16 +144,33 @@ async function updateEstancia(req, res) {
 
   const sets = [];
   const vals = [];
-  let i = 2; // $1 y $2 los usamos para WHERE al final
+  let i = 1; // $1 lo usaremos para WHERE al final
 
-  if (typeof nombre === "string") {
-    sets.push(`descripcion = $${++i}`);
-    vals.push(nombre);
+  if (typeof codigo === "string") {
+    sets.push(`codigo = $${++i}`);
+    vals.push(codigo);
   }
+
+  if (typeof descripcion === "string") {
+    sets.push(`descripcion = $${++i}`);
+    vals.push(descripcion);
+  }
+
   if (typeof totalllaves !== "undefined") {
     sets.push(`totalllaves = $${++i}`);
-    vals.push(Number(keysTotales));
+    vals.push(Number(totalllaves));
   }
+
+  if (typeof armario === "string") {
+    sets.push(`armario = $${++i}`);
+    vals.push(armario);
+  }
+
+  if (typeof codigollave === "string") {
+    sets.push(`codigollave = $${++i}`);
+    vals.push(codigollave);
+  }
+
   if (typeof coordenadas !== "undefined") {
     sets.push(`coordenadas_json = $${++i}`);
     vals.push(JSON.stringify(coordenadas));
@@ -156,25 +181,31 @@ async function updateEstancia(req, res) {
   }
 
   try {
-    const { rows } = await db.query(
-      `UPDATE estancias
-SET ${sets.join(", ")}
-WHERE planta = $1 AND id = $2
-RETURNING codigo, descripcion, totalllaves, coordenadas_json`,
-      [planta, codigo, ...vals]
-    );
-    if (!rows[0])
+    const query = `
+      UPDATE estancias
+      SET ${sets.join(", ")}
+      WHERE id = $1
+      RETURNING id, codigo, descripcion, totalllaves, armario, codigollave, coordenadas_json
+    `;
+
+    const { rows } = await db.query(query, [id, ...vals]);
+
+    if (!rows[0]) {
       return res
         .status(404)
         .json({ ok: false, error: "Estancia no encontrada" });
+    }
 
     const r = rows[0];
     res.json({
       ok: true,
       estancia: {
-        id: r.codigo,
-        nombre: r.descripcion,
+        id: r.id,
+        codigo: r.codigo,
+        descripcion: r.descripcion,
         totalllaves: r.totalllaves,
+        armario: r.armario,
+        codigollave: r.codigollave,
         coordenadas: r.coordenadas_json,
       },
     });
@@ -209,7 +240,7 @@ async function deleteEstancia(req, res) {
 async function getAllEstancias(req, res) {
   try {
     const { rows } = await db.query(
-      `SELECT id, planta, codigo, descripcion, totalllaves, coordenadas_json
+      `SELECT id, planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave
        FROM estancias
        ORDER BY planta, descripcion ASC`
     );
@@ -221,6 +252,8 @@ async function getAllEstancias(req, res) {
       descripcion: r.descripcion,
       totalllaves: r.totalllaves,
       coordenadas: r.coordenadas_json,
+      armario: r.armario,
+      codigollave: r.codigollave,
     }));
 
     res.json(estancias);
@@ -229,7 +262,6 @@ async function getAllEstancias(req, res) {
     res.status(500).json({ ok: false, error: "Error obteniendo estancias" });
   }
 }
-
 
 module.exports = {
   getEstanciasByPlanta,
