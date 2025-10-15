@@ -92,12 +92,11 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Configurar restricciones", url: "/asuntos_restricciones" },
           { title: "Mis asuntos propios", url: "/" },
           { title: "Solicitar", url: "/" },
         ],
       },
-        {
+      {
         title: "Préstamo Libros",
         url: "#",
         icon: BookOpen,
@@ -124,7 +123,10 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         title: "Administrador",
         url: "#",
         icon: Settings2,
-        items: [{ title: "Perfiles de Usuario", url: "/perfiles" }],
+        items: [
+          { title: "Perfiles de Usuario", url: "/perfiles" },
+          { title: "Reglas Asuntos Propios", url: "/asuntos_restricciones" },
+        ],
       },
     ],
     profesor: [
@@ -208,7 +210,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Configurar restricciones", url: "/asuntos_restricciones" },
           { title: "Mis asuntos propios", url: "/" },
           { title: "Solicitar", url: "/" },
         ],
@@ -240,7 +241,10 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         title: "Administrador",
         url: "#",
         icon: Settings2,
-        items: [{ title: "Perfiles de Usuario", url: "/perfiles" }],
+        items: [
+          { title: "Perfiles de Usuario", url: "/perfiles" },
+          { title: "Restricciones Asuntos Propios", url: "/asuntos_restricciones" },
+        ],
       },
     ],
     educadora: [
@@ -289,17 +293,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
           { title: "Profesores", url: "/prestamosProfesores" },
           { title: "Libros", url: "/libros" },
           { title: "Cursos", url: "/cursos" },
-        ],
-      },
-      {
-        title: "Préstamo Llaves",
-        url: "#",
-        icon: BookOpen,
-        items: [
-          { title: "Llaves prestadas", url: "/llavesPrestadas" },
-          { title: "Planta BAJA", url: "/llavesPlantaBaja" },
-          { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
-          { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
         ],
       },
     ],
