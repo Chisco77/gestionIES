@@ -68,69 +68,6 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [formato, setFormato] = useState("40"); // valor por defecto
 
-  /*const generatePdfLabels = async () => {
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
-
-    const labelWidth = 52.5;
-    const labelHeight = 29.7;
-    const cols = 4;
-    const rows = 10;
-    const labelsPerPage = cols * rows;
-    const logoWidth = 18;
-    const logoHeight = 8;
-
-    const image = await new Promise((resolve) => {
-      const img = new Image();
-      img.src = logo;
-      img.onload = () => resolve(img);
-    });
-
-    let etiquetas = [];
-    usuarios.forEach((usuario) => {
-      for (let i = 0; i < Number(etiquetasPorUsuario); i++) {
-        etiquetas.push(usuario);
-      }
-    });
-
-    const total = etiquetas.length;
-
-    for (let i = 0; i < total; i++) {
-      const usuario = etiquetas[i];
-      if (i > 0 && i % labelsPerPage === 0) doc.addPage();
-
-      const indexInPage = i % labelsPerPage;
-      const col = indexInPage % cols;
-      const row = Math.floor(indexInPage / cols);
-      const x = col * labelWidth;
-      const y = row * labelHeight;
-      const centerX = x + labelWidth / 2;
-      const logoX = centerX - logoWidth / 2;
-      const logoY = y + 3;
-
-      doc.addImage(image, "JPEG", logoX, logoY, logoWidth, logoHeight);
-
-      let nombreCompleto = `${usuario.givenName} ${usuario.sn}`;
-      if (nombreCompleto.length > 25)
-        nombreCompleto = nombreCompleto.slice(0, 22) + "…";
-
-      doc.setFontSize(9);
-      doc.text(nombreCompleto, centerX, y + 15, { align: "center" });
-
-      doc.setFontSize(8);
-      doc.text(
-        `Curso: ${usuario.groups[1]} - ${cursoSeleccionado}`,
-        centerX,
-        y + 21,
-        { align: "center" }
-      );
-
-      if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
-      setProgress(Math.round(((i + 1) / total) * 100));
-    }
-
-    doc.save(nombrePdf.endsWith(".pdf") ? nombrePdf : `${nombrePdf}.pdf`);
-  };*/
-
   const generatePdfLabels = async () => {
     const doc = new jsPDF({ unit: "mm", format: "a4" });
 
@@ -151,10 +88,21 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
         rows: 8,
         width: 70,
         height: 33.8,
-        marginX: 7,
+        marginX: 0,
         marginY: 12.7,
         spacingX: 2.5,
         spacingY: 0,
+      },
+
+      33: {
+        cols: 3,
+        rows: 11,
+        width: 70,
+        height: 25.4,
+        marginX: 0, 
+        marginY: 8, 
+        spacingX: 2.5,
+        spacingY: 0, 
       },
     }[formato]; // estado
 
@@ -165,7 +113,7 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
     // fallback logo IES
     const fallbackLogo = await new Promise((resolve) => {
       const img = new Image();
-      img.src = logo;
+      img.src = `${import.meta.env.BASE_URL}logo.png`;
       img.onload = () => resolve(img);
     });
 
@@ -283,6 +231,7 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
                   <SelectContent>
                     <SelectItem value="40">40 (Apli 01286 10x4)</SelectItem>
                     <SelectItem value="24">24 (Apli 01293 8x3)</SelectItem>
+                    <SelectItem value="33">33 (Apli 01270 11x3)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

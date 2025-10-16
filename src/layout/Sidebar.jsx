@@ -92,7 +92,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Mis asuntos propios", url: "/" },
+          { title: "Mis asuntos propios", url: "/asuntos_propios" },
           { title: "Solicitar", url: "/" },
         ],
       },
@@ -159,7 +159,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Mis asuntos propios", url: "/" },
+          { title: "Mis asuntos propios", url: "/asuntos_propios" },
           { title: "Solicitar", url: "/" },
         ],
       },
@@ -210,7 +210,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Mis asuntos propios", url: "/" },
+          { title: "Mis asuntos propios", url: "/asuntos_propios" },
           { title: "Solicitar", url: "/" },
         ],
       },
@@ -243,7 +243,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         icon: Settings2,
         items: [
           { title: "Perfiles de Usuario", url: "/perfiles" },
-          { title: "Restricciones Asuntos Propios", url: "/asuntos_restricciones" },
+          { title: "Asuntos Propios", url: "/asuntos_restricciones" },
         ],
       },
     ],
@@ -279,7 +279,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Mis asuntos propios", url: "/" },
+          { title: "Mis asuntos propios", url: "/asuntos_propios" },
           { title: "Solicitar", url: "/" },
         ],
       },

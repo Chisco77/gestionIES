@@ -34,8 +34,9 @@ import { PrestamosLlavesIndex } from "./modules/Llaves/pages/PrestamosLlavesInde
 import { PlanoPlanta } from "./modules/Llaves/pages/PlanoPlanta";
 import { PerfilesUsuarioIndex } from "./modules/PerfilesUsuario/pages/PerfilesUsuarioIndex";
 import { EstanciasIndex } from "./modules/Estancias/pages/EstanciasIndex";
-import { AsuntosRestricciones } from "./modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
+import { DialogoAsuntosRestricciones } from "./modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
 import { SidebarProviderCustom } from "./context/SidebarContext";
+import { AsuntosPropiosIndex } from "./modules/AsuntosPropios/pages/AsuntosPropiosIndex";
 
 const queryClient = new QueryClient();
 
@@ -97,7 +98,8 @@ const router = createBrowserRouter(
         },
         { path: "perfiles", element: <PerfilesUsuarioIndex /> },
         { path: "estancias", element: <EstanciasIndex /> },
-        { path: "asuntos_restricciones", element: <AsuntosRestricciones /> },
+        { path: "asuntos_restricciones", element: <DialogoAsuntosRestricciones /> },
+        { path: "asuntos_propios", element: <AsuntosPropiosIndex /> },
       ],
     },
   ],

@@ -112,7 +112,7 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
 
     const image = await new Promise((resolve) => {
       const img = new Image();
-      img.src = logo;
+      img.src = img.src = `${import.meta.env.BASE_URL}logo.png`;
       img.onload = () => resolve(img);
     });
 

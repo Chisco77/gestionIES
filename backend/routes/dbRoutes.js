@@ -6,8 +6,8 @@
  *
  *  Descripción:
  *    Rutas relacionadas con la base de datos PostgreSQL.
- *    Incluyen gestión de cursos, libros, estancias, préstamos de libros
- *    y préstamos de llaves.
+ *    Incluyen gestión de cursos, libros, estancias, préstamos de libros,
+ *    préstamos de llaves y restricciones de configuración.
  *
  *  Endpoints:
  *
@@ -34,6 +34,7 @@
  *    POST /prestamos/asignarUsuario           -> Asignar préstamos a usuario
  *    POST /prestamos/eliminarUnAlumno        -> Eliminar préstamos de un alumno
  *    POST /prestamos/update                   -> Actualizar préstamo individual
+ *    POST /prestamos/eliminar                 -> Eliminar préstamo
  *
  *    --- Estancias / planos ---
  *    GET /planos/estancias?planta=<planta>      -> Obtener estancias de una planta
@@ -46,6 +47,19 @@
  *    POST /prestamos-llaves/prestar    -> Prestar llaves
  *    POST /prestamos-llaves/devolver   -> Devolver llaves
  *
+ *    --- Perfiles de usuario ---
+ *    GET /perfiles                    -> Obtener todos los perfiles
+ *    GET /perfiles/:uid               -> Obtener perfil de un usuario
+ *    POST /perfiles                   -> Crear o actualizar perfil (UPSERT)
+ *    PUT /perfiles/:uid               -> Actualizar perfil existente
+ *    DELETE /perfiles/:uid            -> Eliminar perfil
+ *
+ *    --- Restricciones ---
+ *    GET /restricciones               -> Obtener todas las restricciones
+ *    POST /restricciones/asuntos      -> Insertar restricciones de tipo "asuntos propios"
+ *    PUT /restricciones/:id           -> Actualizar una restricción
+ *    DELETE /restricciones/:id        -> Eliminar una restricción
+ *
  *  Autor: Francisco Damian Mendez Palma
  *  Email: adminies.franciscodeorellana@educarex.es
  *  GitHub: https://github.com/Chisco77
@@ -56,11 +70,20 @@
  * ================================================================
  */
 
-
-
 const express = require("express");
 const router = express.Router();
 
+// --- Controlador de asuntos propios ---
+const {
+  getAsuntos,
+  insertAsunto,
+  updateAsunto,
+  deleteAsunto,
+  getNumeroAsuntosPorUsuario,
+} = require("../controllers/db/asuntosController");
+
+
+// --- Controlador de cursos ---
 const {
   getCursos,
   insertCurso,
@@ -73,6 +96,7 @@ router.post("/cursos", insertCurso);
 router.put("/cursos/:id", updateCurso);
 router.delete("/cursos/:id", deleteCurso);
 
+// --- Controlador de libros ---
 const {
   getLibros,
   insertLibro,
@@ -87,7 +111,7 @@ router.put("/libros/:id", updateLibro);
 router.delete("/libros/:id", deleteLibro);
 router.get("/libros/disponibles/:curso/:uid", getLibrosDisponibles);
 
-
+// --- Controlador de préstamos de libros ---
 const {
   asignarLibrosMasivo,
   accionDocCompromisoMasivo,
@@ -97,25 +121,27 @@ const {
   prestarPrestamos,
   asignarUsuario,
   eliminarPrestamosItems,
-  actualizarPrestamoItem, 
-  eliminarPrestamo,  
+  actualizarPrestamoItem,
+  eliminarPrestamo,
 } = require("../controllers/db/prestamosController");
 
+// --- Controlador de estancias / planos ---
 const {
-getEstanciasByPlanta,
-getAllEstancias,
-insertEstancia,
-updateEstancia,
-deleteEstancia,
+  getEstanciasByPlanta,
+  getAllEstancias,
+  insertEstancia,
+  updateEstancia,
+  deleteEstancia,
 } = require("../controllers/db/estanciasController");
 
+// --- Controlador de préstamos de llaves ---
 const {
   getPrestamosLlavesAgrupados,
   prestarLlave,
   devolverLlave,
-} = require("../controllers/db/prestamosLlavesController"); 
+} = require("../controllers/db/prestamosLlavesController");
 
-// Importar controlador de perfiles
+// --- Controlador de perfiles de usuario ---
 const {
   getPerfiles,
   getPerfilUsuario,
@@ -124,45 +150,72 @@ const {
   deletePerfilUsuario,
 } = require("../controllers/db/perfilesUsuarioController");
 
+// --- Controlador de restricciones ---
+const {
+  getRestricciones,
+  insertRestriccionesAsuntos,
+  updateRestriccion,
+  deleteRestriccion,
+} = require("../controllers/db/restriccionesController");
 
-router.get("/planos/estancias", getEstanciasByPlanta); 
-router.post("/planos/estancias", insertEstancia); 
+// ================================================================
+//   Rutas de Estancias
+// ================================================================
+router.get("/planos/estancias", getEstanciasByPlanta);
+router.post("/planos/estancias", insertEstancia);
 router.put("/estancias/:id", updateEstancia);
 router.delete("/planos/estancias/:planta/:id", deleteEstancia);
-router.get("/estancias", getAllEstancias); 
+router.get("/estancias", getAllEstancias);
 
+// ================================================================
+//   Rutas de Préstamos de libros
+// ================================================================
 router.get("/prestamos/agrupados", getPrestamosAgrupados);
 router.post("/prestamos/devolver", devolverPrestamos);
 router.post("/prestamos/prestar", prestarPrestamos);
-router.post ("/prestamos/asignarLibrosMasivo", asignarLibrosMasivo);
+router.post("/prestamos/asignarLibrosMasivo", asignarLibrosMasivo);
 router.post("/prestamos/accionDocCompromisoMasivo", accionDocCompromisoMasivo);
 router.post("/prestamos/accionLibrosMasivo", accionLibrosMasivo);
 router.post("/prestamos/asignarUsuario", asignarUsuario);
-router.post ("/prestamos/eliminarUnAlumno", eliminarPrestamosItems);
+router.post("/prestamos/eliminarUnAlumno", eliminarPrestamosItems);
 router.post("/prestamos/update", actualizarPrestamoItem);
 router.post("/prestamos/eliminar", eliminarPrestamo);
 
-
-// Prestamos llaves
+// ================================================================
+//   Rutas de Préstamos de llaves
+// ================================================================
 router.get("/prestamos-llaves/agrupados", getPrestamosLlavesAgrupados);
 router.post("/prestamos-llaves/prestar", prestarLlave);
 router.post("/prestamos-llaves/devolver", devolverLlave);
 
-// --- Rutas de Perfiles de usuario ---
-// Obtener todos los perfiles
+// ================================================================
+//   Rutas de Perfiles de usuario
+// ================================================================
 router.get("/perfiles", getPerfiles);
-
-// Obtener perfil de un usuario por uid
 router.get("/perfiles/:uid", getPerfilUsuario);
-
-// Crear o actualizar perfil (UPSERT)
 router.post("/perfiles", setPerfilUsuario);
-
-// Actualizar perfil existente
 router.put("/perfiles/:uid", updatePerfilUsuario);
-
-// Eliminar perfil
 router.delete("/perfiles/:uid", deletePerfilUsuario);
+
+// ================================================================
+//   Rutas de Restricciones
+// ================================================================
+router.get("/restricciones", getRestricciones);
+router.post("/restricciones/asuntos", insertRestriccionesAsuntos);
+router.put("/restricciones/:id", updateRestriccion);
+router.delete("/restricciones/:id", deleteRestriccion);
+
+
+// ================================================================
+//   Rutas de Asuntos Propios
+// ================================================================
+router.get("/asuntos-propios", getAsuntos); // Obtener asuntos por mes/año
+router.post("/asuntos-propios", insertAsunto); // Insertar nuevo asunto
+router.put("/asuntos-propios/:id", updateAsunto); // Actualizar asunto por id
+router.delete("/asuntos-propios/:id", deleteAsunto); // Eliminar asunto por id
+
+// Contar asuntos de un usuario
+router.get("/asuntos-propios/count", getNumeroAsuntosPorUsuario); // ?uid=<uid>
 
 
 module.exports = router;

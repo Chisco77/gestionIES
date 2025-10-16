@@ -39,7 +39,6 @@
 
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
-import logo from "/src/images/logo.png";
 import {
   Dialog,
   DialogTrigger,
