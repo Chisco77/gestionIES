@@ -104,7 +104,7 @@ async function apiListarEstancias(planta) {
 }
 
 async function apiGuardarEstancia(planta, estancia) {
-  console.log ("Estancia", estancia);
+  console.log("Estancia", estancia);
   const url = `${API_BASE}/planos/estancias`;
   const r = await fetch(url, {
     method: "POST",
@@ -341,8 +341,8 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
           style={{
             position: "relative",
             flex: 1,
-            maxWidth: "1400px", // antes 1014px
-            maxHeight: "1200px", // antes 860px
+            maxWidth: "1110px", // tamaño lienzo imagenes
+            maxHeight: "860px", 
             border: "1px solid #e5e7eb",
             borderRadius: 8,
             overflow: "hidden",
@@ -459,35 +459,35 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
             )}
             <g>
               <circle
-                cx={20}
+                cx={35}
                 cy={100}
-                r={8}
+                r={16} // duplicado
                 fill="rgba(200,200,200,0.95)"
                 stroke="#374151"
               />
-              <text x={35} y={104} fontSize={10} fill="#374151">
+              <text x={55} y={104} fontSize={12} fill="#374151">
                 0 prestadas
               </text>
 
               <circle
-                cx={100}
+                cx={155}
                 cy={100}
-                r={8}
+                r={16} // duplicado
                 fill="rgba(250,200,80,0.95)"
                 stroke="#374151"
               />
-              <text x={115} y={104} fontSize={10} fill="#374151">
+              <text x={175} y={104} fontSize={12} fill="#374151">
                 parcial
               </text>
 
               <circle
-                cx={160}
+                cx={265}
                 cy={100}
-                r={8}
+                r={16} // duplicado
                 fill="rgba(250,80,80,0.95)"
                 stroke="#374151"
               />
-              <text x={175} y={104} fontSize={10} fill="#374151">
+              <text x={290} y={104} fontSize={12} fill="#374151">
                 todas
               </text>
             </g>

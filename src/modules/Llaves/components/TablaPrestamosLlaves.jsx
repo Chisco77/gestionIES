@@ -40,12 +40,24 @@ import {
   ChevronsRight,
 } from "lucide-react";
 
-export function TablaPrestamosLlaves({ columns, data, onFilteredChange, informes, acciones }) {
-  const [sorting, setSorting] = useState([{ id: "profesor", desc: false }]);
+export function TablaPrestamosLlaves({
+  columns,
+  data,
+  onFilteredChange,
+  informes,
+  acciones,
+}) {
   const [columnFilters, setColumnFilters] = useState([]);
   const [textoFiltro, setTextoFiltro] = useState("");
   const [filtroPlanta, setFiltroPlanta] = useState("");
+  const [filtroDevuelta, setFiltroDevuelta] = useState("");
   const [selectedId, setSelectedId] = useState(null);
+
+  // Criterios de ordenacion
+  const [sorting, setSorting] = useState([
+    { id: "devuelta", desc: false }, // Primero las no devueltas
+    { id: "fechaEntrega", desc: false }, // Luego por fecha de entrega más antigua
+  ]);
 
   const table = useReactTable({
     data,
@@ -77,11 +89,19 @@ export function TablaPrestamosLlaves({ columns, data, onFilteredChange, informes
     onFilteredChange?.(filtered);
   }, [columnFilters, data]);
 
+  useEffect(() => {
+    // Devuelta: convertir "true"/"false" a boolean para la columna
+    const valor = filtroDevuelta === "" ? undefined : filtroDevuelta === "true";
+    table.getColumn("devuelta")?.setFilterValue(valor);
+  }, [filtroDevuelta]);
+
   const selectedRow = table.getSelectedRowModel().rows[0];
   const selectedItem = selectedRow?.original;
 
   // Plantas únicas derivadas de los datos
-  const plantas = Array.from(new Set(data.map((p) => p.planta).filter(Boolean))).sort();
+  const plantas = Array.from(
+    new Set(data.map((p) => p.planta).filter(Boolean))
+  ).sort();
 
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
@@ -117,6 +137,19 @@ export function TablaPrestamosLlaves({ columns, data, onFilteredChange, informes
           />
         </div>
 
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Devuelta</label>
+          <select
+            className="border p-2 rounded text-sm"
+            value={filtroDevuelta}
+            onChange={(e) => setFiltroDevuelta(e.target.value)}
+          >
+            <option value="">Todas</option>
+            <option value="true">Sí</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+
         {informes && <div className="ml-auto">{informes}</div>}
       </div>
 
@@ -130,7 +163,10 @@ export function TablaPrestamosLlaves({ columns, data, onFilteredChange, informes
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -138,27 +174,42 @@ export function TablaPrestamosLlaves({ columns, data, onFilteredChange, informes
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className={`cursor-pointer ${
-                    row.getIsSelected() ? "bg-blue-100" : ""
-                  } hover:bg-gray-100 transition-colors`}
-                  onClick={() => {
-                    row.toggleSelected();
-                    setSelectedId(row.original.id);
-                  }}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                // Si la llave NO ha sido devuelta, aplicar fondo rojo claro
+                const rowClass = `${
+                  !row.original.devuelta
+                    ? "bg-red-100 border border-red-300"
+                    : ""
+                } cursor-pointer hover:bg-gray-100 transition-colors ${
+                  row.getIsSelected() ? "bg-blue-100" : ""
+                }`;
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={rowClass}
+                    onClick={() => {
+                      row.toggleSelected();
+                      setSelectedId(row.original.id);
+                    }}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No hay resultados.
                 </TableCell>
               </TableRow>

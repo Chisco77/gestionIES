@@ -25,8 +25,6 @@
  * ================================================================
  */
 
-
-
 const pool = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
 
@@ -36,18 +34,20 @@ async function getPrestamosLlavesAgrupados(req, res) {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) return res.status(401).json({ error: "No autenticado" });
 
+    // consulta ordenada
     const { rows: prestamos } = await pool.query(`
-      SELECT pl.id, pl.idestancia, pl.uid, pl.unidades, pl.fechaentrega, pl.fechadevolucion,
-             e.codigo AS codigo_estancia, e.planta as planta, e.descripcion AS nombre_estancia
+      SELECT pl.id, pl.idestancia, pl.uid, pl.unidades, pl.fechaentrega, pl.fechadevolucion, pl.devuelta,
+             e.codigo AS codigo_estancia, e.planta as planta, e.descripcion AS nombre_estancia, e.codigollave as codigollave, e.armario as armario
       FROM prestamos_llaves pl
       JOIN estancias e ON e.id = pl.idestancia
-      ORDER BY pl.fechaentrega DESC
+      ORDER BY pl.devuelta ASC, pl.fechaentrega DESC
     `);
 
-    const agrupado = {};
+    const agrupado = new Map(); //Map para mantener orden de inserción
 
     for (const p of prestamos) {
-      if (!agrupado[p.uid]) {
+      if (!agrupado.has(p.uid)) {
+        // Buscamos nombre del profesor
         const nombre = await new Promise((resolve) => {
           buscarPorUid(ldapSession, p.uid, (err, datos) => {
             if (!err && datos)
@@ -55,26 +55,43 @@ async function getPrestamosLlavesAgrupados(req, res) {
             else resolve("Profesor desconocido");
           });
         });
-        agrupado[p.uid] = {
+
+        agrupado.set(p.uid, {
           uid: p.uid,
           nombre,
           prestamos: [],
-        };
+        });
       }
 
-      agrupado[p.uid].prestamos.push({
+      agrupado.get(p.uid).prestamos.push({
         id: p.id,
         idestancia: p.idestancia,
         nombreEstancia: p.nombre_estancia,
         codigoEstancia: p.codigo_estancia,
+        codigollave: p.codigollave,
+        armario: p.armario,
         unidades: p.unidades,
         fechaentrega: p.fechaentrega,
         fechadevolucion: p.fechadevolucion,
+        devuelta: p.devuelta,
         planta: p.planta,
       });
     }
 
-    res.json(Object.values(agrupado));
+    // Map a array manteniendo el orden original de aparición
+    const resultado = Array.from(agrupado.values());
+
+    // para que cada grupo interno también respete el orden SQL
+    resultado.forEach((grupo) => {
+      grupo.prestamos.sort((a, b) => {
+        if (a.devuelta === b.devuelta) {
+          return new Date(b.fechaentrega) - new Date(a.fechaentrega);
+        }
+        return a.devuelta - b.devuelta;
+      });
+    });
+
+    res.json(resultado);
   } catch (error) {
     console.error("❌ Error al obtener préstamos de llaves:", error.message);
     res.status(500).json({ error: "Error al obtener préstamos de llaves" });
@@ -123,8 +140,8 @@ async function prestarLlave(req, res) {
       rows: [nuevoPrestamo],
     } = await pool.query(
       `
-      INSERT INTO prestamos_llaves (idestancia, uid, unidades, fechaentrega)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO prestamos_llaves (idestancia, uid, unidades, fechaentrega, devuelta)
+      VALUES ($1, $2, $3, $4, false)
       RETURNING *
     `,
       [idestancia, uid, unidades, fechaentrega]
@@ -152,7 +169,7 @@ async function devolverLlave(req, res) {
     await pool.query(
       `
       UPDATE prestamos_llaves
-      SET fechadevolucion = $1
+      SET fechadevolucion = $1, devuelta = true
       WHERE id = ANY($2::int[])
     `,
       [fechaDevolucion, ids]
