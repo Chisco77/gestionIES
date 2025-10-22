@@ -76,6 +76,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DialogoGestionLlaves } from "./DialogoGestionLlaves";
 
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -145,6 +146,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   const [error, setError] = useState("");
   const [modoEdicion, setModoEdicion] = useState(false);
   const [draw, setDraw] = useState({ activo: false, coordenadas: [] });
+  const [seleccionadas, setSeleccionadas] = useState([]); // <-- línea necesaria
 
   // Para filtrar que modo edición de estancias es solo para el admin
   const { user } = useAuth();
@@ -226,6 +228,34 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
     }
     return m;
   }, [prestamos]);
+
+  const handleDevolverLlaves = async () => {
+    if (seleccionadas.length === 0) return;
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || ""}/db/prestamos-llaves/devolver`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: seleccionadas }),
+        }
+      );
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || "Error al devolver llaves");
+      }
+
+      toast.success("Llaves devueltas correctamente");
+      setSeleccionadas([]);
+      refrescarPrestamos(); // refresca mapa y panel
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Error al devolver llaves");
+    }
+  };
 
   const estadoEstancia = (e) => {
     const prestadas = prestamosPorEstancia.get(e.id) || 0;
@@ -331,18 +361,20 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       .map((p) => ({ ...p, profesor: profesor.nombre }))
   );
 
+  console.log ("Prestamos activos: ", prestamosActivos);
+
   return (
     <div style={{ padding: 12 }}>
-      {/* Panel lateral y plano */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {/* Plano */}
+      {/* Layout principal: plano + panel lateral */}
+      <div style={{ display: "flex", gap: 16 }}>
+        {/* -------------------- PLANO -------------------- */}
         <div
           ref={wrapperRef}
           style={{
             position: "relative",
             flex: 1,
-            maxWidth: "1110px", // tamaño lienzo imagenes
-            maxHeight: "860px", 
+            maxWidth: "1110px",
+            maxHeight: "860px",
             border: "1px solid #e5e7eb",
             borderRadius: 8,
             overflow: "hidden",
@@ -429,255 +461,124 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                 </g>
               );
             })}
-
-            {draw.activo && draw.coordenadas.length > 0 && (
-              <g>
-                {(() => {
-                  const absDrawPts = scalePoints(draw.coordenadas);
-                  return (
-                    <>
-                      <path
-                        d={polyToPath(absDrawPts)}
-                        fill="rgba(16,185,129,0.18)"
-                        stroke="#059669"
-                        strokeDasharray="6 4"
-                        strokeWidth={2}
-                      />
-                      {absDrawPts.map((p, i) => (
-                        <circle
-                          key={i}
-                          cx={p[0]}
-                          cy={p[1]}
-                          r={4}
-                          fill="#059669"
-                        />
-                      ))}
-                    </>
-                  );
-                })()}
-              </g>
-            )}
-            <g>
-              <circle
-                cx={35}
-                cy={100}
-                r={16} // duplicado
-                fill="rgba(200,200,200,0.95)"
-                stroke="#374151"
-              />
-              <text x={55} y={104} fontSize={12} fill="#374151">
-                0 prestadas
-              </text>
-
-              <circle
-                cx={155}
-                cy={100}
-                r={16} // duplicado
-                fill="rgba(250,200,80,0.95)"
-                stroke="#374151"
-              />
-              <text x={175} y={104} fontSize={12} fill="#374151">
-                parcial
-              </text>
-
-              <circle
-                cx={265}
-                cy={100}
-                r={16} // duplicado
-                fill="rgba(250,80,80,0.95)"
-                stroke="#374151"
-              />
-              <text x={290} y={104} fontSize={12} fill="#374151">
-                todas
-              </text>
-            </g>
           </svg>
         </div>
-        <div style={{ width: 340 }}>
-          {/* Préstamos */}
-          <h3 style={{ margin: 0 }}>Préstamos activos</h3>
-          <div style={{ marginTop: 8 }}>
+
+        {/* -------------------- PANEL DERECHO -------------------- */}
+        <div
+          style={{
+            width: 340,
+            display: "flex",
+            flexDirection: "column",
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            background: "white",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            height: "860px", // misma altura que el plano
+          }}
+        >
+          {/* Cabecera */}
+          <div
+            style={{ borderBottom: "1px solid #e5e7eb", padding: "12px 16px" }}
+          >
+            <h3
+              style={{
+                margin: 0,
+                fontSize: 17,
+                fontWeight: 600,
+                color: "#1e293b",
+              }}
+            >
+              Llaves prestadas
+            </h3>
+            <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
+              Profesores con llaves prestadas
+            </p>
+          </div>
+
+          {/* Lista scrollable */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "12px 16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
             {prestamosActivos.length === 0 ? (
-              <p style={{ color: "#6b7280" }}>No hay préstamos activos.</p>
+              <p style={{ color: "#6b7280", fontSize: 14 }}>
+                No hay préstamos activos.
+              </p>
             ) : (
-              <ul style={{ paddingLeft: 0 }}>
-                {prestamosActivos.map((p, i) => (
-                  <li
-                    key={i}
-                    style={{
-                      listStyle: "none",
-                      marginBottom: 10,
-                      border: "1px solid #e5e7eb",
-                      padding: 8,
-                      borderRadius: 6,
-                    }}
-                  >
-                    <div style={{ fontWeight: 700 }}>
-                      {estancias.find((e) => e.id === p.idestancia)?.codigo ||
-                        p.codigoEstancia ||
-                        p.idestancia}
-                    </div>
-                    <div style={{ fontSize: 13, color: "#374151" }}>
-                      {p.codigoEstancia} · {p.unidades} llave(s) — {p.profesor}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              prestamosActivos.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() =>
+                    setSeleccionadas((prev) =>
+                      prev.includes(p.id)
+                        ? prev.filter((id) => id !== p.id)
+                        : [...prev, p.id]
+                    )
+                  }
+                  style={{
+                    border: seleccionadas.includes(p.id)
+                      ? "2px solid #0284c7"
+                      : "1px solid #e5e7eb",
+                    background: seleccionadas.includes(p.id)
+                      ? "#f0f9ff"
+                      : "white",
+                    borderRadius: 6,
+                    padding: 10,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <div style={{ fontWeight: 600, color: "#0f172a" }}>
+                    {p.profesor}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#334155" }}>
+                    {p.nombreEstancia || "—"}
+                  </div>
+                </div>
+              ))
             )}
           </div>
 
-          <hr style={{ margin: "12px 0" }} />
-
-          {/* Edición */}
-          {user?.perfil === "administrador" && (
-            <div>
-              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={modoEdicion}
-                  onChange={(e) => setModoEdicion(e.target.checked)}
-                />{" "}
-                <strong>Modo edición</strong>
-              </label>
-
-              {modoEdicion && (
-                <div
-                  style={{
-                    marginTop: 8,
-                    border: "1px dashed #e6eef0",
-                    padding: 8,
-                    borderRadius: 6,
-                  }}
-                >
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ display: "block", fontSize: 13 }}>
-                      Código de la estancia
-                    </label>
-                    <input
-                      placeholder="ej. Aula 1.01"
-                      value={nuevo.codigo}
-                      onChange={(e) =>
-                        setNuevo((n) => ({ ...n, codigo: e.target.value }))
-                      }
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ display: "block", fontSize: 13 }}>
-                      Descripción
-                    </label>
-                    <input
-                      placeholder="Ej: Aula de informática"
-                      value={nuevo.descripcion}
-                      onChange={(e) =>
-                        setNuevo((n) => ({ ...n, descripcion: e.target.value }))
-                      }
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ display: "block", fontSize: 13 }}>
-                      Nº llaves totales
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={nuevo.totalllaves}
-                      onChange={(e) =>
-                        setNuevo((n) => ({
-                          ...n,
-                          totalllaves: Number(e.target.value),
-                        }))
-                      }
-                    />
-                  </div>
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ display: "block", fontSize: 13 }}>
-                      Código de la llave
-                    </label>
-                    <input
-                      placeholder="Ej: Aula de informática"
-                      value={nuevo.codigollave}
-                      onChange={(e) =>
-                        setNuevo((n) => ({ ...n, codigollave: e.target.value }))
-                      }
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ display: "block", fontSize: 13 }}>
-                      Llavera
-                    </label>
-                    <select
-                      value={nuevo.armario}
-                      onChange={(e) =>
-                        setNuevo((n) => ({ ...n, armario: e.target.value }))
-                      }
-                    >
-                      <option value="">Selecciona un armario</option>
-                      <option value="Llavera 1">Llavera 1</option>
-                      <option value="Llavera 2">Llavera 2</option>
-                    </select>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      onClick={finishPolygon}
-                      disabled={
-                        !draw.activo || draw.coordenadas.length < 3 || cargando
-                      }
-                    >
-                      {cargando ? "Guardando..." : "Guardar estancia"}
-                    </button>
-                    <button
-                      onClick={cancelDraw}
-                      disabled={!draw.activo || cargando}
-                    >
-                      Cancelar dibujo
-                    </button>
-                  </div>
-
-                  {error && (
-                    <p style={{ color: "#b91c1c", fontSize: 12, marginTop: 6 }}>
-                      {error}
-                    </p>
-                  )}
-
-                  <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
-                    Click en el plano para añadir coordenadas. Doble-click para
-                    cerrar el polígono.
-                  </p>
-
-                  <div
-                    style={{
-                      marginTop: 8,
-                      display: "flex",
-                      gap: 6,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    {estancias.map((s) => (
-                      <span
-                        key={s.id}
-                        style={{
-                          background: "#eef2ff",
-                          padding: "4px 8px",
-                          borderRadius: 999,
-                          fontSize: 12,
-                        }}
-                      >
-                        {s.descripcion}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Botón de devolver */}
+          <div
+            style={{
+              borderTop: "1px solid #e5e7eb",
+              padding: 12,
+              background: "#f8fafc",
+            }}
+          >
+            <button
+              onClick={handleDevolverLlaves}
+              disabled={seleccionadas.length === 0}
+              style={{
+                width: "100%",
+                padding: "8px 0",
+                borderRadius: 6,
+                background: seleccionadas.length > 0 ? "#0284c7" : "#cbd5e1",
+                color: "white",
+                fontWeight: 600,
+                border: "none",
+                cursor: seleccionadas.length > 0 ? "pointer" : "default",
+                transition: "background 0.2s",
+              }}
+            >
+              Devolver {seleccionadas.length || ""} llave
+              {seleccionadas.length > 1 ? "s" : ""}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Diálogos */}
+
+
+      {/* Diálogo de gestión de llaves */}
       {modalLlaves.open && (
         <DialogoGestionLlaves
           open={modalLlaves.open}

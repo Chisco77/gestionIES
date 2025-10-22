@@ -169,6 +169,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         title: "Préstamo Llaves",
         url: "#",
         icon: BookOpen,
+        isActive: true, // 👈 hace que el menú aparezca desplegado
         items: [
           { title: "Llaves prestadas", url: "/llavesPrestadas" },
           { title: "Planta BAJA", url: "/llavesPlantaBaja" },
@@ -177,6 +178,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         ],
       },
     ],
+
     administrador: [
       {
         title: "Panel informativo",
@@ -229,9 +231,10 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         title: "Préstamo Llaves",
         url: "#",
         icon: BookOpen,
-        items: [
+        items: [ 
           { title: "Llaves prestadas", url: "/llavesPrestadas" },
           { title: "Estancias", url: "/estancias" },
+          { title: "Edición de Planos", url: "/edicionPlanos" },
           { title: "Planta BAJA", url: "/llavesPlantaBaja" },
           { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
           { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },

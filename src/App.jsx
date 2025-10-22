@@ -32,6 +32,7 @@ import { PrestamosAlumnosIndex } from "./modules/Prestamos/pages/PrestamosAlumno
 import { PrestamosProfesoresIndex } from "./modules/Prestamos/pages/PrestamosProfesoresIndex";
 import { PrestamosLlavesIndex } from "./modules/Llaves/pages/PrestamosLlavesIndex";
 import { PlanoPlanta } from "./modules/Llaves/pages/PlanoPlanta";
+import PlanoEstanciasEdicion from "./modules/Llaves/components/PlanoEstanciasEdicion";
 import { PerfilesUsuarioIndex } from "./modules/PerfilesUsuario/pages/PerfilesUsuarioIndex";
 import { EstanciasIndex } from "./modules/Estancias/pages/EstanciasIndex";
 import { DialogoAsuntosRestricciones } from "./modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
@@ -87,6 +88,7 @@ const router = createBrowserRouter(
         { path: "prestamos", element: <PrestamosAlumnosIndex /> },
         { path: "prestamosProfesores", element: <PrestamosProfesoresIndex /> },
         { path: "llavesPrestadas", element: <PrestamosLlavesIndex /> },
+        { path: "edicionPlanos", element: <PlanoEstanciasEdicion /> },
         { path: "llavesPlantaBaja", element: <PlanoPlanta planta="baja" /> },
         {
           path: "llavesPlantaPrimera",

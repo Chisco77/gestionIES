@@ -67,7 +67,7 @@ export function LoginForm({ className, ...props }) {
       queryClient.invalidateQueries(["todos-ldap"]);
       queryClient.invalidateQueries(["prestamos"]);
 
-      // Pequeña función para hacer check-auth con reintento
+      // Hacer check-auth con reintento
       const checkAuth = async (retries = 2) => {
         for (let i = 0; i < retries; i++) {
           const res = await fetch(`${API_URL}/check-auth`, {
@@ -97,7 +97,11 @@ export function LoginForm({ className, ...props }) {
       });
 
       // Redirigir al dashboard
-      navigate("/");
+      if (data.username === "ordenanza") {
+        navigate("/llavesPlantaBaja"); // ruta especial
+      } else {
+        navigate("/"); // ruta normal (dashboard)
+      }
     } catch (error) {
       alert("Error de conexión con el servidor");
       console.error(error);
