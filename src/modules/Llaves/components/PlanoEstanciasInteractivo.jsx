@@ -169,18 +169,18 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   const imgRef = useRef(null);
   const [size, setSize] = useState({ w: 1015, h: 860 });
 
-  // ------------------- Observador de tamaño -------------------
   useEffect(() => {
     const ro = new ResizeObserver(() => {
-      if (imgRef.current)
+      if (imgRef.current) {
         setSize({
           w: imgRef.current.clientWidth,
           h: imgRef.current.clientHeight,
         });
+      }
     });
     if (wrapperRef.current) ro.observe(wrapperRef.current);
     return () => ro.disconnect();
-  }, []);
+  }, [planta]); // <--- añadir planta aquí
 
   // ------------------- Carga de estancias y préstamos -------------------
   useEffect(() => {
@@ -361,7 +361,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       .map((p) => ({ ...p, profesor: profesor.nombre }))
   );
 
-  console.log ("Prestamos activos: ", prestamosActivos);
+  console.log("Prestamos activos: ", prestamosActivos);
 
   return (
     <div style={{ padding: 12 }}>
@@ -384,8 +384,17 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
             ref={imgRef}
             src={svgUrl}
             alt={`Plano planta ${planta}`}
+            onLoad={() => {
+              if (imgRef.current) {
+                setSize({
+                  w: imgRef.current.clientWidth,
+                  h: imgRef.current.clientHeight,
+                });
+              }
+            }}
             style={{ width: "100%", height: "auto", display: "block" }}
           />
+
           <svg
             style={{
               position: "absolute",
@@ -575,8 +584,6 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
           </div>
         </div>
       </div>
-
-
 
       {/* Diálogo de gestión de llaves */}
       {modalLlaves.open && (
