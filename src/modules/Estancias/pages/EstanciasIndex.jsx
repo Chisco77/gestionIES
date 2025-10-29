@@ -11,8 +11,6 @@ import { columns } from "../components/columns";
 import { TablaEstancias } from "../components/TablaEstancias";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-// Aquí luego podrás importar los diálogos de insertar/editar/eliminar
-// import { DialogoInsertarEstancia } from "../components/DialogoInsertarEstancia";
 import { DialogoEditarEstancia } from "../components/DialogoEditarEstancia";
 // import { DialogoEliminarEstancia } from "../components/DialogoEliminarEstancia";
 

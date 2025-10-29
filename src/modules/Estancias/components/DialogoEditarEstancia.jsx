@@ -18,6 +18,7 @@
  *    - Nº de llaves
  *    - Armario (seleccionable: Llavera 1 / Llavera 2)
  *    - Código de la llave
+ *    - Reservable (booleano)
  *
  * Props:
  * - open: boolean → controla si el diálogo está abierto.
@@ -36,6 +37,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export function DialogoEditarEstancia({
@@ -48,6 +51,7 @@ export function DialogoEditarEstancia({
   const [totalllaves, setTotalllaves] = useState("");
   const [armario, setArmario] = useState("");
   const [codigollave, setCodigoLlave] = useState("");
+  const [reservable, setReservable] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -57,6 +61,7 @@ export function DialogoEditarEstancia({
       setTotalllaves(estanciaSeleccionada.totalllaves || "");
       setArmario(estanciaSeleccionada.armario || "");
       setCodigoLlave(estanciaSeleccionada.codigollave || "");
+      setReservable(!!estanciaSeleccionada.reservable); 
     }
   }, [estanciaSeleccionada]);
 
@@ -71,6 +76,7 @@ export function DialogoEditarEstancia({
           totalllaves,
           armario,
           codigollave,
+          reservable,
         }),
       });
 
@@ -94,7 +100,7 @@ export function DialogoEditarEstancia({
 
         <div className="flex flex-col gap-4 mt-2">
           <div>
-            <label className="text-sm font-medium">Descripción</label>
+            <Label className="text-sm font-medium">Descripción</Label>
             <Input
               placeholder="Ej: Laboratorio de Ciencias"
               value={descripcion}
@@ -103,7 +109,7 @@ export function DialogoEditarEstancia({
           </div>
 
           <div>
-            <label className="text-sm font-medium">Nº de llaves</label>
+            <Label className="text-sm font-medium">Nº de llaves</Label>
             <Input
               type="number"
               placeholder="Ej: 3"
@@ -113,7 +119,7 @@ export function DialogoEditarEstancia({
           </div>
 
           <div>
-            <label className="text-sm font-medium">Llavera</label>
+            <Label className="text-sm font-medium">Llavera</Label>
             <select
               value={armario}
               onChange={(e) => setArmario(e.target.value)}
@@ -126,11 +132,19 @@ export function DialogoEditarEstancia({
           </div>
 
           <div>
-            <label className="text-sm font-medium">Código de la llave</label>
+            <Label className="text-sm font-medium">Código de la llave</Label>
             <Input
               placeholder="Ej: A-23"
               value={codigollave}
               onChange={(e) => setCodigoLlave(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between border rounded-md p-3 mt-2">
+            <Label className="text-sm font-medium">Reservable</Label>
+            <Switch
+              checked={reservable}
+              onCheckedChange={setReservable}
             />
           </div>
         </div>

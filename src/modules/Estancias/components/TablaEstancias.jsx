@@ -43,8 +43,12 @@ export function TablaEstancias({
 }) {
   const [sorting, setSorting] = useState([{ id: "codigo", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
-  const [textoFiltro, setTextoFiltro] = useState("");
+
+    // 🔍 Filtros individuales
+  const [filtroCodigo, setFiltroCodigo] = useState("");
+  const [filtroDescripcion, setFiltroDescripcion] = useState("");
   const [filtroPlanta, setFiltroPlanta] = useState("");
+  const [filtroReservable, setFiltroReservable] = useState(""); // "true" | "false" | ""
   const [selectedId, setSelectedId] = useState(null);
 
   const table = useReactTable({
@@ -65,10 +69,31 @@ export function TablaEstancias({
   });
 
   // Filtros manuales
-  useEffect(() => {
+  /* useEffect(() => {
     table.getColumn("codigo")?.setFilterValue(textoFiltro);
     table.getColumn("descripcion")?.setFilterValue(textoFiltro);
-  }, [textoFiltro]);
+  }, [textoFiltro]);*/
+
+  // Filtros manuales
+  useEffect(() => {
+    table.getColumn("codigo")?.setFilterValue(filtroCodigo || undefined);
+  }, [filtroCodigo]);
+
+  useEffect(() => {
+    table
+      .getColumn("descripcion")
+      ?.setFilterValue(filtroDescripcion || undefined);
+  }, [filtroDescripcion]);
+
+  useEffect(() => {
+    if (filtroReservable === "") {
+      table.getColumn("reservable")?.setFilterValue(undefined);
+    } else {
+      table
+        .getColumn("reservable")
+        ?.setFilterValue(filtroReservable === "true");
+    }
+  }, [filtroReservable]);
 
   useEffect(() => {
     table.getColumn("planta")?.setFilterValue(filtroPlanta || undefined);
@@ -92,6 +117,7 @@ export function TablaEstancias({
     <div>
       {/* Filtros */}
       <div className="flex flex-wrap gap-4 py-2 text-sm text-muted-foreground items-end">
+        {/* Filtro Planta */}
         <div className="space-y-1">
           <label className="block font-medium text-xs">Planta</label>
           <select
@@ -106,15 +132,42 @@ export function TablaEstancias({
           </select>
         </div>
 
+        {/* Filtro Código */}
         <div className="space-y-1">
-          <label className="block font-medium text-xs">Código / Descripción</label>
+          <label className="block font-medium text-xs">Código</label>
           <input
             type="text"
             className="border p-2 rounded text-sm"
-            placeholder="Buscar..."
-            value={textoFiltro}
-            onChange={(e) => setTextoFiltro(e.target.value)}
+            placeholder="Buscar código..."
+            value={filtroCodigo}
+            onChange={(e) => setFiltroCodigo(e.target.value)}
           />
+        </div>
+
+        {/* Filtro Descripción */}
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Descripción</label>
+          <input
+            type="text"
+            className="border p-2 rounded text-sm"
+            placeholder="Buscar descripción..."
+            value={filtroDescripcion}
+            onChange={(e) => setFiltroDescripcion(e.target.value)}
+          />
+        </div>
+
+        {/* Filtro Reservable */}
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Reservable</label>
+          <select
+            className="border p-2 rounded text-sm"
+            value={filtroReservable}
+            onChange={(e) => setFiltroReservable(e.target.value)}
+          >
+            <option value="">Todas</option>
+            <option value="true">Sí</option>
+            <option value="false">No</option>
+          </select>
         </div>
         {informes && <div className="ml-auto">{informes}</div>}
       </div>
