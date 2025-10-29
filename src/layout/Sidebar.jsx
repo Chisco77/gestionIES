@@ -55,6 +55,7 @@ import { Power, User, BookOpen, SquareTerminal, Settings2 } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
 
 const API_URL = import.meta.env.VITE_API_URL;
+
 function SidebarComponent({ onOpenEtiquetas, ...props }) {
   const navigate = useNavigate();
   const [openEtiquetas, setOpenEtiquetas] = React.useState(false);
@@ -231,7 +232,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         title: "Préstamo Llaves",
         url: "#",
         icon: BookOpen,
-        items: [ 
+        items: [
           { title: "Llaves prestadas", url: "/llavesPrestadas" },
           { title: "Estancias", url: "/estancias" },
           { title: "Edición de Planos", url: "/edicionPlanos" },
@@ -247,6 +248,12 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         items: [
           { title: "Perfiles de Usuario", url: "/perfiles" },
           { title: "Asuntos Propios", url: "/asuntos_restricciones" },
+          { title: "Etiquetas", url: "/etiquetas_genericas" },
+          {
+            title: "Etiquetas genéricas",
+            url: "#",
+            onClick: () => setOpenEtiquetas(true), // 👈 aquí la clave
+          },
         ],
       },
     ],
@@ -300,6 +307,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
       },
     ],
   };
+
   const navMain = user ? (menusPorPerfil[user.perfil] ?? []) : [];
 
   const handleClickLogout = () => {

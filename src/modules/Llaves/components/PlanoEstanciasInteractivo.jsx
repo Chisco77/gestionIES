@@ -9,74 +9,26 @@
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
  *
- * Fecha de creación: 2025
- *
  * Descripción:
  * Componente que muestra un plano interactivo de estancias
  * con la posibilidad de:
  * - Visualizar estancias y su número de llaves prestadas y disponibles.
  * - Abrir un diálogo para gestionar préstamos y devoluciones de llaves a profesores.
- * - Modo de edición para crear nuevas estancias mediante dibujo de polígonos sobre el plano.
  * - Escalado dinámico del plano SVG según tamaño del contenedor.
- *
- * Funcionalidad principal:
- * - Carga las estancias de una planta determinada desde la API.
- * - Carga los préstamos de llaves agrupados por profesor.
- * - Calcula el estado de cada estancia (ninguna llave prestada, parcial o todas prestadas).
- * - Permite dibujar nuevas estancias en modo edición y guardarlas en la API.
- * - Muestra un panel lateral con:
- *     - Lista de préstamos activos.
- *     - Controles para activar el modo edición y crear nuevas estancias.
- * - Dibuja polígonos para cada estancia en el plano SVG, coloreando según el estado de las llaves.
- * - Permite hacer click sobre una estancia para abrir el diálogo de gestión de llaves (`DialogoGestionLlaves`).
- *
- * Props:
- * - planta: string que indica la planta a mostrar ("baja", "primera", "segunda"). Por defecto "baja".
- *
- * Estado interno:
- * - estancias: array con todas las estancias cargadas de la planta.
- * - prestamos: array con los préstamos agrupados por profesor.
- * - cargando: boolean para indicar carga de datos.
- * - error: string con mensaje de error de carga o guardado.
- * - modoEdicion: boolean para activar la creación de nuevas estancias.
- * - draw: objeto con estado de dibujo activo y coordenadas del polígono en edición.
- * - nuevo: objeto con datos de la nueva estancia (código, descripción, totalllaves).
- * - modalLlaves: objeto para controlar la apertura del diálogo de gestión de llaves.
- * - size: dimensiones actuales del plano para escalar los polígonos correctamente.
- *
- * Funciones auxiliares:
- * - parseListResponse(resp): normaliza respuestas JSON de la API.
- * - apiListarEstancias(planta): obtiene estancias de la API para la planta.
- * - apiGuardarEstancia(planta, estancia): guarda una nueva estancia mediante POST a la API.
- * - apiListarPrestamosLlaves(): obtiene préstamos de llaves agrupados por profesor.
- * - estadoEstancia(estancia): calcula llaves prestadas, libres y estado visual de la estancia.
- * - startOrAddPoint(evt), finishPolygon(), cancelDraw(): manejan la creación de polígonos de estancias.
- * - polyToPath(pts), scalePoints(pts): convierten coordenadas relativas en paths SVG escalados.
- * - abrirModalLlaves(estancia), cerrarModalLlaves(): controlan el diálogo de préstamos de llaves.
- * - refrescarPrestamos(): recarga la lista de préstamos activos tras cambios.
- *
- * UI/UX:
- * - Plano SVG escalable con polígonos interactivos para cada estancia.
- * - Círculo de color en cada estancia indicando estado de llaves:
- *     - Gris: ninguna llave prestada.
- *     - Amarillo: parcial.
- *     - Rojo: todas prestadas.
- * - Panel lateral con listado de préstamos activos y controles de edición.
- * - Modo edición permite dibujar polígonos, ingresar código, descripción y número de llaves.
- * - Click en plano fuera de modo edición abre `DialogoGestionLlaves`.
- *
- * Dependencias:
- * - React (useState, useEffect, useMemo, useRef)
- * - DialogoGestionLlaves.jsx
- * - Fetch API para llamadas a backend
  *
  */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DialogoGestionLlaves } from "./DialogoGestionLlaves";
-
-import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -93,7 +45,6 @@ async function parseListResponse(resp) {
   throw new Error("Formato de respuesta desconocido");
 }
 
-// Estancias
 async function apiListarEstancias(planta) {
   const url = `${API_BASE}/planos/estancias?planta=${encodeURIComponent(planta)}`;
   const r = await fetch(url, { credentials: "include" });
@@ -104,25 +55,6 @@ async function apiListarEstancias(planta) {
   return parseListResponse(r);
 }
 
-async function apiGuardarEstancia(planta, estancia) {
-  console.log("Estancia", estancia);
-  const url = `${API_BASE}/planos/estancias`;
-  const r = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ planta, ...estancia }),
-  });
-  if (!r.ok) {
-    const txt = await r.text().catch(() => "");
-    throw new Error(`Error guardando estancia (${r.status}) ${txt}`);
-  }
-  const j = await r.json().catch(() => null);
-  if (!j) throw new Error("Respuesta inválida al guardar");
-  return j;
-}
-
-// Préstamos de llaves
 async function apiListarPrestamosLlaves() {
   const url = `${API_BASE}/prestamos-llaves/agrupados`;
   const r = await fetch(url, { credentials: "include" });
@@ -144,31 +76,18 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   const [prestamos, setPrestamos] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
-  const [modoEdicion, setModoEdicion] = useState(false);
-  const [draw, setDraw] = useState({ activo: false, coordenadas: [] });
-  const [seleccionadas, setSeleccionadas] = useState([]); // <-- línea necesaria
-
-  // Para filtrar que modo edición de estancias es solo para el admin
-  const { user } = useAuth();
-
-  // Para guardar nueva estancia
-  const [nuevo, setNuevo] = useState({
-    codigo: "",
-    descripcion: "",
-    totalllaves: 1,
-    armario: "",
-    codigollave: "",
-  });
-
+  const [seleccionadas, setSeleccionadas] = useState([]);
   const [modalLlaves, setModalLlaves] = useState({
     open: false,
     estancia: null,
   });
-
   const wrapperRef = useRef(null);
   const imgRef = useRef(null);
-  const [size, setSize] = useState({ w: 1015, h: 860 });
+  const [size, setSize] = useState({ w: 0, h: 0 });
 
+  const { user } = useAuth();
+
+  // Escalado dinámico
   useEffect(() => {
     const ro = new ResizeObserver(() => {
       if (imgRef.current) {
@@ -180,9 +99,9 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
     });
     if (wrapperRef.current) ro.observe(wrapperRef.current);
     return () => ro.disconnect();
-  }, [planta]); // <--- añadir planta aquí
+  }, [planta]);
 
-  // ------------------- Carga de estancias y préstamos -------------------
+  // ------------------- Carga de datos -------------------
   useEffect(() => {
     let cancelado = false;
     (async () => {
@@ -199,9 +118,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
           armario: r.armario,
           codigollave: r.codigollave,
         }));
-
         if (!cancelado) setEstancias(normal);
-
         const dataPrestamos = await apiListarPrestamosLlaves();
         if (!cancelado) setPrestamos(dataPrestamos);
       } catch (e) {
@@ -216,12 +133,12 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
     };
   }, [planta]);
 
+  // ------------------- Lógica de préstamos -------------------
   const prestamosPorEstancia = useMemo(() => {
     const m = new Map();
     for (const prof of prestamos) {
       for (const p of prof.prestamos) {
         if (!p.fechadevolucion) {
-          // solo préstamos activos
           m.set(p.idestancia, (m.get(p.idestancia) || 0) + p.unidades);
         }
       }
@@ -231,26 +148,20 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
 
   const handleDevolverLlaves = async () => {
     if (seleccionadas.length === 0) return;
-
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || ""}/db/prestamos-llaves/devolver`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids: seleccionadas }),
-        }
-      );
-
+      const res = await fetch(`${API_URL}/db/prestamos-llaves/devolver`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: seleccionadas }),
+      });
       if (!res.ok) {
         const errData = await res.json().catch(() => null);
         throw new Error(errData?.error || "Error al devolver llaves");
       }
-
       toast.success("Llaves devueltas correctamente");
       setSeleccionadas([]);
-      refrescarPrestamos(); // refresca mapa y panel
+      refrescarPrestamos();
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Error al devolver llaves");
@@ -267,68 +178,10 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
     return { prestadas, libres, estado };
   };
 
-  // ------------------- Dibujo -------------------
-  const startOrAddPoint = (evt) => {
-    if (!modoEdicion) return;
-    const rect = evt.currentTarget.getBoundingClientRect();
-    const x = (evt.clientX - rect.left) / rect.width;
-    const y = (evt.clientY - rect.top) / rect.height;
-    if (!draw.activo) setDraw({ activo: true, coordenadas: [[x, y]] });
-    else setDraw((d) => ({ ...d, coordenadas: [...d.coordenadas, [x, y]] }));
-  };
-
-  const finishPolygon = async () => {
-    if (!modoEdicion || !draw.activo || draw.coordenadas.length < 3) return;
-    const estNueva = {
-      codigo: nuevo.codigo,
-      descripcion: nuevo.descripcion,
-      totalllaves: Math.max(1, Number(nuevo.totalllaves) || 1),
-      coordenadas: draw.coordenadas,
-      armario: nuevo.armario,
-      codigollave: nuevo.codigollave,
-    };
-    try {
-      setCargando(true);
-      setError("");
-      const guardada = await apiGuardarEstancia(planta, estNueva);
-      const norma = {
-        id: guardada.id,
-        codigo: guardada.codigo,
-        descripcion: guardada.descripcion,
-        totalllaves: guardada.totalllaves,
-        coordenadas:
-          guardada.coordenadas_json ||
-          guardada.coordenadas ||
-          estNueva.coordenadas,
-        armario: guardada.armario || "",
-        codigollave: guardada.codigollave || "",
-      };
-      setEstancias((prev) => {
-        const i = prev.findIndex((e) => e.id === norma.id);
-        if (i === -1) return [...prev, norma];
-        const copia = prev.slice();
-        copia[i] = norma;
-        return copia;
-      });
-      // reseteamos despues de guardar
-      setDraw({ activo: false, coordenadas: [] });
-      setNuevo({ codigo: "", descripcion: "", totalllaves: 1 });
-    } catch (e) {
-      setError(e?.message || "Error guardando la estancia");
-      console.error(e);
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  const cancelDraw = () => setDraw({ activo: false, coordenadas: [] });
-
-  // ------------------- Escalado y path -------------------
   const polyToPath = (pts) =>
     pts
       .map((p, i) => (i ? `L ${p[0]} ${p[1]}` : `M ${p[0]} ${p[1]}`))
       .join(" ") + " Z";
-
   const scalePoints = (pts) => pts.map(([x, y]) => [x * size.w, y * size.h]);
 
   const abrirModalLlaves = (estancia) => {
@@ -341,7 +194,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   };
 
   const cerrarModalLlaves = () =>
-    setModalLlaves({ open: false, estancia: null, modo: "prestar" });
+    setModalLlaves({ open: false, estancia: null });
 
   const refrescarPrestamos = async () => {
     try {
@@ -351,21 +204,16 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       console.error(e);
     }
   };
-  // Sacar todos los préstamos de todos los profesores en un array plano
-  const prestamosPlanos = prestamos.flatMap((profesor) => profesor.prestamos);
 
-  // Filtra los que no tienen devolución: son los préstamos activos.
+  // Préstamos activos
   const prestamosActivos = prestamos.flatMap((profesor) =>
     profesor.prestamos
       .filter((p) => p.fechadevolucion === null)
       .map((p) => ({ ...p, profesor: profesor.nombre }))
   );
 
-  console.log("Prestamos activos: ", prestamosActivos);
-
   return (
     <div style={{ padding: 12 }}>
-      {/* Layout principal: plano + panel lateral */}
       <div style={{ display: "flex", gap: 16 }}>
         {/* -------------------- PLANO -------------------- */}
         <div
@@ -404,72 +252,114 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
               height: "100%",
               pointerEvents: "auto",
             }}
-            onClick={startOrAddPoint}
-            onDoubleClick={(e) => {
-              e.preventDefault();
-              finishPolygon();
-            }}
           >
-            {estancias.map((s) => {
-              const { prestadas, estado } = estadoEstancia(s);
-              const absPts = scalePoints(s.coordenadas);
-              const color =
-                estado === "none"
-                  ? "rgba(200,200,200,0.95)"
-                  : estado === "partial"
-                    ? "rgba(250,200,80,0.95)"
-                    : "rgba(250,80,80,0.95)";
-              return (
-                <g
-                  key={s.id}
-                  onClick={(e) => {
-                    if (!modoEdicion) {
-                      e.stopPropagation();
-                      abrirModalLlaves(s);
-                    }
-                  }}
-                >
-                  <path
-                    d={polyToPath(absPts)}
-                    fill="white"
-                    fillOpacity={0.35}
-                    stroke="#0ea5e9"
-                    strokeWidth={2}
-                  />
-                  {(() => {
-                    const xs = absPts.map((p) => p[0]);
-                    const ys = absPts.map((p) => p[1]);
-                    const maxX = Math.max(...xs);
-                    const maxY = Math.max(...ys);
-                    const offset = 30;
-                    const circleX = maxX - offset;
-                    const circleY = maxY - offset;
-                    return (
-                      <>
-                        <circle
-                          cx={circleX}
-                          cy={circleY}
-                          r={16}
-                          fill={color}
-                          stroke="#374151"
-                          strokeWidth={1}
-                        />
-                        <text
-                          x={circleX}
-                          y={circleY + 4}
-                          fontSize={12}
-                          textAnchor="middle"
-                          fill="#071130"
-                          pointerEvents="none"
+            {size.w > 0 &&
+              size.h > 0 &&
+              estancias.map((s) => {
+                const { prestadas, estado } = estadoEstancia(s);
+                const absPts = scalePoints(s.coordenadas);
+                const color =
+                  estado === "none"
+                    ? "rgba(200,200,200,0.95)"
+                    : estado === "partial"
+                      ? "rgba(250,200,80,0.95)"
+                      : "rgba(250,80,80,0.95)";
+                return (
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip key={s.id}>
+                      <TooltipTrigger asChild>
+                        <g
+                          key={s.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            abrirModalLlaves(s);
+                          }}
+                          style={{ cursor: "pointer" }}
                         >
-                          {prestadas}
-                        </text>
-                      </>
-                    );
-                  })()}
-                </g>
-              );
-            })}
+                          <path
+                            d={polyToPath(absPts)}
+                            fill="white"
+                            fillOpacity={0.35}
+                            stroke="#0ea5e9"
+                            strokeWidth={2}
+                          />
+                          {(() => {
+                            const xs = absPts.map((p) => p[0]);
+                            const ys = absPts.map((p) => p[1]);
+                            const maxX = Math.max(...xs);
+                            const maxY = Math.max(...ys);
+                            const offset = 30;
+                            const circleX = maxX - offset;
+                            const circleY = maxY - offset;
+                            return (
+                              <>
+                                <circle
+                                  cx={circleX}
+                                  cy={circleY}
+                                  r={16}
+                                  fill={color}
+                                  stroke="#374151"
+                                  strokeWidth={1}
+                                />
+                                <text
+                                  x={circleX}
+                                  y={circleY + 4}
+                                  fontSize={12}
+                                  textAnchor="middle"
+                                  fill="#071130"
+                                  pointerEvents="none"
+                                >
+                                  {prestadas}
+                                </text>
+                              </>
+                            );
+                          })()}
+                        </g>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="top"
+                        className="bg-sky-500 text-white text-base px-4 py-2 rounded-md shadow-lg font-medium"
+                      >
+                        {s.descripcion || s.codigo}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              })}
+
+            {/* Leyenda */}
+            <g>
+              <circle
+                cx={45}
+                cy={65}
+                r={14}
+                fill="rgba(200,200,200,0.95)"
+                stroke="#374151"
+              />
+              <text x={65} y={69} fontSize={10} fill="#374151">
+                0 prestadas
+              </text>
+              <circle
+                cx={140}
+                cy={65}
+                r={14}
+                fill="rgba(250,200,80,0.95)"
+                stroke="#374151"
+              />
+              <text x={160} y={69} fontSize={10} fill="#374151">
+                parcial
+              </text>
+              <circle
+                cx={235}
+                cy={65}
+                r={14}
+                fill="rgba(250,80,80,0.95)"
+                stroke="#374151"
+              />
+              <text x={255} y={69} fontSize={10} fill="#374151">
+                todas
+              </text>
+            </g>
           </svg>
         </div>
 
@@ -483,12 +373,14 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
             borderRadius: 8,
             background: "white",
             boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            height: "860px", // misma altura que el plano
+            height: "860px",
           }}
         >
-          {/* Cabecera */}
           <div
-            style={{ borderBottom: "1px solid #e5e7eb", padding: "12px 16px" }}
+            style={{
+              borderBottom: "1px solid #e5e7eb",
+              padding: "12px 16px",
+            }}
           >
             <h3
               style={{
@@ -505,7 +397,6 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
             </p>
           </div>
 
-          {/* Lista scrollable */}
           <div
             style={{
               flex: 1,
@@ -548,14 +439,13 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                     {p.profesor}
                   </div>
                   <div style={{ fontSize: 13, color: "#334155" }}>
-                    {p.nombreEstancia || "—"}
+                    {p.nombreEstancia + " - " + p.planta + " planta" || "—"}
                   </div>
                 </div>
               ))
             )}
           </div>
 
-          {/* Botón de devolver */}
           <div
             style={{
               borderTop: "1px solid #e5e7eb",

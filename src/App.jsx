@@ -38,6 +38,8 @@ import { EstanciasIndex } from "./modules/Estancias/pages/EstanciasIndex";
 import { DialogoAsuntosRestricciones } from "./modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
 import { SidebarProviderCustom } from "./context/SidebarContext";
 import { AsuntosPropiosIndex } from "./modules/AsuntosPropios/pages/AsuntosPropiosIndex";
+import { DialogoEtiquetasGenericas } from "./modules/Utilidades/components/DialogoEtiquetasGenericas";
+
 
 const queryClient = new QueryClient();
 
@@ -101,6 +103,7 @@ const router = createBrowserRouter(
         { path: "perfiles", element: <PerfilesUsuarioIndex /> },
         { path: "estancias", element: <EstanciasIndex /> },
         { path: "asuntos_restricciones", element: <DialogoAsuntosRestricciones /> },
+        { path: "etiquetas_genericas", element: <DialogoEtiquetasGenericas /> },
         { path: "asuntos_propios", element: <AsuntosPropiosIndex /> },
       ],
     },
