@@ -84,7 +84,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Aulas", url: "/" },
+          { title: "Estancias", url: "/reservasEstancias" },
           { title: "Armarios de Portátiles", url: "/" },
         ],
       },
@@ -151,7 +151,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Aulas", url: "/" },
+          { title: "Estancias", url: "/reservasEstancias" },
           { title: "Armarios de Portátiles", url: "/" },
         ],
       },
@@ -204,7 +204,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Aulas", url: "/" },
+          { title: "Estancias", url: "/reservasEstancias" },
           { title: "Armarios de Portátiles", url: "/" },
         ],
       },
@@ -280,7 +280,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Aulas", url: "/" },
+          { title: "Estancias", url: "/reservasEstancias" },
           { title: "Armarios de Portátiles", url: "/" },
         ],
       },
