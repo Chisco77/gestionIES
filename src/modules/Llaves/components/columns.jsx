@@ -1,6 +1,5 @@
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const formatoFechaHora = (fecha) => {
   if (!fecha) return "—";
@@ -42,6 +41,18 @@ export const columns = [
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         Llave
+        {renderSortingIcon(column)}
+      </Button>
+    ),
+  },
+  {
+    accessorKey: "nombreEstancia",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Estancia
         {renderSortingIcon(column)}
       </Button>
     ),
@@ -100,11 +111,11 @@ export const columns = [
       </Button>
     ),
     cell: ({ row }) => (
-      <Checkbox
-        checked={row.original.devuelta}
-        disabled
-        className="pointer-events-none"
-      />
+      row.original.devuelta ? (
+        <Check className="text-green-600 w-5 h-5" />
+      ) : (
+        <X className="text-red-500 w-5 h-5" />
+      )
     ),
     sortingFn: (rowA, rowB) => {
       const a = rowA.original.devuelta ? 1 : 0;
