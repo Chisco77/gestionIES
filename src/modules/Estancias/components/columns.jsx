@@ -39,6 +39,21 @@ export const columns = [
       row.getValue(columnId)?.toLowerCase().includes(filterValue.toLowerCase()),
   },
   {
+    accessorKey: "tipoestancia",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Tipo Estancia
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    filterFn: (row, columnId, filterValue) =>
+      !filterValue ||
+      row.getValue(columnId)?.toLowerCase().includes(filterValue.toLowerCase()),
+  },
+  {
     accessorKey: "planta",
     header: ({ column }) => (
       <Button

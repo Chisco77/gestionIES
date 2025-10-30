@@ -109,23 +109,6 @@ export function EstanciasIndex() {
         estanciaSeleccionada={estanciaSeleccionada}
         onSuccess={onSuccess}
       />
-      {/* <DialogoInsertarEstancia
-        open={abrirInsertar}
-        onClose={() => setAbrirInsertar(false)}
-        onSuccess={onSuccess}
-      />
-      <DialogoEditarEstancia
-        open={abrirEditar}
-        onClose={() => setAbrirEditar(false)}
-        estanciaSeleccionada={estanciaSeleccionada}
-        onSuccess={onSuccess}
-      />
-      <DialogoEliminarEstancia
-        open={abrirEliminar}
-        onClose={() => setAbrirEliminar(false)}
-        estanciaSeleccionada={estanciaSeleccionada}
-        onSuccess={onSuccess}
-      /> */}
     </div>
   );
 }

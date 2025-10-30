@@ -60,6 +60,7 @@ ORDER BY descripcion ASC`,
       codigollave: r.codigollave,
       coordenadas: r.coordenadas_json,
       reservable: r.reservable,
+      tipoestancia: r.tipoestancia,
     }));
 
     res.json({ ok: true, planta, estancias });
@@ -81,6 +82,7 @@ async function insertEstancia(req, res) {
     armario = "",
     codigollave = "",
     reservable = "false",
+    tipoestancia = "",
   } = req.body || {};
 
   if (!codigo || !descripcion || !isValidCoordenadas(coordenadas)) {
@@ -93,9 +95,9 @@ async function insertEstancia(req, res) {
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO estancias (planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-       RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable`,
+      `INSERT INTO estancias (planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia`,
       [
         planta.toLowerCase(),
         codigo,
@@ -105,6 +107,7 @@ async function insertEstancia(req, res) {
         armario,
         codigollave,
         reservable,
+        tipoestancia,
       ]
     );
 
@@ -120,6 +123,7 @@ async function insertEstancia(req, res) {
         armario: r.armario,
         codigollave: r.codigollave,
         reservable: r.reservable,
+        tipoestancia: r.tipoestancia,
       },
     });
   } catch (err) {
@@ -139,6 +143,7 @@ async function updateEstancia(req, res) {
     armario,
     codigollave,
     reservable,
+    tipoestancia,
   } = req.body || {};
 
   if (typeof coordenadas !== "undefined" && !isValidCoordenadas(coordenadas)) {
@@ -186,6 +191,11 @@ async function updateEstancia(req, res) {
     vals.push(reservable === true || reservable === "true");
   }
 
+  if (typeof tipoestancia === "string") {
+    sets.push(`tipoestancia = $${++i}`);
+    vals.push(tipoestancia);
+  }
+
   if (sets.length === 0) {
     return res.status(400).json({ ok: false, error: "Nada que actualizar" });
   }
@@ -195,7 +205,7 @@ async function updateEstancia(req, res) {
       UPDATE estancias
       SET ${sets.join(", ")}
       WHERE id = $1
-      RETURNING id, codigo, descripcion, totalllaves, armario, codigollave, coordenadas_json, reservable
+      RETURNING id, codigo, descripcion, totalllaves, armario, codigollave, coordenadas_json, reservable, tipoestancia
     `;
 
     const { rows } = await db.query(query, [id, ...vals]);
@@ -218,6 +228,7 @@ async function updateEstancia(req, res) {
         codigollave: r.codigollave,
         coordenadas: r.coordenadas_json,
         reservable: r.reservable,
+        tipoestancia: r.tipoestancia,
       },
     });
   } catch (err) {
@@ -251,7 +262,7 @@ async function deleteEstancia(req, res) {
 async function getAllEstancias(req, res) {
   try {
     const { rows } = await db.query(
-      `SELECT id, planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable
+      `SELECT id, planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia
        FROM estancias
        ORDER BY planta, descripcion ASC`
     );
@@ -266,6 +277,7 @@ async function getAllEstancias(req, res) {
       armario: r.armario,
       codigollave: r.codigollave,
       reservable: r.reservable,
+      tipoestancia: r.tipoestancia,
     }));
 
     res.json(estancias);

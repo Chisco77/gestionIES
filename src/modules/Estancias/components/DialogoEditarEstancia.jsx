@@ -52,6 +52,7 @@ export function DialogoEditarEstancia({
   const [armario, setArmario] = useState("");
   const [codigollave, setCodigoLlave] = useState("");
   const [reservable, setReservable] = useState(false);
+  const [tipoestancia, setTipoEstancia] = useState ("");
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -61,24 +62,29 @@ export function DialogoEditarEstancia({
       setTotalllaves(estanciaSeleccionada.totalllaves || "");
       setArmario(estanciaSeleccionada.armario || "");
       setCodigoLlave(estanciaSeleccionada.codigollave || "");
-      setReservable(!!estanciaSeleccionada.reservable); 
+      setReservable(!!estanciaSeleccionada.reservable);
+      setTipoEstancia(estanciaSeleccionada.tipoestancia || "");
     }
   }, [estanciaSeleccionada]);
 
   const handleEditar = async () => {
     try {
-      const res = await fetch(`${API_URL}/db/estancias/${estanciaSeleccionada.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          descripcion,
-          totalllaves,
-          armario,
-          codigollave,
-          reservable,
-        }),
-      });
+      const res = await fetch(
+        `${API_URL}/db/estancias/${estanciaSeleccionada.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            descripcion,
+            totalllaves,
+            armario,
+            codigollave,
+            reservable,
+            tipoestancia,
+          }),
+        }
+      );
 
       if (!res.ok) throw new Error("Error al modificar estancia");
 
@@ -106,6 +112,24 @@ export function DialogoEditarEstancia({
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
             />
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium">Tipo de Estancia</Label>
+            <select
+              value={tipoestancia}
+              onChange={(e) => setTipoEstancia(e.target.value)}
+              className="border p-2 rounded w-full text-sm"
+            >
+              <option value="">Seleccionar tipo</option>
+              <option value="Almacen">Almacén</option>
+              <option value="Aula">Aula</option>
+              <option value="Departamento">Departamento</option>
+              <option value="Despacho">Despacho</option>
+              <option value="Infolab">Infolab</option>
+              <option value="Laboratorio">Laboratorio</option>
+              <option value="Otras">Otras</option>
+            </select>
           </div>
 
           <div>
@@ -142,10 +166,7 @@ export function DialogoEditarEstancia({
 
           <div className="flex items-center justify-between border rounded-md p-3 mt-2">
             <Label className="text-sm font-medium">Reservable</Label>
-            <Switch
-              checked={reservable}
-              onCheckedChange={setReservable}
-            />
+            <Switch checked={reservable} onCheckedChange={setReservable} />
           </div>
         </div>
 
