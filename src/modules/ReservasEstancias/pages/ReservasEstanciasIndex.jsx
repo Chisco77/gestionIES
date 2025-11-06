@@ -20,9 +20,9 @@ export function ReservasEstanciasIndex() {
   const [abrirDialogo, setAbrirDialogo] = useState(false);
   const [tipoEstancia, setTipoEstancia] = useState("");
   
-  // 🟢 ESTADO GLOBAL 1: Estancias (para el Card de Reservas Futuras)
+  // Estancias (para el Card de Reservas Futuras)
   const [todasLasEstancias, setTodasLasEstancias] = useState([]); 
-  // 🟢 ESTADO GLOBAL 2: Periodos (para el Card de Reservas Futuras)
+  // Periodos (para el Card de Reservas Futuras)
   const [todosLosPeriodos, setTodosLosPeriodos] = useState([]); 
   
   // ESTADOS PARA EL GRID DEL DÍA SELECCIONADO
@@ -46,7 +46,7 @@ export function ReservasEstanciasIndex() {
     return () => clearInterval(timer);
   }, []);
 
-  // 1. 🟢 Cargar TODAS las estancias (Estado Global)
+  // Cargar TODAS las estancias (Estado Global)
   useEffect(() => {
     const fetchTodasEstancias = async () => {
       try {
@@ -77,7 +77,7 @@ export function ReservasEstanciasIndex() {
     fetchTodasEstancias();
   }, [API_BASE]);
   
-  // 1.5. 🟢 Cargar TODOS los periodos (Estado Global)
+  // Cargar TODOS los periodos (Estado Global)
   useEffect(() => {
     const fetchTodosPeriodos = async () => {
         try {
@@ -100,12 +100,12 @@ export function ReservasEstanciasIndex() {
   }, [API_BASE]);
 
 
-  // 2. Fetch reservas para el grid diario (Carga datos específicos del Grid)
+  // Fetch reservas para el grid diario (Carga datos específicos del Grid)
   const fetchReservasDia = async (fecha, tipo) => {
     console.log(`[DEBUG] 2. Fetch Reservas Dia: Llamada para Fecha=${fecha}, Tipo=${tipo}`);
     
     if (!tipo) {
-      // 🚨 CORRECCIÓN: Usar la lista global para que el Grid siempre pinte los nombres.
+      // Usar la lista global para que el Grid siempre pinte los nombres.
       setPeriodosDB(todosLosPeriodos); 
       setReservas([]);
       setEstanciasDelGrid([]);
@@ -122,7 +122,7 @@ export function ReservasEstanciasIndex() {
       const data = await res.json();
       
       if (data.ok) {
-        // 🚨 CORRECCIÓN: Si la API no devuelve periodos, usamos los globales
+        // Si la API no devuelve periodos, usamos los globales
         const periodosCargados = data.periodos?.map(p => ({...p, id: parseInt(p.id)})) || todosLosPeriodos;
         setPeriodosDB(periodosCargados); 
         
@@ -147,7 +147,7 @@ export function ReservasEstanciasIndex() {
     }
   };
 
-  // 3. Fetch reservas futuras del usuario (NO TOCAN EL ESTADO DEL GRID)
+  // Fetch reservas futuras del usuario (NO TOCAN EL ESTADO DEL GRID)
   const fetchReservasFuturas = async () => {
     if (!uid) return;
     try {
@@ -166,7 +166,7 @@ export function ReservasEstanciasIndex() {
     }
   };
 
-  // 4. Disparar Fetches cuando cambian dependencias
+  // Disparar Fetches cuando cambian dependencias
   useEffect(() => {
     // Aseguramos que los periodos globales se han cargado antes de llamar al Fetch del Día
     if (todosLosPeriodos.length > 0 || tipoEstancia === "") {
@@ -341,7 +341,7 @@ export function ReservasEstanciasIndex() {
                   (e) => parseInt(e.id) === parseInt(r.idestancia)
                 );
                 
-                // 🟢 CLAVE: Buscamos en todosLosPeriodos (estado global)
+                // Buscamos en todosLosPeriodos (estado global)
                 const periodoInicio = todosLosPeriodos.find(
                   (p) => p.id === parseInt(r.idperiodo_inicio)
                 );
