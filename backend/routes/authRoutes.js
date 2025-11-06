@@ -61,6 +61,7 @@ router.get("/check-auth", async (req, res) => {
       return res.json({
         authenticated: true,
         username: uid,
+        uid: uid,
         perfil,
       });
     } catch (error) {

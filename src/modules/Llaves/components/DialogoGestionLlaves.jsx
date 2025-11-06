@@ -59,7 +59,6 @@
  * Notas:
  * - Se calculan llaves disponibles en tiempo real restando las prestadas del total.
  */
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -74,6 +73,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
+import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+
 const API_URL = import.meta.env.VITE_API_URL || "";
 
 export function DialogoGestionLlaves({
@@ -83,10 +84,17 @@ export function DialogoGestionLlaves({
   onClose,
   onSuccess,
 }) {
-  const [profesores, setProfesores] = useState([]);
   const [profesorSeleccionado, setProfesorSeleccionado] = useState("");
   const [filtroProfesor, setFiltroProfesor] = useState("");
   const [seleccionados, setSeleccionados] = useState([]);
+
+  // React query para obtener profesores
+  const {
+    data: profesores = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useProfesoresLdap();
 
   if (!estancia) return null;
 
@@ -95,6 +103,7 @@ export function DialogoGestionLlaves({
     (estancia.totalllaves || estancia.totalllaves || 0) -
       (prestamosActivos?.reduce((acc, p) => acc + p.unidades, 0) || 0)
   );
+
   const hayPrestamos = prestamosActivos?.length > 0;
 
   // Resetear estados al abrir
@@ -103,46 +112,30 @@ export function DialogoGestionLlaves({
       setProfesorSeleccionado("");
       setFiltroProfesor("");
       setSeleccionados([]);
+      refetch(); // Vuelve a pedir datos pero usa caché mientras
     }
-  }, [open]);
+  }, [open, refetch]);
 
-  // Cargar profesores desde LDAP
-  useEffect(() => {
-    if (!open) return;
-    fetch(`${API_URL}/ldap/usuarios?tipo=teachers`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const ordenados = data.sort((a, b) => {
-          if (a.sn === b.sn) return a.givenName.localeCompare(b.givenName);
-          return a.sn.localeCompare(b.sn);
-        });
-        setProfesores(ordenados);
-      })
-      .catch(() => toast.error("Error al obtener profesores"));
-  }, [open]);
+  // Ordenar profesores
+  const profesoresOrdenados = [...profesores].sort((a, b) => {
+    if (a.sn === b.sn) return a.givenName.localeCompare(b.givenName);
+    return a.sn.localeCompare(b.sn);
+  });
 
   // Filtrado de profesores
-  const profesoresFiltrados = profesores.filter((p) => {
-    const busqueda = filtroProfesor.toLowerCase();
+  const profesoresFiltrados = profesoresOrdenados.filter((p) => {
+    const q = filtroProfesor.toLowerCase();
     return (
-      p.sn.toLowerCase().includes(busqueda) ||
-      p.givenName.toLowerCase().includes(busqueda) ||
-      p.uid.toLowerCase().includes(busqueda)
+      p.sn.toLowerCase().includes(q) ||
+      p.givenName.toLowerCase().includes(q) ||
+      p.uid.toLowerCase().includes(q)
     );
   });
 
   // --- acciones ---
   const handlePrestar = async () => {
-    if (!profesorSeleccionado) {
-      toast.error("Selecciona un profesor");
-      return;
-    }
-    if (!estancia?.id) {
-      toast.error("Estancia no definida");
-      return;
-    }
+    if (!profesorSeleccionado) return toast.error("Selecciona un profesor");
+    if (!estancia?.id) return toast.error("Estancia no definida");
 
     try {
       const res = await fetch(`${API_URL}/db/prestamos-llaves/prestar`, {
@@ -156,25 +149,19 @@ export function DialogoGestionLlaves({
         }),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        throw new Error(errorData?.error || "Error al prestar llave");
-      }
+      if (!res.ok) throw new Error((await res.json())?.error);
 
       toast.success("Llave prestada correctamente");
       onSuccess?.();
       onClose();
-    } catch (error) {
-      toast.error(error.message || "Error al prestar llave");
-      console.error(error);
+    } catch (err) {
+      toast.error(err.message || "Error al prestar llave");
     }
   };
 
   const handleDevolver = async () => {
-    if (seleccionados.length === 0) {
-      toast.error("Selecciona al menos un profesor para devolver la llave");
-      return;
-    }
+    if (!seleccionados.length)
+      return toast.error("Selecciona al menos una llave");
 
     try {
       const res = await fetch(`${API_URL}/db/prestamos-llaves/devolver`, {
@@ -184,25 +171,19 @@ export function DialogoGestionLlaves({
         body: JSON.stringify({ ids: seleccionados }),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        throw new Error(errorData?.error || "Error al devolver llave");
-      }
+      if (!res.ok) throw new Error((await res.json())?.error);
 
       toast.success("Llaves devueltas correctamente");
       onSuccess?.();
       onClose();
-    } catch (error) {
-      toast.error(error.message || "Error al devolver llave");
-      console.error(error);
+    } catch (err) {
+      toast.error(err.message || "Error al devolver llave");
     }
   };
 
-  const toggleSeleccion = (idPrestamo) => {
+  const toggleSeleccion = (id) => {
     setSeleccionados((prev) =>
-      prev.includes(idPrestamo)
-        ? prev.filter((id) => id !== idPrestamo)
-        : [...prev, idPrestamo]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
@@ -213,7 +194,6 @@ export function DialogoGestionLlaves({
         className="max-w-lg"
       >
         <DialogHeader className="flex justify-between items-center">
-          {/* Izquierda: título y descripción */}
           <div>
             <DialogTitle>
               Gestión de llaves · {estancia.descripcion}
@@ -240,13 +220,6 @@ export function DialogoGestionLlaves({
               )}
             </DialogDescription>
           </div>
-
-          {/* Derecha: número de llave grande */}
-          {estancia?.codigollave && estancia?.armario && (
-            <div className="text-4xl font-bold text-blue-600">
-              {estancia.codigollave}-A{estancia.armario.replace(/\D/g, "")}
-            </div>
-          )}
         </DialogHeader>
 
         <Tabs defaultValue="prestar" className="mt-4">
@@ -263,60 +236,45 @@ export function DialogoGestionLlaves({
               </p>
             ) : (
               <>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Filtrar profesor
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Buscar por apellido, nombre o uid"
-                    value={filtroProfesor}
-                    onChange={(e) => setFiltroProfesor(e.target.value)}
-                  />
-                </div>
+                <Input
+                  placeholder="Buscar profesor"
+                  value={filtroProfesor}
+                  onChange={(e) => setFiltroProfesor(e.target.value)}
+                />
 
-                <div className="max-h-64 overflow-auto border border-gray-200 rounded-md p-3 shadow-sm mt-2">
-                  {profesoresFiltrados.length === 0 && (
+                <div className="max-h-64 overflow-auto border rounded p-3 shadow-sm mt-2">
+                  {isLoading && <p className="text-sm">Cargando...</p>}
+                  {isError && (
+                    <p className="text-sm text-red-500">
+                      Error al cargar profesores.{" "}
+                      <button className="underline" onClick={() => refetch()}>
+                        Reintentar
+                      </button>
+                    </p>
+                  )}
+
+                  {!isLoading && profesoresFiltrados.length === 0 && (
                     <p className="text-xs italic text-gray-500">
                       No hay profesores
                     </p>
                   )}
+
                   {profesoresFiltrados.map((p) => (
                     <div
                       key={p.uid}
                       onClick={() => setProfesorSeleccionado(p.uid)}
-                      className={`cursor-pointer p-2 rounded-md mb-1 select-none
-                        ${
-                          profesorSeleccionado === p.uid
-                            ? "bg-green-200"
-                            : "hover:bg-gray-100"
-                        }
-                      `}
+                      className={`cursor-pointer p-2 rounded mb-1 ${
+                        profesorSeleccionado === p.uid
+                          ? "bg-green-200"
+                          : "hover:bg-gray-100"
+                      }`}
                     >
                       {p.sn}, {p.givenName} ({p.uid})
                     </div>
                   ))}
                 </div>
 
-                <div>
-                  <p>
-                    Total llaves:{" "}
-                    <strong>
-                      {estancia?.totalllaves || estancia?.totalllaves || 1}
-                    </strong>
-                  </p>
-                  <p>
-                    Prestadas:{" "}
-                    <strong>
-                      {prestamosActivos.reduce(
-                        (sum, p) => sum + p.unidades,
-                        0
-                      ) || 0}
-                    </strong>{" "}
-                  </p>
-                </div>
-
-                <DialogFooter className="mt-4 flex justify-end gap-2">
+                <DialogFooter className="flex justify-end gap-2">
                   <Button variant="outline" onClick={onClose}>
                     Cancelar
                   </Button>
@@ -337,51 +295,31 @@ export function DialogoGestionLlaves({
               <p className="text-gray-500 text-sm">No hay préstamos activos.</p>
             ) : (
               <>
-                <div className="max-h-64 overflow-auto border border-gray-200 rounded-md p-3 shadow-sm mt-2">
+                <div className="max-h-64 overflow-auto border rounded p-3 shadow-sm mt-2">
                   {prestamosActivos.map((p) => (
                     <div
                       key={p.id}
                       onClick={() => toggleSeleccion(p.id)}
-                      className={`cursor-pointer p-2 rounded-md mb-1 select-none
-                        ${
-                          seleccionados.includes(p.id)
-                            ? "bg-red-200"
-                            : "hover:bg-gray-100"
-                        }
-                      `}
+                      className={`cursor-pointer p-2 rounded mb-1 ${
+                        seleccionados.includes(p.id)
+                          ? "bg-red-200"
+                          : "hover:bg-gray-100"
+                      }`}
                     >
                       {p.nombre} · {p.unidades} llave(s)
                     </div>
                   ))}
                 </div>
 
-                <div>
-                  <p>
-                    Total llaves:{" "}
-                    <strong>
-                      {estancia?.totalllaves || estancia?.totalllaves || 1}
-                    </strong>
-                  </p>
-                  <p>
-                    Prestadas:{" "}
-                    <strong>
-                      {prestamosActivos.reduce(
-                        (sum, p) => sum + p.unidades,
-                        0
-                      ) || 0}
-                    </strong>
-                  </p>
-                </div>
-
-                <DialogFooter className="mt-4 flex justify-end gap-2">
+                <DialogFooter className="flex justify-end gap-2">
                   <Button variant="outline" onClick={onClose}>
                     Cancelar
                   </Button>
                   <Button
                     onClick={handleDevolver}
-                    disabled={seleccionados.length === 0}
+                    disabled={!seleccionados.length}
                   >
-                    Devolver llave{seleccionados.length > 1 ? "s" : ""}
+                    Devolver llave
                   </Button>
                 </DialogFooter>
               </>

@@ -44,7 +44,7 @@ async function getEstanciasByPlanta(req, res) {
   const planta = (req.query.planta || "baja").toLowerCase();
   try {
     const { rows } = await db.query(
-      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable
+      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia
 FROM estancias
 WHERE planta = $1
 ORDER BY descripcion ASC`,
@@ -66,6 +66,37 @@ ORDER BY descripcion ASC`,
     res.json({ ok: true, planta, estancias });
   } catch (err) {
     console.error("[getEstanciasByPlanta] Error:", err);
+    res.status(500).json({ ok: false, error: "Error obteniendo estancias" });
+  }
+}
+
+// Devuelve en la forma que espera el front: { id: codigo, nombre: descripcion, keysTotales: totalllaves, puntos: coordenadas_json }
+async function getEstanciasByTipoEstancia(req, res) {
+  const tipoestancia = req.query.tipoestancia || "Infolab";
+  try {
+    const { rows } = await db.query(
+      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia
+FROM estancias
+WHERE tipoestancia = $1
+ORDER BY descripcion ASC`,
+      [tipoestancia]
+    );
+
+    const estancias = rows.map((r) => ({
+      id: r.id,
+      codigo: r.codigo,
+      descripcion: r.descripcion,
+      totalllaves: r.totalllaves,
+      armario: r.armario,
+      codigollave: r.codigollave,
+      coordenadas: r.coordenadas_json,
+      reservable: r.reservable,
+      tipoestancia: r.tipoestancia,
+    }));
+
+    res.json({ ok: true, tipoestancia, estancias });
+  } catch (err) {
+    console.error("[getEstanciasByTipoEstancia] Error:", err);
     res.status(500).json({ ok: false, error: "Error obteniendo estancias" });
   }
 }
@@ -293,4 +324,5 @@ module.exports = {
   insertEstancia,
   updateEstancia,
   deleteEstancia,
+  getEstanciasByTipoEstancia,
 };

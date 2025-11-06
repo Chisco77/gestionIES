@@ -73,6 +73,18 @@
 const express = require("express");
 const router = express.Router();
 
+const {
+  getPeriodosHorarios,
+} = require("../controllers/db/periodosHorariosController");
+
+const {
+  getReservasEstancias,
+  insertReservaEstancia,
+  deleteReservaEstancia,
+  getReservasEstanciasPorDia,
+  getReservasFiltradas,
+} = require("../controllers/db/reservasEstanciasController");
+
 // --- Controlador de asuntos propios ---
 const {
   getAsuntos,
@@ -81,7 +93,6 @@ const {
   deleteAsunto,
   getNumeroAsuntosPorUsuario,
 } = require("../controllers/db/asuntosController");
-
 
 // --- Controlador de cursos ---
 const {
@@ -128,6 +139,7 @@ const {
 // --- Controlador de estancias / planos ---
 const {
   getEstanciasByPlanta,
+  getEstanciasByTipoEstancia,
   getAllEstancias,
   insertEstancia,
   updateEstancia,
@@ -162,6 +174,7 @@ const {
 //   Rutas de Estancias
 // ================================================================
 router.get("/planos/estancias", getEstanciasByPlanta);
+router.get("/planos/estancias", getEstanciasByTipoEstancia);
 router.post("/planos/estancias", insertEstancia);
 router.put("/estancias/:id", updateEstancia);
 router.delete("/planos/estancias/:planta/:id", deleteEstancia);
@@ -205,7 +218,6 @@ router.post("/restricciones/asuntos", insertRestriccionesAsuntos);
 router.put("/restricciones/:id", updateRestriccion);
 router.delete("/restricciones/:id", deleteRestriccion);
 
-
 // ================================================================
 //   Rutas de Asuntos Propios
 // ================================================================
@@ -217,5 +229,18 @@ router.delete("/asuntos-propios/:id", deleteAsunto); // Eliminar asunto por id
 // Contar asuntos de un usuario
 router.get("/asuntos-propios/count", getNumeroAsuntosPorUsuario); // ?uid=<uid>
 
+// ================================================================
+//   Rutas de Periodos Horarios
+// ================================================================
+router.get("/periodos-horarios", getPeriodosHorarios);
+
+// ================================================================
+//   Rutas de Reservas de estancias
+// ================================================================
+router.get("/reservas-estancias", getReservasEstancias);
+router.get("/reservas-estancias/filtradas", getReservasFiltradas);
+router.post("/reservas-estancias", insertReservaEstancia);
+router.delete("/reservas-estancias/:id", deleteReservaEstancia);
+router.get("/reservas-estancias/dia", getReservasEstanciasPorDia);
 
 module.exports = router;
