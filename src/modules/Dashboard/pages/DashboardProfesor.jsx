@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { PanelReservas } from "../../Comunes/PanelReservas";
+import { useAuth } from "@/context/AuthContext";
+
 
 // Para evitar problemas con el tiempo UTC
 const formatDateKey = (date) => {
@@ -17,6 +20,9 @@ export function DashboardProfesor() {
   const [selectedDate, setSelectedDate] = useState(formatDateKey(new Date()));
   const [currentMonth, setCurrentMonth] = useState(fechaHora.getMonth());
   const [currentYear, setCurrentYear] = useState(fechaHora.getFullYear());
+  const { user } = useAuth();
+  const uid = user?.username;
+
 
   useEffect(() => {
     const timer = setInterval(() => setFechaHora(new Date()), 1000);
@@ -208,35 +214,10 @@ export function DashboardProfesor() {
         </Card>
 
         {/* Detalles del día */}
-        <Card className="shadow-lg rounded-2xl">
-          <CardHeader className="border-b pb-4">
-            <CardTitle className="text-center text-xl font-semibold text-blue-600">
-              {new Date(selectedDate).toLocaleDateString("es-ES", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4 space-y-2 text-center">
-            <p>
-              <strong>Aulas reservadas:</strong>{" "}
-              {selectedInfo.aulas.length > 0
-                ? selectedInfo.aulas.join(", ")
-                : "Ninguna"}
-            </p>
-            <p>
-              <strong>Armarios reservados:</strong>{" "}
-              {selectedInfo.armarios.length > 0
-                ? selectedInfo.armarios.join(", ")
-                : "Ninguno"}
-            </p>
-            <p>
-              <strong>Asuntos propios:</strong>{" "}
-              {selectedInfo.asuntos ? "Sí" : "No"}
-            </p>
-          </CardContent>
-        </Card>
+        <PanelReservas
+          uid={uid}
+          onClickReserva={(r) => console.log("Editar reserva:", r)}
+        />
       </div>
     </div>
   );

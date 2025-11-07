@@ -83,6 +83,7 @@ const {
   deleteReservaEstancia,
   getReservasEstanciasPorDia,
   getReservasFiltradas,
+  updateReservaEstancia,
 } = require("../controllers/db/reservasEstanciasController");
 
 // --- Controlador de asuntos propios ---
@@ -242,5 +243,11 @@ router.get("/reservas-estancias/filtradas", getReservasFiltradas);
 router.post("/reservas-estancias", insertReservaEstancia);
 router.delete("/reservas-estancias/:id", deleteReservaEstancia);
 router.get("/reservas-estancias/dia", getReservasEstanciasPorDia);
+router.put("/reservas-estancias/:id", updateReservaEstancia);
+
+
+const { getPanelReservas } = require("../controllers/db/panelReservasController");
+router.get("/panel/reservas", getPanelReservas);
+
 
 module.exports = router;

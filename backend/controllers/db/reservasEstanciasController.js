@@ -309,6 +309,73 @@ async function getReservasFiltradas(req, res) {
   }
 }
 
+// Actualiza una reserva existente
+async function updateReservaEstancia(req, res) {
+  const { id } = req.params;
+  const {
+    idperiodo_inicio,
+    idperiodo_fin,
+    descripcion = "",
+  } = req.body || {};
+
+  if (!idperiodo_inicio || !idperiodo_fin) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "Faltan periodos de inicio o fin" });
+  }
+
+  try {
+    // Primero obtenemos la reserva actual
+    const { rows: existentes } = await pool.query(
+      `SELECT id, idestancia, fecha, uid
+       FROM reservas_estancias
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (existentes.length === 0) {
+      return res
+        .status(404)
+        .json({ ok: false, error: "Reserva no encontrada" });
+    }
+
+    const { idestancia, fecha } = existentes[0];
+
+    // Comprobamos solape con otras reservas de la misma estancia/fecha
+    const { rows: solapes } = await pool.query(
+      `SELECT id FROM reservas_estancias
+       WHERE idestancia = $1 AND fecha = $2
+       AND id <> $3
+       AND NOT (idperiodo_fin < $4 OR idperiodo_inicio > $5)
+       LIMIT 1`,
+      [idestancia, fecha, id, idperiodo_inicio, idperiodo_fin]
+    );
+
+    if (solapes.length > 0) {
+      return res
+        .status(409)
+        .json({ ok: false, error: "Solape con otra reserva existente" });
+    }
+
+    // Actualizamos
+    const { rows } = await pool.query(
+      `UPDATE reservas_estancias
+       SET idperiodo_inicio = $1,
+           idperiodo_fin = $2,
+           descripcion = $3
+       WHERE id = $4
+       RETURNING *`,
+      [idperiodo_inicio, idperiodo_fin, descripcion, id]
+    );
+
+    res.json({ ok: true, reserva: rows[0] });
+  } catch (err) {
+    console.error("[updateReservaEstancia] Error:", err);
+    res.status(500).json({ ok: false, error: "Error actualizando reserva" });
+  }
+}
+
+
 
 
 module.exports = {
@@ -317,4 +384,5 @@ module.exports = {
   deleteReservaEstancia,
   getReservasEstanciasPorDia,
   getReservasFiltradas,
+  updateReservaEstancia,
 };

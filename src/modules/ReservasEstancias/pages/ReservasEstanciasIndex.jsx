@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DialogoInsertarReserva } from "../components/DialogoInsertarReserva";
 import { useAuth } from "@/context/AuthContext";
+import { PanelReservas } from "../../Comunes/PanelReservas";
 
 // Formato de fecha YYYY-MM-DD
 const formatDateKey = (date) => {
@@ -19,17 +20,17 @@ export function ReservasEstanciasIndex() {
   const [currentYear, setCurrentYear] = useState(fechaHora.getFullYear());
   const [abrirDialogo, setAbrirDialogo] = useState(false);
   const [tipoEstancia, setTipoEstancia] = useState("");
-  
+
   // Estancias (para el Card de Reservas Futuras)
-  const [todasLasEstancias, setTodasLasEstancias] = useState([]); 
+  //const [todasLasEstancias, setTodasLasEstancias] = useState([]);
   // Periodos (para el Card de Reservas Futuras)
-  const [todosLosPeriodos, setTodosLosPeriodos] = useState([]); 
-  
+  const [todosLosPeriodos, setTodosLosPeriodos] = useState([]);
+
   // ESTADOS PARA EL GRID DEL DÍA SELECCIONADO
   const [estanciasDelGrid, setEstanciasDelGrid] = useState([]);
   const [periodosDB, setPeriodosDB] = useState([]); // Periodos del día (para el Grid y Diálogo)
-  const [reservas, setReservas] = useState([]); 
-  
+  const [reservas, setReservas] = useState([]);
+
   // ESTADO PARA EL CARD DE RESERVAS FUTURAS
   const [reservasFuturas, setReservasFuturas] = useState([]);
   const [celdaSeleccionada, setCeldaSeleccionada] = useState(null);
@@ -53,66 +54,84 @@ export function ReservasEstanciasIndex() {
         const res = await fetch(`${API_BASE}/estancias`, {
           credentials: "include",
         });
-        
-        if (!res.ok) {
-            console.error(`Error ${res.status} al obtener todas las estancias.`);
-            throw new Error("Error al obtener todas las estancias");
-        }
-        
-        const data = await res.json();
-        const rawEstancias = data.estancias || data; 
-        
-        // Convertimos ID a entero para búsqueda segura
-        const estanciasData = Array.isArray(rawEstancias) 
-            ? rawEstancias.map((e) => ({ ...e, tipo: e.tipoestancia, id: parseInt(e.id) })) 
-            : []; 
 
-        setTodasLasEstancias(estanciasData);
-        console.log(`[DEBUG] 1. Carga Global Estancias: ${estanciasData.length} estancias cargadas.`);
+        if (!res.ok) {
+          console.error(`Error ${res.status} al obtener todas las estancias.`);
+          throw new Error("Error al obtener todas las estancias");
+        }
+
+        const data = await res.json();
+        const rawEstancias = data.estancias || data;
+
+        // Convertimos ID a entero para búsqueda segura
+        const estanciasData = Array.isArray(rawEstancias)
+          ? rawEstancias.map((e) => ({
+              ...e,
+              tipo: e.tipoestancia,
+              id: parseInt(e.id),
+            }))
+          : [];
+
+        //setTodasLasEstancias(estanciasData);
+        console.log(
+          `[DEBUG] 1. Carga Global Estancias: ${estanciasData.length} estancias cargadas.`
+        );
       } catch (err) {
-        console.error("[DEBUG] 1. Error de red/API en Carga Global Estancias:", err);
-        setTodasLasEstancias([]);
+        console.error(
+          "[DEBUG] 1. Error de red/API en Carga Global Estancias:",
+          err
+        );
+        //setTodasLasEstancias([]);
       }
     };
     fetchTodasEstancias();
   }, [API_BASE]);
-  
+
   // Cargar TODOS los periodos (Estado Global)
   useEffect(() => {
     const fetchTodosPeriodos = async () => {
-        try {
-            const res = await fetch(`${API_BASE}/periodos-horarios`, {
-                credentials: "include",
-            });
-            if (!res.ok) throw new Error("Error al obtener todos los periodos");
-            const data = await res.json();
-            
-            // Convertimos ID a entero para búsqueda segura
-            const periodosData = data.periodos?.map(p => ({...p, id: parseInt(p.id)})) || []; 
-            setTodosLosPeriodos(periodosData);
-            console.log(`[DEBUG] 1.5. Carga Global Periodos: ${periodosData.length} periodos cargados.`);
-        } catch (err) {
-            console.error("[DEBUG] 1.5. Error de red/API en Carga Global Periodos:", err);
-            setTodosLosPeriodos([]);
-        }
+      try {
+        const res = await fetch(`${API_BASE}/periodos-horarios`, {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Error al obtener todos los periodos");
+        const data = await res.json();
+
+        // Convertimos ID a entero para búsqueda segura
+        const periodosData =
+          data.periodos?.map((p) => ({ ...p, id: parseInt(p.id) })) || [];
+        setTodosLosPeriodos(periodosData);
+        console.log(
+          `[DEBUG] 1.5. Carga Global Periodos: ${periodosData.length} periodos cargados.`
+        );
+      } catch (err) {
+        console.error(
+          "[DEBUG] 1.5. Error de red/API en Carga Global Periodos:",
+          err
+        );
+        setTodosLosPeriodos([]);
+      }
     };
     fetchTodosPeriodos();
   }, [API_BASE]);
 
-
   // Fetch reservas para el grid diario (Carga datos específicos del Grid)
   const fetchReservasDia = async (fecha, tipo) => {
-    console.log(`[DEBUG] 2. Fetch Reservas Dia: Llamada para Fecha=${fecha}, Tipo=${tipo}`);
-    
+    console.log(
+      `[DEBUG] 2. Fetch Reservas Dia: Llamada para Fecha=${fecha}, Tipo=${tipo}`
+    );
+
     if (!tipo) {
       // Usar la lista global para que el Grid siempre pinte los nombres.
-      setPeriodosDB(todosLosPeriodos); 
+      setPeriodosDB(todosLosPeriodos);
       setReservas([]);
       setEstanciasDelGrid([]);
-      console.log("[DEBUG] 2. Fetch Reservas Dia: Tipo vacío. Estableciendo periodos globales.");
+      console.log(
+        "[DEBUG] 2. Fetch Reservas Dia: Tipo vacío. Estableciendo periodos globales."
+      );
       return;
     }
-    
+
     try {
       const res = await fetch(
         `${API_BASE}/reservas-estancias/filtradas?fecha=${fecha}&tipoestancia=${tipo}`,
@@ -120,28 +139,34 @@ export function ReservasEstanciasIndex() {
       );
       if (!res.ok) throw new Error("Error al obtener reservas del día");
       const data = await res.json();
-      
+
       if (data.ok) {
         // Si la API no devuelve periodos, usamos los globales
-        const periodosCargados = data.periodos?.map(p => ({...p, id: parseInt(p.id)})) || todosLosPeriodos;
-        setPeriodosDB(periodosCargados); 
-        
+        const periodosCargados =
+          data.periodos?.map((p) => ({ ...p, id: parseInt(p.id) })) ||
+          todosLosPeriodos;
+        setPeriodosDB(periodosCargados);
+
         setReservas(data.reservas || []);
-        
-        const estanciasData = data.estancias?.map((e) => ({ ...e, tipo: e.tipoestancia })) || [];
-        setEstanciasDelGrid(estanciasData); 
-        
-        console.log(`[DEBUG] 2. Fetch Reservas Dia: Éxito. Periodos: ${periodosCargados.length}, Reservas: ${data.reservas?.length}, Estancias para Grid: ${estanciasData.length}.`);
-        
+
+        const estanciasData =
+          data.estancias?.map((e) => ({ ...e, tipo: e.tipoestancia })) || [];
+        setEstanciasDelGrid(estanciasData);
+
+        console.log(
+          `[DEBUG] 2. Fetch Reservas Dia: Éxito. Periodos: ${periodosCargados.length}, Reservas: ${data.reservas?.length}, Estancias para Grid: ${estanciasData.length}.`
+        );
       } else {
-        console.log("[DEBUG] 2. Fetch Reservas Dia: Respuesta OK=false. Usando periodos globales.");
-        setPeriodosDB(todosLosPeriodos); 
+        console.log(
+          "[DEBUG] 2. Fetch Reservas Dia: Respuesta OK=false. Usando periodos globales."
+        );
+        setPeriodosDB(todosLosPeriodos);
         setReservas([]);
         setEstanciasDelGrid([]);
       }
     } catch (err) {
       console.error("[DEBUG] 2. Fetch Reservas Dia: Error de red/API", err);
-      setPeriodosDB(todosLosPeriodos); 
+      setPeriodosDB(todosLosPeriodos);
       setReservas([]);
       setEstanciasDelGrid([]);
     }
@@ -159,7 +184,9 @@ export function ReservasEstanciasIndex() {
       const data = await res.json();
       const reservasData = data.ok ? data.reservas : [];
       setReservasFuturas(reservasData);
-      console.log(`[DEBUG] 3. Fetch Reservas Futuras: ${reservasData.length} reservas encontradas.`);
+      console.log(
+        `[DEBUG] 3. Fetch Reservas Futuras: ${reservasData.length} reservas encontradas.`
+      );
     } catch (err) {
       console.error(err);
       setReservasFuturas([]);
@@ -170,7 +197,7 @@ export function ReservasEstanciasIndex() {
   useEffect(() => {
     // Aseguramos que los periodos globales se han cargado antes de llamar al Fetch del Día
     if (todosLosPeriodos.length > 0 || tipoEstancia === "") {
-        fetchReservasDia(selectedDate, tipoEstancia);
+      fetchReservasDia(selectedDate, tipoEstancia);
     }
   }, [selectedDate, tipoEstancia, todosLosPeriodos]); // Añadimos todosLosPeriodos como dependencia
 
@@ -178,12 +205,11 @@ export function ReservasEstanciasIndex() {
     fetchReservasFuturas();
   }, [uid]);
 
-
   // ********** LÓGICA DEL CALENDARIO Y GRID **********
-  
+
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  const startDay = (firstDay + 6) % 7; 
+  const startDay = (firstDay + 6) % 7;
   const weeks = [];
   let day = 1 - startDay;
 
@@ -195,7 +221,7 @@ export function ReservasEstanciasIndex() {
     }
     weeks.push(week);
   }
-  
+
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
       setCurrentMonth(11);
@@ -225,7 +251,7 @@ export function ReservasEstanciasIndex() {
   const buildGridData = () => {
     const grid = periodosDB.map((p) => {
       const row = {};
-      estanciasDelGrid.forEach((e) => { 
+      estanciasDelGrid.forEach((e) => {
         const reserva = reservas.find(
           (r) =>
             parseInt(r.idestancia) === e.id &&
@@ -240,10 +266,12 @@ export function ReservasEstanciasIndex() {
   };
 
   const gridData = buildGridData();
+  const [reloadPanel, setReloadPanel] = useState(0);
 
   const onInsertarSuccess = () => {
     fetchReservasDia(selectedDate, tipoEstancia);
     fetchReservasFuturas();
+    setReloadPanel((v) => v + 1); // 🔹 fuerza recarga del PanelReservas
   };
 
   // ********** RENDERIZADO JSX COMPLETO **********
@@ -266,7 +294,6 @@ export function ReservasEstanciasIndex() {
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
         {/* 1. Calendario */}
         <Card className="shadow-lg rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -305,7 +332,7 @@ export function ReservasEstanciasIndex() {
                       );
                       const isToday = dateKey === todayStr;
                       const isSelected = dateKey === selectedDate;
-                      
+
                       return (
                         <td
                           key={j}
@@ -326,59 +353,12 @@ export function ReservasEstanciasIndex() {
         </Card>
 
         {/* 2. Mis reservas futuras (Usa todosLosPeriodos) */}
-        <Card className="shadow-lg rounded-2xl">
-          <CardHeader className="border-b pb-4">
-            <CardTitle className="text-center text-xl font-semibold text-blue-600">
-              Mis reservas futuras
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent className="pt-4 space-y-4">
-            {reservasFuturas.length > 0 ? (
-              reservasFuturas.map((r, i) => {
-                // Buscamos en todasLasEstancias
-                const estancia = todasLasEstancias.find(
-                  (e) => parseInt(e.id) === parseInt(r.idestancia)
-                );
-                
-                // Buscamos en todosLosPeriodos (estado global)
-                const periodoInicio = todosLosPeriodos.find(
-                  (p) => p.id === parseInt(r.idperiodo_inicio)
-                );
-                const periodoFin = todosLosPeriodos.find(
-                  (p) => p.id === parseInt(r.idperiodo_fin)
-                );
-                
-                const fecha = new Date(r.fecha);
-                const fechaStr = fecha.toLocaleDateString("es-ES", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                });
-
-                return (
-                  <Card
-                    key={i}
-                    className="border shadow-md rounded-xl p-4 bg-white cursor-pointer hover:bg-blue-50 transition-colors"
-                    onClick={() => console.log("Editar reserva:", r)}
-                  >
-                    <p className="font-semibold text-blue-600">
-                      {estancia?.descripcion || "Estancia desconocida"}
-                    </p>
-                    <p>
-                      {/* Usamos el nombre si existe, sino el ID */}
-                      {periodoInicio?.nombre || r.idperiodo_inicio} a{" "}
-                      {periodoFin?.nombre || r.idperiodo_fin}
-                    </p>
-                    <p className="text-gray-500">{fechaStr}</p>
-                  </Card>
-                );
-              })
-            ) : (
-              <p>No tienes reservas futuras</p>
-            )}
-          </CardContent>
-        </Card>
+        <PanelReservas
+          uid={uid}
+          reloadKey={reloadPanel}
+          onClickReserva={(r) => console.log("Editar reserva:", r)}
+          onReservaModificada={onInsertarSuccess} // <---- añadir esto
+        />
 
         {/* 3. Grid de reservas */}
         <div className="mt-10 w-full md:col-span-2">
@@ -518,7 +498,7 @@ export function ReservasEstanciasIndex() {
         idestancia={celdaSeleccionada?.estanciaId}
         onSuccess={onInsertarSuccess}
         // Pasamos periodosDB, que ahora siempre contiene los nombres cargados
-        periodos={periodosDB} 
+        periodos={periodosDB}
       />
     </div>
   );
