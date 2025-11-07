@@ -42,7 +42,6 @@ export function DialogoInsertarReserva({
   }, [open]);
 
   const handleGuardar = async () => {
-    console.log ("Usuario: ", user);
     if (!inicio || !fin) {
       toast.error("Selecciona periodo de inicio y fin");
       return;
@@ -71,14 +70,20 @@ export function DialogoInsertarReserva({
         }),
       });
 
-      if (!res.ok) throw new Error("Error al insertar reserva");
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Mostramos el mensaje que envía el backend
+        toast.error(data.error || "Error desconocido al insertar reserva");
+        return;
+      }
 
       toast.success("Reserva insertada correctamente");
       onSuccess?.();
       onClose();
     } catch (err) {
-      toast.error("Error al insertar reserva");
       console.error(err);
+      toast.error("Error de conexión al insertar reserva");
     }
   };
 

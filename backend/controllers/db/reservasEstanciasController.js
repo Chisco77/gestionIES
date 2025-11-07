@@ -104,7 +104,7 @@ async function insertReservaEstancia(req, res) {
     );
 
     if (existentes.length > 0) {
-      return res.status(409).json({ ok: false, error: "Solape detectado" });
+      return res.status(409).json({ ok: false, error: "La reserva se solapa con otra existente" });
     }
 
     const { rows } = await pool.query(
@@ -354,7 +354,7 @@ async function updateReservaEstancia(req, res) {
     if (solapes.length > 0) {
       return res
         .status(409)
-        .json({ ok: false, error: "Solape con otra reserva existente" });
+        .json({ ok: false, error: "La reserva se solapa con otra reserva existente" });
     }
 
     // Actualizamos

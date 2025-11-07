@@ -180,6 +180,11 @@ export function PanelReservas({
             onReservaModificada?.(); // avisar al padre que recargue grid
           }}
           periodos={periodos}
+          descripcionEstancia={
+            estancias.find(
+              (e) => parseInt(e.id) === parseInt(reservaSeleccionada.idestancia)
+            )?.descripcion || ""
+          }
         />
       )}
     </>
