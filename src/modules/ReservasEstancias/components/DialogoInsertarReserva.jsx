@@ -25,6 +25,7 @@ export function DialogoInsertarReserva({
   onSuccess,
   periodos,
   idestancia,
+  descripcionEstancia = "",
 }) {
   const [descripcion, setDescripcion] = useState("");
   const [inicio, setInicio] = useState("");
@@ -73,7 +74,6 @@ export function DialogoInsertarReserva({
       const data = await res.json();
 
       if (!res.ok) {
-        // Mostramos el mensaje que envía el backend
         toast.error(data.error || "Error desconocido al insertar reserva");
         return;
       }
@@ -89,15 +89,21 @@ export function DialogoInsertarReserva({
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={false}>
-      <DialogContent onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle>
-            Nueva Reserva ({new Date(fecha).toLocaleDateString("es-ES")})
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="p-0 overflow-hidden rounded-lg"
+      >
+        {/* ENCABEZADO */}
+        <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+          <DialogTitle className="text-lg font-semibold text-center leading-snug">
+            Nueva Reserva ({new Date(fecha).toLocaleDateString("es-ES")}) –{" "}
+            <span className="font-bold">{descripcionEstancia}</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col space-y-4 mt-2">
-          <div className="flex gap-2">
+        {/* CUERPO */}
+        <div className="flex flex-col space-y-4 p-6">
+          <div className="flex gap-3">
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">
                 Periodo Inicio
@@ -147,7 +153,8 @@ export function DialogoInsertarReserva({
           </div>
         </div>
 
-        <DialogFooter className="mt-4">
+        {/* PIE */}
+        <DialogFooter className="px-6 py-4 bg-gray-50">
           <Button onClick={handleGuardar}>Guardar</Button>
         </DialogFooter>
       </DialogContent>
