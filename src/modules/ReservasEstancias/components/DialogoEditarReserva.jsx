@@ -80,7 +80,7 @@ export function DialogoEditarReserva({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose} modal={false}>
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
         className="p-0 overflow-hidden rounded-lg"

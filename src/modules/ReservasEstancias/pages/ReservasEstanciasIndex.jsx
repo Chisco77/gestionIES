@@ -236,8 +236,8 @@ export function ReservasEstanciasIndex() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Calendario */}
-        <Card className="shadow-lg rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="shadow-lg rounded-2xl h-[350px] flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
             <button onClick={handlePrevMonth}>
               <ChevronLeft className="w-6 h-6" />
             </button>
@@ -251,45 +251,46 @@ export function ReservasEstanciasIndex() {
               <ChevronRight className="w-6 h-6" />
             </button>
           </CardHeader>
-          <CardContent>
-            <table className="w-full border-collapse text-center">
-              <thead>
-                <tr>
-                  {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
-                    <th key={d} className="p-1 font-medium">
-                      {d}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {weeks.map((week, i) => (
-                  <tr key={i}>
-                    {week.map((d, j) => {
-                      if (!d) return <td key={j} className="p-2"></td>;
 
-                      const dateKey = formatDateKey(
-                        new Date(currentYear, currentMonth, d)
-                      );
-                      const isToday = dateKey === todayStr;
-                      const isSelected = dateKey === selectedDate;
-
-                      return (
-                        <td
-                          key={j}
-                          className={`p-1 cursor-pointer relative rounded-lg transition 
-                          ${isToday ? "bg-blue-200 border-2 border-blue-400" : ""}
-                          ${isSelected ? "bg-gray-200" : ""}`}
-                          onClick={() => handleDiaClick(dateKey)}
-                        >
-                          {d}
-                        </td>
-                      );
-                    })}
+          <CardContent className="p-2 flex-grow flex items-start justify-center">
+            <div className="w-full">
+              <table className="w-full border-collapse text-center align-top">
+                <thead>
+                  <tr>
+                    {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
+                      <th key={d} className="p-1 font-medium">
+                        {d}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="align-top">
+                  {weeks.map((week, i) => (
+                    <tr key={i} className="align-top">
+                      {week.map((d, j) => {
+                        if (!d) return <td key={j} className="p-2"></td>;
+                        const dateKey = formatDateKey(
+                          new Date(currentYear, currentMonth, d)
+                        );
+                        const isToday = dateKey === todayStr;
+                        const isSelected = dateKey === selectedDate;
+                        return (
+                          <td
+                            key={j}
+                            className={`p-1 cursor-pointer relative rounded-lg transition
+                    ${isToday ? "bg-blue-200 border-2 border-blue-400" : ""}
+                    ${isSelected ? "bg-gray-200" : ""}`}
+                            onClick={() => handleDiaClick(dateKey)}
+                          >
+                            {d}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
 

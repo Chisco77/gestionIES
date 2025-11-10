@@ -17,13 +17,13 @@ export function PanelReservas({ uid, reloadKey, onClickReserva, onReservaModific
   const [periodos, setPeriodos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 Estados para los diálogos
+  // Estados para los diálogos
   const [reservaSeleccionada, setReservaSeleccionada] = useState(null);
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false);
   const [reservaAEliminar, setReservaAEliminar] = useState(null);
   const [dialogoEliminarAbierto, setDialogoEliminarAbierto] = useState(false);
 
-  // 🔹 Función de carga de datos
+  // Función de carga de datos
   const fetchDatosPanel = useCallback(async () => {
     if (!uid) return;
     setLoading(true);
@@ -108,7 +108,7 @@ export function PanelReservas({ uid, reloadKey, onClickReserva, onReservaModific
 
   if (loading) {
     return (
-      <Card className="shadow-lg rounded-2xl h-[400px] flex items-center justify-center">
+      <Card className="shadow-lg rounded-2xl h-[350px] flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
       </Card>
     );
@@ -116,7 +116,7 @@ export function PanelReservas({ uid, reloadKey, onClickReserva, onReservaModific
 
   return (
     <>
-      <Card className="shadow-lg rounded-2xl h-[400px] flex flex-col">
+      <Card className="shadow-lg rounded-2xl h-[350px] flex flex-col">
         <CardHeader className="border-b pb-2">
           <CardTitle className="text-center text-xl font-semibold text-blue-600">
             Mis próximas actividades
