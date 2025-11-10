@@ -26,6 +26,8 @@ export function DialogoInsertarReserva({
   periodos,
   idestancia,
   descripcionEstancia = "",
+  inicioSeleccionado,
+  finSeleccionado,
 }) {
   const [descripcion, setDescripcion] = useState("");
   const [inicio, setInicio] = useState("");
@@ -34,28 +36,49 @@ export function DialogoInsertarReserva({
   const { user } = useAuth();
 
   useEffect(() => {
-    // Reset al abrir
     if (open) {
       setDescripcion("");
-      setInicio("");
-      setFin("");
+      setInicio(inicioSeleccionado?.toString() || "");
+      setFin(finSeleccionado?.toString() || "");
     }
-  }, [open]);
+  }, [open, inicioSeleccionado, finSeleccionado]);
 
   const handleGuardar = async () => {
     if (!inicio || !fin) {
       toast.error("Selecciona periodo de inicio y fin");
       return;
     }
+
     if (parseInt(fin) < parseInt(inicio)) {
       toast.error("El periodo final no puede ser anterior al inicial");
       return;
     }
+
     if (!user?.username) {
       toast.error("Usuario no autenticado");
       return;
     }
 
+    // --- Verificar que el periodo seleccionado no haya finalizado ---
+    const periodoInicioSeleccionado = periodos.find(
+      (p) => p.id === parseInt(inicio)
+    );
+
+    if (periodoInicioSeleccionado) {
+      const ahora = new Date();
+      const [hf, mf, sf] = periodoInicioSeleccionado.fin.split(":").map(Number);
+
+      // Combinamos fecha seleccionada con hora de fin del periodo
+      const fechaFinPeriodo = new Date(fecha);
+      fechaFinPeriodo.setHours(hf, mf, sf, 0);
+
+      if (fechaFinPeriodo < ahora) {
+        toast.error("No puedes seleccionar un periodo que ya ha finalizado");
+        return;
+      }
+    }
+
+    // --- Continuamos con la inserción ---
     try {
       const res = await fetch(`${API_URL}/db/reservas-estancias`, {
         method: "POST",

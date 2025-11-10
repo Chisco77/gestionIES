@@ -6,6 +6,8 @@ import { DialogoEditarReserva } from "../components/DialogoEditarReserva";
 import { useAuth } from "@/context/AuthContext";
 import { PanelReservas } from "../../Comunes/PanelReservas";
 import { toast } from "sonner";
+import { esReservaFutura } from "../../../utils/esReservaFutura";
+import { RelojPeriodo } from "@/modules/Utilidades/components/RelojPeriodo";
 
 // Formato de fecha YYYY-MM-DD
 const formatDateKey = (date) => {
@@ -39,6 +41,26 @@ export function ReservasEstanciasIndex() {
   const todayStr = formatDateKey(new Date());
   const { user } = useAuth();
   const uid = user?.username;
+
+  const handleEditarReserva = (reserva) => {
+    if (reserva.uid !== uid) {
+      toast.error("Solo puedes modificar tus propias reservas.");
+      return;
+    }
+
+    const periodoFin = periodosDB.find(
+      (p) => parseInt(p.id) === parseInt(reserva.idperiodo_fin)
+    );
+    const horaFin = periodoFin?.fin;
+
+    if (!horaFin || !esReservaFutura(reserva.fecha, horaFin)) {
+      toast.error("No puedes modificar reservas ya finalizadas.");
+      return;
+    }
+
+    setReservaSeleccionada(reserva);
+    setAbrirDialogoEditar(true);
+  };
 
   // Actualizar hora cada segundo
   useEffect(() => {
@@ -170,7 +192,13 @@ export function ReservasEstanciasIndex() {
   const handleDiaClick = (dateKey, estanciaId, periodoId) => {
     setSelectedDate(dateKey);
     if (estanciaId && periodoId) {
-      setCeldaSeleccionada({ estanciaId, periodoId });
+      const periodo = periodosDB.find((p) => p.id === periodoId);
+      setCeldaSeleccionada({
+        estanciaId,
+        periodoId,
+        inicioId: periodo?.id,
+        finId: periodo?.id,
+      });
       setAbrirDialogo(true);
     }
   };
@@ -202,22 +230,11 @@ export function ReservasEstanciasIndex() {
   return (
     <div className="p-6">
       {/* Encabezado reloj */}
-      <h1 className="text-4xl font-bold text-blue-400 text-center mb-8">
-        {fechaHora.toLocaleTimeString("es-ES", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        })}{" "}
-        -{" "}
-        {fechaHora.toLocaleDateString("es-ES", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
-      </h1>
+      <div className="mb-4">
+        <RelojPeriodo periodos={periodosDB} />
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Calendario */}
         <Card className="shadow-lg rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -239,7 +256,7 @@ export function ReservasEstanciasIndex() {
               <thead>
                 <tr>
                   {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
-                    <th key={d} className="p-2 font-medium">
+                    <th key={d} className="p-1 font-medium">
                       {d}
                     </th>
                   ))}
@@ -260,7 +277,7 @@ export function ReservasEstanciasIndex() {
                       return (
                         <td
                           key={j}
-                          className={`p-2 cursor-pointer relative rounded-lg transition 
+                          className={`p-1 cursor-pointer relative rounded-lg transition 
                           ${isToday ? "bg-blue-200 border-2 border-blue-400" : ""}
                           ${isSelected ? "bg-gray-200" : ""}`}
                           onClick={() => handleDiaClick(dateKey)}
@@ -277,46 +294,42 @@ export function ReservasEstanciasIndex() {
         </Card>
 
         {/* Panel de reservas futuras */}
-        <PanelReservas
-          uid={uid}
-          reloadKey={reloadPanel}
-          onReservaModificada={onInsertarSuccess}
-        />
+        <div className="h-full">
+          <PanelReservas
+            uid={uid}
+            reloadKey={reloadPanel}
+            onReservaModificada={onInsertarSuccess}
+          />
+        </div>
 
         {/* GRID de reservas */}
-        <div className="mt-10 w-full md:col-span-2">
+        <div className="mt-4 w-full md:col-span-2">
           <Card className="shadow-lg rounded-2xl w-full">
             <CardHeader className="pb-4 border-b">
-              <CardTitle className="text-center text-xl font-semibold text-blue-600">
-                Reservas por Estancia -{" "}
-                {new Date(selectedDate).toLocaleDateString("es-ES", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+              <CardTitle className="text-center text-xl font-semibold">
+                <div className="max-w-sm">
+                  <label className="text-sm font-medium">
+                    Tipo de Estancia
+                  </label>
+                  <select
+                    value={tipoEstancia}
+                    onChange={(e) => setTipoEstancia(e.target.value)}
+                    className="border p-2 rounded w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Almacen">Almacén</option>
+                    <option value="Aula">Aula</option>
+                    <option value="Departamento">Departamento</option>
+                    <option value="Despacho">Despacho</option>
+                    <option value="Infolab">Infolab</option>
+                    <option value="Laboratorio">Laboratorio</option>
+                    <option value="Otras">Otras</option>
+                  </select>
+                </div>
               </CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              <div className="max-w-sm">
-                <label className="text-sm font-medium">Tipo de Estancia</label>
-                <select
-                  value={tipoEstancia}
-                  onChange={(e) => setTipoEstancia(e.target.value)}
-                  className="border p-2 rounded w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                >
-                  <option value="">Seleccionar tipo</option>
-                  <option value="Almacen">Almacén</option>
-                  <option value="Aula">Aula</option>
-                  <option value="Departamento">Departamento</option>
-                  <option value="Despacho">Despacho</option>
-                  <option value="Infolab">Infolab</option>
-                  <option value="Laboratorio">Laboratorio</option>
-                  <option value="Otras">Otras</option>
-                </select>
-              </div>
-
               <div className="overflow-x-auto w-full">
                 <table className="w-full border-collapse text-center text-sm table-fixed">
                   <thead>
@@ -363,16 +376,7 @@ export function ReservasEstanciasIndex() {
                                     ? "bg-green-200 hover:bg-green-300"
                                     : "bg-yellow-200 hover:bg-yellow-300"
                                 }`}
-                                onClick={() => {
-                                  if (reserva.uid === uid) {
-                                    // Solo puede editar si es suya
-                                    setReservaSeleccionada(reserva);
-                                    setAbrirDialogoEditar(true);
-                                  } else {
-                                    // Mostramos aviso si no es suya
-                                    toast.error ("Solo puedes modificar tus propias reservas.");
-                                  }
-                                }}
+                                onClick={() => handleEditarReserva(reserva)}
                               >
                                 {reserva.uid === uid
                                   ? "Mi reserva"
@@ -388,19 +392,38 @@ export function ReservasEstanciasIndex() {
                           )
                             return null;
 
+                          const periodoActual = periodosDB.find(
+                            (p) => p.id === rowData.periodoId
+                          );
+                          const horaFin = periodoActual?.fin;
+                          const esFutura = esReservaFutura(
+                            selectedDate,
+                            horaFin
+                          );
+
                           return (
                             <td
                               key={e.id}
-                              className="p-2 border bg-blue-200 cursor-pointer hover:bg-blue-300"
-                              onClick={() =>
+                              className={`p-2 border text-gray-700 transition ${
+                                esFutura
+                                  ? "bg-blue-200 cursor-pointer hover:bg-blue-300"
+                                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              }`}
+                              onClick={() => {
+                                if (!esFutura) {
+                                  toast.error(
+                                    "No puedes crear reservas en periodos pasados."
+                                  );
+                                  return;
+                                }
                                 handleDiaClick(
                                   selectedDate,
                                   e.id,
                                   rowData.periodoId
-                                )
-                              }
+                                );
+                              }}
                             >
-                              Libre
+                              {esFutura ? "Libre" : ""}
                             </td>
                           );
                         })}
@@ -430,6 +453,8 @@ export function ReservasEstanciasIndex() {
             (e) => e.id === parseInt(celdaSeleccionada?.estanciaId)
           )?.descripcion || ""
         }
+        inicioSeleccionado={celdaSeleccionada?.inicioId}
+        finSeleccionado={celdaSeleccionada?.finId}
       />
 
       {/* Diálogo para editar reserva */}
