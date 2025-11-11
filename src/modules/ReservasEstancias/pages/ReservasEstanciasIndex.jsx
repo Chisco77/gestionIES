@@ -8,6 +8,8 @@ import { PanelReservas } from "../../Comunes/PanelReservas";
 import { toast } from "sonner";
 import { esReservaFutura } from "../../../utils/esReservaFutura";
 import { RelojPeriodo } from "@/modules/Utilidades/components/RelojPeriodo";
+import { DialogoPlanoEstancia } from "../components/DialogoPlanoEstancia";
+import { MapPin } from "lucide-react";
 
 // Formato de fecha YYYY-MM-DD
 const formatDateKey = (date) => {
@@ -35,6 +37,9 @@ export function ReservasEstanciasIndex() {
   const [reservasFuturas, setReservasFuturas] = useState([]);
   const [celdaSeleccionada, setCeldaSeleccionada] = useState(null);
   const [reloadPanel, setReloadPanel] = useState(0);
+  const [abrirPlano, setAbrirPlano] = useState(false);
+  const [estanciaSeleccionadaPlano, setEstanciaSeleccionadaPlano] =
+    useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
   const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -99,7 +104,7 @@ export function ReservasEstanciasIndex() {
 
     try {
       const res = await fetch(
-        `${API_BASE}/reservas-estancias/filtradas?fecha=${fecha}&tipoestancia=${tipo}`,
+        `${API_BASE}/reservas-estancias/filtradas?fecha=${fecha}&tipoestancia=${tipo}&reservable=true`,
         { credentials: "include" }
       );
       if (!res.ok) throw new Error("Error al obtener reservas del día");
@@ -228,15 +233,15 @@ export function ReservasEstanciasIndex() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4">
       {/* Encabezado reloj */}
-      <div className="mb-4">
+      <div className="mb-1">
         <RelojPeriodo periodos={periodosDB} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Calendario */}
-        <Card className="shadow-lg rounded-2xl h-[350px] flex flex-col">
+        <Card className="shadow-lg rounded-2xl h-[300px] flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
             <button onClick={handlePrevMonth}>
               <ChevronLeft className="w-6 h-6" />
@@ -304,10 +309,10 @@ export function ReservasEstanciasIndex() {
         </div>
 
         {/* GRID de reservas */}
-        <div className="mt-4 w-full md:col-span-2">
+        <div className="mt-2 w-full md:col-span-2">
           <Card className="shadow-lg rounded-2xl w-full">
-            <CardHeader className="pb-4 border-b">
-              <CardTitle className="text-center text-xl font-semibold">
+            <CardHeader className="pb-2 border-b">
+              <CardTitle className="text-center text-sm font-semibold">
                 <div className="max-w-sm">
                   <label className="text-sm font-medium">
                     Tipo de Estancia
@@ -330,109 +335,127 @@ export function ReservasEstanciasIndex() {
               </CardTitle>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              <div className="overflow-x-auto w-full">
-                <table className="w-full border-collapse text-center text-sm table-fixed">
-                  <thead>
-                    <tr>
-                      <th className="p-2 font-semibold border bg-gray-50 w-32">
-                        Periodo
-                      </th>
-                      {estanciasDelGrid.map((e) => (
-                        <th
-                          key={e.id}
-                          className="p-2 font-semibold border bg-gray-50"
-                        >
-                          {e.descripcion}
+            <CardContent className="space-y-2">
+              {estanciasDelGrid.length === 0 ? (
+                <div className="p-4 text-center text-gray-600">
+                  No hay estancias reservables disponibles para el tipo
+                  seleccionado.
+                </div>
+              ) : (
+                <div className="overflow-x-auto w-full">
+                  <table className="w-full border-collapse text-center text-sm table-fixed">
+                    <thead>
+                      <tr>
+                        <th className="p-2 font-semibold border bg-gray-50 w-32 text-center">
+                          Periodo
                         </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {gridData.map((rowData, i) => (
-                      <tr key={i}>
-                        <td className="p-2 border font-medium bg-gray-50 w-32">
-                          {
-                            periodosDB.find((p) => p.id === rowData.periodoId)
-                              ?.nombre
-                          }
-                        </td>
-                        {estanciasDelGrid.map((e) => {
-                          const reserva = rowData.row[e.id];
-                          if (
-                            reserva &&
-                            parseInt(reserva.idperiodo_inicio) ===
-                              rowData.periodoId
-                          ) {
-                            const rowspan =
-                              parseInt(reserva.idperiodo_fin) -
-                              parseInt(reserva.idperiodo_inicio) +
-                              1;
+                        {estanciasDelGrid.map((e) => (
+                          <th
+                            key={e.id}
+                            className="p-2 font-semibold border bg-gray-50 cursor-pointer hover:bg-blue-50 transition"
+                            onClick={() => {
+                              setEstanciaSeleccionadaPlano(e);
+                              setAbrirPlano(true);
+                            }}
+                            title={`Ver plano de ${e.descripcion}`}
+                          >
+                            <div className="flex items-center justify-center gap-2">
+                              <span>{e.descripcion}</span>
+                              <MapPin
+                                size={18}
+                                className="text-gray-500 hover:text-blue-600 transition-colors"
+                              />
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {gridData.map((rowData, i) => (
+                        <tr key={i}>
+                          <td className="p-2 border font-medium bg-gray-50 w-32">
+                            {
+                              periodosDB.find((p) => p.id === rowData.periodoId)
+                                ?.nombre
+                            }
+                          </td>
+                          {estanciasDelGrid.map((e) => {
+                            const reserva = rowData.row[e.id];
+                            if (
+                              reserva &&
+                              parseInt(reserva.idperiodo_inicio) ===
+                                rowData.periodoId
+                            ) {
+                              const rowspan =
+                                parseInt(reserva.idperiodo_fin) -
+                                parseInt(reserva.idperiodo_inicio) +
+                                1;
+                              return (
+                                <td
+                                  key={e.id}
+                                  rowSpan={rowspan}
+                                  className={`p-2 border cursor-pointer transition ${
+                                    reserva.uid === uid
+                                      ? "bg-green-200 hover:bg-green-300"
+                                      : "bg-yellow-200 hover:bg-yellow-300"
+                                  }`}
+                                  onClick={() => handleEditarReserva(reserva)}
+                                >
+                                  {reserva.uid === uid
+                                    ? "Mi reserva"
+                                    : reserva.nombre || "Ocupado"}
+                                </td>
+                              );
+                            }
+
+                            if (
+                              reserva &&
+                              parseInt(reserva.idperiodo_inicio) <
+                                rowData.periodoId
+                            )
+                              return null;
+
+                            const periodoActual = periodosDB.find(
+                              (p) => p.id === rowData.periodoId
+                            );
+                            const horaFin = periodoActual?.fin;
+                            const esFutura = esReservaFutura(
+                              selectedDate,
+                              horaFin
+                            );
+
                             return (
                               <td
                                 key={e.id}
-                                rowSpan={rowspan}
-                                className={`p-2 border cursor-pointer transition ${
-                                  reserva.uid === uid
-                                    ? "bg-green-200 hover:bg-green-300"
-                                    : "bg-yellow-200 hover:bg-yellow-300"
+                                className={`p-2 border text-gray-700 transition ${
+                                  esFutura
+                                    ? "bg-blue-200 cursor-pointer hover:bg-blue-300"
+                                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
                                 }`}
-                                onClick={() => handleEditarReserva(reserva)}
+                                onClick={() => {
+                                  if (!esFutura) {
+                                    toast.error(
+                                      "No puedes crear reservas en periodos pasados."
+                                    );
+                                    return;
+                                  }
+                                  handleDiaClick(
+                                    selectedDate,
+                                    e.id,
+                                    rowData.periodoId
+                                  );
+                                }}
                               >
-                                {reserva.uid === uid
-                                  ? "Mi reserva"
-                                  : reserva.nombre || "Ocupado"}
+                                {esFutura ? "Libre" : ""}
                               </td>
                             );
-                          }
-
-                          if (
-                            reserva &&
-                            parseInt(reserva.idperiodo_inicio) <
-                              rowData.periodoId
-                          )
-                            return null;
-
-                          const periodoActual = periodosDB.find(
-                            (p) => p.id === rowData.periodoId
-                          );
-                          const horaFin = periodoActual?.fin;
-                          const esFutura = esReservaFutura(
-                            selectedDate,
-                            horaFin
-                          );
-
-                          return (
-                            <td
-                              key={e.id}
-                              className={`p-2 border text-gray-700 transition ${
-                                esFutura
-                                  ? "bg-blue-200 cursor-pointer hover:bg-blue-300"
-                                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                              }`}
-                              onClick={() => {
-                                if (!esFutura) {
-                                  toast.error(
-                                    "No puedes crear reservas en periodos pasados."
-                                  );
-                                  return;
-                                }
-                                handleDiaClick(
-                                  selectedDate,
-                                  e.id,
-                                  rowData.periodoId
-                                );
-                              }}
-                            >
-                              {esFutura ? "Libre" : ""}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -456,6 +479,12 @@ export function ReservasEstanciasIndex() {
         }
         inicioSeleccionado={celdaSeleccionada?.inicioId}
         finSeleccionado={celdaSeleccionada?.finId}
+      />
+
+      <DialogoPlanoEstancia
+        open={abrirPlano}
+        onClose={() => setAbrirPlano(false)}
+        estancia={estanciaSeleccionadaPlano}
       />
 
       {/* Diálogo para editar reserva */}

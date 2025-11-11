@@ -80,12 +80,14 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         ],
       },
       {
-        title: "Reserva de recursos",
+        title: "Reservas",
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Estancias", url: "/reservasEstancias" },
-          { title: "Armarios de Portátiles", url: "/" },
+          { title: "Aulas", url: "/reservasEstancias" },
+          { title: "Asuntos Propios", url: "/asuntos_propios" },
+          { title: "Educadora", url: "/reservasEstancias" },
+          { title: "Extraescolares", url: "/reservasEstancias" },
         ],
       },
       {
@@ -147,12 +149,14 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         ],
       },
       {
-        title: "Reserva de recursos",
+        title: "Reservas",
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Estancias", url: "/reservasEstancias" },
-          { title: "Armarios de Portátiles", url: "/" },
+          { title: "Aulas", url: "/reservasEstancias" },
+          { title: "Asuntos Propios", url: "/asuntos_propios" },
+          { title: "Educadora", url: "/reservasEstancias" },
+          { title: "Extraescolares", url: "/reservasEstancias" },
         ],
       },
       {
@@ -200,12 +204,14 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
       },
 
       {
-        title: "Reserva de recursos",
+        title: "Reservas",
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Estancias", url: "/reservasEstancias" },
-          { title: "Armarios de Portátiles", url: "/" },
+          { title: "Aulas", url: "/reservasEstancias" },
+          { title: "Asuntos Propios", url: "/asuntos_propios" },
+          { title: "Educadora", url: "/reservasEstancias" },
+          { title: "Extraescolares", url: "/reservasEstancias" },
         ],
       },
       {

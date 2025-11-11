@@ -11,16 +11,16 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 
-export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
+export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
   const [descripcion, setDescripcion] = useState("");
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
 
   useEffect(() => {
-    if (open) {
-      setDescripcion("");
+    if (open && asunto) {
+      setDescripcion(asunto.descripcion || "");
     }
-  }, [open]);
+  }, [open, asunto]);
 
   const handleGuardar = async () => {
     if (!descripcion.trim()) {
@@ -28,36 +28,30 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
       return;
     }
 
-    if (!user?.username) {
-      toast.error("Usuario no autenticado");
-      return;
-    }
-
     try {
-      const res = await fetch(`${API_URL}/db/asuntos-propios`, {
-        method: "POST",
+      const res = await fetch(`${API_URL}/db/asuntos-propios/${asunto.id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          uid: user.username,
-          fecha,
           descripcion,
+          uid: user.username,
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Error desconocido al insertar asunto propio");
+        toast.error(data.error || "Error desconocido al actualizar asunto propio");
         return;
       }
 
-      toast.success("Asunto propio insertado correctamente");
+      toast.success("Asunto propio actualizado correctamente");
       onSuccess?.();
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error("Error de conexión al insertar asunto propio");
+      toast.error("Error de conexión al actualizar asunto propio");
     }
   };
 
@@ -70,7 +64,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
         {/* ENCABEZADO */}
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
-            Nuevo Asunto Propio ({new Date(fecha).toLocaleDateString("es-ES")})
+            Editar Asunto Propio ({new Date(asunto?.fecha).toLocaleDateString("es-ES")})
           </DialogTitle>
         </DialogHeader>
 
@@ -88,7 +82,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
 
         {/* PIE */}
         <DialogFooter className="px-6 py-4 bg-gray-50">
-          <Button onClick={handleGuardar}>Guardar</Button>
+          <Button onClick={handleGuardar}>Guardar cambios</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

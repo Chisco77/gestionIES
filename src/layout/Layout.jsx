@@ -67,6 +67,7 @@ export default function Layout(props) {
       "/libros": "Libros",
       "/perfilesUsuario": "Administrar  Usuarios",
       "/prestamos": "Préstamos",
+      "/reservasEstancias": "Reservas de Aulas",
     };
 
     const titulo = pathToTitleMap[location.pathname];

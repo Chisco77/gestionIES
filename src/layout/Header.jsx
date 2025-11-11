@@ -45,8 +45,8 @@ export default function Header() {
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-3">
       <SidebarTrigger />
-      <Separator orientation="vertical" className="h-4" />
-      <h1 className="text-xl font-semibold">{tituloActivo}</h1>
+      <Separator orientation="vertical" className="h-2" />
+      <h1 className="text-m font-semibold">{tituloActivo}</h1>
     </header>
   );
 }

@@ -53,7 +53,7 @@ export function RelojPeriodo({ periodos }) {
       {/* Hora + Periodo en la misma línea */}
       <div className="flex flex-col md:flex-row justify-center items-center gap-4">
         <div className="text-2xl md:text-3xl font-bold text-blue-600">
-          {fechaHora.toLocaleTimeString("es-ES", { hour: '2-digit', minute: '2-digit' })}
+          {fechaHora.toLocaleTimeString("es-ES", { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>
         <div className="text-lg md:text-xl font-semibold text-blue-600">
           {periodoActual

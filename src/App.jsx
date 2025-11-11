@@ -38,7 +38,7 @@ import { EstanciasIndex } from "./modules/Estancias/pages/EstanciasIndex";
 import { DialogoAsuntosRestricciones } from "./modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
 import { SidebarProviderCustom } from "./context/SidebarContext";
 import { AsuntosPropiosIndex } from "./modules/AsuntosPropios/pages/AsuntosPropiosIndex";
-import {ReservasEstanciasIndex} from "./modules/ReservasEstancias/pages/ReservasEstanciasIndex"
+import { ReservasEstanciasIndex } from "./modules/ReservasEstancias/pages/ReservasEstanciasIndex";
 import { DialogoEtiquetasGenericas } from "./modules/Utilidades/components/DialogoEtiquetasGenericas";
 
 const queryClient = new QueryClient();

@@ -75,7 +75,7 @@ async function getEstanciasByTipoEstancia(req, res) {
   const tipoestancia = req.query.tipoestancia || "Infolab";
   try {
     const { rows } = await db.query(
-      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia
+      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, planta
 FROM estancias
 WHERE tipoestancia = $1
 ORDER BY descripcion ASC`,
@@ -92,6 +92,7 @@ ORDER BY descripcion ASC`,
       coordenadas: r.coordenadas_json,
       reservable: r.reservable,
       tipoestancia: r.tipoestancia,
+      planta: r.planta,
     }));
 
     res.json({ ok: true, tipoestancia, estancias });
@@ -317,12 +318,87 @@ async function getAllEstancias(req, res) {
     res.status(500).json({ ok: false, error: "Error obteniendo estancias" });
   }
 }
+async function getEstanciasFiltradas(req, res) {
+  const { tipoestancia, reservable } = req.query;
+
+  console.log("[getEstanciasFiltradas] tipoestancia:", tipoestancia);
+  console.log("[getEstanciasFiltradas] reservable:", reservable);
+  try {
+    const filtros = [];
+    const vals = [];
+    let i = 0;
+
+    if (tipoestancia) {
+      filtros.push(`tipoestancia = $${++i}`);
+      vals.push(tipoestancia);
+    }
+    if (reservable !== undefined) {
+      filtros.push(`reservable = $${++i}`);
+      vals.push(reservable === "true");
+    }
+
+    const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
+    console.log("[getEstanciasFiltradas] WHERE:", where);
+    console.log("[getEstanciasFiltradas] vals:", vals);
+
+    const { rows } = await db.query(
+      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, planta
+       FROM estancias
+       ${where}
+       ORDER BY descripcion ASC`,
+      vals
+    );
+    console.log("[getEstanciasFiltradas] filas encontradas:", rows.length);
+    res.json({ ok: true, estancias: rows });
+  } catch (err) {
+    console.error("[getEstanciasFiltradas] Error:", err);
+    res
+      .status(500)
+      .json({ ok: false, error: "Error obteniendo estancias filtradas" });
+  }
+}
+
+// Filtra estancias por tipoestancia y reservable
+async function filtrarEstancias({ tipoestancia, reservable }) {
+  try {
+    const filtros = [];
+    const vals = [];
+    let i = 0;
+
+    if (tipoestancia) {
+      filtros.push(`tipoestancia = $${++i}`);
+      vals.push(tipoestancia);
+    }
+    if (typeof reservable !== "undefined") {
+      filtros.push(`reservable = $${++i}`);
+      vals.push(reservable === true || reservable === "true");
+    }
+
+    const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
+
+    const { rows } = await db.query(
+      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, planta
+       FROM estancias
+       ${where}
+       ORDER BY descripcion ASC`,
+      vals
+    );
+
+    return { ok: true, estancias: rows };
+  } catch (err) {
+    console.error("[filtrarEstancias] Error:", err);
+    return { ok: false, error: "Error obteniendo estancias filtradas" };
+  }
+}
+
 
 module.exports = {
   getEstanciasByPlanta,
+  getEstanciasByTipoEstancia,
   getAllEstancias,
   insertEstancia,
   updateEstancia,
   deleteEstancia,
-  getEstanciasByTipoEstancia,
+  getEstanciasFiltradas,
+  filtrarEstancias,
 };
