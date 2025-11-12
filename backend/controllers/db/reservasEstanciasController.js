@@ -75,6 +75,7 @@ async function getReservasEstancias(req, res) {
 }
 
 // Inserta una nueva reserva
+// Inserta una nueva reserva (versión depurada)
 async function insertReservaEstancia(req, res) {
   const {
     idestancia,
@@ -85,8 +86,9 @@ async function insertReservaEstancia(req, res) {
     descripcion = "",
   } = req.body || {};
 
-  if (!uid)
+  if (!uid) {
     return res.status(401).json({ ok: false, error: "Usuario no autenticado" });
+  }
 
   if (!idestancia || !idperiodo_inicio || !idperiodo_fin || !uid || !fecha) {
     return res
@@ -94,28 +96,54 @@ async function insertReservaEstancia(req, res) {
       .json({ ok: false, error: "Datos obligatorios faltan" });
   }
 
+  console.log("Intentando insertar reserva:", {
+    idestancia,
+    idperiodo_inicio,
+    idperiodo_fin,
+    uid,
+    fecha,
+    descripcion,
+  });
+
   try {
-    // Comprobación de solape
+    console.log("=== Intentando insertar reserva ===");
+    console.log({
+      idestancia,
+      idperiodo_inicio,
+      idperiodo_fin,
+      uid,
+      fecha,
+      descripcion,
+    });
+
+    // 1️⃣ Verificar solape
     const { rows: existentes } = await pool.query(
-      `SELECT id FROM reservas_estancias
-       WHERE idestancia = $1 AND fecha = $2
-       AND NOT (idperiodo_fin < $3 OR idperiodo_inicio > $4)
-       LIMIT 1`,
+      `SELECT id, idperiodo_inicio, idperiodo_fin
+   FROM reservas_estancias
+   WHERE idestancia = $1 AND fecha = $2
+   AND NOT (idperiodo_fin < $3 OR idperiodo_inicio > $4)`,
       [idestancia, fecha, idperiodo_inicio, idperiodo_fin]
     );
-
+    console.log("Reservas existentes que podrían solapar:", existentes);
     if (existentes.length > 0) {
-      return res
-        .status(409)
-        .json({ ok: false, error: "La reserva se solapa con otra existente" });
+      return res.status(409).json({
+        ok: false,
+        error: `La reserva se solapa con otra existente: ${existentes
+          .map((e) => `[${e.idperiodo_inicio}-${e.idperiodo_fin}]`)
+          .join(", ")}`,
+      });
     }
 
+    // 2️⃣ Insertar reserva
     const { rows } = await pool.query(
-      `INSERT INTO reservas_estancias (idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion)
-       VALUES ($1,$2,$3,$4,$5,$6)
-       RETURNING *`,
+      `INSERT INTO reservas_estancias
+   (idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion)
+   VALUES ($1, $2, $3, $4, $5, $6)
+   RETURNING *`,
       [idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion]
     );
+
+    console.log("Reserva insertada correctamente:", rows[0]);
 
     res.status(201).json({ ok: true, reserva: rows[0] });
   } catch (err) {
@@ -142,189 +170,6 @@ async function deleteReservaEstancia(req, res) {
     res.status(500).json({ ok: false, error: "Error eliminando reserva" });
   }
 }
-
-// ============================================================================
-// Obtiene reservas por día y tipo de estancia para el grid del frontend
-// Incluye periodos horarios, estancias y reservas con nombres LDAP
-// ============================================================================
-/*async function getReservasEstanciasPorDia(req, res) {
-  const ldapSession = req.session?.ldap;
-  if (!ldapSession)
-    return res.status(401).json({ ok: false, error: "No autenticado" });
-
-  const { fecha, tipoestancia } = req.query;
-
-  if (!fecha || !tipoestancia) {
-    return res
-      .status(400)
-      .json({ ok: false, error: "fecha y tipoestancia son obligatorios" });
-  }
-
-  try {
-    // 1️⃣ periodos horarios completos
-    const { rows: periodos } = await pool.query(
-      `SELECT id, nombre, inicio, fin
-       FROM periodos_horarios
-       ORDER BY id`
-    );
-
-    // 2️⃣ obtener estancias llamando a la nueva función filtrada
-    const { estancias, ok } = await new Promise((resolve, reject) => {
-      // simulamos req y res para capturar el resultado
-      const fakeRes = {
-        json: (data) => resolve(data),
-        status: (code) => ({ json: (data) => resolve(data) }),
-      };
-
-      // Llamada a la nueva función con filtro reservable
-      getEstanciasFiltradas(
-        { query: { tipoestancia, reservable: "true" } },
-        fakeRes
-      );
-    });
-
-    if (!ok)
-      return res
-        .status(500)
-        .json({ ok: false, error: "Error obteniendo estancias" });
-
-    // 3️⃣ reservas para ese día y esas estancias
-    const idsEstancias = estancias.map((e) => e.id);
-    const { rows: reservas } = await pool.query(
-      `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, descripcion
-       FROM reservas_estancias
-       WHERE fecha = $1
-       AND idestancia = ANY($2::int[])
-       ORDER BY idperiodo_inicio`,
-      [fecha, idsEstancias]
-    );
-
-    // 4️⃣ añadir nombres LDAP
-    const cacheNombres = new Map();
-    for (const r of reservas) {
-      if (!cacheNombres.has(r.uid)) {
-        const nombre = await new Promise((resolve) => {
-          buscarPorUid(ldapSession, r.uid, (err, datos) => {
-            if (!err && datos)
-              resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
-            else resolve("Profesor desconocido");
-          });
-        });
-        cacheNombres.set(r.uid, nombre);
-      }
-      r.nombre = cacheNombres.get(r.uid);
-    }
-
-    res.json({ ok: true, periodos, estancias, reservas });
-  } catch (err) {
-    console.error("[getReservasEstanciasPorDia] Error:", err);
-    res
-      .status(500)
-      .json({ ok: false, error: "Error obteniendo reservas por día" });
-  }
-}
-
-async function getReservasFiltradas(req, res) {
-  const ldapSession = req.session?.ldap;
-  if (!ldapSession)
-    return res.status(401).json({ ok: false, error: "No autenticado" });
-
-  const { fecha, desde, hasta, idestancia, tipoestancia, uid } = req.query;
-
-  try {
-    // 1️⃣ Construir filtros dinámicos
-    const filtros = [];
-    const vals = [];
-    let i = 0;
-
-    if (fecha) {
-      filtros.push(`fecha = $${++i}`);
-      vals.push(fecha);
-    }
-    if (desde) {
-      filtros.push(`fecha >= $${++i}`);
-      vals.push(desde);
-    }
-    if (hasta) {
-      filtros.push(`fecha <= $${++i}`);
-      vals.push(hasta);
-    }
-    if (idestancia) {
-      filtros.push(`idestancia = $${++i}`);
-      vals.push(Number(idestancia));
-    }
-    if (uid) {
-      filtros.push(`uid = $${++i}`);
-      vals.push(uid);
-    }
-
-    let idsEstancias = [];
-    let estancias = [];
-    console.log("[getReservasFiltradas] tipoestancia:", tipoestancia);
-    console.log("[getReservasFiltradas] filtros actuales:", filtros);
-    console.log("[getReservasFiltradas] vals actuales:", vals);
-
-    if (tipoestancia) {
-      const { estancias: ests, ok } = await new Promise((resolve) => {
-        const fakeRes = {
-          json: (data) => resolve(data),
-          status: (code) => ({ json: (data) => resolve(data) }),
-        };
-        getEstanciasFiltradas(
-          { query: { tipoestancia, reservable: "true" } },
-          fakeRes
-        );
-      });
-      if (!ok)
-        return res
-          .status(500)
-          .json({ ok: false, error: "Error obteniendo estancias" });
-      estancias = ests;
-      idsEstancias = estancias.map((e) => e.id);
-      filtros.push(`idestancia = ANY($${++i}::int[])`);
-      vals.push(idsEstancias);
-    }
-
-    const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
-
-    // 2️⃣ Obtener reservas
-    const { rows: reservas } = await pool.query(
-      `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion
-       FROM reservas_estancias
-       ${where}
-       ORDER BY fecha ASC, idperiodo_inicio ASC`,
-      vals
-    );
-
-    // 3️⃣ Añadir nombres LDAP
-    const cacheNombres = new Map();
-    for (const r of reservas) {
-      if (!cacheNombres.has(r.uid)) {
-        const nombre = await new Promise((resolve) => {
-          buscarPorUid(ldapSession, r.uid, (err, datos) => {
-            if (!err && datos)
-              resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
-            else resolve("Profesor desconocido");
-          });
-        });
-        cacheNombres.set(r.uid, nombre);
-      }
-      r.nombre = cacheNombres.get(r.uid);
-    }
-
-    // 4️⃣ Obtener periodos (solo si quieres mostrarlos en el grid)
-    const { rows: periodos } = await pool.query(
-      `SELECT id, nombre, inicio, fin
-       FROM periodos_horarios
-       ORDER BY id`
-    );
-
-    res.json({ ok: true, periodos, estancias, reservas });
-  } catch (err) {
-    console.error("[getReservasFiltradas] Error:", err);
-    res.status(500).json({ ok: false, error: "Error obteniendo reservas" });
-  }
-}*/
 
 async function getReservasEstanciasPorDia(req, res) {
   const ldapSession = req.session?.ldap;

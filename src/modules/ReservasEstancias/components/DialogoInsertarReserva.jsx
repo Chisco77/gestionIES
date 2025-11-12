@@ -59,26 +59,14 @@ export function DialogoInsertarReserva({
       return;
     }
 
-    // --- Verificar que el periodo seleccionado no haya finalizado ---
-    const periodoInicioSeleccionado = periodos.find(
-      (p) => p.id === parseInt(inicio)
-    );
+    console.log("=== Enviando reserva ===");
+    console.log("idestancia:", idestancia);
+    console.log("idperiodo_inicio:", inicio);
+    console.log("idperiodo_fin:", fin);
+    console.log("uid:", user.username);
+    console.log("fecha:", fecha);
+    console.log("descripcion:", descripcion);
 
-    if (periodoInicioSeleccionado) {
-      const ahora = new Date();
-      const [hf, mf, sf] = periodoInicioSeleccionado.fin.split(":").map(Number);
-
-      // Combinamos fecha seleccionada con hora de fin del periodo
-      const fechaFinPeriodo = new Date(fecha);
-      fechaFinPeriodo.setHours(hf, mf, sf, 0);
-
-      if (fechaFinPeriodo < ahora) {
-        toast.error("No puedes seleccionar un periodo que ya ha finalizado");
-        return;
-      }
-    }
-
-    // --- Continuamos con la inserción ---
     try {
       const res = await fetch(`${API_URL}/db/reservas-estancias`, {
         method: "POST",
@@ -94,7 +82,10 @@ export function DialogoInsertarReserva({
         }),
       });
 
+      console.log("Respuesta del backend recibida:", res);
+
       const data = await res.json();
+      console.log("Contenido JSON recibido:", data);
 
       if (!res.ok) {
         toast.error(data.error || "Error desconocido al insertar reserva");
@@ -105,7 +96,7 @@ export function DialogoInsertarReserva({
       onSuccess?.();
       onClose();
     } catch (err) {
-      console.error(err);
+      console.error("Error al hacer fetch:", err);
       toast.error("Error de conexión al insertar reserva");
     }
   };

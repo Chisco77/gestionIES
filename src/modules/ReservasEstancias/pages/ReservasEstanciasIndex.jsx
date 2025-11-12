@@ -57,7 +57,8 @@ export function ReservasEstanciasIndex() {
       (p) => parseInt(p.id) === parseInt(reserva.idperiodo_fin)
     );
     const horaFin = periodoFin?.fin;
-
+    console.log ("hora fin: ", periodoFin.fin);
+    console.log ("Fecha reserva: ", reserva.fecha);
     if (!horaFin || !esReservaFutura(reserva.fecha, horaFin)) {
       toast.error("No puedes modificar reservas ya finalizadas.");
       return;

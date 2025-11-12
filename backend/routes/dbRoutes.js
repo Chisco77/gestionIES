@@ -23,7 +23,9 @@ const express = require("express");
 const router = express.Router();
 
 // --- Controladores ---
-const { getPeriodosHorarios } = require("../controllers/db/periodosHorariosController");
+const {
+  getPeriodosHorarios,
+} = require("../controllers/db/periodosHorariosController");
 
 const {
   getReservasEstancias,
@@ -99,6 +101,7 @@ const {
   insertRestriccionesAsuntos,
   updateRestriccion,
   deleteRestriccion,
+  getRestriccionesAsuntos,
 } = require("../controllers/db/restriccionesController");
 
 // --- Controlador de asuntos propios unificado ---
@@ -157,6 +160,7 @@ router.get("/restricciones", getRestricciones);
 router.post("/restricciones/asuntos", insertRestriccionesAsuntos);
 router.put("/restricciones/:id", updateRestriccion);
 router.delete("/restricciones/:id", deleteRestriccion);
+router.get("/restricciones/asuntos", getRestriccionesAsuntos);
 
 // ================================================================
 //   Rutas de Asuntos Propios
@@ -182,7 +186,9 @@ router.get("/reservas-estancias/dia", getReservasEstanciasPorDia);
 router.put("/reservas-estancias/:id", updateReservaEstancia);
 
 // ================================================================
-const { getPanelReservas } = require("../controllers/db/panelReservasController");
+const {
+  getPanelReservas,
+} = require("../controllers/db/panelReservasController");
 router.get("/panel/reservas", getPanelReservas);
 
 module.exports = router;

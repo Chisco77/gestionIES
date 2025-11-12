@@ -11,6 +11,7 @@
  *
  *  Funcionalidades:
  *    - Obtener todas las restricciones (getRestricciones)
+ *    - Obtener restricciones específicas de asuntos propios (getRestriccionesAsuntos)
  *    - Insertar nuevas restricciones por tipo (insertRestriccionesAsuntos)
  *    - Actualizar una restricción (updateRestriccion)
  *    - Eliminar una restricción (deleteRestriccion)
@@ -29,9 +30,8 @@ const db = require("../../db");
 
 /**
  * Obtener todas las restricciones
- * ================================================================
  */
-exports.getRestricciones = async (req, res) => {
+async function getRestricciones(req, res) {
   try {
     const result = await db.query(
       "SELECT id, tipo, restriccion, descripcion, valor_num, valor_bool FROM restricciones ORDER BY id"
@@ -41,21 +41,50 @@ exports.getRestricciones = async (req, res) => {
     console.error("❌ Error al obtener las restricciones:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
-};
+}
+
+/**
+ * Obtener las restricciones específicas de los asuntos propios
+ * ================================================================
+ * Si se pasa `res`, actúa como endpoint HTTP. Si no, devuelve objeto JS.
+ */
+async function getRestriccionesAsuntos(req, res) {
+  try {
+    const { rows } = await db.query(
+      `SELECT descripcion, valor_num, valor_bool
+       FROM restricciones
+       WHERE restriccion = 'asuntos'`
+    );
+
+    const restricciones = {};
+    for (const r of rows) {
+      restricciones[r.descripcion] =
+        r.valor_bool !== false ? r.valor_bool : r.valor_num;
+    }
+
+    if (res) {
+      return res.json({ restricciones });
+    }
+
+    return restricciones;
+  } catch (error) {
+    console.error(
+      "❌ Error al obtener restricciones de asuntos propios:",
+      error
+    );
+    if (res) {
+      return res
+        .status(500)
+        .json({ message: "Error al obtener restricciones de asuntos propios" });
+    }
+    throw new Error("Error al obtener restricciones de asuntos propios");
+  }
+}
 
 /**
  * Insertar restricciones de tipo "asuntos"
- * ================================================================
- * Espera en el body:
- *  {
- *    asuntosDisponibles: number,
- *    maxPorDia: number,
- *    antelacionMinima: number,
- *    maxConsecutivos: number,
- *    ofuscar: boolean
- *  }
  */
-exports.insertRestriccionesAsuntos = async (req, res) => {
+async function insertRestriccionesAsuntos(req, res) {
   const {
     asuntosDisponibles = 0,
     maxPorDia = 0,
@@ -66,7 +95,6 @@ exports.insertRestriccionesAsuntos = async (req, res) => {
 
   const tipo = "asuntos";
 
-  // Mapeo de las restricciones que se van a insertar
   const restricciones = [
     {
       tipo,
@@ -106,38 +134,36 @@ exports.insertRestriccionesAsuntos = async (req, res) => {
   ];
 
   try {
-    // Eliminar las restricciones anteriores de tipo "asuntos" antes de insertar nuevas
     await db.query("DELETE FROM restricciones WHERE tipo = $1", [tipo]);
-
-    // Insertar todas las nuevas restricciones
-    const insertPromises = restricciones.map((r) =>
-      db.query(
-        `INSERT INTO restricciones 
-          (tipo, restriccion, descripcion, valor_num, valor_bool)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        [r.tipo, r.restriccion, r.descripcion, r.valor_num, r.valor_bool]
+    const results = await Promise.all(
+      restricciones.map((r) =>
+        db.query(
+          `INSERT INTO restricciones (tipo, restriccion, descripcion, valor_num, valor_bool)
+           VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+          [r.tipo, r.restriccion, r.descripcion, r.valor_num, r.valor_bool]
+        )
       )
     );
 
-    const results = await Promise.all(insertPromises);
     const inserted = results.map((r) => r.rows[0]);
-
-    res.status(201).json({
-      message: "Restricciones de asuntos propias guardadas correctamente",
-      data: inserted,
-    });
+    res
+      .status(201)
+      .json({
+        message: "Restricciones de asuntos propias guardadas correctamente",
+        data: inserted,
+      });
   } catch (error) {
     console.error("❌ Error al insertar restricciones de asuntos:", error);
-    res.status(500).json({ message: "Error interno al insertar restricciones" });
+    res
+      .status(500)
+      .json({ message: "Error interno al insertar restricciones" });
   }
-};
+}
 
 /**
  * Actualizar una restricción
- * ================================================================
  */
-exports.updateRestriccion = async (req, res) => {
+async function updateRestriccion(req, res) {
   const { id } = req.params;
   const { valor_num, valor_bool } = req.body;
 
@@ -157,36 +183,38 @@ exports.updateRestriccion = async (req, res) => {
       [valor_num, valor_bool, id]
     );
 
-    if (result.rowCount === 0) {
+    if (result.rowCount === 0)
       return res.status(404).json({ message: "Restricción no encontrada" });
-    }
 
     res.json(result.rows[0]);
   } catch (error) {
     console.error("❌ Error al actualizar restricción:", error);
     res.status(500).json({ message: "Error interno al actualizar" });
   }
-};
+}
 
 /**
  * Eliminar una restricción
- * ================================================================
  */
-exports.deleteRestriccion = async (req, res) => {
+async function deleteRestriccion(req, res) {
   const { id } = req.params;
-
   try {
     const result = await db.query("DELETE FROM restricciones WHERE id = $1", [
       id,
     ]);
-
-    if (result.rowCount === 0) {
+    if (result.rowCount === 0)
       return res.status(404).json({ message: "Restricción no encontrada" });
-    }
-
     res.sendStatus(204);
   } catch (error) {
     console.error("❌ Error al eliminar restricción:", error);
     res.status(500).json({ message: "Error interno al eliminar restricción" });
   }
+}
+
+module.exports = {
+  getRestricciones,
+  getRestriccionesAsuntos,
+  insertRestriccionesAsuntos,
+  updateRestriccion,
+  deleteRestriccion,
 };
