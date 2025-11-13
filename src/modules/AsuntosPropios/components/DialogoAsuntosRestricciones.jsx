@@ -17,51 +17,67 @@
  *
  */
 
-
-import { useState, useEffect } from "react"
-import { useLocation } from "react-router-dom"
+import { useState, useEffect } from "react";
+import { Loader2, Trash2 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog"
-import { Card, CardContent } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { toast } from "sonner"
+} from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { DialogoEliminarRango } from "./DialogoEliminarRango";
 
 export function DialogoAsuntosRestricciones() {
-  const location = useLocation()
-  const API_URL = import.meta.env.VITE_API_URL
+  const location = useLocation();
+  const API_URL = import.meta.env.VITE_API_URL;
 
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(true);
   const [restricciones, setRestricciones] = useState({
     asuntosDisponibles: 0,
     maxPorDia: 0,
     antelacionMinima: 0,
     maxConsecutivos: 0,
     ofuscar: false,
-  })
+  });
 
-  // Reabrir modal al llegar a esta ruta
+  const [rangoAEliminar, setRangoAEliminar] = useState(null);
+  const [dialogoEliminarRangoAbierto, setDialogoEliminarRangoAbierto] =
+    useState(false);
+
+  const [rangos, setRangos] = useState([]);
+  const [nuevoRango, setNuevoRango] = useState({
+    inicio: "",
+    fin: "",
+    motivo: "",
+  });
+  const [cargandoRangos, setCargandoRangos] = useState(false);
+
   useEffect(() => {
-    setOpen(true)
-    if (open) fetchRestricciones()
-  }, [location.key])
+    setOpen(true);
+    if (open) {
+      fetchRestricciones();
+      fetchRangos();
+    }
+  }, [location.key]);
 
-  // Cargar valores del backend
   const fetchRestricciones = async () => {
     try {
       const res = await fetch(`${API_URL}/db/restricciones`, {
         credentials: "include",
-      })
-      if (!res.ok) throw new Error("Error al obtener restricciones de asuntos propios")
-      const data = await res.json()
+      });
+      if (!res.ok)
+        throw new Error("Error al obtener restricciones de asuntos propios");
+      const data = await res.json();
 
       const map = {
         dias: "asuntosDisponibles",
@@ -69,28 +85,44 @@ export function DialogoAsuntosRestricciones() {
         antelacion: "antelacionMinima",
         consecutivos: "maxConsecutivos",
         ofuscar: "ofuscar",
-      }
+      };
 
-      const newState = { ...restricciones }
+      const newState = { ...restricciones };
       data.forEach((r) => {
         if (r.restriccion === "asuntos" && map[r.descripcion]) {
           if (r.descripcion === "ofuscar") {
-            newState[map[r.descripcion]] = r.valor_bool
+            newState[map[r.descripcion]] = r.valor_bool;
           } else {
-            newState[map[r.descripcion]] = r.valor_num
+            newState[map[r.descripcion]] = r.valor_num;
           }
         }
-      })
-      setRestricciones(newState)
+      });
+      setRestricciones(newState);
     } catch (err) {
-      console.error(err)
-      toast.error("No se pudieron cargar las restricciones de asuntos propios")
+      console.error(err);
+      toast.error("No se pudieron cargar las restricciones de asuntos propios");
     }
-  }
+  };
 
-  const handleChange = (field, value) => {
-    setRestricciones((prev) => ({ ...prev, [field]: value }))
-  }
+  const fetchRangos = async () => {
+    try {
+      setCargandoRangos(true);
+      const res = await fetch(`${API_URL}/db/restricciones/asuntos/rangos`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Error al obtener rangos bloqueados");
+      const data = await res.json();
+      setRangos(data.rangos || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("No se pudieron cargar los rangos bloqueados");
+    } finally {
+      setCargandoRangos(false);
+    }
+  };
+
+  const handleChange = (field, value) =>
+    setRestricciones((prev) => ({ ...prev, [field]: value }));
 
   const handleGuardar = async () => {
     try {
@@ -99,110 +131,278 @@ export function DialogoAsuntosRestricciones() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(restricciones),
-      })
-      if (!res.ok) throw new Error("Error al guardar restricciones")
+      });
+      if (!res.ok) throw new Error("Error al guardar restricciones");
 
-      toast.success("Restricciones de asuntos propios guardadas correctamente")
-      setOpen(false)
+      toast.success("Restricciones de asuntos propios guardadas correctamente");
+      setOpen(false);
     } catch (err) {
-      console.error(err)
-      toast.error("Error al guardar restricciones de asuntos propios")
+      console.error(err);
+      toast.error("Error al guardar restricciones de asuntos propios");
     }
-  }
+  };
 
-  const handleCancelar = () => setOpen(false)
+  const handleCancelar = () => setOpen(false);
+
+  const handleAddRango = async () => {
+    if (!nuevoRango.inicio || !nuevoRango.fin) {
+      toast.error("Debes indicar fechas de inicio y fin");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/db/restricciones/asuntos/rangos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(nuevoRango),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Error al añadir rango bloqueado");
+      }
+      const data = await res.json();
+      setRangos(data.rangos);
+      setNuevoRango({ inicio: "", fin: "", motivo: "" });
+      toast.success("Rango bloqueado añadido correctamente");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message);
+    }
+  };
+
+  const handleDeleteRango = async (inicio, fin) => {
+    if (!confirm("¿Eliminar este rango bloqueado?")) return;
+    try {
+      const res = await fetch(`${API_URL}/db/restricciones/asuntos/rangos`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ inicio, fin }),
+      });
+      if (!res.ok) throw new Error("Error al eliminar rango bloqueado");
+
+      const data = await res.json();
+      setRangos(data.rangos);
+      toast.success("Rango eliminado correctamente");
+    } catch (err) {
+      console.error(err);
+      toast.error("No se pudo eliminar el rango bloqueado");
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent
-        className="sm:max-w-lg rounded-2xl border border-border shadow-lg"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
-            Configurar Restricciones
+      <DialogContent className="p-0 overflow-hidden rounded-lg h-[60vh] flex flex-col">
+        <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+          <DialogTitle className="text-lg font-semibold text-center leading-snug">
+            Restricciones de Asuntos Propios
           </DialogTitle>
-          <DialogDescription>
-            Define los límites y reglas aplicables a las solicitudes de días de asuntos propios.
-          </DialogDescription>
         </DialogHeader>
 
-        <Card className="border-none shadow-none bg-transparent">
-          <CardContent className="space-y-5 pt-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="asuntosDisponibles" className="text-sm font-medium">
-                Asuntos propios disponibles
-              </Label>
-              <Input
-                id="asuntosDisponibles"
-                type="number"
-                value={restricciones.asuntosDisponibles}
-                onChange={(e) =>
-                  handleChange("asuntosDisponibles", Number(e.target.value))
-                }
-                className="w-28 text-right"
-              />
-            </div>
+        <Card className="border-none shadow-none bg-transparent flex-1 overflow-hidden">
+          <CardContent className="space-y-5 pt-4 flex flex-col h-full overflow-hidden">
+            <Tabs
+              defaultValue="restricciones"
+              className="flex-1 flex flex-col overflow-hidden"
+            >
+              <TabsList className="justify-start">
+                <TabsTrigger value="restricciones">Restricciones</TabsTrigger>
+                <TabsTrigger value="rangos">Rangos bloqueados</TabsTrigger>
+              </TabsList>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="maxPorDia" className="text-sm font-medium">
-                Máximo de peticiones por día
-              </Label>
-              <Input
-                id="maxPorDia"
-                type="number"
-                value={restricciones.maxPorDia}
-                onChange={(e) =>
-                  handleChange("maxPorDia", Number(e.target.value))
-                }
-                className="w-28 text-right"
-              />
-            </div>
+              {/* --- Tab: Restricciones numéricas --- */}
+              <TabsContent
+                value="restricciones"
+                className="flex-1 overflow-auto space-y-5"
+              >
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="asuntosDisponibles"
+                    className="text-sm font-medium"
+                  >
+                    Asuntos propios disponibles
+                  </Label>
+                  <Input
+                    id="asuntosDisponibles"
+                    type="number"
+                    value={restricciones.asuntosDisponibles}
+                    onChange={(e) =>
+                      handleChange("asuntosDisponibles", Number(e.target.value))
+                    }
+                    className="w-28 text-right"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="maxPorDia" className="text-sm font-medium">
+                    Máximo de peticiones por día
+                  </Label>
+                  <Input
+                    id="maxPorDia"
+                    type="number"
+                    value={restricciones.maxPorDia}
+                    onChange={(e) =>
+                      handleChange("maxPorDia", Number(e.target.value))
+                    }
+                    className="w-28 text-right"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="antelacionMinima"
+                    className="text-sm font-medium"
+                  >
+                    Antelación mínima (días)
+                  </Label>
+                  <Input
+                    id="antelacionMinima"
+                    type="number"
+                    value={restricciones.antelacionMinima}
+                    onChange={(e) =>
+                      handleChange("antelacionMinima", Number(e.target.value))
+                    }
+                    className="w-28 text-right"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="maxConsecutivos"
+                    className="text-sm font-medium"
+                  >
+                    Máximo de días consecutivos
+                  </Label>
+                  <Input
+                    id="maxConsecutivos"
+                    type="number"
+                    value={restricciones.maxConsecutivos}
+                    onChange={(e) =>
+                      handleChange("maxConsecutivos", Number(e.target.value))
+                    }
+                    className="w-28 text-right"
+                  />
+                </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="antelacionMinima" className="text-sm font-medium">
-                Antelación mínima (días)
-              </Label>
-              <Input
-                id="antelacionMinima"
-                type="number"
-                value={restricciones.antelacionMinima}
-                onChange={(e) =>
-                  handleChange("antelacionMinima", Number(e.target.value))
-                }
-                className="w-28 text-right"
-              />
-            </div>
+                <Separator />
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="maxConsecutivos" className="text-sm font-medium">
-                Máximo de días consecutivos
-              </Label>
-              <Input
-                id="maxConsecutivos"
-                type="number"
-                value={restricciones.maxConsecutivos}
-                onChange={(e) =>
-                  handleChange("maxConsecutivos", Number(e.target.value))
-                }
-                className="w-28 text-right"
-              />
-            </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="ofuscar" className="text-sm font-medium">
+                    Ofuscar nombres en el calendario
+                  </Label>
+                  <Switch
+                    id="ofuscar"
+                    checked={restricciones.ofuscar}
+                    onCheckedChange={(checked) =>
+                      handleChange("ofuscar", checked)
+                    }
+                  />
+                </div>
+              </TabsContent>
+
+              {/* --- Tab: Rangos bloqueados --- */}
+              <TabsContent
+                value="rangos"
+                className="flex-1 overflow-auto space-y-4"
+              >
+                <p className="text-sm text-muted-foreground mb-3">
+                  Define periodos en los que no se podrán solicitar días de
+                  asuntos propios.
+                </p>
+
+                <div className="flex-1 overflow-auto space-y-2 mb-3">
+                  {cargandoRangos ? (
+                    <p className="text-sm text-muted-foreground">Cargando...</p>
+                  ) : rangos.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No hay rangos bloqueados actualmente.
+                    </p>
+                  ) : (
+                    rangos.map((r, i) => {
+                      const inicioStr = new Date(r.inicio).toLocaleDateString(
+                        "es-ES",
+                        {
+                          day: "numeric",
+                          month: "numeric",
+                          year: "numeric",
+                        }
+                      );
+                      const finStr = new Date(r.fin).toLocaleDateString(
+                        "es-ES",
+                        {
+                          day: "numeric",
+                          month: "numeric",
+                          year: "numeric",
+                        }
+                      );
+
+                      return (
+                        <Card
+                          key={i}
+                          className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative"
+                        >
+                          <div className="flex items-center justify-between text-sm">
+                            <div>
+                              <span>
+                                {inicioStr} → {finStr}
+                              </span>
+                              {r.motivo && (
+                                <div className="text-muted-foreground ml-0">
+                                  ({r.motivo})
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              className="text-red-500 hover:text-red-700 flex-shrink-0"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setRangoAEliminar(r);
+                                setDialogoEliminarRangoAbierto(true);
+                              }}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </Button>
+                          </div>
+                        </Card>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                  <Input
+                    type="date"
+                    value={nuevoRango.inicio}
+                    onChange={(e) =>
+                      setNuevoRango((p) => ({ ...p, inicio: e.target.value }))
+                    }
+                  />
+                  <Input
+                    type="date"
+                    value={nuevoRango.fin}
+                    onChange={(e) =>
+                      setNuevoRango((p) => ({ ...p, fin: e.target.value }))
+                    }
+                  />
+                  <Input
+                    placeholder="Motivo (opcional)"
+                    value={nuevoRango.motivo}
+                    onChange={(e) =>
+                      setNuevoRango((p) => ({ ...p, motivo: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <Button variant="secondary" onClick={handleAddRango}>
+                    Añadir rango
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
 
             <Separator />
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="ofuscar" className="text-sm font-medium">
-                Ofuscar nombres en el calendario
-              </Label>
-              <Switch
-                id="ofuscar"
-                checked={restricciones.ofuscar}
-                onCheckedChange={(checked) => handleChange("ofuscar", checked)}
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-6">
+            <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={handleCancelar}>
                 Cancelar
               </Button>
@@ -211,6 +411,17 @@ export function DialogoAsuntosRestricciones() {
           </CardContent>
         </Card>
       </DialogContent>
+      {rangoAEliminar && (
+        <DialogoEliminarRango
+          rango={rangoAEliminar}
+          open={dialogoEliminarRangoAbierto}
+          onOpenChange={setDialogoEliminarRangoAbierto}
+          onDeleteSuccess={() => {
+            fetchRangos(); // recarga rangos después de eliminar
+            setRangoAEliminar(null);
+          }}
+        />
+      )}
     </Dialog>
-  )
+  );
 }

@@ -113,10 +113,12 @@ async function insertAsuntoPropio(req, res) {
     const { rows: totalCurso } = await db.query(
       `SELECT COUNT(*)::int AS total
        FROM asuntos_propios
-       WHERE uid = $1
-         AND EXTRACT(YEAR FROM fecha) = EXTRACT(YEAR FROM $2::date)`,
-      [uid, fecha]
+       WHERE uid = $1`,
+      [uid]
     );
+
+    console.log ("Total dias pedidos: ", totalCurso[0].total );
+    console.log ("Máximo días por curso: ", dias );
 
     if (totalCurso[0].total >= dias) {
       return res.status(400).json({

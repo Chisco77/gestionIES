@@ -284,8 +284,8 @@ export function ReservasEstanciasIndex() {
                           <td
                             key={j}
                             className={`p-1 cursor-pointer relative rounded-lg transition
-                    ${isToday ? "bg-blue-200 border-2 border-blue-400" : ""}
-                    ${isSelected ? "bg-gray-200" : ""}`}
+                    ${isToday ? "border-2 border-blue-400" : ""}
+                    ${isSelected ? "bg-blue-100" : ""}`}
                             onClick={() => handleDiaClick(dateKey)}
                           >
                             {d}

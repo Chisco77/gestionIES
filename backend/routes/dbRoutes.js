@@ -102,6 +102,9 @@ const {
   updateRestriccion,
   deleteRestriccion,
   getRestriccionesAsuntos,
+  getRangosBloqueados, 
+  addRangoBloqueado,
+  deleteRangoBloqueado,
 } = require("../controllers/db/restriccionesController");
 
 // --- Controlador de asuntos propios unificado ---
@@ -163,6 +166,14 @@ router.delete("/restricciones/:id", deleteRestriccion);
 router.get("/restricciones/asuntos", getRestriccionesAsuntos);
 
 // ================================================================
+//   Rutas de Rangos de Asuntos Propios (bloqueos)
+// ================================================================
+router.get("/restricciones/asuntos/rangos", getRangosBloqueados);
+router.post("/restricciones/asuntos/rangos", addRangoBloqueado);
+router.delete("/restricciones/asuntos/rangos", deleteRangoBloqueado);
+
+
+// ================================================================
 //   Rutas de Asuntos Propios
 // ================================================================
 router.get("/asuntos-propios", getAsuntosPropios); // Filtrable por uid, fecha, descripcion
@@ -184,6 +195,24 @@ router.post("/reservas-estancias", insertReservaEstancia);
 router.delete("/reservas-estancias/:id", deleteReservaEstancia);
 router.get("/reservas-estancias/dia", getReservasEstanciasPorDia);
 router.put("/reservas-estancias/:id", updateReservaEstancia);
+
+// Rutas de cursos
+router.get("/cursos", getCursos);
+router.post("/cursos", insertCurso);
+router.put("/cursos/:id", updateCurso);
+router.delete("/cursos/:id", deleteCurso);
+
+// Rutas de libros
+// ================================================================
+//   Rutas de Libros
+// ================================================================
+router.get("/libros", getLibros);
+router.post("/libros", insertLibro);
+router.put("/libros/:id", updateLibro);
+router.delete("/libros/:id", deleteLibro);
+
+// Libros disponibles (para préstamos)
+router.get("/libros/disponibles", getLibrosDisponibles);
 
 // ================================================================
 const {

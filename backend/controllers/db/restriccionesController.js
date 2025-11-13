@@ -81,9 +81,6 @@ async function getRestriccionesAsuntos(req, res) {
   }
 }
 
-/**
- * Insertar restricciones de tipo "asuntos"
- */
 async function insertRestriccionesAsuntos(req, res) {
   const {
     asuntosDisponibles = 0,
@@ -134,7 +131,13 @@ async function insertRestriccionesAsuntos(req, res) {
   ];
 
   try {
-    await db.query("DELETE FROM restricciones WHERE tipo = $1", [tipo]);
+    // --- Borrar restricciones "normales" ---
+    await db.query(
+      "DELETE FROM restricciones WHERE tipo = $1 AND descripcion <> 'rangos_bloqueados'",
+      [tipo]
+    );
+
+    // --- Insertar nuevas restricciones ---
     const results = await Promise.all(
       restricciones.map((r) =>
         db.query(
@@ -146,12 +149,21 @@ async function insertRestriccionesAsuntos(req, res) {
     );
 
     const inserted = results.map((r) => r.rows[0]);
-    res
-      .status(201)
-      .json({
-        message: "Restricciones de asuntos propias guardadas correctamente",
-        data: inserted,
-      });
+
+    // --- Traer rangos bloqueados actuales ---
+    const { rows: rangoRows } = await db.query(
+      `SELECT rangos_bloqueados_json
+       FROM restricciones
+       WHERE restriccion = 'asuntos' AND descripcion = 'rangos_bloqueados'`
+    );
+
+    const rangos = rangoRows[0]?.rangos_bloqueados_json?.rango_bloqueado || [];
+
+    res.status(201).json({
+      message: "Restricciones de asuntos propias guardadas correctamente",
+      data: inserted,
+      rangosBloqueados: rangos,
+    });
   } catch (error) {
     console.error("❌ Error al insertar restricciones de asuntos:", error);
     res
@@ -211,10 +223,147 @@ async function deleteRestriccion(req, res) {
   }
 }
 
+/**
+ * ================================================================
+ *  NUEVA FUNCIÓN: Gestión de rangos bloqueados de asuntos propios
+ * ================================================================
+ */
+
+/**
+ * Obtener todos los rangos bloqueados
+ */
+async function getRangosBloqueados(req, res) {
+  try {
+    const { rows } = await db.query(
+      `SELECT rangos_bloqueados_json
+       FROM restricciones
+       WHERE restriccion = 'asuntos' AND descripcion = 'rangos_bloqueados'`
+    );
+
+    const rangos = rows[0]?.rangos_bloqueados_json?.rango_bloqueado || [];
+    res.json({ rangos });
+  } catch (error) {
+    console.error("❌ Error al obtener rangos bloqueados:", error);
+    res
+      .status(500)
+      .json({ message: "Error interno al obtener rangos bloqueados" });
+  }
+}
+
+/**
+ * Añadir un nuevo rango bloqueado
+ */
+async function addRangoBloqueado(req, res) {
+  try {
+    const { inicio, fin, motivo } = req.body;
+    if (!inicio || !fin) {
+      return res
+        .status(400)
+        .json({ message: "Debe especificar fechas de inicio y fin" });
+    }
+
+    const { rows } = await db.query(
+      `SELECT rangos_bloqueados_json
+       FROM restricciones
+       WHERE restriccion = 'asuntos' AND descripcion = 'rangos_bloqueados'`
+    );
+
+    let rangos_bloqueados_json = rows[0]?.rangos_bloqueados_json || {
+      rango_bloqueado: [],
+    };
+    let rangos = rangos_bloqueados_json.rango_bloqueado || [];
+
+    // --- Comprobar solapes ---
+    const nuevoInicio = new Date(inicio);
+    const nuevoFin = new Date(fin);
+    const haySolape = rangos.some((r) => {
+      const ri = new Date(r.inicio);
+      const rf = new Date(r.fin);
+      return (
+        (nuevoInicio >= ri && nuevoInicio <= rf) ||
+        (nuevoFin >= ri && nuevoFin <= rf) ||
+        (nuevoInicio <= ri && nuevoFin >= rf)
+      );
+    });
+
+    if (haySolape) {
+      return res.status(400).json({
+        message: "El rango de fechas se solapa con otro existente",
+      });
+    }
+
+    // --- Añadir nuevo rango ---
+    rangos.push({ inicio, fin, motivo });
+
+    // Si no existía la fila, la insertamos
+    const query =
+      rows.length === 0
+        ? `INSERT INTO restricciones (tipo, restriccion, descripcion, valor_num, valor_bool, rangos_bloqueados_json)
+           VALUES ('asuntos', 'asuntos', 'rangos_bloqueados', 0, false, $1)`
+        : `UPDATE restricciones
+           SET rangos_bloqueados_json = $1
+           WHERE restriccion = 'asuntos' AND descripcion = 'rangos_bloqueados'`;
+
+    await db.query(query, [JSON.stringify({ rango_bloqueado: rangos })]);
+
+    res.json({ message: "Rango bloqueado añadido correctamente", rangos });
+  } catch (error) {
+    console.error("❌ Error al añadir rango bloqueado:", error);
+    res
+      .status(500)
+      .json({ message: "Error interno al añadir rango bloqueado" });
+  }
+}
+
+/**
+ * Eliminar un rango bloqueado por su inicio y fin
+ */
+async function deleteRangoBloqueado(req, res) {
+  try {
+    const { inicio, fin } = req.body;
+    if (!inicio || !fin) {
+      return res.status(400).json({ message: "Debe especificar inicio y fin" });
+    }
+
+    const { rows } = await db.query(
+      `SELECT rangos_bloqueados_json
+       FROM restricciones
+       WHERE restriccion = 'asuntos' AND descripcion = 'rangos_bloqueados'`
+    );
+
+    let rangos = rows[0]?.rangos_bloqueados_json?.rango_bloqueado || [];
+    const originalLength = rangos.length;
+
+    // Filtrar el rango a eliminar
+    rangos = rangos.filter((r) => !(r.inicio === inicio && r.fin === fin));
+
+    if (rangos.length === originalLength) {
+      return res.status(404).json({ message: "Rango no encontrado" });
+    }
+
+    await db.query(
+      `UPDATE restricciones
+       SET rangos_bloqueados_json = $1
+       WHERE restriccion = 'asuntos' AND descripcion = 'rangos_bloqueados'`,
+      [JSON.stringify({ rango_bloqueado: rangos })]
+    );
+
+    res.json({ message: "Rango bloqueado eliminado correctamente", rangos });
+  } catch (error) {
+    console.error("❌ Error al eliminar rango bloqueado:", error);
+    res
+      .status(500)
+      .json({ message: "Error interno al eliminar rango bloqueado" });
+  }
+}
+
 module.exports = {
   getRestricciones,
   getRestriccionesAsuntos,
   insertRestriccionesAsuntos,
   updateRestriccion,
   deleteRestriccion,
+  getRangosBloqueados,
+  addRangoBloqueado,
+  deleteRangoBloqueado,
 };

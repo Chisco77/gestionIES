@@ -91,15 +91,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         ],
       },
       {
-        title: "Asuntos Propios",
-        url: "#",
-        icon: BookOpen,
-        items: [
-          { title: "Mis asuntos propios", url: "/asuntos_propios" },
-          { title: "Solicitar", url: "/" },
-        ],
-      },
-      {
         title: "Préstamo Libros",
         url: "#",
         icon: BookOpen,
@@ -128,6 +119,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         icon: Settings2,
         items: [
           { title: "Perfiles de Usuario", url: "/perfiles" },
+          { title: "Estancias", url: "/estancias" },
           { title: "Reglas Asuntos Propios", url: "/asuntos_restricciones" },
         ],
       },
@@ -157,15 +149,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
           { title: "Asuntos Propios", url: "/asuntos_propios" },
           { title: "Educadora", url: "/reservasEstancias" },
           { title: "Extraescolares", url: "/reservasEstancias" },
-        ],
-      },
-      {
-        title: "Asuntos Propios",
-        url: "#",
-        icon: BookOpen,
-        items: [
-          { title: "Mis asuntos propios", url: "/asuntos_propios" },
-          { title: "Solicitar", url: "/" },
         ],
       },
     ],
@@ -215,15 +198,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         ],
       },
       {
-        title: "Asuntos Propios",
-        url: "#",
-        icon: BookOpen,
-        items: [
-          { title: "Mis asuntos propios", url: "/asuntos_propios" },
-          { title: "Solicitar", url: "/" },
-        ],
-      },
-      {
         title: "Préstamo Libros",
         url: "#",
         icon: BookOpen,
@@ -254,6 +228,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         items: [
           { title: "Perfiles de Usuario", url: "/perfiles" },
           { title: "Asuntos Propios", url: "/asuntos_restricciones" },
+          { title: "Estancias", url: "/estancias" },
           { title: "Etiquetas", url: "/etiquetas_genericas" },
           {
             title: "Etiquetas genéricas",
@@ -282,24 +257,13 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
       },
 
       {
-        title: "Reserva de recursos",
+        title: "Reservas",
         url: "#",
         icon: BookOpen,
         items: [
           { title: "Estancias", url: "/reservasEstancias" },
-          { title: "Armarios de Portátiles", url: "/" },
         ],
       },
-      {
-        title: "Asuntos Propios",
-        url: "#",
-        icon: BookOpen,
-        items: [
-          { title: "Mis asuntos propios", url: "/asuntos_propios" },
-          { title: "Solicitar", url: "/" },
-        ],
-      },
-
       {
         title: "Préstamo Libros",
         url: "#",
