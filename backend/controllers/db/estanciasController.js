@@ -321,8 +321,7 @@ async function getAllEstancias(req, res) {
 async function getEstanciasFiltradas(req, res) {
   const { tipoestancia, reservable } = req.query;
 
-  console.log("[getEstanciasFiltradas] tipoestancia:", tipoestancia);
-  console.log("[getEstanciasFiltradas] reservable:", reservable);
+  
   try {
     const filtros = [];
     const vals = [];
@@ -338,8 +337,7 @@ async function getEstanciasFiltradas(req, res) {
     }
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
-    console.log("[getEstanciasFiltradas] WHERE:", where);
-    console.log("[getEstanciasFiltradas] vals:", vals);
+    
 
     const { rows } = await db.query(
       `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, planta
@@ -348,7 +346,6 @@ async function getEstanciasFiltradas(req, res) {
        ORDER BY descripcion ASC`,
       vals
     );
-    console.log("[getEstanciasFiltradas] filas encontradas:", rows.length);
     res.json({ ok: true, estancias: rows });
   } catch (err) {
     console.error("[getEstanciasFiltradas] Error:", err);

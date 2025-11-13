@@ -191,47 +191,52 @@ export function DialogoGestionLlaves({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="max-w-lg"
+        className="p-0 rounded-lg h-[610px] flex flex-col"
       >
-        <DialogHeader className="flex justify-between items-center">
+        {/* CABECERA */}
+        <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <div>
-            <DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-center leading-snug">
               Gestión de llaves · {estancia.descripcion}
+              <p>
+                {estancia?.codigollave || estancia?.armario ? (
+                  <>
+                    {estancia?.codigollave && (
+                      <>
+                        Número de llave: <strong>{estancia.codigollave}</strong>
+                      </>
+                    )}
+                    {estancia?.codigollave && estancia?.armario && " · "}
+                    {estancia?.armario && (
+                      <>
+                        Armario: <strong>{estancia.armario}</strong>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-gray-200 italic">
+                    Sin información de ubicación.
+                  </span>
+                )}
+              </p>
             </DialogTitle>
-            <DialogDescription>
-              {estancia?.codigollave || estancia?.armario ? (
-                <>
-                  {estancia?.codigollave && (
-                    <>
-                      Código llave: <strong>{estancia.codigollave}</strong>
-                    </>
-                  )}
-                  {estancia?.codigollave && estancia?.armario && " · "}
-                  {estancia?.armario && (
-                    <>
-                      Armario: <strong>{estancia.armario}</strong>
-                    </>
-                  )}
-                </>
-              ) : (
-                <span className="text-gray-500 italic">
-                  Sin información de ubicación.
-                </span>
-              )}
-            </DialogDescription>
           </div>
         </DialogHeader>
 
-        <Tabs defaultValue="prestar" className="mt-4">
-          <TabsList>
+        {/* CUERPO CON TABS */}
+        <Tabs
+          defaultValue="prestar"
+          className="flex flex-col flex-1 px-6 pb-4 overflow-hidden"
+        >
+          <TabsList className="mb-4 justify-start">
             <TabsTrigger value="prestar">Entregar llave</TabsTrigger>
             <TabsTrigger value="devolver">Pendientes devolver</TabsTrigger>
           </TabsList>
 
-          {/* --- PRESTAR --- */}
-          <TabsContent value="prestar" className="mt-4 space-y-4">
+          {/* --- TAB PRESTAR --- */}
+          <TabsContent className="flex flex-col pb-2" value="prestar">
             {disponibles <= 0 ? (
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-500 text-sm mt-4">
                 No hay llaves disponibles.
               </p>
             ) : (
@@ -240,9 +245,14 @@ export function DialogoGestionLlaves({
                   placeholder="Buscar profesor"
                   value={filtroProfesor}
                   onChange={(e) => setFiltroProfesor(e.target.value)}
+                  className="mb-3"
                 />
 
-                <div className="max-h-64 overflow-auto border rounded p-3 shadow-sm mt-2">
+                {/* Lista de altura fija con scroll */}
+                <div
+                  className="overflow-auto border rounded p-3 shadow-sm"
+                  style={{ height: 350 }}
+                >
                   {isLoading && <p className="text-sm">Cargando...</p>}
                   {isError && (
                     <p className="text-sm text-red-500">
@@ -274,11 +284,13 @@ export function DialogoGestionLlaves({
                   ))}
                 </div>
 
-                <DialogFooter className="flex justify-end gap-2">
+                {/* Footer */}
+                <DialogFooter className="mt-3 flex justify-end gap-2 shrink-0 justify-end">
                   <Button variant="outline" onClick={onClose}>
                     Cancelar
                   </Button>
                   <Button
+                    variant="outline"
                     onClick={handlePrestar}
                     disabled={!profesorSeleccionado}
                   >
@@ -289,13 +301,16 @@ export function DialogoGestionLlaves({
             )}
           </TabsContent>
 
-          {/* --- DEVOLVER --- */}
-          <TabsContent value="devolver" className="mt-4 space-y-4">
+          {/* --- TAB DEVOLVER --- */}
+          <TabsContent className="flex flex-col pb-2" value="devolver">
             {!hayPrestamos ? (
-              <p className="text-gray-500 text-sm">No hay préstamos activos.</p>
+              <p className="text-gray-500 text-sm mt-4">
+                No hay préstamos activos.
+              </p>
             ) : (
               <>
-                <div className="max-h-64 overflow-auto border rounded p-3 shadow-sm mt-2">
+                {/* Lista de llaves con altura fija */}
+                <div className="h-[380px] overflow-auto border rounded p-3 shadow-sm">
                   {prestamosActivos.map((p) => (
                     <div
                       key={p.id}
@@ -311,11 +326,13 @@ export function DialogoGestionLlaves({
                   ))}
                 </div>
 
-                <DialogFooter className="flex justify-end gap-2">
+                {/* Footer siempre visible */}
+                <DialogFooter className="mt-3 flex gap-2 shrink-0 justify-end bg-gray-50">
                   <Button variant="outline" onClick={onClose}>
                     Cancelar
                   </Button>
                   <Button
+                    variant="outline"
                     onClick={handleDevolver}
                     disabled={!seleccionados.length}
                   >

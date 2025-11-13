@@ -117,9 +117,6 @@ async function insertAsuntoPropio(req, res) {
       [uid]
     );
 
-    console.log ("Total dias pedidos: ", totalCurso[0].total );
-    console.log ("Máximo días por curso: ", dias );
-
     if (totalCurso[0].total >= dias) {
       return res.status(400).json({
         ok: false,

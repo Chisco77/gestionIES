@@ -204,7 +204,7 @@ exports.getLdapUsuarios = (req, res) => {
     const peopleOptions = {
       scope: "sub",
       filter: "(objectClass=inetOrgPerson)",
-      attributes: ["uidNumber", "givenName", "sn", "uid", "gidNumber"],
+      attributes: ["uidNumber", "givenName", "sn", "uid", "gidNumber", "employeeNumber"],
     };
 
     client.search(`ou=People,${baseDN}`, peopleOptions, (err, peopleRes) => {
@@ -231,6 +231,7 @@ exports.getLdapUsuarios = (req, res) => {
           sn: attrs.sn?.[0] || null,
           uid,
           gidNumber: attrs.gidNumber?.[0] || null,
+          employeeNumber: attrs.employeeNumber?.[0] || null,
         });
       });
 
@@ -278,6 +279,7 @@ exports.getLdapUsuarios = (req, res) => {
                   sn: p.sn,
                   uid: p.uid,
                   gidNumber: p.gidNumber,
+                  employeeNumber: p.employeeNumber,
                   groups: userGroups,
                 };
               })
@@ -288,6 +290,7 @@ exports.getLdapUsuarios = (req, res) => {
 
             client.unbind();
             res.json(result);
+            console.log (result);
           });
         });
       });

@@ -29,7 +29,7 @@
 const db = require("../../db");
 
 exports.getCursos = async (req, res) => {
-  console.log ("Llega a getCursos");
+  
   try {
     const result = await db.query("SELECT id, curso FROM cursos ORDER BY id");
     res.json(result.rows);

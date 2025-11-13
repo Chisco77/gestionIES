@@ -59,13 +59,7 @@ export function DialogoInsertarReserva({
       return;
     }
 
-    console.log("=== Enviando reserva ===");
-    console.log("idestancia:", idestancia);
-    console.log("idperiodo_inicio:", inicio);
-    console.log("idperiodo_fin:", fin);
-    console.log("uid:", user.username);
-    console.log("fecha:", fecha);
-    console.log("descripcion:", descripcion);
+   
 
     try {
       const res = await fetch(`${API_URL}/db/reservas-estancias`, {
@@ -82,10 +76,8 @@ export function DialogoInsertarReserva({
         }),
       });
 
-      console.log("Respuesta del backend recibida:", res);
 
       const data = await res.json();
-      console.log("Contenido JSON recibido:", data);
 
       if (!res.ok) {
         toast.error(data.error || "Error desconocido al insertar reserva");
@@ -169,7 +161,9 @@ export function DialogoInsertarReserva({
 
         {/* PIE */}
         <DialogFooter className="px-6 py-4 bg-gray-50">
-          <Button onClick={handleGuardar}>Guardar</Button>
+          <Button variant="outline" onClick={handleGuardar}>
+            Guardar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

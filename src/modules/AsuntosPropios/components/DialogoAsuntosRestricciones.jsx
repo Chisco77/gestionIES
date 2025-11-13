@@ -193,7 +193,7 @@ export function DialogoAsuntosRestricciones() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="p-0 overflow-hidden rounded-lg h-[60vh] flex flex-col">
+      <DialogContent className="p-0 rounded-lg h-[550px] flex flex-col">
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Restricciones de Asuntos Propios

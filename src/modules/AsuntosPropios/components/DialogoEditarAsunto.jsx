@@ -82,7 +82,7 @@ export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
 
         {/* PIE */}
         <DialogFooter className="px-6 py-4 bg-gray-50">
-          <Button onClick={handleGuardar}>Guardar cambios</Button>
+          <Button variant="outline" onClick={handleGuardar}>Guardar cambios</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

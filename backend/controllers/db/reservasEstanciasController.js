@@ -96,26 +96,7 @@ async function insertReservaEstancia(req, res) {
       .json({ ok: false, error: "Datos obligatorios faltan" });
   }
 
-  console.log("Intentando insertar reserva:", {
-    idestancia,
-    idperiodo_inicio,
-    idperiodo_fin,
-    uid,
-    fecha,
-    descripcion,
-  });
-
   try {
-    console.log("=== Intentando insertar reserva ===");
-    console.log({
-      idestancia,
-      idperiodo_inicio,
-      idperiodo_fin,
-      uid,
-      fecha,
-      descripcion,
-    });
-
     // 1️⃣ Verificar solape
     const { rows: existentes } = await pool.query(
       `SELECT id, idperiodo_inicio, idperiodo_fin
@@ -124,7 +105,6 @@ async function insertReservaEstancia(req, res) {
    AND NOT (idperiodo_fin < $3 OR idperiodo_inicio > $4)`,
       [idestancia, fecha, idperiodo_inicio, idperiodo_fin]
     );
-    console.log("Reservas existentes que podrían solapar:", existentes);
     if (existentes.length > 0) {
       return res.status(409).json({
         ok: false,
@@ -142,8 +122,6 @@ async function insertReservaEstancia(req, res) {
    RETURNING *`,
       [idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion]
     );
-
-    console.log("Reserva insertada correctamente:", rows[0]);
 
     res.status(201).json({ ok: true, reserva: rows[0] });
   } catch (err) {

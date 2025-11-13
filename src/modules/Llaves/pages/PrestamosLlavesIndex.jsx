@@ -47,8 +47,6 @@ export function PrestamosLlavesIndex() {
       });
       const data = await res.json();
 
-      console.log("🔹 Datos originales del backend:", data);
-
       // Aplanar estructura para construir la tabla
       const prestamosAplanados = data.flatMap((prof) =>
         prof.prestamos.map((p) => ({
@@ -59,8 +57,6 @@ export function PrestamosLlavesIndex() {
           fechaDevolucion: p.fechadevolucion,
         }))
       );
-
-      console.log("🔹 Datos aplanados:", prestamosAplanados);
 
       setPrestamos(prestamosAplanados);
     } catch (error) {

@@ -10,9 +10,7 @@ import PlanoEstanciaResaltada from "@/modules/Utilidades/components/PlanoEstanci
 export function DialogoPlanoEstancia({ open, onClose, estancia }) {
   if (!estancia) return null;
 
-  // 🔹 Log para depuración
-  console.log("🔹 DialogoPlanoEstancia - estancia recibida:", estancia);
-
+  
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent

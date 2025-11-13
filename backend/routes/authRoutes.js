@@ -42,7 +42,7 @@ const pool = require("../db"); // conexión a PostgreSQL
 router.post("/login", loginLdap);
 
 // Check auth con perfil
-router.get("/check-auth", async (req, res) => {
+/*router.get("/check-auth", async (req, res) => {
   if (req.session.ldap) {
     try {
       const match = req.session.ldap.dn.match(/^(uid|cn)=(.+?),/);
@@ -57,12 +57,14 @@ router.get("/check-auth", async (req, res) => {
       // Si no hay perfil en la tabla, asignar "profesor" por defecto
       const perfil =
         result.rows.length > 0 ? result.rows[0].perfil : "profesor";
+      const employeeNumber = req.session.ldap.employeeNumber || null;
 
       return res.json({
         authenticated: true,
         username: uid,
         uid: uid,
         perfil,
+        employeeNumber,
       });
     } catch (error) {
       console.error("Error consultando perfil:", error);
@@ -74,7 +76,49 @@ router.get("/check-auth", async (req, res) => {
       error: "No autenticado",
     });
   }
+});*/
+
+// Check auth con perfil y datos LDAP
+router.get("/check-auth", async (req, res) => {
+  if (!req.session.ldap) {
+    console.log("🔒 No autenticado: No hay datos en la sesión LDAP");
+    return res.status(401).json({ authenticated: false, error: "No autenticado" });
+  }
+
+  try {
+    const { dn, password, employeeNumber, givenName, sn } = req.session.ldap;
+
+    // Log de los datos de la sesión LDAP
+    console.log("🔑 Datos de la sesión LDAP:", { dn, employeeNumber, givenName, sn });
+
+    const match = dn.match(/^(uid|cn)=(.+?),/);
+    const uid = match ? match[2] : dn;
+
+    // Consultar perfil en PostgreSQL
+    const result = await pool.query(
+      "SELECT perfil FROM perfiles_usuario WHERE uid = $1 LIMIT 1",
+      [uid]
+    );
+    const perfil = result.rows.length > 0 ? result.rows[0].perfil : "profesor";
+
+     // Enviar respuesta con los datos de la sesión y perfil
+    return res.json({
+      authenticated: true,
+      username: uid,
+      uid,
+      perfil,
+      employeeNumber,
+      givenName,
+      sn,
+    });
+
+  } catch (error) {
+    console.error("❌ Error consultando perfil:", error);
+    return res.status(500).json({ error: "Error obteniendo perfil" });
+  }
 });
+
+
 
 
 router.post("/logout", (req, res) => {
@@ -83,6 +127,5 @@ router.post("/logout", (req, res) => {
     res.status(200).json({ mensaje: "Sesión cerrada correctamente" });
   });
 });
-
 
 module.exports = router;
