@@ -27,6 +27,7 @@
 
 const db = require("../../db");
 const { getRestriccionesAsuntos } = require("./restriccionesController");
+const { buscarPorUid } = require("../ldap/usuariosController");
 
 /**
  * Obtener asuntos propios con filtros opcionales
@@ -73,6 +74,85 @@ async function getAsuntosPropios(req, res) {
     res
       .status(500)
       .json({ ok: false, error: "Error obteniendo asuntos propios" });
+  }
+}
+
+/**
+ * Obtener asuntos propios con información enriquecida (nombre del profesor)
+ * ================================================================
+ */
+async function getAsuntosPropiosEnriquecidos(req, res) {
+  console.log("Llego a asuntos propios enriquecidos");
+
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession) {
+      return res
+        .status(401)
+        .json({ ok: false, error: "No autenticado en LDAP" });
+    }
+
+    const { uid, fecha, descripcion, estado } = req.query;
+
+    const filtros = [];
+    const vals = [];
+    let i = 0;
+
+    if (uid) {
+      filtros.push(`ap.uid = $${++i}`);
+      vals.push(uid);
+    }
+    if (fecha) {
+      filtros.push(`ap.fecha = $${++i}`);
+      vals.push(fecha);
+    }
+    if (descripcion) {
+      filtros.push(`ap.descripcion ILIKE $${++i}`);
+      vals.push(`%${descripcion}%`);
+    }
+    if (typeof estado !== "undefined") {
+      filtros.push(`ap.estado = $${++i}`);
+      vals.push(Number(estado));
+    }
+
+    const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
+
+    // Consulta de los asuntos propios
+    const { rows: asuntos } = await db.query(
+      `SELECT ap.id, ap.uid, ap.fecha, ap.descripcion, ap.estado
+       FROM asuntos_propios ap
+       ${where}
+       ORDER BY ap.fecha ASC`,
+      vals
+    );
+
+    // Enriquecemos cada registro con nombre del profesor
+    const asuntosEnriquecidos = [];
+
+    for (const asunto of asuntos) {
+      const nombreProfesor = await new Promise((resolve) => {
+        buscarPorUid(ldapSession, asunto.uid, (err, datos) => {
+          if (!err && datos) {
+            resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
+          } else {
+            resolve("Profesor desconocido");
+          }
+        });
+      });
+
+      asuntosEnriquecidos.push({
+        ...asunto,
+        nombreProfesor,
+      });
+    }
+    console.log("Devuelvo: ", asuntosEnriquecidos);
+    res.json({ ok: true, asuntos: asuntosEnriquecidos });
+  } catch (err) {
+    console.error("[getAsuntosPropiosEnriquecidos] Error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Error obteniendo asuntos propios enriquecidos",
+    });
   }
 }
 
@@ -291,4 +371,5 @@ module.exports = {
   insertAsuntoPropio,
   updateAsuntoPropio,
   deleteAsuntoPropio,
+  getAsuntosPropiosEnriquecidos,
 };

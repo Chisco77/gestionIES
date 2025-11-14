@@ -113,6 +113,7 @@ const {
   insertAsuntoPropio,
   updateAsuntoPropio,
   deleteAsuntoPropio,
+  getAsuntosPropiosEnriquecidos,
 } = require("../controllers/db/asuntosPropiosController");
 
 // ================================================================
@@ -180,6 +181,8 @@ router.get("/asuntos-propios", getAsuntosPropios); // Filtrable por uid, fecha, 
 router.post("/asuntos-propios", insertAsuntoPropio);
 router.put("/asuntos-propios/:id", updateAsuntoPropio);
 router.delete("/asuntos-propios/:id", deleteAsuntoPropio);
+router.get("/asuntos-propios-enriquecidos", getAsuntosPropiosEnriquecidos); // Nuevas rutas enriquecidas con nombre del profesor
+
 
 // ================================================================
 //   Rutas de Periodos Horarios
