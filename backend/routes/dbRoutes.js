@@ -114,6 +114,7 @@ const {
   updateAsuntoPropio,
   deleteAsuntoPropio,
   getAsuntosPropiosEnriquecidos,
+  updateEstadoAsuntoPropio,
 } = require("../controllers/db/asuntosPropiosController");
 
 // ================================================================
@@ -182,6 +183,7 @@ router.post("/asuntos-propios", insertAsuntoPropio);
 router.put("/asuntos-propios/:id", updateAsuntoPropio);
 router.delete("/asuntos-propios/:id", deleteAsuntoPropio);
 router.get("/asuntos-propios-enriquecidos", getAsuntosPropiosEnriquecidos); // Nuevas rutas enriquecidas con nombre del profesor
+router.patch("/asuntos-propios/estado/:id", updateEstadoAsuntoPropio);
 
 
 // ================================================================

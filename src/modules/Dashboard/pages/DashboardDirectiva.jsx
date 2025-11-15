@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PanelReservasDirectiva } from "@/modules/PanelReservasDirectiva/pages/PanelReservasDirectiva";
-import { RelojPeriodo } from "@/modules/Utilidades/components/RelojPeriodo";
 import { PanelReservas } from "@/modules/Comunes/PanelReservas";
 import { useAuth } from "@/context/AuthContext";
 
@@ -40,12 +39,17 @@ export function DashboardDirectiva() {
   const [motivoDenegacion, setMotivoDenegacion] = useState("");
   const [solicitudActual, setSolicitudActual] = useState(null);
 
+  const [recargarPanelReservas, setRecargarPanelReservas] = useState(false);
+
   const [reloadKey, setReloadKey] = useState(0);
   const [periodosDB, setPeriodosDB] = useState([]);
   const [todosLosPeriodos, setTodosLosPeriodos] = useState([]);
+  const [reloadPanelReservas, setReloadPanelReservas] = useState(0);
+  const [reloadPanelDirectiva, setReloadPanelDirectiva] = useState(0);
 
   const { user } = useAuth();
   const uid = user?.username;
+  const [reloadKeyDirectiva, setReloadKeyDirectiva] = useState(0);
 
   // --- Cargar todos los periodos ---
   useEffect(() => {
@@ -69,12 +73,6 @@ export function DashboardDirectiva() {
     fetchTodosPeriodos();
   }, []);
 
-  // --- Actualizar hora cada segundo ---
-  useEffect(() => {
-    const timer = setInterval(() => setFechaHora(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   const todayStr = formatDateKey(new Date());
 
   // Datos de ejemplo
@@ -95,29 +93,6 @@ export function DashboardDirectiva() {
       asuntos: false,
     },
   };
-
-  // Datos de ejemplo para tablas
-  const asuntosPendientes = [
-    { id: 1, profesor: "María López", fechaInicio: "2025-10-10", dias: 2 },
-    { id: 2, profesor: "Juan Pérez", fechaInicio: "2025-10-15", dias: 1 },
-  ];
-
-  const extraescolaresPendientes = [
-    {
-      id: 1,
-      profesor: "Ana García",
-      fechaInicio: "2025-11-02",
-      dias: 3,
-      fechaFin: "2025-11-04",
-    },
-    {
-      id: 2,
-      profesor: "Carlos Ruiz",
-      fechaInicio: "2025-11-20",
-      dias: 2,
-      fechaFin: "2025-11-21",
-    },
-  ];
 
   const getDateKey = (y, m, d) => formatDateKey(new Date(y, m, d));
 
@@ -159,11 +134,6 @@ export function DashboardDirectiva() {
     }
   };
 
-  const selectedInfo = reservas[selectedDate] || {
-    aulas: [],
-    armarios: [],
-    asuntos: false,
-  };
 
   const handleDenegar = (solicitud) => {
     setSolicitudActual(solicitud);
@@ -178,11 +148,6 @@ export function DashboardDirectiva() {
 
   return (
     <div className="p-4">
-      {/* Encabezado reloj */}
-      <div className="mb-1">
-        <RelojPeriodo periodos={periodosDB} />
-      </div>
-
       {/* Grid con calendario y detalles */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Calendario */}
@@ -280,17 +245,21 @@ export function DashboardDirectiva() {
           </CardContent>
         </Card>
 
-        {/* Detalles del día */}
+        {/* Detalles del día. Si detecto cambio dentro del PanelReservas, notifico para recargar PanelReservasDirectiva y tener datos actualizados.*/}
         <PanelReservas
           uid={uid}
-          onClickReserva={(r) => console.log("Editar reserva:", r)}
+          reloadKey={reloadPanelReservas}
+          onPanelCambiado={() => setReloadPanelDirectiva((k) => k + 1)}
         />
       </div>
 
       {/* Tablas de peticiones pendientes */}
       <div className="mt-2 space-y-8">
-        {/* Se pasa `reloadKey` a PanelReservasDirectiva */}
-        <PanelReservasDirectiva reloadKey={reloadKey} />
+        {/* Se pasa `reloadKey` a PanelReservasDirectiva . Si detecto cambio dentro del PanelReservasDirectiva, notifico para recargar panel reservas y tener datos actualizados.*/}
+        <PanelReservasDirectiva
+          reloadKey={reloadPanelDirectiva}
+          onPanelCambiado={() => setReloadPanelReservas((k) => k + 1)}
+        />
       </div>
 
       {/* Modal de denegación */}

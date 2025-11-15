@@ -362,6 +362,38 @@ async function deleteAsuntoPropio(req, res) {
 }
 
 /**
+ * Actualizar solo el estado de un asunto propio (para la directiva)
+ */
+async function updateEstadoAsuntoPropio(req, res) {
+  const id = req.params.id;
+  const { estado } = req.body; // 1 = Aceptado, 2 = Rechazado
+
+  if (![1, 2].includes(estado)) {
+    return res.status(400).json({ ok: false, error: "Estado inválido" });
+  }
+
+  try {
+    const query = `
+      UPDATE asuntos_propios
+      SET estado = $1
+      WHERE id = $2
+      RETURNING id, uid, fecha, descripcion, estado
+    `;
+    const { rows } = await db.query(query, [estado, id]);
+
+    if (!rows[0]) {
+      return res.status(404).json({ ok: false, error: "Asunto propio no encontrado" });
+    }
+
+    res.json({ ok: true, asunto: rows[0] });
+  } catch (err) {
+    console.error("[updateEstadoAsuntoPropio] Error:", err);
+    res.status(500).json({ ok: false, error: "Error actualizando estado" });
+  }
+}
+
+
+/**
  * ================================================================
  *  Exportación de funciones
  * ================================================================
@@ -372,4 +404,5 @@ module.exports = {
   updateAsuntoPropio,
   deleteAsuntoPropio,
   getAsuntosPropiosEnriquecidos,
+  updateEstadoAsuntoPropio,
 };

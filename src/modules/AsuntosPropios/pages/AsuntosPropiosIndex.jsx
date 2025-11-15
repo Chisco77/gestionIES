@@ -5,7 +5,6 @@ import { useAuth } from "@/context/AuthContext";
 import { PanelReservas } from "@/modules/Comunes/PanelReservas";
 import { DialogoInsertarAsunto } from "../components/DialogoInsertarAsunto";
 import { DialogoEditarAsunto } from "../components/DialogoEditarAsunto";
-import { RelojPeriodo } from "@/modules/Utilidades/components/RelojPeriodo";
 import {
   Tooltip,
   TooltipContent,
@@ -41,9 +40,6 @@ export function AsuntosPropiosIndex() {
   const [asuntosPropiosMes, setAsuntosPropiosMes] = useState([]);
   const [maxConcurrentes, setMaxConcurrentes] = useState(2);
 
-  const [todosLosPeriodos, setTodosLosPeriodos] = useState([]);
-  const [periodosDB, setPeriodosDB] = useState([]);
-
   const [reloadPanel, setReloadPanel] = useState(0);
   const [rangosBloqueados, setRangosBloqueados] = useState([]);
 
@@ -65,33 +61,7 @@ export function AsuntosPropiosIndex() {
   // --- Función para recargar PanelReservas ---
   const recargarPanel = () => setReloadPanel((r) => r + 1);
 
-  // --- Cargar todos los periodos ---
-  useEffect(() => {
-    const fetchTodosPeriodos = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/periodos-horarios`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Error al obtener todos los periodos");
-        const data = await res.json();
-        const periodosData =
-          data.periodos?.map((p) => ({ ...p, id: parseInt(p.id) })) || [];
-        setTodosLosPeriodos(periodosData);
-        setPeriodosDB(periodosData);
-      } catch (err) {
-        console.error("[DEBUG] Error en carga de periodos:", err);
-        setTodosLosPeriodos([]);
-        setPeriodosDB([]);
-      }
-    };
-    fetchTodosPeriodos();
-  }, []);
 
-  // --- Actualizar hora cada segundo ---
-  useEffect(() => {
-    const timer = setInterval(() => setFechaHora(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // --- Cálculo calendario ---
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -208,11 +178,6 @@ export function AsuntosPropiosIndex() {
 
   return (
     <div className="p-4">
-      {/* Encabezado reloj */}
-      <div className="mb-1">
-        <RelojPeriodo periodos={periodosDB} />
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Calendario */}
         <Card className="shadow-lg rounded-2xl flex flex-col h-[300px]">

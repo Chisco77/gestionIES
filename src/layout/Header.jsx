@@ -33,20 +33,55 @@
  * - Se emplea flexbox con gap para distribuir los elementos horizontalmente.
  */
 
-
 import React from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useSidebarContext } from "@/context/SidebarContext";
+import { RelojPeriodo } from "@/modules/Utilidades/components/RelojPeriodo";
+import { useState, useEffect } from "react";
+
+const API_URL = import.meta.env.VITE_API_URL;
+const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
 export default function Header() {
   const { tituloActivo } = useSidebarContext();
+  const [periodosDB, setPeriodosDB] = useState([]);
+
+  useEffect(() => {
+    const fetchTodosPeriodos = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/periodos-horarios`, {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Error al obtener periodos");
+
+        const data = await res.json();
+        const periodosData =
+          data.periodos?.map((p) => ({ ...p, id: parseInt(p.id) })) || [];
+
+        setPeriodosDB(periodosData);
+      } catch (err) {
+        console.error("[DEBUG] Error carga periodos:", err);
+        setPeriodosDB([]);
+      }
+    };
+
+    fetchTodosPeriodos();
+  }, []);
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-3">
-      <SidebarTrigger />
-      <Separator orientation="vertical" className="h-2" />
-      <h1 className="text-m font-semibold">{tituloActivo}</h1>
+    <header className="flex h-20 items-center gap-4 border-b px-4">
+      {/* IZQUIERDA: menu + título */}
+      <div className="flex items-center gap-3">
+        <SidebarTrigger />
+        <Separator orientation="vertical" className="h-5" />
+        <h1 className="text-lg font-semibold">{tituloActivo}</h1>
+      </div>
+
+      {/* CENTRO: reloj */}
+      <div className="flex-1 flex justify-center">
+        <RelojPeriodo periodos={periodosDB} />
+      </div>
     </header>
   );
 }

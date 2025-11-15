@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 import { PanelReservas } from "../../Comunes/PanelReservas";
 import { toast } from "sonner";
 import { esReservaFutura } from "../../../utils/esReservaFutura";
-import { RelojPeriodo } from "@/modules/Utilidades/components/RelojPeriodo";
 import { DialogoPlanoEstancia } from "../components/DialogoPlanoEstancia";
 import { MapPin } from "lucide-react";
 
@@ -66,12 +65,6 @@ export function ReservasEstanciasIndex() {
     setReservaSeleccionada(reserva);
     setAbrirDialogoEditar(true);
   };
-
-  // Actualizar hora cada segundo
-  useEffect(() => {
-    const timer = setInterval(() => setFechaHora(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Cargar TODOS los periodos
   useEffect(() => {
@@ -234,10 +227,7 @@ export function ReservasEstanciasIndex() {
 
   return (
     <div className="p-4">
-      {/* Encabezado reloj */}
-      <div className="mb-1">
-        <RelojPeriodo periodos={periodosDB} />
-      </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Calendario */}
@@ -304,7 +294,7 @@ export function ReservasEstanciasIndex() {
           <PanelReservas
             uid={uid}
             reloadKey={reloadPanel}
-            onReservaModificada={onInsertarSuccess}
+            onPanelCambiado={onInsertarSuccess}
           />
         </div>
 

@@ -353,9 +353,9 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
           onInteractOutside={(e) => e.preventDefault()}
           className="p-0 overflow-hidden rounded-lg"
         >
-          <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+          <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
             <DialogTitle className="text-lg font-semibold text-center leading-snug">
-              Nuevo Asunto Propio ({new Date(fecha).toLocaleDateString("es-ES")}
+              Solicitud de Asunto Propio ({new Date(fecha).toLocaleDateString("es-ES")}
               )
             </DialogTitle>
           </DialogHeader>

@@ -4,7 +4,7 @@ import { columnsAsuntos } from "../components/columns-asuntos";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function PanelReservasDirectiva() {
+export function PanelReservasDirectiva({ reloadKey, onPanelCambiado }) {
   const [data, setData] = useState([]);
   const [asuntosFiltrados, setAsuntosFiltrados] = useState([]);
   const API_URL = import.meta.env.VITE_API_URL;
@@ -15,10 +15,8 @@ export function PanelReservasDirectiva() {
         `${API_URL}/db/asuntos-propios-enriquecidos`,
         { credentials: "include" }
       );
-
       if (!resAsuntos.ok)
         throw new Error("Error al obtener los asuntos propios");
-
       const data = await resAsuntos.json();
       if (data.ok) {
         setData(data.asuntos);
@@ -33,42 +31,20 @@ export function PanelReservasDirectiva() {
 
   useEffect(() => {
     fetchAsuntos();
-  }, []);
+  }, [reloadKey]);
 
-  const handleAceptar = async (asunto) => {
-    try {
-      const res = await fetch(`${API_URL}/db/asuntos-propios/${asunto.id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado: 1 }),
-      });
-      if (!res.ok) throw new Error("Error aceptando asunto");
-      await fetchAsuntos();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleRechazar = async (asunto) => {
-    try {
-      const res = await fetch(`${API_URL}/db/asuntos-propios/${asunto.id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado: 2 }),
-      });
-      if (!res.ok) throw new Error("Error rechazando asunto");
-      await fetchAsuntos();
-    } catch (err) {
-      console.error(err);
-    }
+  const handleCambio = () => {
+    fetchAsuntos();
+    onPanelCambiado?.(); // notifica al Dashboard
   };
 
   return (
     <Card className="shadow-lg rounded-2xl h-[500px] flex flex-col">
       <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
-        <Tabs defaultValue="asuntos" className="flex-1 flex flex-col overflow-hidden">
+        <Tabs
+          defaultValue="asuntos"
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           <TabsList className="grid grid-cols-2 mb-2 gap-2">
             <TabsTrigger value="asuntos" className="text-sm py-1">
               Asuntos propios
@@ -78,12 +54,15 @@ export function PanelReservasDirectiva() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Contenedor de contenido con scroll solo en la primera pestaña */}
           <div className="flex-1 overflow-hidden">
-            <TabsContent value="asuntos" className="h-full overflow-y-auto pr-2">
+            <TabsContent
+              value="asuntos"
+              className="h-full overflow-y-auto pr-2"
+            >
               <TablaAsuntosDirectiva
                 data={asuntosFiltrados}
-                columns={columnsAsuntos(handleAceptar, handleRechazar)}
+                columns={columnsAsuntos({ onCambio: handleCambio })}
+                onCambio={handleCambio}
               />
             </TabsContent>
 
