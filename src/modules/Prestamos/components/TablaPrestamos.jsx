@@ -201,7 +201,14 @@ export function TablaPrestamos({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="h-6">
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="py-1 px-2">
+                <TableHead
+                  key={header.id}
+                  className={`py-1 px-2 ${
+                    header.column.id === "nombreUsuario"
+                      ? "text-left"
+                      : "text-center"
+                  }`}
+                >
                   {header.isPlaceholder
                     ? null
                     : flexRender(
@@ -228,7 +235,10 @@ export function TablaPrestamos({
                       onClick={() => handleRowClick(usuario)}
                     >
                       {/* 1ª columna: expandir/colapsar */}
-                      <TableCell className="w-10 text-center py-1 px-1">
+                      <TableCell
+                        className="text-center py-1 px-0"
+                        style={{ width: "30px", maxWidth: "30px" }}
+                      >
                         <Button
                           variant="ghost"
                           size="icon"
@@ -251,16 +261,39 @@ export function TablaPrestamos({
                       </TableCell>
 
                       {/* 3ª columna: Doc compromiso */}
-                      <TableCell className="py-1 px-2">
-                        {usuario.doc_compromiso === 1
-                          ? "Entregado"
-                          : usuario.doc_compromiso === 2
-                            ? "Recibido"
-                            : ""}
+                      <TableCell className="text-center py-1 px-2">
+                        {(() => {
+                          let text = "";
+                          let classes =
+                            "px-2 py-1 rounded-lg text-xs font-medium border ";
+
+                          switch (usuario.doc_compromiso) {
+                            case 0:
+                              text = "Pendiente";
+                              classes +=
+                                "text-yellow-600 bg-yellow-100 border-yellow-300";
+                              break;
+                            case 1:
+                              text = "Entregado";
+                              classes +=
+                                "text-green-600 border-green-600 bg-transparent";
+                              break;
+                            case 2:
+                              text = "Recibido";
+                              classes +=
+                                "text-white border-green-600 bg-green-600";
+                              break;
+                            default:
+                              text = "";
+                              classes = "";
+                          }
+
+                          return <span className={classes}>{text}</span>;
+                        })()}
                       </TableCell>
 
                       {/* 4ª columna: Curso */}
-                      <TableCell className="py-1 px-2">
+                      <TableCell className="text-center py-1 px-2">
                         {usuario.curso}
                       </TableCell>
                     </TableRow>
@@ -331,15 +364,18 @@ export function TablaPrestamos({
         </Table>
       </div>
 
-      {/* Acciones + Paginación */}
-      <div className="flex flex-col sm:flex-row sm:justify-between items-center py-6 space-y-4 sm:space-y-0">
-        <div className="flex gap-2">
+      {/* Acciones + Paginación + Total de registros */}
+      <div className="grid grid-cols-3 items-center py-6">
+        {/* Acciones a la izquierda */}
+        <div className="flex gap-2 justify-start">
           {acciones &&
             acciones(
               selectedId ? data.find((u) => u.id_prestamo === selectedId) : null
             )}
         </div>
-        <div className="flex items-center space-x-2">
+
+        {/* Paginación centrada */}
+        <div className="flex items-center justify-center space-x-2">
           <Button
             variant="outline"
             size="icon"
@@ -376,7 +412,9 @@ export function TablaPrestamos({
             <ChevronsRight className="w-4 h-4" />
           </Button>
         </div>
-        <div className="text-xs text-muted-foreground">
+
+        {/* Total de registros a la derecha */}
+        <div className="flex justify-end text-xs text-muted-foreground">
           Total de registros: {table.getFilteredRowModel().rows.length}
         </div>
       </div>

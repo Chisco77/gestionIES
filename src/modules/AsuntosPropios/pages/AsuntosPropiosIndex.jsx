@@ -61,8 +61,6 @@ export function AsuntosPropiosIndex() {
   // --- Función para recargar PanelReservas ---
   const recargarPanel = () => setReloadPanel((r) => r + 1);
 
-
-
   // --- Cálculo calendario ---
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
@@ -272,30 +270,30 @@ export function AsuntosPropiosIndex() {
                   ))}
                 </tbody>
               </table>
-              {/* Leyenda + Switch */}
-              <div className="mt-4 flex justify-center items-center text-sm">
-                {/* Leyenda */}
-                <div className="flex gap-6">
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-green-200 rounded"></div>
-                    Mis asuntos propios
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-red-200 rounded"></div>
-                    Días bloqueados
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                    Parcialmente ocupado
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                    Completo
-                  </div>
-                </div>
-              </div>
             </div>
           </CardContent>
+          {/* Leyenda + Switch */}
+          <div className="mt-4 mb-4 flex justify-center items-center text-sm">
+            {/* Leyenda */}
+            <div className="flex gap-6">
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 bg-green-200 rounded"></div>
+                Mis asuntos propios
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 bg-red-200 rounded"></div>
+                Días bloqueados
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                Parcialmente ocupado
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                Completo
+              </div>
+            </div>
+          </div>
         </Card>
 
         {/* Panel de asuntos */}

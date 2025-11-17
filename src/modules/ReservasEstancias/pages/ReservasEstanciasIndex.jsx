@@ -350,7 +350,7 @@ export function ReservasEstanciasIndex() {
                             title={`Ver plano de ${e.descripcion}`}
                           >
                             <div className="flex items-center justify-center gap-2">
-                              <span>{e.descripcion}</span>
+                              <span>{e.descripcion + " (" + e.numero_ordenadores + ")"}</span>
                               <MapPin
                                 size={18}
                                 className="text-gray-500 hover:text-blue-600 transition-colors"

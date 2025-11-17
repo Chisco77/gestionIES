@@ -39,7 +39,7 @@
  *   que a su vez dispara el callback `onOpenEtiquetas` si está definido.
  * - El pie del sidebar incluye un botón de logout y la información del usuario activo.
  */
-
+/*
 import { useAuth } from "@/context/AuthContext";
 import React from "react";
 import { useNavigate } from "react-router-dom";
@@ -52,6 +52,27 @@ import {
   SidebarMenu,
 } from "@/components/ui/sidebar";
 import { Power, User, BookOpen, SquareTerminal, Settings2 } from "lucide-react";
+import {
+  Home,
+  Users,
+  CalendarCheck,
+  Library,
+  BookMarked,
+  GraduationCap,
+  UserCheck,
+  KeySquare,
+  KeyRound,
+  Map,
+  ShieldCog,
+  IdCard,
+  ListChecks,
+  Building2,
+  Tag,
+  Wrench,
+  Power,
+  User,
+} from "lucide-react";
+
 import { NavMain } from "@/components/nav-main";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -322,6 +343,346 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
           </div>
         </SidebarMenu>
       </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  );
+}
+
+export default React.memo(SidebarComponent);
+*/
+
+/**
+ * Sidebar.jsx - Componente de barra lateral de la aplicación
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Componente que renderiza la barra lateral de navegación principal.
+ */
+
+import { useAuth } from "@/context/AuthContext";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
+  SidebarMenu,
+} from "@/components/ui/sidebar";
+
+import { NavMain } from "@/components/nav-main";
+
+import {
+  Home,
+  Users,
+  CalendarCheck,
+  Library,
+  BookMarked,
+  GraduationCap,
+  UserCheck,
+  KeySquare,
+  KeyRound,
+  Map,
+  ShieldCheck,
+  IdCard,
+  ListChecks,
+  Building2,
+  Tag,
+  Wrench,
+  Power,
+  User,
+} from "lucide-react";
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+function SidebarComponent({ onOpenEtiquetas, ...props }) {
+  const navigate = useNavigate();
+  const [openEtiquetas, setOpenEtiquetas] = React.useState(false);
+  const { user, setUser, loading } = useAuth();
+
+  // Menús por perfil con iconos mejorados
+  const menusPorPerfil = {
+    directiva: [
+      {
+        title: "Inicio",
+        url: "/",
+        icon: Home,
+      },
+      {
+        title: "Usuarios",
+        url: "#",
+        icon: Users,
+        items: [
+          { title: "Alumnos", url: "/alumnos" },
+          { title: "Profesores", url: "/profesores" },
+          { title: "Todos", url: "/todos" },
+        ],
+      },
+      {
+        title: "Reservas",
+        url: "#",
+        icon: CalendarCheck,
+        items: [
+          { title: "Aulas", url: "/reservasEstancias" },
+          { title: "Asuntos Propios", url: "/asuntos_propios" },
+          { title: "Educadora", url: "" },
+          { title: "Extraescolares", url: "" },
+        ],
+      },
+      {
+        title: "Préstamo Libros",
+        url: "#",
+        icon: Library,
+        items: [
+          { title: "Alumnos", url: "/prestamos" },
+          { title: "Profesores", url: "/prestamosProfesores" },
+          { title: "Libros", url: "/libros" },
+          { title: "Cursos", url: "/cursos" },
+        ],
+      },
+      {
+        title: "Préstamo Llaves",
+        url: "#",
+        icon: KeySquare,
+        items: [
+          { title: "Llaves prestadas", url: "/llavesPrestadas" },
+          { title: "Planta BAJA", url: "/llavesPlantaBaja" },
+          { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
+          { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
+        ],
+      },
+      {
+        title: "Administrador",
+        url: "#",
+        icon: ShieldCheck,
+        items: [
+          { title: "Perfiles de Usuario", url: "/perfiles" },
+          { title: "Estancias", url: "/estancias" },
+          { title: "Reglas Asuntos Propios", url: "/asuntos_restricciones" },
+          { title: "Etiquetas", url: "/etiquetas_genericas" },
+          {
+            title: "Etiquetas genéricas",
+            url: "#",
+            onClick: () => setOpenEtiquetas(true),
+            icon: Tag,
+          },
+        ],
+      },
+    ],
+
+    profesor: [
+      {
+        title: "Inicio",
+        url: "/",
+        icon: Home,
+      },
+      {
+        title: "Usuarios",
+        url: "#",
+        icon: Users,
+        items: [
+          { title: "Alumnos", url: "/alumnos" },
+          { title: "Profesores", url: "/profesores" },
+          { title: "Todos", url: "/todos" },
+        ],
+      },
+      {
+        title: "Reservas",
+        url: "#",
+        icon: CalendarCheck,
+        items: [
+          { title: "Aulas", url: "/reservasEstancias" },
+          { title: "Asuntos Propios", url: "/asuntos_propios" },
+          { title: "Educadora", url: "" },
+          { title: "Extraescolares", url: "" },
+        ],
+      },
+    ],
+
+    ordenanza: [
+      {
+        title: "Préstamo Llaves",
+        url: "#",
+        icon: KeySquare,
+        isActive: true,
+        items: [
+          { title: "Llaves prestadas", url: "/llavesPrestadas" },
+          { title: "Planta BAJA", url: "/llavesPlantaBaja" },
+          { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
+          { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
+        ],
+      },
+    ],
+
+    administrador: [
+      {
+        title: "Inicio",
+        url: "/",
+        icon: Home,
+      },
+      {
+        title: "Usuarios",
+        url: "#",
+        icon: Users,
+        items: [
+          { title: "Alumnos", url: "/alumnos" },
+          { title: "Profesores", url: "/profesores" },
+          { title: "Todos", url: "/todos" },
+          { title: "Perfiles de Usuario", url: "/perfiles" },
+        ],
+      },
+
+      {
+        title: "Reservas",
+        url: "#",
+        icon: CalendarCheck,
+        items: [
+          { title: "Aulas", url: "/reservasEstancias" },
+          { title: "Asuntos Propios", url: "/asuntos_propios" },
+          { title: "Educadora", url: "" },
+          { title: "Extraescolares", url: "" },
+        ],
+      },
+      {
+        title: "Préstamo Libros",
+        url: "#",
+        icon: Library,
+        items: [
+          { title: "Alumnos", url: "/prestamos" },
+          { title: "Profesores", url: "/prestamosProfesores" },
+          { title: "Libros", url: "/libros" },
+          { title: "Cursos", url: "/cursos" },
+        ],
+      },
+      {
+        title: "Préstamo Llaves",
+        url: "#",
+        icon: KeySquare,
+        items: [
+          { title: "Llaves prestadas", url: "/llavesPrestadas" },
+          { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
+          { title: "Planta BAJA", url: "/llavesPlantaBaja" },
+          { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
+          { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
+        ],
+      },
+      {
+        title: "Administrador",
+        url: "#",
+        icon: ShieldCheck,
+        items: [
+          { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
+          { title: "Asuntos Propios", url: "/asuntos_restricciones", icon: ListChecks },
+          { title: "Estancias", url: "/estancias", icon: Building2 },
+          { title: "Etiquetas", url: "/etiquetas_genericas", icon: Tag },
+          {
+            title: "Etiquetas genéricas",
+            url: "#",
+            onClick: () => setOpenEtiquetas(true),
+            icon: Tag,
+          },
+        ],
+      },
+    ],
+
+    educadora: [
+      {
+        title: "Inicio",
+        url: "/",
+        icon: Home,
+      },
+      {
+        title: "Usuarios",
+        url: "#",
+        icon: Users,
+        items: [
+          { title: "Alumnos", url: "/alumnos" },
+          { title: "Profesores", url: "/profesores" },
+          { title: "Todos", url: "/todos" },
+        ],
+      },
+      {
+        title: "Reservas",
+        url: "#",
+        icon: CalendarCheck,
+        items: [
+          { title: "Estancias", url: "/reservasEstancias" },
+        ],
+      },
+      {
+        title: "Préstamo Libros",
+        url: "#",
+        icon: Library,
+        items: [
+          { title: "Alumnos", url: "/prestamos" },
+          { title: "Profesores", url: "/prestamosProfesores" },
+          { title: "Libros", url: "/libros" },
+          { title: "Cursos", url: "/cursos" },
+        ],
+      },
+    ],
+  };
+
+  const navMain = user ? (menusPorPerfil[user.perfil] ?? []) : [];
+
+  const handleClickLogout = () => {
+    fetch(`${API_URL}/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).finally(() => {
+      setUser(null);
+      navigate("/login");
+    });
+  };
+
+  // Cuando se abre etiquetas, notificar al padre
+  React.useEffect(() => {
+    if (openEtiquetas && onOpenEtiquetas) {
+      onOpenEtiquetas();
+      setOpenEtiquetas(false);
+    }
+  }, [openEtiquetas, onOpenEtiquetas]);
+
+  return (
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader />
+      <SidebarContent>
+        {loading ? (
+          <div>Cargando...</div>
+        ) : !user ? (
+          <div>No autenticado</div>
+        ) : (
+          <NavMain items={navMain} />
+        )}
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu className="border-t p-4">
+          <div className="flex items-center justify-between w-full">
+            <Power
+              className="cursor-pointer"
+              color="red"
+              onClick={handleClickLogout}
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{user?.username}</span>
+              <User className="h-5 w-5 text-gray-500" />
+            </div>
+          </div>
+        </SidebarMenu>
+      </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   );
