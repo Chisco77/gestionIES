@@ -134,7 +134,6 @@ export function DashboardDirectiva() {
     }
   };
 
-
   const handleDenegar = (solicitud) => {
     setSolicitudActual(solicitud);
     setMotivoDenegacion("");
@@ -151,7 +150,7 @@ export function DashboardDirectiva() {
       {/* Grid con calendario y detalles */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Calendario */}
-        <Card className="shadow-lg rounded-2xl flex flex-col h-[300px]">
+        <Card className="shadow-lg rounded-2xl flex flex-col h-[350px]">
           <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
             <button onClick={handlePrevMonth}>
               <ChevronLeft className="w-6 h-6" />
@@ -183,11 +182,7 @@ export function DashboardDirectiva() {
                     <tr key={i}>
                       {week.map((d, j) => {
                         if (!d) return <td key={j} className="p-2"></td>;
-                        const dateKey = getDateKey(
-                          currentYear,
-                          currentMonth,
-                          d
-                        );
+                        const dateKey = getDateKey(currentYear, currentMonth);
                         const info = reservas[dateKey] || {};
                         const isToday = dateKey === todayStr;
                         const isSelected = dateKey === selectedDate;
@@ -218,31 +213,30 @@ export function DashboardDirectiva() {
                   ))}
                 </tbody>
               </table>
-
-              {/* Leyenda + Switch */}
-              <div className="mt-4 flex justify-center items-center text-sm">
-                {/* Leyenda */}
-                <div className="flex gap-6">
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-green-200 rounded"></div>
-                    Mis asuntos propios
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-red-200 rounded"></div>
-                    Días bloqueados
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                    Parcialmente ocupado
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                    Completo
-                  </div>
-                </div>
-              </div>
             </div>
           </CardContent>
+          {/* Leyenda + Switch */}
+          <div className="mt-4 mb-4 flex justify-center items-center text-sm">
+            {/* Leyenda */}
+            <div className="flex gap-6">
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 bg-green-200 rounded"></div>
+                Mis asuntos propios
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 bg-red-200 rounded"></div>
+                Días bloqueados
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                Parcialmente ocupado
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                Completo
+              </div>
+            </div>
+          </div>
         </Card>
 
         {/* Detalles del día. Si detecto cambio dentro del PanelReservas, notifico para recargar PanelReservasDirectiva y tener datos actualizados.*/}

@@ -65,7 +65,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
   const menusPorPerfil = {
     directiva: [
       {
-        title: "Panel informativo",
+        title: "Inicio",
         url: "/",
         icon: SquareTerminal,
       },
@@ -107,7 +107,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         icon: BookOpen,
         items: [
           { title: "Llaves prestadas", url: "/llavesPrestadas" },
-          { title: "Estancias", url: "/estancias" },
           { title: "Planta BAJA", url: "/llavesPlantaBaja" },
           { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
           { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
@@ -126,7 +125,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
     ],
     profesor: [
       {
-        title: "Panel informativo",
+        title: "Inicio",
         url: "/",
         icon: SquareTerminal,
       },
@@ -157,7 +156,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         title: "Préstamo Llaves",
         url: "#",
         icon: BookOpen,
-        isActive: true, // 👈 hace que el menú aparezca desplegado
+        isActive: true, 
         items: [
           { title: "Llaves prestadas", url: "/llavesPrestadas" },
           { title: "Planta BAJA", url: "/llavesPlantaBaja" },
@@ -169,7 +168,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
 
     administrador: [
       {
-        title: "Panel informativo",
+        title: "Inicio",
         url: "/",
         icon: SquareTerminal,
       },
@@ -214,7 +213,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         icon: BookOpen,
         items: [
           { title: "Llaves prestadas", url: "/llavesPrestadas" },
-          { title: "Estancias", url: "/estancias" },
           { title: "Edición de Planos", url: "/edicionPlanos" },
           { title: "Planta BAJA", url: "/llavesPlantaBaja" },
           { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
@@ -240,7 +238,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
     ],
     educadora: [
       {
-        title: "Panel informativo",
+        title: "Inicio",
         url: "/",
         icon: SquareTerminal,
       },

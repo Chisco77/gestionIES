@@ -231,7 +231,7 @@ export function ReservasEstanciasIndex() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Calendario */}
-        <Card className="shadow-lg rounded-2xl h-[300px] flex flex-col">
+        <Card className="shadow-lg rounded-2xl h-[350px] flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
             <button onClick={handlePrevMonth}>
               <ChevronLeft className="w-6 h-6" />

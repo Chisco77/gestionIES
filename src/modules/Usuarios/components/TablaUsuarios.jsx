@@ -85,6 +85,7 @@ export function TablaUsuarios({
     enableRowSelection: true,
     enableMultiRowSelection: false,
     state: { sorting, columnFilters },
+    initialState: { pagination: { pageIndex: 0, pageSize: 15 } },
   });
 
   // Notificar al padre los alumnos filtrados
@@ -193,7 +194,7 @@ export function TablaUsuarios({
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell className="py-1 px-2" key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -216,10 +217,13 @@ export function TablaUsuarios({
         </Table>
       </div>
 
-      {/* Acciones + Paginación */}
-      <div className="flex flex-col sm:flex-row sm:justify-between items-center py-6 space-y-4 sm:space-y-0">
+      {/* ACCIONES + PAGINACIÓN */}
+      <div className="flex flex-col sm:flex-row items-center py-1 space-y-4 sm:space-y-0 text-xs">
         <div className="flex gap-2">{acciones(selectedItem)}</div>
-        <div className="flex items-center space-x-2">
+        {/* Izquierda vacío para empujar el centro */}
+        <div className="flex-1"></div>
+        <div className="flex items-center justify-center space-x-1 flex-1">
+          {" "}
           <Button
             variant="outline"
             size="icon"
@@ -256,7 +260,9 @@ export function TablaUsuarios({
             <ChevronsRight className="w-4 h-4" />
           </Button>
         </div>
-        <div className="text-xs text-muted-foreground">
+
+        <div className="flex-1 text-right text-xs text-muted-foreground">
+          {" "}
           Total de registros: {table.getFilteredRowModel().rows.length}
         </div>
       </div>

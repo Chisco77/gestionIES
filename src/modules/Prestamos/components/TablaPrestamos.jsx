@@ -1,6 +1,6 @@
 /**
  * Componente: TablaPrestamos
- * 
+ *
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
  * Email: adminies.franciscodeorellana@educarex.es
@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Este componente renderiza una tabla interactiva de préstamos de libros,
  * con funcionalidades de:
  *   - Filtrado por curso y nombre de alumno
@@ -17,7 +17,7 @@
  *   - Filas expandibles para ver detalle de préstamos
  *   - Selección de fila
  *   - Acciones dinámicas basadas en la fila seleccionada
- * 
+ *
  * Props:
  *   - columns: array → definición de columnas (para React Table)
  *   - data: array → lista de préstamos, cada objeto debe incluir:
@@ -34,18 +34,18 @@
  *   - acciones: función que recibe el usuario seleccionado y devuelve botones/acciones
  *   - onSelectUsuario: función callback al seleccionar una fila (usuario)
  *   - onFilteredChange: función callback que recibe el array de usuarios filtrados
- * 
+ *
  * Estados internos:
  *   - sorting: array → columnas por las que se ordena
  *   - columnFilters: array → filtros aplicados a columnas
  *   - expandedRows: objeto → mapea id_prestamo a booleano para saber si la fila está expandida
  *   - selectedId: id del usuario seleccionado
- * 
+ *
  * Funciones principales:
  *   - toggleRow(id): expande o colapsa la fila de detalle
  *   - handleRowClick(usuario): selecciona la fila y llama a onSelectUsuario
  *   - toggleExpandClick(id, e): evita propagación del click y expande/colapsa fila
- * 
+ *
  * React Table:
  *   - Se usa useReactTable con:
  *       - getCoreRowModel
@@ -54,12 +54,12 @@
  *       - getFilteredRowModel
  *   - Se sincroniza sorting y columnFilters en el estado
  *   - Se habilita selección de fila (single row)
- * 
+ *
  * Filtrado:
  *   - Select para curso → filtra columna "curso"
  *   - Input para nombre → filtra columna "nombreUsuario"
  *   - Se notifica a onFilteredChange con los resultados filtrados
- * 
+ *
  * Render:
  *   - Cabecera con filtros
  *   - Tabla con:
@@ -69,9 +69,8 @@
  *   - Paginación con botones (primera, anterior, siguiente, última)
  *   - Total de registros filtrados
  *   - Acciones dinámicas según usuario seleccionado
- * 
+ *
  */
-
 
 import { useState, Fragment, useEffect } from "react";
 import {
@@ -102,7 +101,6 @@ import {
   X,
 } from "lucide-react";
 
-
 export function TablaPrestamos({
   columns,
   data,
@@ -130,6 +128,7 @@ export function TablaPrestamos({
     state: { sorting, columnFilters },
     enableRowSelection: true,
     enableMultiRowSelection: false,
+    initialState: { pagination: { pageIndex: 0, pageSize: 15 } },
   });
 
   // --- efecto para enviar filas filtradas ---
@@ -200,9 +199,9 @@ export function TablaPrestamos({
       <div className="rounded-md border mt-4">
         <Table>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
+            <TableRow key={headerGroup.id} className="h-6">
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead key={header.id} className="py-1 px-2">
                   {header.isPlaceholder
                     ? null
                     : flexRender(
@@ -223,29 +222,36 @@ export function TablaPrestamos({
                 return (
                   <Fragment key={usuario.id_prestamo}>
                     <TableRow
-                      className={`cursor-pointer ${
+                      className={`h-6 cursor-pointer ${
                         selectedId === usuario.id_prestamo ? "bg-blue-100" : ""
                       } hover:bg-gray-200`}
                       onClick={() => handleRowClick(usuario)}
                     >
                       {/* 1ª columna: expandir/colapsar */}
-                      <TableCell className="w-10 text-center">
+                      <TableCell className="w-10 text-center py-1 px-1">
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="p-0 w-5 h-5"
                           onClick={(e) =>
                             toggleExpandClick(usuario.id_prestamo, e)
                           }
                         >
-                          {isExpanded ? <ChevronDown /> : <ChevronRight />}
+                          {isExpanded ? (
+                            <ChevronDown className="w-3 h-3" />
+                          ) : (
+                            <ChevronRight className="w-3 h-3" />
+                          )}
                         </Button>
                       </TableCell>
 
                       {/* 2ª columna: Alumno*/}
-                      <TableCell>{usuario.nombreUsuario}</TableCell>
+                      <TableCell className="py-1 px-2">
+                        {usuario.nombreUsuario}
+                      </TableCell>
 
                       {/* 3ª columna: Doc compromiso */}
-                      <TableCell>
+                      <TableCell className="py-1 px-2">
                         {usuario.doc_compromiso === 1
                           ? "Entregado"
                           : usuario.doc_compromiso === 2
@@ -254,49 +260,56 @@ export function TablaPrestamos({
                       </TableCell>
 
                       {/* 4ª columna: Curso */}
-                      <TableCell>{usuario.curso}</TableCell>
+                      <TableCell className="py-1 px-2">
+                        {usuario.curso}
+                      </TableCell>
                     </TableRow>
 
                     {/* Filas expandidas */}
                     {isExpanded && (
                       <Fragment>
-                        <TableRow className="bg-gray-100 font-semibold">
-                          <TableCell></TableCell>
-                          <TableCell className="pl-10">Libro</TableCell>
-                          <TableCell className="text-center">
+                        <TableRow className="bg-gray-100 font-semibold h-5">
+                          <TableCell className="py-1 px-2"></TableCell>
+                          <TableCell className="pl-10 py-1 px-2">
+                            Libro
+                          </TableCell>
+                          <TableCell className="text-center py-1 px-2">
                             Entregado
                           </TableCell>
-                          <TableCell className="text-center">
+                          <TableCell className="text-center py-1 px-2">
                             Devuelto
                           </TableCell>
-                          <TableCell></TableCell>
+                          <TableCell className="py-1 px-2"></TableCell>
                         </TableRow>
                         {usuario.prestamos.map((item) => (
-                          <TableRow key={item.id_item} className="bg-gray-50">
-                            <TableCell></TableCell>
-                            <TableCell className="pl-10">
+                          <TableRow
+                            key={item.id_item}
+                            className="bg-gray-50 h-5"
+                          >
+                            <TableCell className="py-1 px-2"></TableCell>
+                            <TableCell className="pl-10 py-1 px-2">
                               {item.libro}
                             </TableCell>
 
-                            {/* Nueva columna ENTREGADO */}
-                            <TableCell className="text-center">
+                            {/* Columna ENTREGADO */}
+                            <TableCell className="text-center py-1 px-2">
                               {item.entregado ? (
-                                <Check className="text-green-600 w-4 h-4 mx-auto" />
+                                <Check className="text-green-600 w-3 h-3 mx-auto" />
                               ) : (
-                                <X className="text-red-600 w-4 h-4 mx-auto" />
+                                <X className="text-red-600 w-3 h-3 mx-auto" />
                               )}
                             </TableCell>
 
                             {/* Columna DEVUELTO */}
-                            <TableCell className="text-center">
+                            <TableCell className="text-center py-1 px-2">
                               {item.devuelto ? (
-                                <Check className="text-green-600 w-4 h-4 mx-auto" />
+                                <Check className="text-green-600 w-3 h-3 mx-auto" />
                               ) : (
-                                <X className="text-red-600 w-4 h-4 mx-auto" />
+                                <X className="text-red-600 w-3 h-3 mx-auto" />
                               )}
                             </TableCell>
 
-                            <TableCell></TableCell>
+                            <TableCell className="py-1 px-2"></TableCell>
                           </TableRow>
                         ))}
                       </Fragment>
@@ -308,7 +321,7 @@ export function TablaPrestamos({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-12 text-center"
                 >
                   No hay resultados.
                 </TableCell>
@@ -370,5 +383,3 @@ export function TablaPrestamos({
     </div>
   );
 }
-
-

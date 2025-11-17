@@ -44,7 +44,7 @@ async function getEstanciasByPlanta(req, res) {
   const planta = (req.query.planta || "baja").toLowerCase();
   try {
     const { rows } = await db.query(
-      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia
+      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, numero_ordenadores
 FROM estancias
 WHERE planta = $1
 ORDER BY descripcion ASC`,
@@ -61,6 +61,7 @@ ORDER BY descripcion ASC`,
       coordenadas: r.coordenadas_json,
       reservable: r.reservable,
       tipoestancia: r.tipoestancia,
+      numero_ordenadores: r.numero_ordenadores,
     }));
 
     res.json({ ok: true, planta, estancias });
@@ -75,7 +76,7 @@ async function getEstanciasByTipoEstancia(req, res) {
   const tipoestancia = req.query.tipoestancia || "Infolab";
   try {
     const { rows } = await db.query(
-      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, planta
+      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, planta, numero_ordenadores
 FROM estancias
 WHERE tipoestancia = $1
 ORDER BY descripcion ASC`,
@@ -93,6 +94,7 @@ ORDER BY descripcion ASC`,
       reservable: r.reservable,
       tipoestancia: r.tipoestancia,
       planta: r.planta,
+      numero_ordenadores: r.numero_ordenadores,
     }));
 
     res.json({ ok: true, tipoestancia, estancias });
@@ -115,6 +117,7 @@ async function insertEstancia(req, res) {
     codigollave = "",
     reservable = "false",
     tipoestancia = "",
+    numero_ordenadores = 0,
   } = req.body || {};
 
   if (!codigo || !descripcion || !isValidCoordenadas(coordenadas)) {
@@ -127,9 +130,9 @@ async function insertEstancia(req, res) {
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO estancias (planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia)
+      `INSERT INTO estancias (planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, numero_ordenadores)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-       RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia`,
+       RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, numero_ordenadores`,
       [
         planta.toLowerCase(),
         codigo,
@@ -140,6 +143,7 @@ async function insertEstancia(req, res) {
         codigollave,
         reservable,
         tipoestancia,
+        numero_ordenadores,
       ]
     );
 
@@ -156,6 +160,7 @@ async function insertEstancia(req, res) {
         codigollave: r.codigollave,
         reservable: r.reservable,
         tipoestancia: r.tipoestancia,
+        numero_ordenadores: r.numero_ordenadores,
       },
     });
   } catch (err) {
@@ -176,6 +181,7 @@ async function updateEstancia(req, res) {
     codigollave,
     reservable,
     tipoestancia,
+    numero_ordenadores,
   } = req.body || {};
 
   if (typeof coordenadas !== "undefined" && !isValidCoordenadas(coordenadas)) {
@@ -228,6 +234,11 @@ async function updateEstancia(req, res) {
     vals.push(tipoestancia);
   }
 
+  if (typeof numero_ordenadores !== "undefined") {
+    sets.push(`numero_ordenadores = $${++i}`);
+    vals.push(Number(numero_ordenadores));
+  }
+
   if (sets.length === 0) {
     return res.status(400).json({ ok: false, error: "Nada que actualizar" });
   }
@@ -237,7 +248,7 @@ async function updateEstancia(req, res) {
       UPDATE estancias
       SET ${sets.join(", ")}
       WHERE id = $1
-      RETURNING id, codigo, descripcion, totalllaves, armario, codigollave, coordenadas_json, reservable, tipoestancia
+      RETURNING id, codigo, descripcion, totalllaves, armario, codigollave, coordenadas_json, reservable, tipoestancia, numero_ordenadores
     `;
 
     const { rows } = await db.query(query, [id, ...vals]);
@@ -261,6 +272,7 @@ async function updateEstancia(req, res) {
         coordenadas: r.coordenadas_json,
         reservable: r.reservable,
         tipoestancia: r.tipoestancia,
+        numero_ordenadores: r.numero_ordenadores,
       },
     });
   } catch (err) {
@@ -294,7 +306,7 @@ async function deleteEstancia(req, res) {
 async function getAllEstancias(req, res) {
   try {
     const { rows } = await db.query(
-      `SELECT id, planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia
+      `SELECT id, planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, numero_ordenadores
        FROM estancias
        ORDER BY planta, descripcion ASC`
     );
@@ -310,6 +322,7 @@ async function getAllEstancias(req, res) {
       codigollave: r.codigollave,
       reservable: r.reservable,
       tipoestancia: r.tipoestancia,
+      numero_ordenadores: r.numero_ordenadores,
     }));
 
     res.json(estancias);
@@ -321,7 +334,6 @@ async function getAllEstancias(req, res) {
 async function getEstanciasFiltradas(req, res) {
   const { tipoestancia, reservable } = req.query;
 
-  
   try {
     const filtros = [];
     const vals = [];
@@ -337,10 +349,9 @@ async function getEstanciasFiltradas(req, res) {
     }
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
-    
 
     const { rows } = await db.query(
-      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, planta
+      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, planta, numero_ordenadores
        FROM estancias
        ${where}
        ORDER BY descripcion ASC`,
@@ -374,7 +385,7 @@ async function filtrarEstancias({ tipoestancia, reservable }) {
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
 
     const { rows } = await db.query(
-      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, planta
+      `SELECT id, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, planta, numero_ordenadores
        FROM estancias
        ${where}
        ORDER BY descripcion ASC`,
@@ -387,7 +398,6 @@ async function filtrarEstancias({ tipoestancia, reservable }) {
     return { ok: false, error: "Error obteniendo estancias filtradas" };
   }
 }
-
 
 module.exports = {
   getEstanciasByPlanta,

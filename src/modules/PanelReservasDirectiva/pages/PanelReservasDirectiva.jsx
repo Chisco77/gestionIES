@@ -39,8 +39,8 @@ export function PanelReservasDirectiva({ reloadKey, onPanelCambiado }) {
   };
 
   return (
-    <Card className="shadow-lg rounded-2xl h-[500px] flex flex-col">
-      <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
+    <Card className="shadow-lg rounded-2xl h-[480px] flex flex-col">
+      <CardContent className="flex-1 flex flex-col p-2 overflow-hidden">
         <Tabs
           defaultValue="asuntos"
           className="flex-1 flex flex-col overflow-hidden"

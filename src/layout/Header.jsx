@@ -70,7 +70,7 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="flex h-20 items-center gap-4 border-b px-4">
+    <header className="relative flex h-[60px] items-center gap-4 border-b px-4">
       {/* IZQUIERDA: menu + título */}
       <div className="flex items-center gap-3">
         <SidebarTrigger />
@@ -79,7 +79,7 @@ export default function Header() {
       </div>
 
       {/* CENTRO: reloj */}
-      <div className="flex-1 flex justify-center">
+      <div className="absolute left-1/2 transform -translate-x-1/2">
         <RelojPeriodo periodos={periodosDB} />
       </div>
     </header>

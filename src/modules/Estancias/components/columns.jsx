@@ -78,6 +78,12 @@ export const columns = [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
+    // Alineación centro en la celda
+    cell: ({ row }) => (
+      <div className="text-center w-full pr-2">
+        {row.getValue("totalllaves")}
+      </div>
+    ),
     enableSorting: true,
   },
   {
@@ -109,6 +115,12 @@ export const columns = [
     filterFn: (row, columnId, filterValue) =>
       !filterValue ||
       row.getValue(columnId)?.toLowerCase().includes(filterValue.toLowerCase()),
+    // Alineación centro en la celda
+    cell: ({ row }) => (
+      <div className="text-center w-full pr-2">
+        {row.getValue("codigollave")}
+      </div>
+    ),
   },
   {
     accessorKey: "reservable",
@@ -127,5 +139,25 @@ export const columns = [
     },
     enableSorting: true,
     enableColumnFilter: true,
+  },
+  {
+    accessorKey: "numero_ordenadores",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Nº Ordenadores
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    enableSorting: true,
+
+    // Alineación centro en la celda
+    cell: ({ row }) => (
+      <div className="text-center w-full pr-2">
+        {row.getValue("numero_ordenadores")}
+      </div>
+    ),
   },
 ];

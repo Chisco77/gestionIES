@@ -49,10 +49,12 @@ export function DialogoEditarEstancia({
 }) {
   const [descripcion, setDescripcion] = useState("");
   const [totalllaves, setTotalllaves] = useState("");
+  const [numero_ordenadores, setNumeroOrdenadores] = useState("");
+
   const [armario, setArmario] = useState("");
   const [codigollave, setCodigoLlave] = useState("");
   const [reservable, setReservable] = useState(false);
-  const [tipoestancia, setTipoEstancia] = useState ("");
+  const [tipoestancia, setTipoEstancia] = useState("");
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -64,9 +66,10 @@ export function DialogoEditarEstancia({
       setCodigoLlave(estanciaSeleccionada.codigollave || "");
       setReservable(!!estanciaSeleccionada.reservable);
       setTipoEstancia(estanciaSeleccionada.tipoestancia || "");
+      setNumeroOrdenadores(estanciaSeleccionada.numero_ordenadores || "");
     }
   }, [estanciaSeleccionada]);
-
+  console.log(estanciaSeleccionada);
   const handleEditar = async () => {
     try {
       const res = await fetch(
@@ -82,6 +85,7 @@ export function DialogoEditarEstancia({
             codigollave,
             reservable,
             tipoestancia,
+            numero_ordenadores,
           }),
         }
       );
@@ -98,13 +102,19 @@ export function DialogoEditarEstancia({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose} modal={false}>
-      <DialogContent onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle>Editar estancia</DialogTitle>
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="p-0 overflow-hidden rounded-lg"
+      >
+        {/* ENCABEZADO */}
+        <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+          <DialogTitle className="text-lg font-semibold text-center leading-snug">
+            Editar estancia
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 mt-2">
+        <div className="flex flex-col space-y-4 p-6">
           <div>
             <Label className="text-sm font-medium">Descripción</Label>
             <Input
@@ -163,6 +173,15 @@ export function DialogoEditarEstancia({
               onChange={(e) => setCodigoLlave(e.target.value)}
             />
           </div>
+          <div>
+            <Label className="text-sm font-medium">Nº de ordenadores</Label>
+            <Input
+              type="number"
+              placeholder="Ej: 3"
+              value={numero_ordenadores}
+              onChange={(e) => setNumeroOrdenadores(e.target.value)}
+            />
+          </div>
 
           <div className="flex items-center justify-between border rounded-md p-3 mt-2">
             <Label className="text-sm font-medium">Reservable</Label>
@@ -170,8 +189,10 @@ export function DialogoEditarEstancia({
           </div>
         </div>
 
-        <DialogFooter className="mt-4">
-          <Button onClick={handleEditar}>Guardar cambios</Button>
+        <DialogFooter className="px-6 py-4 bg-gray-50">
+          <Button variant="outline" onClick={handleEditar}>
+            Guardar cambios
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

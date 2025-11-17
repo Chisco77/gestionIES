@@ -42,10 +42,10 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 import { DialogoConfirmacion } from "./DialogoConfirmacion";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
 import { columnsAsuntos } from "./columns-asuntos";
 
-export function TablaAsuntosDirectiva({ data, user, onCambio}) {
+export function TablaAsuntosDirectiva({ data, user, onCambio }) {
   const [sorting, setSorting] = useState([{ id: "fecha", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
@@ -94,6 +94,9 @@ export function TablaAsuntosDirectiva({ data, user, onCambio}) {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     state: { sorting, columnFilters },
+    initialState: {
+      pagination: { pageIndex: 0, pageSize: 6 }, 
+    },
   });
 
   const currentPage = table.getState().pagination.pageIndex + 1;
@@ -156,11 +159,12 @@ export function TablaAsuntosDirectiva({ data, user, onCambio}) {
       .getColumn("fecha")
       ?.setFilterValue({ desde: fechaDesde, hasta: fechaHasta });
   }, [fechaDesde, fechaHasta]);
+  const formatLocalDate = (d) => d.toLocaleDateString("sv-SE");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* FILTROS */}
-      <div className="p-4 border rounded-md space-y-3 bg-muted/40">
+      <div className="p-2 border rounded-md space-y-3 bg-muted/40">
         <div className="flex flex-wrap gap-4 items-end text-sm">
           {/* Filtro profesor */}
           <div className="space-y-1">
@@ -229,11 +233,9 @@ export function TablaAsuntosDirectiva({ data, user, onCambio}) {
                     }}
                     onSelect={(range) => {
                       setFechaDesde(
-                        range?.from ? range.from.toISOString().slice(0, 10) : ""
+                        range?.from ? formatLocalDate(range.from) : ""
                       );
-                      setFechaHasta(
-                        range?.to ? range.to.toISOString().slice(0, 10) : ""
-                      );
+                      setFechaHasta(range?.to ? formatLocalDate(range.to) : "");
                     }}
                   />
                 </PopoverContent>
@@ -259,9 +261,7 @@ export function TablaAsuntosDirectiva({ data, user, onCambio}) {
             <Switch
               checked={table.getColumn("estado")?.getFilterValue() === true}
               onCheckedChange={(checked) =>
-                table
-                  .getColumn("estado")
-                  ?.setFilterValue(checked ? true : null)
+                table.getColumn("estado")?.setFilterValue(checked ? true : null)
               }
             />
             <span className="text-sm text-muted-foreground">
@@ -272,9 +272,9 @@ export function TablaAsuntosDirectiva({ data, user, onCambio}) {
       </div>
 
       {/* TABLA */}
-      <div className="rounded-md border">
+      <div className="rounded-md border max-h-[288px] overflow-y-auto">
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader className="bg-muted/50 sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -306,9 +306,9 @@ export function TablaAsuntosDirectiva({ data, user, onCambio}) {
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} className="h-6">
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="py-0.5">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -319,7 +319,10 @@ export function TablaAsuntosDirectiva({ data, user, onCambio}) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={table.getAllColumns().length} className="text-center h-24">
+                <TableCell
+                  colSpan={table.getAllColumns().length}
+                  className="text-center h-24"
+                >
                   No hay asuntos propios
                 </TableCell>
               </TableRow>
@@ -329,52 +332,54 @@ export function TablaAsuntosDirectiva({ data, user, onCambio}) {
       </div>
 
       {/* PAGINACIÓN */}
-      <div className="flex flex-col sm:flex-row sm:justify-between items-center py-6 space-y-4 sm:space-y-0">
-        <div />
-
-        <div className="flex items-center space-x-2">
+      <div className="flex flex-col sm:flex-row items-center py-1 space-y-4 sm:space-y-0 text-xs">
+        {/* Izquierda vacío para empujar el centro */}
+        <div className="flex-1"></div>
+        <div className="flex items-center justify-center space-x-1 flex-1">
+          {" "}
           <Button
             variant="outline"
             size="icon"
+            className="h-6 w-6 p-0"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronsLeft className="w-4 h-4" />
+            <ChevronsLeft className="w-3 h-3" />
           </Button>
-
           <Button
             variant="outline"
             size="icon"
+            className="h-6 w-6 p-0"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3 h-3" />
           </Button>
-
           <span className="px-2 text-muted-foreground">
             Página {currentPage} de {totalPages}
           </span>
-
           <Button
             variant="outline"
             size="icon"
+            className="h-6 w-6 p-0"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3 h-3" />
           </Button>
-
           <Button
             variant="outline"
             size="icon"
+            className="h-6 w-6 p-0"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronsRight className="w-4 h-4" />
+            <ChevronsRight className="w-3 h-3" />
           </Button>
         </div>
 
-        <div className="text-xs text-muted-foreground text-right">
+        <div className="flex-1 text-right text-xs text-muted-foreground">
+          {" "}
           Total de registros: {table.getFilteredRowModel().rows.length}
         </div>
       </div>

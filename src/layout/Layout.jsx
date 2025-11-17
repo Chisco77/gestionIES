@@ -59,15 +59,21 @@ export default function Layout(props) {
 
   useEffect(() => {
     const pathToTitleMap = {
-      "/": "Dashboard",
+      "/": "Inicio",
       "/alumnos": "Alumnos",
       "/profesores": "Profesores",
       "/todos": "Todos",
       "/cursos": "Cursos",
       "/libros": "Libros",
       "/perfilesUsuario": "Administrar  Usuarios",
-      "/prestamos": "Préstamos",
+      "/prestamos": "Préstamos Alumnos",
+      "/prestamosProfesores": "Préstamos Profesores",
       "/reservasEstancias": "Reservas de Aulas",
+      "/llavesPrestadas": "Llaves Prestadas", 
+      "/llavesPlantaBaja": "Llaves Planta Baja",
+      "/llavesPlantaPrimera": "Llaves Planta Primera",
+      "/llavesPlantaSegunda": "Llaves Planta Segunda",
+      "/asuntos_propios": "Asuntos Propios"
     };
 
     const titulo = pathToTitleMap[location.pathname];

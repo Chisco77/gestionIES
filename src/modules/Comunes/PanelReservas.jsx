@@ -232,14 +232,14 @@ export function PanelReservas({ uid, reloadKey, onPanelCambiado }) {
 
   if (loading) {
     return (
-      <Card className="shadow-lg rounded-2xl h-[300px] flex items-center justify-center">
+      <Card className="shadow-lg rounded-2xl h-[350px] flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
       </Card>
     );
   }
 
   return (
-    <Card className="shadow-lg rounded-2xl h-[300px] flex flex-col">
+    <Card className="shadow-lg rounded-2xl h-[350px] flex flex-col">
       <CardContent className="flex-1 flex flex-col overflow-hidden">
         <Tabs
           defaultValue="estancias"

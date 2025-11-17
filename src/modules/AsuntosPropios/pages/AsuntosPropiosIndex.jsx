@@ -180,7 +180,7 @@ export function AsuntosPropiosIndex() {
     <div className="p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Calendario */}
-        <Card className="shadow-lg rounded-2xl flex flex-col h-[300px]">
+        <Card className="shadow-lg rounded-2xl flex flex-col h-[350px]">
           <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
             <button onClick={handlePrevMonth}>
               <ChevronLeft className="w-6 h-6" />
