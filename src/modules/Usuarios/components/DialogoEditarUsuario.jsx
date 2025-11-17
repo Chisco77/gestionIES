@@ -153,7 +153,7 @@ export function DialogoEditarUsuario({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose} modal={false}>
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
         className="max-w-md"
@@ -170,7 +170,11 @@ export function DialogoEditarUsuario({
               No se encontró imagen
             </div>
           ) : null}
-          <DialogTitle>{usuarioSeleccionado?.givenName+ " " + usuarioSeleccionado?.sn} </DialogTitle>
+          <DialogTitle>
+            {usuarioSeleccionado?.givenName +
+              " " +
+              usuarioSeleccionado?.sn}{" "}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
@@ -207,10 +211,10 @@ export function DialogoEditarUsuario({
         </div>
 
         <DialogFooter className="mt-6 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button>Guardar</Button>
+          <Button variant="outline">Guardar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

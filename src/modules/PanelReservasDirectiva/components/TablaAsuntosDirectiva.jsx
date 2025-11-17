@@ -95,7 +95,7 @@ export function TablaAsuntosDirectiva({ data, user, onCambio }) {
     onColumnFiltersChange: setColumnFilters,
     state: { sorting, columnFilters },
     initialState: {
-      pagination: { pageIndex: 0, pageSize: 6 }, 
+      pagination: { pageIndex: 0, pageSize: 6 },
     },
   });
 
@@ -384,7 +384,6 @@ export function TablaAsuntosDirectiva({ data, user, onCambio }) {
         </div>
       </div>
 
-      {/* DIÁLOGO CONFIRMACIÓN */}
       <DialogoConfirmacion
         open={dialogOpen}
         setOpen={setDialogOpen}
@@ -393,6 +392,7 @@ export function TablaAsuntosDirectiva({ data, user, onCambio }) {
             ? "¿Desea aceptar este asunto propio?"
             : "¿Desea rechazar este asunto propio?"
         }
+        accion={accion} // <-- FALTA ESTA LÍNEA
         onConfirm={confirmarAccion}
       />
     </div>

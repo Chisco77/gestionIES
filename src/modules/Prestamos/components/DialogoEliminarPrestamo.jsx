@@ -98,20 +98,31 @@ export function DialogoEliminarPrestamo({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose} modal={false}>
-      <DialogContent onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle>¿Eliminar préstamo?</DialogTitle>
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="p-0 overflow-hidden rounded-lg"
+      >
+        <DialogHeader className="bg-red-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+          <DialogTitle className="text-lg font-semibold text-center leading-snug">
+            ¿Eliminar préstamo?
+          </DialogTitle>
         </DialogHeader>
-        <p className="text-sm">
-          Esta acción eliminará permanentemente el préstamo de{" "}
-          <span className="font-semibold">
+
+        {/* CUERPO CON MARGENES */}
+        <div className="text-sm text-gray-700 mb-4 space-y-2 px-6 pt-4">
+          <div className="text-red-600 font-semibold mt-2">
+            Esta acción eliminará permanentemente el préstamo de{" "}
             {alumnoSeleccionado?.nombreUsuario}
-          </span>
-          .
-        </p>
-        <DialogFooter>
-          <Button variant="destructive" onClick={handleEliminar}>
+          </div>
+        </div>
+
+        <DialogFooter className="px-6 py-4 bg-gray-50">
+         <Button
+            variant="destructive"
+            className="bg-red-600 hover:bg-red-700"
+            onClick={handleEliminar}
+          >
             Eliminar
           </Button>
           <Button onClick={onClose} variant="outline">

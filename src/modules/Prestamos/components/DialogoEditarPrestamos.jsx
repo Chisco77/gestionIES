@@ -1,6 +1,6 @@
 /**
  * Componente: DialogoEditarPrestamos
- * 
+ *
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
  * Email: adminies.franciscodeorellana@educarex.es
@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Este componente muestra un diálogo para la edición de asignaciones y préstamos de libros de un usuario
  * (alumno o tutor). Permite:
  *   - Visualizar foto y datos del usuario.
@@ -18,7 +18,7 @@
  *   - Asignar libros disponibles a un usuario.
  *   - Eliminar préstamos seleccionados.
  *   - Controlar el documento de compromiso y mostrar información de inicio de curso.
- * 
+ *
  * Props:
  *   - open: boolean → indica si el diálogo está abierto.
  *   - onClose: function → callback para cerrar el diálogo.
@@ -30,7 +30,7 @@
  *       - doc_compromiso: number → estado del documento de compromiso (0,1,2)
  *       - iniciocurso: boolean → indica si ha comenzado el curso
  *   - onSuccess: function → callback que se ejecuta tras cualquier acción exitosa.
- * 
+ *
  * Estados internos:
  *   - state: objeto con:
  *       - prestamos: lista de préstamos normalizados
@@ -49,7 +49,7 @@
  *       - fechaNuevaDevolucion
  *   - fotoUrl: URL de la foto del usuario (si existe)
  *   - activeTab: string → pestaña activa ('asignaciones' | 'prestamos')
- * 
+ *
  * Funciones principales:
  *   - apiCall(endpoint, method, body, successMsg, errorMsg): realiza fetch al backend,
  *     muestra toasts y llama a onSuccess si es exitoso.
@@ -65,14 +65,14 @@
  *   - handleDateChange(dateType): actualiza fecha de préstamo o devolución de un préstamo individual.
  *   - asignarLibros: asigna libros seleccionados disponibles al usuario.
  *   - eliminarAsignacion: elimina los préstamos seleccionados de un usuario.
- * 
+ *
  * Subcomponentes:
  *   - ListSection: componente reutilizable que muestra listas con scroll,
  *     selección múltiple y acciones.
  *   - Tabs: separa vistas entre "Asignaciones" y "Préstamos".
  *   - Dialogs internos: para cambiar fecha de préstamo y devolución.
  *   - AlertDialog: confirmación de eliminación de préstamos.
- * 
+ *
  * Flujo de uso:
  *   1. Abrir diálogo con un usuario seleccionado.
  *   2. El componente carga foto, normaliza préstamos y resetea selecciones.
@@ -84,23 +84,21 @@
  *   4. Se muestran toasts de éxito/error tras cada acción.
  *   5. Se actualiza el estado local para reflejar cambios sin recargar.
  *   6. Cerrar el diálogo al finalizar.
- * 
+ *
  * Librerías/componentes usados:
  *   - React: useState, useEffect
  *   - sonner: toast notifications
  *   - lucide-react: iconos
  *   - Componentes UI: Dialog, Button, Tooltip, ScrollArea, AlertDialog, Select, Tabs
- * 
- * 
+ *
+ *
  * Notas:
  *    Una vez el documento de compromiso pasa del estado "No entregado" a cualquier otro, no se
  *    pueden realizar modificaciones en asignaciones ni prestar nuevos libros.
- * 
+ *
  *    Para hacer nuevos préstamos, hay que crear un nuevo registro utilizando la opción "+" del
  *    pie de la tabla de préstamos.
  */
-
-
 
 import { useState, useEffect } from "react";
 import {
@@ -348,7 +346,6 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
   /*const puedenEntregar = asignadosNoEntregados.filter(
     (p) => p.doc_compromiso === 0
   );*/
-  
 
   const updatePrestamosState = (ids, updates) => {
     setState((prev) => ({
@@ -542,7 +539,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose} modal={false}>
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
         className="max-w-6xl"
@@ -887,11 +884,15 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
 
         <Dialog
           open={modals.fechaPrestamoModalAbierto}
+          modal={true}
           onOpenChange={() =>
             setModals((m) => ({ ...m, fechaPrestamoModalAbierto: false }))
           }
         >
-          <DialogContent>
+          <DialogContent
+            className="max-w-md"
+            onInteractOutside={(e) => e.preventDefault()}
+          >
             <DialogHeader>
               <DialogTitle>Cambiar fecha de préstamo</DialogTitle>
             </DialogHeader>
