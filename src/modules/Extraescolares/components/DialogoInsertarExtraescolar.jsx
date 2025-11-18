@@ -19,14 +19,21 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMapEvent,
+  useMap,
+} from "react-leaflet";
 import { OpenStreetMapProvider } from "leaflet-geosearch";
 
 const provider = new OpenStreetMapProvider();
 
 /* ============================
-   AUTOCOMPLETE COMPONENTE
-=========================== */
+   AUTOCOMPLETE
+============================ */
 export function Autocomplete({
   value,
   onChange,
@@ -37,11 +44,8 @@ export function Autocomplete({
   const [sugerencias, setSugerencias] = useState([]);
   const [abierto, setAbierto] = useState(false);
   const containerRef = useRef(null);
-
-  // Debounce
   const debounceRef = useRef(null);
 
-  // Cerrar si se hace clic fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -54,49 +58,27 @@ export function Autocomplete({
 
   const safeBuscar = async (texto) => {
     try {
-      console.log("[Autocomplete] Llamando buscar() con:", texto);
       const resultados = await buscar(texto);
-      console.log("[Autocomplete] Resultados de buscar():", resultados);
-      // Asegúrate de que es un array
-      if (Array.isArray(resultados)) {
-        setSugerencias(resultados);
-      } else {
-        console.warn(
-          "[Autocomplete] buscar() NO devolvió un array:",
-          resultados
-        );
-        setSugerencias([]);
-      }
+      setSugerencias(Array.isArray(resultados) ? resultados : []);
       setAbierto(true);
-    } catch (err) {
-      console.error("[Autocomplete] Error en buscar():", err);
+    } catch {
       setSugerencias([]);
       setAbierto(false);
     }
   };
 
   const handleInput = (texto) => {
-    // 1) Actualiza el valor controlado en el padre
     onChange(texto);
-
-    // 2) Cancelar debounce anterior
     if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    // 3) Si texto corto, limpiar
     if (!texto || texto.length < 3) {
       setSugerencias([]);
       setAbierto(false);
       return;
     }
-
-    // 4) Debounce antes de consultar la API
-    debounceRef.current = setTimeout(() => {
-      safeBuscar(texto);
-    }, 300);
+    debounceRef.current = setTimeout(() => safeBuscar(texto), 300);
   };
 
   const handleSelect = (item) => {
-    console.log("[Autocomplete] seleccionado:", item);
     onSelect(item);
     setAbierto(false);
   };
@@ -108,14 +90,12 @@ export function Autocomplete({
         value={value}
         onChange={(e) => handleInput(e.target.value)}
         onFocus={() => {
-          // si ya tenemos sugerencias, abrir
           if (sugerencias.length > 0) setAbierto(true);
         }}
       />
-
       {abierto && sugerencias.length > 0 && (
         <ul
-          className="absolute w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto z-50"
+          className="absolute w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto z-[1000]"
           role="listbox"
         >
           {sugerencias.map((s, i) => (
@@ -123,61 +103,60 @@ export function Autocomplete({
               key={i}
               role="option"
               className="p-2 text-sm cursor-pointer hover:bg-gray-100"
-              onMouseDown={() => handleSelect(s)} // onMouseDown evita que el blur cierre antes
+              onMouseDown={() => handleSelect(s)}
             >
               {s.label}
             </li>
           ))}
         </ul>
       )}
-
-      {/* ---------- PANEL DE DEBUG (quítalo cuando funcione) ---------- */}
-      <div
-        style={{
-          marginTop: 6,
-          padding: 8,
-          fontSize: 12,
-          background: "#f8fafc",
-          border: "1px solid #e6eef6",
-          borderRadius: 6,
-        }}
-      >
-        <div>
-          <strong>DEBUG Autocomplete</strong>
-        </div>
-        <div>
-          valor input: <code>{String(value)}</code>
-        </div>
-        <div>
-          sugerencias (count): <strong>{sugerencias.length}</strong>
-        </div>
-        <details style={{ marginTop: 6 }}>
-          <summary>JSON sugerencias (expandir)</summary>
-          <pre
-            style={{ whiteSpace: "pre-wrap", maxHeight: 200, overflow: "auto" }}
-          >
-            {JSON.stringify(sugerencias, null, 2)}
-          </pre>
-        </details>
-      </div>
     </div>
   );
 }
 
 /* ============================
-   FUNCIÓN BÚSQUEDA
-=========================== */
+   FUNCIONES GEO
+============================ */
 const buscarLugar = async (query) => {
   if (!query || query.length < 3) return [];
   const resultados = await provider.search({ query });
-  return resultados.map((r) => ({
-    label: r.label,
-    lat: r.y,
-    lng: r.x,
-  }));
+  return resultados.map((r) => ({ label: r.label, lat: r.y, lng: r.x }));
 };
 
-// Datos fake
+async function reverseGeocode({ lat, lng }) {
+  try {
+    const resultados = await provider.search({ query: `${lat}, ${lng}` });
+    if (resultados.length > 0) return resultados[0].label;
+    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  } catch {
+    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  }
+}
+
+/* ============================
+   COMPONENTES MAP
+============================ */
+function ClickHandler({ setCoords, setUbicacion }) {
+  useMapEvent("click", async (e) => {
+    const { lat, lng } = e.latlng;
+    setCoords({ lat, lng });
+    const direccion = await reverseGeocode({ lat, lng });
+    setUbicacion(direccion);
+  });
+  return null;
+}
+
+function SetViewOnChange({ coords }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map) map.setView([coords.lat, coords.lng], map.getZoom());
+  }, [coords, map]);
+  return null;
+}
+
+/* ============================
+   DATOS DE PRUEBA
+============================ */
 const periodos = [
   { id: 1, nombre: "1ª hora" },
   { id: 2, nombre: "2ª hora" },
@@ -202,7 +181,7 @@ const departamentosPrueba = [
 
 /* ============================
    COMPONENTE PRINCIPAL
-=========================== */
+============================ */
 export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
   const [titulo, setTitulo] = useState("Excursión a Alemania");
   const [descripcion, setDescripcion] = useState(
@@ -220,7 +199,6 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
   const [periodoFin, setPeriodoFin] = useState("2");
 
   const [cursosSeleccionados, setCursosSeleccionados] = useState([]);
-
   const [ubicacion, setUbicacion] = useState("");
   const [coords, setCoords] = useState({ lat: 40.4168, lng: -3.7038 });
 
@@ -230,8 +208,11 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
     );
   };
 
-  const handleMarkerDrag = (event) => {
-    setCoords(event.target.getLatLng());
+  const handleMarkerDrag = async (event) => {
+    const { lat, lng } = event.target.getLatLng();
+    setCoords({ lat, lng });
+    const direccion = await reverseGeocode({ lat, lng });
+    setUbicacion(direccion);
   };
 
   const handleGuardar = () => {
@@ -248,7 +229,6 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
       ubicacion,
       coords,
     };
-
     onGuardar?.(datos);
   };
 
@@ -265,7 +245,7 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Parte izquierda */}
+          {/* ---------------- Parte izquierda ---------------- */}
           <div className="space-y-4 px-6 py-5">
             <div className="space-y-1">
               <Label>Título</Label>
@@ -274,7 +254,6 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
                 onChange={(e) => setTitulo(e.target.value)}
               />
             </div>
-
             <div className="space-y-1">
               <Label>Descripción</Label>
               <Textarea
@@ -282,7 +261,6 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
                 onChange={(e) => setDescripcion(e.target.value)}
               />
             </div>
-
             <div className="space-y-1">
               <Label>Departamento organizador</Label>
               <Select value={departamento} onValueChange={setDepartamento}>
@@ -298,7 +276,6 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-1">
               <Label>Tipo de actividad</Label>
               <Select value={tipo} onValueChange={setTipo}>
@@ -315,7 +292,6 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>Fecha inicio</Label>
@@ -325,7 +301,6 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
                   onChange={(e) => setFechaInicio(e.target.value)}
                 />
               </div>
-
               <div className="space-y-1">
                 <Label>Fecha fin</Label>
                 <Input
@@ -335,7 +310,6 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
                 />
               </div>
             </div>
-
             {tipo === "lectivo" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -350,14 +324,12 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
                     <SelectContent>
                       {periodos.map((p) => (
                         <SelectItem key={p.id} value={String(p.id)}>
-                          {" "}
-                          {p.nombre}{" "}
+                          {p.nombre}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-1">
                   <Label>Periodo fin</Label>
                   <Select value={periodoFin} onValueChange={setPeriodoFin}>
@@ -367,8 +339,7 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
                     <SelectContent>
                       {periodos.map((p) => (
                         <SelectItem key={p.id} value={String(p.id)}>
-                          {" "}
-                          {p.nombre}{" "}
+                          {p.nombre}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -376,7 +347,6 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
                 </div>
               </div>
             )}
-
             <div className="space-y-2">
               <Label>Cursos participantes</Label>
               <div className="border rounded-lg p-3 space-y-2">
@@ -393,23 +363,20 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
             </div>
           </div>
 
-          {/* Parte derecha */}
-          <div className="flex flex-col space-y-3 px-6 py-5">
+          {/* ---------------- Parte derecha ---------------- */}
+          <div className="flex flex-col justify-center space-y-3 px-6 py-5">
             <Label>Ubicación / Lugar</Label>
-
             <Autocomplete
               value={ubicacion}
               placeholder="Nombre de la localidad o lugar..."
               buscar={buscarLugar}
-              onChange={(t) => setUbicacion(t)}
+              onChange={setUbicacion}
               onSelect={(lugar) => {
                 setUbicacion(lugar.label);
                 setCoords({ lat: lugar.lat, lng: lugar.lng });
               }}
             />
-
             <MapContainer
-              key={`${coords.lat}-${coords.lng}`}
               center={coords}
               zoom={13}
               style={{ height: "300px", width: "100%", marginTop: "8px" }}
@@ -423,6 +390,8 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
               >
                 <Popup>Arrastra para ajustar la ubicación</Popup>
               </Marker>
+              <ClickHandler setCoords={setCoords} setUbicacion={setUbicacion} />
+              <SetViewOnChange coords={coords} />
             </MapContainer>
           </div>
         </div>
