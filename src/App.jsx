@@ -40,6 +40,7 @@ import { SidebarProviderCustom } from "./context/SidebarContext";
 import { AsuntosPropiosIndex } from "./modules/AsuntosPropios/pages/AsuntosPropiosIndex";
 import { ReservasEstanciasIndex } from "./modules/ReservasEstancias/pages/ReservasEstanciasIndex";
 import { DialogoEtiquetasGenericas } from "./modules/Utilidades/components/DialogoEtiquetasGenericas";
+import { ExtraescolaresIndex } from "./modules/Extraescolares/pages/ExtraescolaresIndex";
 
 const queryClient = new QueryClient();
 
@@ -108,6 +109,7 @@ const router = createBrowserRouter(
         },
         { path: "etiquetas_genericas", element: <DialogoEtiquetasGenericas /> },
         { path: "asuntos_propios", element: <AsuntosPropiosIndex /> },
+        { path: "extraescolares", element: <ExtraescolaresIndex /> },
         { path: "reservasEstancias", element: <ReservasEstanciasIndex /> },
       ],
     },

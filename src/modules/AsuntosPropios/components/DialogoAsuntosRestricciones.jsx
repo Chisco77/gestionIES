@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -192,8 +193,11 @@ export function DialogoAsuntosRestricciones() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="p-0 rounded-lg h-[550px] flex flex-col">
+    <Dialog open={open} onOpenChange={setOpen} modal={true}>
+      <DialogContent
+        className="p-0 rounded-lg h-[550px] flex flex-col"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Restricciones de Asuntos Propios
@@ -402,15 +406,19 @@ export function DialogoAsuntosRestricciones() {
 
             <Separator />
 
-            <div className="flex justify-end gap-3 pt-4">
+            <DialogFooter className="px-6 py-4 bg-gray-50">
               <Button variant="outline" onClick={handleCancelar}>
                 Cancelar
               </Button>
-              <Button onClick={handleGuardar}>Guardar</Button>
-            </div>
+              <Button variant="outline" onClick={handleGuardar}>
+                Guardar
+              </Button>
+            </DialogFooter>
           </CardContent>
         </Card>
       </DialogContent>
+
+      
       {rangoAEliminar && (
         <DialogoEliminarRango
           rango={rangoAEliminar}

@@ -38,7 +38,6 @@
  * - El título de la cabecera se mapea desde la ruta actual.
  */
 
-
 import React, { useEffect, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { Outlet } from "react-router-dom";
@@ -69,11 +68,14 @@ export default function Layout(props) {
       "/prestamos": "Préstamos Alumnos",
       "/prestamosProfesores": "Préstamos Profesores",
       "/reservasEstancias": "Reservas de Aulas",
-      "/llavesPrestadas": "Llaves Prestadas", 
+      "/llavesPrestadas": "Llaves Prestadas",
       "/llavesPlantaBaja": "Llaves Planta Baja",
       "/llavesPlantaPrimera": "Llaves Planta Primera",
       "/llavesPlantaSegunda": "Llaves Planta Segunda",
-      "/asuntos_propios": "Asuntos Propios"
+      "/asuntos_propios": "Asuntos Propios",
+      "/extraescolares": "Actividades Extraescolares",
+      "/estancias": "Estancias",
+      "/perfiles": "Perfiles de Usuario",
     };
 
     const titulo = pathToTitleMap[location.pathname];

@@ -108,12 +108,17 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
-      <DialogContent onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle>Generar etiquetas genéricas</DialogTitle>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+      <DialogContent
+        className="p-0 overflow-hidden rounded-lg"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+          <DialogTitle className="text-lg font-semibold text-center leading-snug">
+            Generar etiquetas genéricas{" "}
+          </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="flex flex-col space-y-4 p-6">
           <div>
             <label className="block text-sm font-medium mb-1">
               Prefijo para la etiqueta
@@ -156,7 +161,6 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
               placeholder="Ej: 65"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium mb-1">
               Posición inicial en la página (1 a {cantidad})
@@ -170,7 +174,6 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
               placeholder="Ej: 1"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium mb-1">
               Nombre del archivo PDF
@@ -197,8 +200,9 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
           </div>
         )}
 
-        <DialogFooter className="pt-4">
+        <DialogFooter className="px-6 py-4 bg-gray-50">
           <Button
+            variant="outline"
             disabled={
               loading ||
               prefijo.trim() === "" ||

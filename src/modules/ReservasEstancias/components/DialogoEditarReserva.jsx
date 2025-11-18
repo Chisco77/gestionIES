@@ -51,17 +51,20 @@ export function DialogoEditarReserva({
     }
 
     try {
-      const res = await fetch(`${API_URL}/db/reservas-estancias/${reserva.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          idperiodo_inicio: parseInt(inicio),
-          idperiodo_fin: parseInt(fin),
-          descripcion,
-          uid: user.username,
-        }),
-      });
+      const res = await fetch(
+        `${API_URL}/db/reservas-estancias/${reserva.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            idperiodo_inicio: parseInt(inicio),
+            idperiodo_fin: parseInt(fin),
+            descripcion,
+            uid: user.username,
+          }),
+        }
+      );
 
       const data = await res.json();
 
@@ -86,7 +89,7 @@ export function DialogoEditarReserva({
         className="p-0 overflow-hidden rounded-lg"
       >
         {/* ENCABEZADO */}
-        <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+        <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Editar Reserva (
             {new Date(reserva?.fecha).toLocaleDateString("es-ES")}) –{" "}
@@ -148,7 +151,9 @@ export function DialogoEditarReserva({
 
         {/* PIE */}
         <DialogFooter className="px-6 py-4 bg-gray-50">
-          <Button variant="outline" onClick={handleGuardar}>Guardar cambios</Button>
+          <Button variant="outline" onClick={handleGuardar}>
+            Guardar cambios
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

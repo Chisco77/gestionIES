@@ -289,6 +289,7 @@ exports.getLdapUsuarios = (req, res) => {
               );
 
             client.unbind();
+            console.log (result);
             res.json(result);
             console.log (result);
           });
