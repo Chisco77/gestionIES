@@ -1,4 +1,3 @@
-// src/modules/Extraescolares/ExtraescolaresIndex.jsx
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -30,7 +29,13 @@ export function ExtraescolaresIndex() {
   const [selectedDate, setSelectedDate] = useState(formatDateKey(new Date()));
 
   const [extraescolares, setExtraescolares] = useState([]);
+  // señales para recarga de panel de reservas y tabla de extraescolares
+  const [reloadTabla, setReloadTabla] = useState(0);
   const [reloadPanel, setReloadPanel] = useState(0);
+
+  const recargarTabla = () => setReloadTabla((r) => r + 1);
+  const recargarPanelReservas = () => setReloadPanel((r) => r + 1);
+
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
 
   // --- Calendario dinámico ---
@@ -38,6 +43,8 @@ export function ExtraescolaresIndex() {
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
   const startDay = (firstDay + 6) % 7; // lunes=0
   const weeks = [];
+  const [periodos, setPeriodos] = useState([]);
+
   let day = 1 - startDay;
   while (day <= daysInMonth) {
     const week = [];
@@ -63,7 +70,6 @@ export function ExtraescolaresIndex() {
     }
   };
 
-  // --- Recarga de panel ---
   const recargarPanel = () => setReloadPanel((r) => r + 1);
 
   // --- Calendario derivado ---
@@ -95,7 +101,7 @@ export function ExtraescolaresIndex() {
 
   const handleGuardarExtraescolar = async (datos) => {
     try {
-      const res = await fetch(`${API_BASE}/extraescolares`, {
+      const res = await fetch(`${API_BASE}/periodos-horarios`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -117,6 +123,23 @@ export function ExtraescolaresIndex() {
 
   useEffect(() => {
     fetchExtraescolares();
+  }, []);
+
+  useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL;
+    const fetchPeriodos = async () => {
+      const res = await fetch(`${API_BASE}/periodos-horarios`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      setPeriodos(
+        (data.periodos || []).map((p) => ({
+          id: Number(p.id),
+          nombre: p.nombre,
+        }))
+      );
+    };
+    fetchPeriodos();
   }, []);
 
   return (
@@ -143,26 +166,33 @@ export function ExtraescolaresIndex() {
               <table className="w-full border-collapse text-center align-top">
                 <thead>
                   <tr>
-                    {["L","M","X","J","V","S","D"].map((d) => (
-                      <th key={d} className="p-1 font-medium">{d}</th>
+                    {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
+                      <th key={d} className="p-1 font-medium">
+                        {d}
+                      </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="align-top">
                   {weeks.map((week, i) => (
                     <tr key={i}>
-                      {week.map((d,j) => {
+                      {week.map((d, j) => {
                         if (!d) return <td key={j} className="p-2"></td>;
-                        const dateObj = new Date(currentYear,currentMonth,d);
+                        const dateObj = new Date(currentYear, currentMonth, d);
                         const dateKey = formatDateKey(dateObj);
                         const numExtra = extraescolaresPorDia[dateKey] || 0;
+                        const esHoy = dateKey === todayStr;
+
                         return (
                           <td
                             key={j}
-                            className={`p-1 rounded-lg cursor-pointer ${
-                              numExtra ? "bg-green-100" : ""
-                            }`}
                             onClick={() => handleDiaClick(dateKey)}
+                            className={`
+    p-1 rounded-lg cursor-pointer transition-all
+    ${numExtra ? "bg-green-100" : ""}
+    ${esHoy ? "border-2 border-purple-300" : "border border-transparent"}
+    hover:bg-purple-200
+  `}
                           >
                             {d}
                           </td>
@@ -186,22 +216,25 @@ export function ExtraescolaresIndex() {
         </div>
       </div>
 
-      {/* Tabla de Extraescolares */}
       <TablaExtraescolares
         data={extraescolares}
         user={user}
         onCambio={() => {
           fetchExtraescolares();
-          recargarPanel();
+          recargarTabla();
         }}
       />
 
-      {/* Dialogo para insertar */}
-      {dialogoAbierto && (
+      {dialogoAbierto && periodos && periodos.length > 0 && (
         <DialogoInsertarExtraescolar
           open={dialogoAbierto}
           onClose={() => setDialogoAbierto(false)}
-          onGuardar={handleGuardarExtraescolar}
+          onGuardado={(actividad) => {
+            fetchExtraescolares(); // recarga tabla
+            recargarPanelReservas(); // recarga panel
+          }}
+          fechaSeleccionada={selectedDate}
+          periodos={periodos}
         />
       )}
     </div>

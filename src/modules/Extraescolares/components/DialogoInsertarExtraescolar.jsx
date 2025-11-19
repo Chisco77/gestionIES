@@ -17,7 +17,8 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { MultiSelect } from "@/components/ui/multiselect";
+import { MultiSelectProfesores } from "@/modules/Utilidades/components/MultiselectProfesores";
 
 import {
   MapContainer,
@@ -28,6 +29,9 @@ import {
   useMap,
 } from "react-leaflet";
 import { OpenStreetMapProvider } from "leaflet-geosearch";
+import { useAuth } from "@/context/AuthContext"; // Importar el contexto de autenticación
+import { toast } from "sonner";
+
 
 const provider = new OpenStreetMapProvider();
 
@@ -155,58 +159,84 @@ function SetViewOnChange({ coords }) {
 }
 
 /* ============================
-   DATOS DE PRUEBA
-============================ */
-const periodos = [
-  { id: 1, nombre: "1ª hora" },
-  { id: 2, nombre: "2ª hora" },
-  { id: 3, nombre: "3ª hora" },
-  { id: 4, nombre: "4ª hora" },
-  { id: 5, nombre: "5ª hora" },
-  { id: 6, nombre: "6ª hora" },
-];
-
-const cursosPrueba = [
-  { gid: 101, nombre: "1º ESO A" },
-  { gid: 102, nombre: "1º ESO B" },
-  { gid: 201, nombre: "2º ESO A" },
-  { gid: 202, nombre: "2º ESO B" },
-];
-
-const departamentosPrueba = [
-  { gidNumber: 1, nombre: "Departamento de Matemáticas" },
-  { gidNumber: 2, nombre: "Departamento de Ciencias" },
-  { gidNumber: 3, nombre: "Departamento de Idiomas" },
-];
-
-/* ============================
    COMPONENTE PRINCIPAL
 ============================ */
-export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
+export function DialogoInsertarExtraescolar({
+  open,
+  onClose,
+  onGuardado,
+  fechaSeleccionada,
+  periodos = [],
+}) {
   const [titulo, setTitulo] = useState("Excursión a Alemania");
   const [descripcion, setDescripcion] = useState(
     "Viaje de intercambio durante varios días."
   );
   const [tipo, setTipo] = useState("extracurricular");
-  const [departamento, setDepartamento] = useState(
-    departamentosPrueba[0].gidNumber
-  );
-
-  const [fechaInicio, setFechaInicio] = useState("2025-03-10");
-  const [fechaFin, setFechaFin] = useState("2025-03-15");
-
-  const [periodoInicio, setPeriodoInicio] = useState("1");
-  const [periodoFin, setPeriodoFin] = useState("2");
-
+  const [departamento, setDepartamento] = useState("");
+  const [periodoInicio, setPeriodoInicio] = useState("");
+  const [periodoFin, setPeriodoFin] = useState("");
   const [cursosSeleccionados, setCursosSeleccionados] = useState([]);
   const [ubicacion, setUbicacion] = useState("");
   const [coords, setCoords] = useState({ lat: 40.4168, lng: -3.7038 });
+  const [fechaInicio, setFechaInicio] = useState(
+    fechaSeleccionada || "2025-03-10"
+  );
+  const [fechaFin, setFechaFin] = useState(fechaSeleccionada || "2025-03-15");
+  const [departamentos, setDepartamentos] = useState([]);
+  const [cursos, setCursos] = useState([]);
+  const [profesoresSeleccionados, setProfesoresSeleccionados] = useState([]);
 
-  const toggleCurso = (gid) => {
-    setCursosSeleccionados((prev) =>
-      prev.includes(gid) ? prev.filter((g) => g !== gid) : [...prev, gid]
-    );
-  };
+  const { user } = useAuth(); // Acceder al usuario autenticado
+
+  useEffect(() => {
+    if (open && fechaSeleccionada) {
+      const f = fechaSeleccionada.split("T")[0];
+      setFechaInicio(f);
+      setFechaFin(f);
+    }
+  }, [open, fechaSeleccionada]);
+
+  useEffect(() => {
+    if (open && periodos.length > 0) {
+      setPeriodoInicio(String(periodos[0].id));
+      setPeriodoFin(String(periodos[periodos.length - 1].id));
+    }
+  }, [open, periodos]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    // Cargar departamentos
+    fetch(`${API_URL}/ldap/grupos?groupType=school_department`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) =>
+        setDepartamentos(
+          data
+            .map((d) => ({ gidNumber: d.gidNumber, nombre: d.cn }))
+            .sort((a, b) => a.nombre.localeCompare(b.nombre))
+        )
+      )
+      .catch(() => setDepartamentos([]));
+
+    // Cargar cursos
+    fetch(`${API_URL}/ldap/grupos?groupType=school_class`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) =>
+        setCursos(
+          data
+            .map((c) => ({ gid: c.gidNumber, nombre: c.cn }))
+            .sort((a, b) => a.nombre.localeCompare(b.nombre))
+        )
+      )
+      .catch(() => setCursos([]));
+  }, [open]);
 
   const handleMarkerDrag = async (event) => {
     const { lat, lng } = event.target.getLatLng();
@@ -215,21 +245,91 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
     setUbicacion(direccion);
   };
 
-  const handleGuardar = () => {
+  /*const handleGuardar = async () => {
+    const API_URL = import.meta.env.VITE_API_URL;
+
     const datos = {
+      uid: user.username,
       titulo,
       descripcion,
       tipo,
-      departamento,
+      gidnumber: Number(departamento),
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin,
       idperiodo_inicio: tipo === "lectivo" ? Number(periodoInicio) : null,
       idperiodo_fin: tipo === "lectivo" ? Number(periodoFin) : null,
       cursos_gids: cursosSeleccionados,
+      responsables_uids: profesoresSeleccionados,
       ubicacion,
       coords,
     };
-    onGuardar?.(datos);
+
+    try {
+      const resp = await fetch(`${API_URL}/db/extraescolares`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(datos),
+      });
+
+      const json = await resp.json();
+
+      if (!resp.ok) {
+        console.error("Error guardando", json);
+        return;
+      }
+
+      console.log("Extraescolar insertada correctamente", json);
+      if (onGuardado) onGuardado();
+      onClose();
+
+    } catch (e) {
+      console.error("Error haciendo la petición:", e);
+    }
+  };*/
+
+  const handleGuardar = async () => {
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    const datos = {
+      uid: user.username,
+      titulo,
+      descripcion,
+      tipo,
+      gidnumber: Number(departamento),
+      fecha_inicio: fechaInicio,
+      fecha_fin: fechaFin,
+      idperiodo_inicio: tipo === "lectivo" ? Number(periodoInicio) : null,
+      idperiodo_fin: tipo === "lectivo" ? Number(periodoFin) : null,
+      cursos_gids: cursosSeleccionados,
+      responsables_uids: profesoresSeleccionados,
+      ubicacion,
+      coords,
+    };
+
+    try {
+      const resp = await fetch(`${API_URL}/db/extraescolares`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(datos),
+      });
+
+      const json = await resp.json();
+
+      if (!resp.ok || !json.ok) {
+        console.error("Error guardando extraescolar", json);
+        toast.error(json.error || "Error guardando actividad");
+        return;
+      }
+
+      toast.success("Actividad creada"); // muestra el toast
+      if (onGuardado) onGuardado(json.actividad); // recarga tabla/panel
+      onClose(); // cierra diálogo
+    } catch (e) {
+      console.error("Error haciendo la petición:", e);
+      toast.error("Error guardando actividad");
+    }
   };
 
   return (
@@ -244,9 +344,9 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* ---------------- Parte izquierda ---------------- */}
-          <div className="space-y-4 px-6 py-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 py-5">
+          {/* Parte izquierda */}
+          <div className="space-y-4">
             <div className="space-y-1">
               <Label>Título</Label>
               <Input
@@ -263,18 +363,40 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
             </div>
             <div className="space-y-1">
               <Label>Departamento organizador</Label>
-              <Select value={departamento} onValueChange={setDepartamento}>
+              <Select
+                value={departamento}
+                onValueChange={(v) => {
+                  console.log("Seleccionado:", v);
+                  setDepartamento(v);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {departamentosPrueba.map((d) => (
+                  {departamentos.map((d) => (
                     <SelectItem key={d.gidNumber} value={d.gidNumber}>
                       {d.nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            {/* ---------------- Profesores responsables ---------------- */}
+
+            <MultiSelectProfesores
+              value={profesoresSeleccionados}
+              onChange={setProfesoresSeleccionados}
+            />
+            {/* ---------------- Cursos participantes (MultiSelect) ---------------- */}
+            <div className="space-y-2">
+              <Label>Cursos participantes</Label>
+              <MultiSelect
+                values={cursosSeleccionados}
+                onChange={setCursosSeleccionados}
+                options={cursos.map((c) => ({ value: c.gid, label: c.nombre }))}
+                placeholder="Seleccionar cursos"
+              />
             </div>
             <div className="space-y-1">
               <Label>Tipo de actividad</Label>
@@ -310,6 +432,8 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
                 />
               </div>
             </div>
+            {/* ---------------- Periodo Inicio y Periodo Fin ---------------- */}
+            {/* Periodos */}
             {tipo === "lectivo" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -347,24 +471,10 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
                 </div>
               </div>
             )}
-            <div className="space-y-2">
-              <Label>Cursos participantes</Label>
-              <div className="border rounded-lg p-3 space-y-2">
-                {cursosPrueba.map((curso) => (
-                  <div key={curso.gid} className="flex items-center gap-2">
-                    <Checkbox
-                      checked={cursosSeleccionados.includes(curso.gid)}
-                      onCheckedChange={() => toggleCurso(curso.gid)}
-                    />
-                    <span>{curso.nombre}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
-          {/* ---------------- Parte derecha ---------------- */}
-          <div className="flex flex-col justify-center space-y-3 px-6 py-5">
+          {/* Parte derecha */}
+          <div className="flex flex-col justify-center space-y-3">
             <Label>Ubicación / Lugar</Label>
             <Autocomplete
               value={ubicacion}

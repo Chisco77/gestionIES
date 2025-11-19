@@ -45,7 +45,7 @@ async function getExtraescolaresEnriquecidos(req, res) {
         e.titulo, e.descripcion,
         e.fecha_inicio, e.fecha_fin,
         e.idperiodo_inicio, e.idperiodo_fin,
-        e.estado
+        e.estado, e.responsables_uids
       FROM extraescolares e
       ${where}
       ORDER BY e.fecha_inicio ASC`,
@@ -55,6 +55,7 @@ async function getExtraescolaresEnriquecidos(req, res) {
     const enriquecidos = [];
 
     for (const item of rows) {
+      // Nombre del profesor que creó la actividad
       const nombreProfesor = await new Promise((resolve) => {
         buscarPorUid(ldapSession, item.uid, (err, datos) => {
           if (!err && datos) {
@@ -65,7 +66,24 @@ async function getExtraescolaresEnriquecidos(req, res) {
         });
       });
 
-      enriquecidos.push({ ...item, nombreProfesor });
+      // Nombres de los responsables
+      const responsables = [];
+      if (Array.isArray(item.responsables_uids)) {
+        for (const uidResp of item.responsables_uids) {
+          const nombre = await new Promise((resolve) => {
+            buscarPorUid(ldapSession, uidResp, (err, datos) => {
+              if (!err && datos) {
+                resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
+              } else {
+                resolve("Profesor desconocido");
+              }
+            });
+          });
+          responsables.push({ uid: uidResp, nombre });
+        }
+      }
+
+      enriquecidos.push({ ...item, nombreProfesor, responsables });
     }
 
     res.json({ ok: true, extraescolares: enriquecidos });
@@ -103,28 +121,37 @@ async function updateEstadoExtraescolar(req, res) {
 }
 
 /**
- * CRUD opcional: insertar / borrar / actualizar
+ * Insertar nueva actividad extraescolar
  * ================================================================
  */
 async function insertExtraescolar(req, res) {
   try {
     const {
-      uid, gidnumber, cursos_gids,
-      tipo, titulo, descripcion,
-      fecha_inicio, fecha_fin,
-      idperiodo_inicio, idperiodo_fin,
+      uid,
+      gidnumber,
+      cursos_gids,
+      tipo,
+      titulo,
+      descripcion,
+      fecha_inicio,
+      fecha_fin,
+      idperiodo_inicio,
+      idperiodo_fin,
+      responsables_uids = [],
     } = req.body;
 
     const { rows } = await db.query(
       `INSERT INTO extraescolares (
         uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
-        fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin
+        fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
+        responsables_uids
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       RETURNING *`,
       [
         uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
         fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
+        responsables_uids
       ]
     );
 
@@ -135,6 +162,10 @@ async function insertExtraescolar(req, res) {
   }
 }
 
+/**
+ * Borrar actividad extraescolar
+ * ================================================================
+ */
 async function deleteExtraescolar(req, res) {
   try {
     const id = req.params.id;
@@ -154,9 +185,66 @@ async function deleteExtraescolar(req, res) {
   }
 }
 
+/**
+ * Actualizar actividad extraescolar
+ * ================================================================
+ */
+async function updateExtraescolar(req, res) {
+  try {
+    const id = req.params.id;
+    const {
+      uid,
+      gidnumber,
+      cursos_gids,
+      tipo,
+      titulo,
+      descripcion,
+      fecha_inicio,
+      fecha_fin,
+      idperiodo_inicio,
+      idperiodo_fin,
+      responsables_uids = [],
+      estado,
+    } = req.body;
+
+    const { rows } = await db.query(
+      `UPDATE extraescolares
+       SET 
+         uid = $1,
+         gidnumber = $2,
+         cursos_gids = $3,
+         tipo = $4,
+         titulo = $5,
+         descripcion = $6,
+         fecha_inicio = $7,
+         fecha_fin = $8,
+         idperiodo_inicio = $9,
+         idperiodo_fin = $10,
+         responsables_uids = $11,
+         estado = $12
+       WHERE id = $13
+       RETURNING *`,
+      [
+        uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
+        fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
+        responsables_uids, estado, id
+      ]
+    );
+
+    if (!rows[0])
+      return res.status(404).json({ ok: false, error: "No encontrado" });
+
+    res.json({ ok: true, actividad: rows[0] });
+  } catch (err) {
+    console.error("[updateExtraescolar] Error:", err);
+    res.status(500).json({ ok: false, error: "Error actualizando actividad" });
+  }
+}
+
 module.exports = {
   getExtraescolaresEnriquecidos,
   updateEstadoExtraescolar,
   insertExtraescolar,
   deleteExtraescolar,
+  updateExtraescolar,
 };

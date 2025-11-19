@@ -189,29 +189,37 @@ exports.getLdapUsuarios = (req, res) => {
     ? `ldap://${ldapSession.ldapHost}`
     : process.env.LDAP_URL;
 
-  const client = ldap.createClient({
-    url: LDAP_URL,
-  });
+  const client = ldap.createClient({ url: LDAP_URL });
 
   client.bind(ldapSession.dn, ldapSession.password, (err) => {
     if (err) {
-      return res
-        .status(401)
-        .json({ error: "LDAP bind fallido", details: err.message });
+      return res.status(401).json({
+        error: "LDAP bind fallido",
+        details: err.message,
+      });
     }
 
     const baseDN = "dc=instituto,dc=extremadura,dc=es";
+
     const peopleOptions = {
       scope: "sub",
       filter: "(objectClass=inetOrgPerson)",
-      attributes: ["uidNumber", "givenName", "sn", "uid", "gidNumber", "employeeNumber"],
+      attributes: [
+        "uidNumber",
+        "givenName",
+        "sn",
+        "uid",
+        "gidNumber",
+        "employeeNumber",
+      ],
     };
 
     client.search(`ou=People,${baseDN}`, peopleOptions, (err, peopleRes) => {
       if (err) {
-        return res
-          .status(500)
-          .json({ error: "Error al buscar usuarios", details: err.message });
+        return res.status(500).json({
+          error: "Error al buscar usuarios",
+          details: err.message,
+        });
       }
 
       const people = [];
@@ -245,9 +253,10 @@ exports.getLdapUsuarios = (req, res) => {
 
         client.search(groupBaseDN, groupOptions, (err, groupRes) => {
           if (err) {
-            return res
-              .status(500)
-              .json({ error: "Error al buscar grupos", details: err.message });
+            return res.status(500).json({
+              error: "Error al buscar grupos",
+              details: err.message,
+            });
           }
 
           const groups = {};
@@ -288,10 +297,18 @@ exports.getLdapUsuarios = (req, res) => {
                   grupoPermitido === "all" || p.groups.includes(grupoPermitido)
               );
 
+            // 🔥 ORDENACIÓN DOBLE: 1º sn, 2º givenName
+            result.sort((a, b) => {
+              const snA = a.sn?.toLowerCase() || "";
+              const snB = b.sn?.toLowerCase() || "";
+              const nameA = a.givenName?.toLowerCase() || "";
+              const nameB = b.givenName?.toLowerCase() || "";
+
+              return snA.localeCompare(snB) || nameA.localeCompare(nameB);
+            });
+
             client.unbind();
-            console.log (result);
             res.json(result);
-            console.log (result);
           });
         });
       });

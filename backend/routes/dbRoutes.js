@@ -33,6 +33,7 @@ const {
   updateEstadoExtraescolar,
   insertExtraescolar,
   deleteExtraescolar,
+  updateExtraescolar,
 } = require("../controllers/db/extraescolaresController");
 
 const {
@@ -230,16 +231,15 @@ const {
   getPanelReservas,
 } = require("../controllers/db/panelReservasController");
 router.get("/panel/reservas", getPanelReservas);
+
+
 // ================================================================
 //   Rutas de Actividades Extraescolares
 // ================================================================
-
 router.get("/extraescolares/enriquecidos", getExtraescolaresEnriquecidos);
-
 router.post("/extraescolares", insertExtraescolar);
-
+router.put("/extraescolares/:id", updateExtraescolar);          // <-- ruta para actualizar toda la actividad
 router.put("/extraescolares/:id/estado", updateEstadoExtraescolar);
-
 router.delete("/extraescolares/:id", deleteExtraescolar);
 
 module.exports = router;
