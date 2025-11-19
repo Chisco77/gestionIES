@@ -380,7 +380,7 @@ export function DialogoInsertarExtraescolar({ open, onClose, onGuardar }) {
               center={coords}
               zoom={13}
               style={{ height: "300px", width: "100%", marginTop: "8px" }}
-              scrollWheelZoom={false}
+              scrollWheelZoom={true}
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <Marker
