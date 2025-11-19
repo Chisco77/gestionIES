@@ -27,6 +27,14 @@ const {
   getPeriodosHorarios,
 } = require("../controllers/db/periodosHorariosController");
 
+// --- Controlador de Extraescolares ---
+const {
+  getExtraescolaresEnriquecidos,
+  updateEstadoExtraescolar,
+  insertExtraescolar,
+  deleteExtraescolar,
+} = require("../controllers/db/extraescolaresController");
+
 const {
   getReservasEstancias,
   insertReservaEstancia,
@@ -102,7 +110,7 @@ const {
   updateRestriccion,
   deleteRestriccion,
   getRestriccionesAsuntos,
-  getRangosBloqueados, 
+  getRangosBloqueados,
   addRangoBloqueado,
   deleteRangoBloqueado,
 } = require("../controllers/db/restriccionesController");
@@ -174,7 +182,6 @@ router.get("/restricciones/asuntos/rangos", getRangosBloqueados);
 router.post("/restricciones/asuntos/rangos", addRangoBloqueado);
 router.delete("/restricciones/asuntos/rangos", deleteRangoBloqueado);
 
-
 // ================================================================
 //   Rutas de Asuntos Propios
 // ================================================================
@@ -184,7 +191,6 @@ router.put("/asuntos-propios/:id", updateAsuntoPropio);
 router.delete("/asuntos-propios/:id", deleteAsuntoPropio);
 router.get("/asuntos-propios-enriquecidos", getAsuntosPropiosEnriquecidos); // Nuevas rutas enriquecidas con nombre del profesor
 router.patch("/asuntos-propios/estado/:id", updateEstadoAsuntoPropio);
-
 
 // ================================================================
 //   Rutas de Periodos Horarios
@@ -224,5 +230,16 @@ const {
   getPanelReservas,
 } = require("../controllers/db/panelReservasController");
 router.get("/panel/reservas", getPanelReservas);
+// ================================================================
+//   Rutas de Actividades Extraescolares
+// ================================================================
+
+router.get("/extraescolares/enriquecidos", getExtraescolaresEnriquecidos);
+
+router.post("/extraescolares", insertExtraescolar);
+
+router.put("/extraescolares/:id/estado", updateEstadoExtraescolar);
+
+router.delete("/extraescolares/:id", deleteExtraescolar);
 
 module.exports = router;

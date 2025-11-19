@@ -1,66 +1,207 @@
+// src/modules/Extraescolares/ExtraescolaresIndex.jsx
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { DialogoInsertarExtraescolar } from "../components/DialogoInsertarExtraescolar"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { PanelReservas } from "@/modules/Comunes/PanelReservas";
+import { TablaExtraescolares } from "../components/TablaExtraescolares";
+import { toast } from "sonner";
+import { DialogoInsertarExtraescolar } from "../components/DialogoInsertarExtraescolar";
 
-// Datos de prueba temporales
-const datosPrueba = [
-  { id: 1, titulo: "Salida al Parque", fecha: "2025-02-14", profesor: "Juan Pérez" },
-  { id: 2, titulo: "Visita al Zoo", fecha: "2025-03-02", profesor: "Ana García" },
-];
+const API_URL = import.meta.env.VITE_API_URL;
+const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
+
+const formatDateKey = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
 
 export function ExtraescolaresIndex() {
-  const [extraescolares, setExtraescolares] = useState([]);
-  const [abrirDialogo, setAbrirDialogo] = useState(false);
+  const { user } = useAuth();
+  const uid = user?.username;
+  const todayStr = formatDateKey(new Date());
 
-  // Cargar datos de prueba
+  // Calendario
+  const [fechaHora] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(fechaHora.getMonth());
+  const [currentYear, setCurrentYear] = useState(fechaHora.getFullYear());
+  const [selectedDate, setSelectedDate] = useState(formatDateKey(new Date()));
+
+  const [extraescolares, setExtraescolares] = useState([]);
+  const [reloadPanel, setReloadPanel] = useState(0);
+  const [dialogoAbierto, setDialogoAbierto] = useState(false);
+
+  // --- Calendario dinámico ---
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const startDay = (firstDay + 6) % 7; // lunes=0
+  const weeks = [];
+  let day = 1 - startDay;
+  while (day <= daysInMonth) {
+    const week = [];
+    for (let i = 0; i < 7; i++) {
+      week.push(day > 0 && day <= daysInMonth ? day : null);
+      day++;
+    }
+    weeks.push(week);
+  }
+
+  // --- Fetch extraescolares ---
+  const fetchExtraescolares = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/extraescolares/enriquecidos`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Error cargando extraescolares");
+      const data = await res.json();
+      setExtraescolares(data.extraescolares || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Error cargando actividades extraescolares");
+    }
+  };
+
+  // --- Recarga de panel ---
+  const recargarPanel = () => setReloadPanel((r) => r + 1);
+
+  // --- Calendario derivado ---
+  const extraescolaresPorDia = {};
+  extraescolares.forEach((a) => {
+    const fechaObj = new Date(a.fecha_inicio);
+    const fecha = formatDateKey(fechaObj);
+    extraescolaresPorDia[fecha] = (extraescolaresPorDia[fecha] || 0) + 1;
+  });
+
+  // --- Handlers calendario ---
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear((y) => y - 1);
+    } else setCurrentMonth((m) => m - 1);
+  };
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear((y) => y + 1);
+    } else setCurrentMonth((m) => m + 1);
+  };
+
+  const handleDiaClick = (dateKey) => {
+    setSelectedDate(dateKey);
+    setDialogoAbierto(true);
+  };
+
+  const handleGuardarExtraescolar = async (datos) => {
+    try {
+      const res = await fetch(`${API_BASE}/extraescolares`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos),
+      });
+      if (!res.ok) {
+        const r = await res.json();
+        throw new Error(r.error || "Error al guardar actividad");
+      }
+      toast.success("Actividad creada");
+      setDialogoAbierto(false);
+      fetchExtraescolares();
+      recargarPanel();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message);
+    }
+  };
+
   useEffect(() => {
-    setExtraescolares(datosPrueba);
+    fetchExtraescolares();
   }, []);
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold">Actividades Extraescolares</h1>
-        <Button onClick={() => setAbrirDialogo(true)}>Nueva actividad</Button>
+    <div className="p-4 space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Calendario */}
+        <Card className="shadow-lg rounded-2xl flex flex-col h-[350px]">
+          <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
+            <button onClick={handlePrevMonth}>
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <CardTitle>
+              {new Date(currentYear, currentMonth).toLocaleDateString("es-ES", {
+                month: "long",
+                year: "numeric",
+              })}
+            </CardTitle>
+            <button onClick={handleNextMonth}>
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </CardHeader>
+          <CardContent className="p-2 flex-grow flex items-start justify-center overflow-auto">
+            <div className="w-full">
+              <table className="w-full border-collapse text-center align-top">
+                <thead>
+                  <tr>
+                    {["L","M","X","J","V","S","D"].map((d) => (
+                      <th key={d} className="p-1 font-medium">{d}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="align-top">
+                  {weeks.map((week, i) => (
+                    <tr key={i}>
+                      {week.map((d,j) => {
+                        if (!d) return <td key={j} className="p-2"></td>;
+                        const dateObj = new Date(currentYear,currentMonth,d);
+                        const dateKey = formatDateKey(dateObj);
+                        const numExtra = extraescolaresPorDia[dateKey] || 0;
+                        return (
+                          <td
+                            key={j}
+                            className={`p-1 rounded-lg cursor-pointer ${
+                              numExtra ? "bg-green-100" : ""
+                            }`}
+                            onClick={() => handleDiaClick(dateKey)}
+                          >
+                            {d}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Panel Reservas */}
+        <div className="h-full">
+          <PanelReservas
+            uid={uid}
+            reloadKey={reloadPanel}
+            onReservaModificada={fetchExtraescolares}
+          />
+        </div>
       </div>
 
-      <Card className="shadow-lg rounded-2xl">
-        <CardHeader>
-          <CardTitle>Listado de actividades</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {extraescolares.length === 0 ? (
-            <p className="text-gray-500 italic">No hay actividades registradas.</p>
-          ) : (
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b">
-                  <th className="p-2">Título</th>
-                  <th className="p-2">Fecha</th>
-                  <th className="p-2">Profesor responsable</th>
-                </tr>
-              </thead>
-              <tbody>
-                {extraescolares.map((e) => (
-                  <tr key={e.id} className="border-b hover:bg-gray-50">
-                    <td className="p-2">{e.titulo}</td>
-                    <td className="p-2">{e.fecha}</td>
-                    <td className="p-2">{e.profesor}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </CardContent>
-      </Card>
+      {/* Tabla de Extraescolares */}
+      <TablaExtraescolares
+        data={extraescolares}
+        user={user}
+        onCambio={() => {
+          fetchExtraescolares();
+          recargarPanel();
+        }}
+      />
 
-      {/* Diálogo */}
-      {abrirDialogo && (
+      {/* Dialogo para insertar */}
+      {dialogoAbierto && (
         <DialogoInsertarExtraescolar
-          open={abrirDialogo}
-          onClose={() => setAbrirDialogo(false)}
-          onSuccess={() => {}}
+          open={dialogoAbierto}
+          onClose={() => setDialogoAbierto(false)}
+          onGuardar={handleGuardarExtraescolar}
         />
       )}
     </div>
