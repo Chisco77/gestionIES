@@ -16,7 +16,9 @@ async function getExtraescolaresEnriquecidos(req, res) {
     const ldapSession = req.session?.ldap;
 
     if (!ldapSession)
-      return res.status(401).json({ ok: false, error: "No autenticado en LDAP" });
+      return res
+        .status(401)
+        .json({ ok: false, error: "No autenticado en LDAP" });
 
     const { estado, tipo, uid } = req.query;
 
@@ -45,7 +47,8 @@ async function getExtraescolaresEnriquecidos(req, res) {
         e.titulo, e.descripcion,
         e.fecha_inicio, e.fecha_fin,
         e.idperiodo_inicio, e.idperiodo_fin,
-        e.estado, e.responsables_uids
+        e.estado, e.responsables_uids,
+        e.ubicacion, e.coords
       FROM extraescolares e
       ${where}
       ORDER BY e.fecha_inicio ASC`,
@@ -138,20 +141,32 @@ async function insertExtraescolar(req, res) {
       idperiodo_inicio,
       idperiodo_fin,
       responsables_uids = [],
+      ubicacion,
+      coords,
     } = req.body;
 
     const { rows } = await db.query(
       `INSERT INTO extraescolares (
         uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
         fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
-        responsables_uids
+        responsables_uids, ubicacion, coords
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
       RETURNING *`,
       [
-        uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
-        fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
-        responsables_uids
+        uid,
+        gidnumber,
+        cursos_gids,
+        tipo,
+        titulo,
+        descripcion,
+        fecha_inicio,
+        fecha_fin,
+        idperiodo_inicio,
+        idperiodo_fin,
+        responsables_uids,
+        ubicacion,
+        coords,
       ]
     );
 
@@ -205,6 +220,8 @@ async function updateExtraescolar(req, res) {
       idperiodo_fin,
       responsables_uids = [],
       estado,
+      ubicacion,
+      coords,
     } = req.body;
 
     const { rows } = await db.query(
@@ -221,13 +238,27 @@ async function updateExtraescolar(req, res) {
          idperiodo_inicio = $9,
          idperiodo_fin = $10,
          responsables_uids = $11,
-         estado = $12
-       WHERE id = $13
+         estado = $12,
+         ubicacion = $13,
+         coords = $14
+       WHERE id = $15
        RETURNING *`,
       [
-        uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
-        fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
-        responsables_uids, estado, id
+        uid,
+        gidnumber,
+        cursos_gids,
+        tipo,
+        titulo,
+        descripcion,
+        fecha_inicio,
+        fecha_fin,
+        idperiodo_inicio,
+        idperiodo_fin,
+        responsables_uids,
+        estado,
+        ubicacion,
+        coords,
+        id,
       ]
     );
 

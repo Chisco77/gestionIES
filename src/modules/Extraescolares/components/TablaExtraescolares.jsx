@@ -29,10 +29,15 @@ import {
   CalendarIcon,
   Check,
   X,
+  Pencil,
 } from "lucide-react";
 
 import { es } from "date-fns/locale";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,7 +45,7 @@ import { toast } from "sonner";
 
 import { columnsExtraescolares } from "./columns";
 
-export function TablaExtraescolares({ data, user, onCambio }) {
+export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
@@ -75,6 +80,9 @@ export function TablaExtraescolares({ data, user, onCambio }) {
               onClick={() => handleClick(row.original, "rechazar")}
             >
               <X size={16} />
+            </Button>
+            <Button variant="ghost" onClick={() => onEditar(row.original)}>
+              <Pencil className="w-4 h-4 text-blue-600" />
             </Button>
           </div>
         ),
@@ -207,9 +215,7 @@ export function TablaExtraescolares({ data, user, onCambio }) {
                       setFechaDesde(
                         range?.from ? formatLocalDate(range.from) : ""
                       );
-                      setFechaHasta(
-                        range?.to ? formatLocalDate(range.to) : ""
-                      );
+                      setFechaHasta(range?.to ? formatLocalDate(range.to) : "");
                     }}
                   />
                 </PopoverContent>
@@ -252,10 +258,7 @@ export function TablaExtraescolares({ data, user, onCambio }) {
                       className="flex items-center gap-1 cursor-pointer select-none"
                       onClick={h.column.getToggleSortingHandler()}
                     >
-                      {flexRender(
-                        h.column.columnDef.header,
-                        h.getContext()
-                      )}
+                      {flexRender(h.column.columnDef.header, h.getContext())}
                       {{
                         asc: "↑",
                         desc: "↓",
@@ -326,9 +329,7 @@ export function TablaExtraescolares({ data, user, onCambio }) {
             variant="outline"
             size="icon"
             disabled={!table.getCanNextPage()}
-            onClick={() =>
-              table.setPageIndex(table.getPageCount() - 1)
-            }
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
           >
             <ChevronsRight size={16} />
           </Button>
@@ -336,8 +337,6 @@ export function TablaExtraescolares({ data, user, onCambio }) {
 
         <div>Total: {table.getFilteredRowModel().rows.length}</div>
       </div>
-
-    
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { PanelReservas } from "@/modules/Comunes/PanelReservas";
 import { TablaExtraescolares } from "../components/TablaExtraescolares";
 import { toast } from "sonner";
 import { DialogoInsertarExtraescolar } from "../components/DialogoInsertarExtraescolar";
+import { DialogoEditarExtraescolar } from "../components/DialogoEditarExtraescolar";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -43,7 +44,23 @@ export function ExtraescolaresIndex() {
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
   const startDay = (firstDay + 6) % 7; // lunes=0
   const weeks = [];
+
+  // carga de datos en este componente, el padre.
   const [periodos, setPeriodos] = useState([]);
+  const [departamentos, setDepartamentos] = useState([]);
+  const [cursos, setCursos] = useState([]);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+
+  const handleEditar = (item) => {
+    console.log("🟢 Editar actividad seleccionada:", item);
+    console.log("🟢 Periodos disponibles:", periodos);
+    console.log("🟢 Departamentos disponibles:", departamentos);
+    console.log("🟢 Cursos disponibles:", cursos);
+    setEditItem(item);
+    setEditOpen(true);
+  };
 
   let day = 1 - startDay;
   while (day <= daysInMonth) {
@@ -99,30 +116,40 @@ export function ExtraescolaresIndex() {
     setDialogoAbierto(true);
   };
 
-  const handleGuardarExtraescolar = async (datos) => {
-    try {
-      const res = await fetch(`${API_BASE}/periodos-horarios`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(datos),
-      });
-      if (!res.ok) {
-        const r = await res.json();
-        throw new Error(r.error || "Error al guardar actividad");
-      }
-      toast.success("Actividad creada");
-      setDialogoAbierto(false);
-      fetchExtraescolares();
-      recargarPanel();
-    } catch (err) {
-      console.error(err);
-      toast.error(err.message);
-    }
-  };
-
   useEffect(() => {
     fetchExtraescolares();
+  }, []);
+
+  useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    // Cargar departamentos
+    fetch(`${API_URL}/ldap/grupos?groupType=school_department`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) =>
+        setDepartamentos(
+          data
+            .map((d) => ({ gidNumber: d.gidNumber, nombre: d.cn }))
+            .sort((a, b) => a.nombre.localeCompare(b.nombre))
+        )
+      )
+      .catch(() => setDepartamentos([]));
+
+    // Cargar cursos
+    fetch(`${API_URL}/ldap/grupos?groupType=school_class`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) =>
+        setCursos(
+          data
+            .map((c) => ({ gid: c.gidNumber, nombre: c.cn }))
+            .sort((a, b) => a.nombre.localeCompare(b.nombre))
+        )
+      )
+      .catch(() => setCursos([]));
   }, []);
 
   useEffect(() => {
@@ -219,6 +246,7 @@ export function ExtraescolaresIndex() {
       <TablaExtraescolares
         data={extraescolares}
         user={user}
+        onEditar={handleEditar}
         onCambio={() => {
           fetchExtraescolares();
           recargarTabla();
@@ -235,6 +263,21 @@ export function ExtraescolaresIndex() {
           }}
           fechaSeleccionada={selectedDate}
           periodos={periodos}
+        />
+      )}
+
+      {editItem && editOpen && periodos && departamentos && cursos && (
+        <DialogoEditarExtraescolar
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          actividad={editItem}
+          periodos={periodos}
+          departamentos={departamentos}
+          cursos={cursos}
+          onGuardado={(actividad) => {
+            fetchExtraescolares(); // recarga tabla
+            recargarPanelReservas(); // recarga panel
+          }}
         />
       )}
     </div>
