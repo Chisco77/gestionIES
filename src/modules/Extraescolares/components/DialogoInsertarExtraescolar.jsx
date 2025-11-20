@@ -33,7 +33,6 @@ import { useAuth } from "@/context/AuthContext"; // Importar el contexto de aute
 import { Autocomplete } from "@/modules/Utilidades/components/Autocomplete";
 import { toast } from "sonner";
 
-
 const provider = new OpenStreetMapProvider();
 
 /* ============================
@@ -163,49 +162,6 @@ export function DialogoInsertarExtraescolar({
     setUbicacion(direccion);
   };
 
-  /*const handleGuardar = async () => {
-    const API_URL = import.meta.env.VITE_API_URL;
-
-    const datos = {
-      uid: user.username,
-      titulo,
-      descripcion,
-      tipo,
-      gidnumber: Number(departamento),
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin,
-      idperiodo_inicio: tipo === "lectivo" ? Number(periodoInicio) : null,
-      idperiodo_fin: tipo === "lectivo" ? Number(periodoFin) : null,
-      cursos_gids: cursosSeleccionados,
-      responsables_uids: profesoresSeleccionados,
-      ubicacion,
-      coords,
-    };
-
-    try {
-      const resp = await fetch(`${API_URL}/db/extraescolares`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(datos),
-      });
-
-      const json = await resp.json();
-
-      if (!resp.ok) {
-        console.error("Error guardando", json);
-        return;
-      }
-
-      console.log("Extraescolar insertada correctamente", json);
-      if (onGuardado) onGuardado();
-      onClose();
-
-    } catch (e) {
-      console.error("Error haciendo la petición:", e);
-    }
-  };*/
-
   const handleGuardar = async () => {
     const API_URL = import.meta.env.VITE_API_URL;
 
@@ -251,10 +207,10 @@ export function DialogoInsertarExtraescolar({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg max-w-5xl w-[90vw]"
+        className="p-0 overflow-hidden rounded-lg max-w-5xl w-full"
       >
         <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">

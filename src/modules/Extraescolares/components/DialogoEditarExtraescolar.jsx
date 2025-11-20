@@ -188,10 +188,13 @@ export function DialogoEditarExtraescolar({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="p-0 max-w-5xl w-[90vw] overflow-hidden">
-        <DialogHeader className="bg-blue-500 text-white py-3 flex justify-center">
-          <DialogTitle>Editar Actividad Extraescolar</DialogTitle>
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="p-0 overflow-hidden rounded-lg max-w-5xl w-full"
+      >
+        <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+          <DialogTitle className="text-lg font-semibold text-center leading-snug"> Editar Actividad </DialogTitle>
         </DialogHeader>
 
         {/* === CUERPO === */}
@@ -319,7 +322,7 @@ export function DialogoEditarExtraescolar({
           </div>
 
           {/* DERECHA */}
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-col justify-center space-y-3">
             <Label>Ubicación</Label>
 
             <Autocomplete

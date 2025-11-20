@@ -7,6 +7,9 @@ import { TablaExtraescolares } from "../components/TablaExtraescolares";
 import { toast } from "sonner";
 import { DialogoInsertarExtraescolar } from "../components/DialogoInsertarExtraescolar";
 import { DialogoEditarExtraescolar } from "../components/DialogoEditarExtraescolar";
+import { useCursosLdap } from "@/hooks/useCursosLdap";
+import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -45,22 +48,16 @@ export function ExtraescolaresIndex() {
   const startDay = (firstDay + 6) % 7; // lunes=0
   const weeks = [];
 
-  // carga de datos en este componente, el padre.
-  const [periodos, setPeriodos] = useState([]);
-  const [departamentos, setDepartamentos] = useState([]);
-  const [cursos, setCursos] = useState([]);
-
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
 
   const handleEditar = (item) => {
-    console.log("🟢 Editar actividad seleccionada:", item);
-    console.log("🟢 Periodos disponibles:", periodos);
-    console.log("🟢 Departamentos disponibles:", departamentos);
-    console.log("🟢 Cursos disponibles:", cursos);
     setEditItem(item);
     setEditOpen(true);
   };
+
+  const { data: departamentosData } = useDepartamentosLdap();
+  const { data: cursosData } = useCursosLdap();
 
   let day = 1 - startDay;
   while (day <= daysInMonth) {
@@ -120,54 +117,11 @@ export function ExtraescolaresIndex() {
     fetchExtraescolares();
   }, []);
 
-  useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL;
 
-    // Cargar departamentos
-    fetch(`${API_URL}/ldap/grupos?groupType=school_department`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) =>
-        setDepartamentos(
-          data
-            .map((d) => ({ gidNumber: d.gidNumber, nombre: d.cn }))
-            .sort((a, b) => a.nombre.localeCompare(b.nombre))
-        )
-      )
-      .catch(() => setDepartamentos([]));
-
-    // Cargar cursos
-    fetch(`${API_URL}/ldap/grupos?groupType=school_class`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) =>
-        setCursos(
-          data
-            .map((c) => ({ gid: c.gidNumber, nombre: c.cn }))
-            .sort((a, b) => a.nombre.localeCompare(b.nombre))
-        )
-      )
-      .catch(() => setCursos([]));
-  }, []);
-
-  useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL;
-    const fetchPeriodos = async () => {
-      const res = await fetch(`${API_BASE}/periodos-horarios`, {
-        credentials: "include",
-      });
-      const data = await res.json();
-      setPeriodos(
-        (data.periodos || []).map((p) => ({
-          id: Number(p.id),
-          nombre: p.nombre,
-        }))
-      );
-    };
-    fetchPeriodos();
-  }, []);
+  // Usamos los hooks para la carga de departamentos, cursos y periodos horarios.
+  const { data: departamentos } = useDepartamentosLdap();
+  const { data: cursos } = useCursosLdap();
+  const { data: periodos } = usePeriodosHorarios();
 
   return (
     <div className="p-4 space-y-4">
@@ -242,24 +196,30 @@ export function ExtraescolaresIndex() {
           />
         </div>
       </div>
+      <Card className="shadow-lg rounded-2xl flex flex-col p-4">
+        <CardHeader>
+          <CardTitle className="text-center text-xl font-semibold">
+            Actividades Extraescolares y Complementarias
+          </CardTitle>
+        </CardHeader>
+        <TablaExtraescolares
+          data={extraescolares}
+          user={user}
+          onEditar={handleEditar}
+          onCambio={() => {
+            fetchExtraescolares();
+            recargarTabla();
+          }}
+        />
+      </Card>
 
-      <TablaExtraescolares
-        data={extraescolares}
-        user={user}
-        onEditar={handleEditar}
-        onCambio={() => {
-          fetchExtraescolares();
-          recargarTabla();
-        }}
-      />
-
-      {dialogoAbierto && periodos && periodos.length > 0 && (
+      {dialogoAbierto && periodos && (
         <DialogoInsertarExtraescolar
           open={dialogoAbierto}
           onClose={() => setDialogoAbierto(false)}
-          onGuardado={(actividad) => {
-            fetchExtraescolares(); // recarga tabla
-            recargarPanelReservas(); // recarga panel
+          onGuardado={() => {
+            fetchExtraescolares();
+            recargarPanelReservas();
           }}
           fechaSeleccionada={selectedDate}
           periodos={periodos}
@@ -274,9 +234,9 @@ export function ExtraescolaresIndex() {
           periodos={periodos}
           departamentos={departamentos}
           cursos={cursos}
-          onGuardado={(actividad) => {
-            fetchExtraescolares(); // recarga tabla
-            recargarPanelReservas(); // recarga panel
+          onGuardado={() => {
+            fetchExtraescolares();
+            recargarPanelReservas();
           }}
         />
       )}

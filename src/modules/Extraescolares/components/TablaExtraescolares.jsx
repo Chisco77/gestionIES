@@ -296,46 +296,56 @@ export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
       </div>
 
       {/* PAGINACIÓN */}
-      <div className="flex items-center justify-between text-xs py-2">
-        <div className="flex items-center gap-1">
+      <div className="flex flex-col sm:flex-row items-center py-1 space-y-4 sm:space-y-0 text-xs">
+        {/* Izquierda vacío para empujar el centro */}
+        <div className="flex-1"></div>
+        <div className="flex items-center justify-center space-x-1 flex-1">
+          {" "}
           <Button
             variant="outline"
             size="icon"
-            disabled={!table.getCanPreviousPage()}
+            className="h-6 w-6 p-0"
             onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
           >
-            <ChevronsLeft size={16} />
+            <ChevronsLeft className="w-3 h-3" />
           </Button>
           <Button
             variant="outline"
             size="icon"
-            disabled={!table.getCanPreviousPage()}
+            className="h-6 w-6 p-0"
             onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft className="w-3 h-3" />
           </Button>
-          <span>
+          <span className="px-2 text-muted-foreground">
             Página {currentPage} de {totalPages}
           </span>
           <Button
             variant="outline"
             size="icon"
-            disabled={!table.getCanNextPage()}
+            className="h-6 w-6 p-0"
             onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
           >
-            <ChevronRight size={16} />
+            <ChevronRight className="w-3 h-3" />
           </Button>
           <Button
             variant="outline"
             size="icon"
-            disabled={!table.getCanNextPage()}
+            className="h-6 w-6 p-0"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
           >
-            <ChevronsRight size={16} />
+            <ChevronsRight className="w-3 h-3" />
           </Button>
         </div>
 
-        <div>Total: {table.getFilteredRowModel().rows.length}</div>
+        <div className="flex-1 text-right text-xs text-muted-foreground">
+          {" "}
+          Total de registros: {table.getFilteredRowModel().rows.length}
+        </div>
       </div>
     </div>
   );
