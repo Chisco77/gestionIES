@@ -17,30 +17,36 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useActualizarReservaUid } from "@/hooks/Reservas/useMutacionesReservasUid";
 
 export function DialogoEditarReserva({
   open,
   onClose,
   reserva,
-  onSuccess,
   periodos,
   descripcionEstancia = "",
 }) {
   const [descripcion, setDescripcion] = useState("");
   const [inicio, setInicio] = useState("");
   const [fin, setFin] = useState("");
-  const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
+
+  // Mutation para actualizar reserva
+  const actualizarReserva = useActualizarReservaUid(user?.username);
 
   useEffect(() => {
     if (open && reserva) {
+      console.log("DialogoEditarReserva abierto");
+      console.log("Reserva recibida:", reserva);
+      console.log("Periodos recibidos:", periodos);
+
       setDescripcion(reserva.descripcion || "");
       setInicio(reserva.idperiodo_inicio?.toString() || "");
       setFin(reserva.idperiodo_fin?.toString() || "");
     }
-  }, [open, reserva]);
+  }, [open, reserva, periodos]);
 
-  const handleGuardar = async () => {
+  const handleGuardar = () => {
     if (!inicio || !fin) {
       toast.error("Selecciona periodo de inicio y fin");
       return;
@@ -50,36 +56,27 @@ export function DialogoEditarReserva({
       return;
     }
 
-    try {
-      const res = await fetch(
-        `${API_URL}/db/reservas-estancias/${reserva.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            idperiodo_inicio: parseInt(inicio),
-            idperiodo_fin: parseInt(fin),
-            descripcion,
-            uid: user.username,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.error || "Error desconocido al actualizar reserva");
-        return;
+    actualizarReserva.mutate(
+      {
+        id: reserva.id,
+        datos: {
+          idperiodo_inicio: parseInt(inicio),
+          idperiodo_fin: parseInt(fin),
+          descripcion,
+          uid: user.username,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Reserva actualizada correctamente");
+          onClose();
+        },
+        onError: (err) => {
+          console.error(err);
+          toast.error(err.message || "Error actualizando reserva");
+        },
       }
-
-      toast.success("Reserva actualizada correctamente");
-      onSuccess?.();
-      onClose();
-    } catch (err) {
-      console.error(err);
-      toast.error("Error de conexión al actualizar reserva");
-    }
+    );
   };
 
   return (
@@ -88,7 +85,6 @@ export function DialogoEditarReserva({
         onInteractOutside={(e) => e.preventDefault()}
         className="p-0 overflow-hidden rounded-lg"
       >
-        {/* ENCABEZADO */}
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Editar Reserva (
@@ -97,7 +93,6 @@ export function DialogoEditarReserva({
           </DialogTitle>
         </DialogHeader>
 
-        {/* CUERPO */}
         <div className="flex flex-col space-y-4 p-6">
           <div className="flex gap-3">
             <div className="flex-1">
@@ -149,10 +144,13 @@ export function DialogoEditarReserva({
           </div>
         </div>
 
-        {/* PIE */}
         <DialogFooter className="px-6 py-4 bg-gray-50">
-          <Button variant="outline" onClick={handleGuardar}>
-            Guardar cambios
+          <Button
+            variant="outline"
+            onClick={handleGuardar}
+            disabled={actualizarReserva.isLoading}
+          >
+            {actualizarReserva.isLoading ? "Guardando..." : "Guardar cambios"}
           </Button>
         </DialogFooter>
       </DialogContent>

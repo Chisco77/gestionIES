@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -29,10 +29,10 @@ import {
   useMap,
 } from "react-leaflet";
 import { OpenStreetMapProvider } from "leaflet-geosearch";
-
 import { Autocomplete } from "@/modules/Utilidades/components/Autocomplete";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const provider = new OpenStreetMapProvider();
 
@@ -80,6 +80,7 @@ export function DialogoEditarExtraescolar({
   cursos = [],
 }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -94,31 +95,22 @@ export function DialogoEditarExtraescolar({
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
 
-  // Cargar actividad
+  // Cargar datos de la actividad al abrir el diálogo
   useEffect(() => {
     if (!actividad) return;
 
-    console.log("📌 Cargando actividad en diálogo:", actividad);
-    console.log("📌 Props periodos:", periodos);
-    console.log("📌 Props departamentos:", departamentos);
-    console.log("📌 Props cursos:", cursos);
-
-    // Título, descripción y tipo
     setTitulo(actividad.titulo || "");
     setDescripcion(actividad.descripcion || "");
     setTipo(actividad.tipo || "complementaria");
 
-    // Departamento
     const depto = departamentos.find(
       (d) => String(d.gidNumber) === String(actividad.gidnumber)
     );
     setDepartamento(depto ? String(depto.gidNumber) : "");
 
-    // Fechas
     setFechaInicio(actividad.fecha_inicio?.split("T")[0] || "");
     setFechaFin(actividad.fecha_fin?.split("T")[0] || "");
 
-    // Periodos
     const periodoIni = periodos.find(
       (p) => String(p.id) === String(actividad.idperiodo_inicio)
     );
@@ -128,23 +120,43 @@ export function DialogoEditarExtraescolar({
     setPeriodoInicio(periodoIni ? String(periodoIni.id) : "");
     setPeriodoFin(periodoFi ? String(periodoFi.id) : "");
 
-    // Cursos
     const cursosSel = cursos
       .filter((c) => actividad.cursos_gids?.map(String).includes(String(c.gid)))
       .map((c) => String(c.gid));
     setCursosSeleccionados(cursosSel);
 
-    // Profesores
     setProfesoresSeleccionados(actividad.responsables_uids || []);
-
-    // Ubicación y coordenadas
     setUbicacion(actividad.ubicacion || "");
     setCoords(actividad.coords || { lat: 40.4168, lng: -3.7038 });
   }, [actividad, periodos, departamentos, cursos]);
 
-  const handleGuardar = async () => {
-    const API_URL = import.meta.env.VITE_API_URL;
+  // --- Mutation para actualizar actividad ---
+  const mutation = useMutation({
+    mutationFn: async (datos) => {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const resp = await fetch(`${API_URL}/db/extraescolares/${actividad.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(datos),
+      });
+      const json = await resp.json();
+      if (!resp.ok || !json.ok)
+        throw new Error(json.error || "Error actualizando actividad");
+      return json.actividad;
+    },
+    onSuccess: (actividad) => {
+      queryClient.invalidateQueries(["extraescolares", "uid", user.username]);
+      if (onGuardado) onGuardado(actividad);
+      onClose();
+    },
+    onError: (err) => {
+      console.error("Error actualizando extraescolar:", err);
+      toast.error(err.message || "Error actualizando actividad");
+    },
+  });
 
+  const handleGuardar = () => {
     const datos = {
       uid: user.username,
       titulo,
@@ -155,51 +167,29 @@ export function DialogoEditarExtraescolar({
       fecha_fin: fechaFin,
       idperiodo_inicio: periodoInicio ? Number(periodoInicio) : null,
       idperiodo_fin: periodoFin ? Number(periodoFin) : null,
-
       estado: actividad.estado,
       cursos_gids: cursosSeleccionados,
       responsables_uids: profesoresSeleccionados,
       ubicacion,
       coords,
     };
-
-    try {
-      const resp = await fetch(`${API_URL}/db/extraescolares/${actividad.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(datos),
-      });
-
-      const json = await resp.json();
-
-      if (!resp.ok || !json.ok) {
-        toast.error(json.error || "Error actualizando actividad");
-        return;
-      }
-
-      toast.success("Actividad actualizada");
-      if (onGuardado) onGuardado(json.actividad);
-      onClose();
-    } catch (e) {
-      console.error(e);
-      toast.error("Error guardando");
-    }
+    mutation.mutate(datos);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose} modal={true}>
+    <Dialog open={open} onOpenChange={onClose} modal>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
         className="p-0 overflow-hidden rounded-lg max-w-5xl w-full"
       >
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
-          <DialogTitle className="text-lg font-semibold text-center leading-snug"> Editar Actividad </DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-center leading-snug">
+            Editar Actividad
+          </DialogTitle>
         </DialogHeader>
 
-        {/* === CUERPO === */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 py-5">
-          {/* IZQUIERDA */}
+          {/* Izquierda */}
           <div className="space-y-4">
             <div className="space-y-1">
               <Label>Título</Label>
@@ -208,7 +198,6 @@ export function DialogoEditarExtraescolar({
                 onChange={(e) => setTitulo(e.target.value)}
               />
             </div>
-
             <div className="space-y-1">
               <Label>Descripción</Label>
               <Textarea
@@ -216,7 +205,6 @@ export function DialogoEditarExtraescolar({
                 onChange={(e) => setDescripcion(e.target.value)}
               />
             </div>
-
             <div className="space-y-1">
               <Label>Departamento organizador</Label>
               <Select value={departamento} onValueChange={setDepartamento}>
@@ -244,7 +232,7 @@ export function DialogoEditarExtraescolar({
                 values={cursosSeleccionados}
                 onChange={setCursosSeleccionados}
                 options={cursos.map((c) => ({
-                  value: String(c.gid), // Convertimos a string
+                  value: String(c.gid),
                   label: c.nombre,
                 }))}
               />
@@ -321,10 +309,9 @@ export function DialogoEditarExtraescolar({
             )}
           </div>
 
-          {/* DERECHA */}
+          {/* Derecha */}
           <div className="flex flex-col justify-center space-y-3">
             <Label>Ubicación</Label>
-
             <Autocomplete
               value={ubicacion}
               onChange={setUbicacion}
@@ -334,15 +321,13 @@ export function DialogoEditarExtraescolar({
                 setCoords({ lat: lugar.lat, lng: lugar.lng });
               }}
             />
-
             <MapContainer
               center={coords}
               zoom={13}
               style={{ height: "300px", width: "100%", marginTop: "8px" }}
-              scrollWheelZoom={true}
+              scrollWheelZoom
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
               <Marker
                 position={coords}
                 draggable
@@ -357,17 +342,19 @@ export function DialogoEditarExtraescolar({
               >
                 <Popup>Mueve el marcador</Popup>
               </Marker>
-
               <ClickHandler setCoords={setCoords} setUbicacion={setUbicacion} />
               <SetViewOnChange coords={coords} />
             </MapContainer>
           </div>
         </div>
 
-        {/* FOOTER */}
         <DialogFooter className="px-6 py-4 bg-gray-50">
-          <Button variant="outline" onClick={handleGuardar}>
-            Guardar cambios
+          <Button
+            variant="outline"
+            onClick={handleGuardar}
+            disabled={mutation.isLoading}
+          >
+            {mutation.isLoading ? "Guardando..." : "Guardar cambios"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -12,6 +12,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
+
+import { useReservasUid } from "@/hooks/Reservas/useReservasUid";
+import { useAsuntosUid } from "@/hooks/Asuntos/useAsuntosUid";
+import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
+import { useEstancias } from "@/hooks/Estancias/useEstancias";
+import { useAsuntosMes } from "@/hooks/Asuntos/useAsuntosMes";
+
+import { CalendarioAsuntos } from "../components/CalendarioAsuntos";
 
 const formatDateKey = (date) => {
   const y = date.getFullYear();
@@ -19,9 +28,6 @@ const formatDateKey = (date) => {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 };
-
-const API_URL = import.meta.env.VITE_API_URL;
-const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
 export function AsuntosPropiosIndex() {
   const { user } = useAuth();
@@ -37,26 +43,23 @@ export function AsuntosPropiosIndex() {
   const [abrirDialogoEdicion, setAbrirDialogoEdicion] = useState(false);
   const [asuntoSeleccionado, setAsuntoSeleccionado] = useState(null);
 
-  const [asuntosPropiosMes, setAsuntosPropiosMes] = useState([]);
   const [maxConcurrentes, setMaxConcurrentes] = useState(2);
-
   const [reloadPanel, setReloadPanel] = useState(0);
   const [rangosBloqueados, setRangosBloqueados] = useState([]);
 
-  // Convertir Date a string YYYY-MM-DD
-  const formatKey = (d) => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
+  // ===== Hooks de PanelReservas =====
+  const { data: reservasEstancias } = useReservasUid(uid);
+  const { data: asuntosPropios } = useAsuntosUid(uid);
+  const { data: extraescolares } = useExtraescolaresUid(uid);
+  const { data: estancias } = useEstancias();
+  const { data: periodos } = usePeriodosHorarios();
 
-  const isRangoBloqueado = (date) => {
-    const fechaStr = formatKey(new Date(date));
-    return rangosBloqueados.some(
-      (r) => fechaStr >= r.inicio && fechaStr <= r.fin
+  // === Hook para asuntos del mes ===
+  const { data: asuntosPropiosMes = [], refetch: refetchAsuntosMes } =
+    useAsuntosMes(
+      currentYear,
+      currentMonth + 1 // el hook espera mes 1-12
     );
-  };
 
   // --- Función para recargar PanelReservas ---
   const recargarPanel = () => setReloadPanel((r) => r + 1);
@@ -75,59 +78,6 @@ export function AsuntosPropiosIndex() {
     }
     weeks.push(week);
   }
-
-  // --- Fetch rangos bloqueados ---
-  const fetchRangosBloqueados = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/restricciones/asuntos/rangos`, {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Error al cargar rangos bloqueados");
-      const data = await res.json();
-      setRangosBloqueados(data.rangos || []);
-    } catch (err) {
-      console.error(err);
-      setRangosBloqueados([]);
-    }
-  };
-
-  // --- Fetch asuntos del mes ---
-  const fetchAsuntos = async () => {
-    try {
-      const inicio = `${currentYear}-${String(currentMonth + 1).padStart(
-        2,
-        "0"
-      )}-01`;
-      const fin = `${currentYear}-${String(currentMonth + 1).padStart(
-        2,
-        "0"
-      )}-${String(daysInMonth).padStart(2, "0")}`;
-
-      const res = await fetch(
-        `${API_BASE}/asuntos-propios?fecha_inicio=${inicio}&fecha_fin=${fin}`
-      );
-      const data = await res.json();
-      setAsuntosPropiosMes(data.asuntos || []);
-
-      // Restricción concurrentes
-      const resRestricciones = await fetch(`${API_BASE}/restricciones/asuntos`);
-      const dataRestr = await resRestricciones.json();
-
-      const concurrentes =
-        dataRestr?.restricciones?.concurrentes !== undefined
-          ? dataRestr.restricciones.concurrentes
-          : 2;
-
-      setMaxConcurrentes(concurrentes);
-    } catch (err) {
-      console.error("Error cargando asuntos propios:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchAsuntos();
-    fetchRangosBloqueados();
-  }, [currentMonth, currentYear]);
 
   // --- Derivados ---
   const asuntosPorDia = {};
@@ -170,138 +120,38 @@ export function AsuntosPropiosIndex() {
 
   // --- onSuccess para diálogos ---
   const onSuccess = () => {
-    fetchAsuntos();
-    recargarPanel();
+    refetchAsuntosMes(); // actualizamos el mes usando el hook
+    recargarPanel(); // recargamos el panel
   };
 
   return (
     <div className="p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Calendario */}
-        <Card className="shadow-lg rounded-2xl flex flex-col h-[350px]">
-          <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
-            <button onClick={handlePrevMonth}>
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <CardTitle>
-              {new Date(currentYear, currentMonth).toLocaleDateString("es-ES", {
-                month: "long",
-                year: "numeric",
-              })}
-            </CardTitle>
-            <button onClick={handleNextMonth}>
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </CardHeader>
+        <CalendarioAsuntos
+          currentMonth={currentMonth}
+          currentYear={currentYear}
+          todayStr={todayStr}
+          selectedDate={selectedDate}
+          asuntosPorDia={asuntosPorDia}
+          asuntosPropiosUsuario={asuntosPropiosUsuario}
+          rangosBloqueados={rangosBloqueados}
+          maxConcurrentes={maxConcurrentes}
+          onDiaClick={handleDiaClick}
+          onMonthChange={({ newMonth, newYear }) => {
+            setCurrentMonth(newMonth);
+            setCurrentYear(newYear);
+          }}
+        />
 
-          <CardContent className="p-2 flex-grow flex items-start justify-center overflow-auto">
-            <div className="w-full">
-              <table className="w-full border-collapse text-center align-top">
-                <thead>
-                  <tr>
-                    {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
-                      <th key={d} className="p-1 font-medium">
-                        {d}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="align-top">
-                  {weeks.map((week, i) => (
-                    <tr key={i}>
-                      {week.map((d, j) => {
-                        if (!d) return <td key={j} className="p-2"></td>;
-
-                        const dateObj = new Date(currentYear, currentMonth, d);
-                        const dateKey = formatDateKey(dateObj);
-                        const isToday = dateKey === todayStr;
-                        const isSelected = dateKey === selectedDate;
-                        const numAsuntos = asuntosPorDia[dateKey] || 0;
-                        const isWeekend =
-                          dateObj.getDay() === 0 || dateObj.getDay() === 6;
-                        const rangoDelDia = rangosBloqueados.find(
-                          (r) => dateKey >= r.inicio && dateKey <= r.fin
-                        );
-                        const motivoRango = rangoDelDia?.motivo || "";
-                        const rangoBloqueado = !!rangoDelDia;
-                        const bloqueado =
-                          numAsuntos >= maxConcurrentes ||
-                          rangoBloqueado ||
-                          isWeekend;
-                        const isMine = !!asuntosPropiosUsuario[dateKey];
-
-                        return (
-                          <TooltipProvider key={j}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <td
-                                  className={`relative p-1 rounded-lg transition-all align-top
-            ${bloqueado ? "bg-red-100 text-gray-400 cursor-not-allowed" : "cursor-pointer hover:bg-green-50"}
-            ${isToday ? "border border-green-400" : ""}
-             ${isMine ? "bg-green-100" : ""}
-            `}
-                                  onClick={() =>
-                                    !bloqueado && handleDiaClick(dateKey)
-                                  }
-                                >
-                                  <div className="relative flex items-center justify-center flex-col">
-                                    <span>{d}</span>
-                                    {numAsuntos > 0 && (
-                                      <span
-                                        className={`absolute right-1 flex items-center justify-center w-5 h-5 text-[0.7rem] text-white font-semibold rounded-full
-                  ${bloqueado ? "bg-red-500" : "bg-green-500"}`}
-                                      >
-                                        {numAsuntos}
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                              </TooltipTrigger>
-                              {bloqueado && motivoRango && (
-                                <TooltipContent className="bg-red-100 text-black p-2 rounded-md">
-                                  {motivoRango}
-                                </TooltipContent>
-                              )}
-                            </Tooltip>
-                          </TooltipProvider>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-          {/* Leyenda + Switch */}
-          <div className="mt-4 mb-4 flex justify-center items-center text-sm">
-            {/* Leyenda */}
-            <div className="flex gap-6">
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-green-200 rounded"></div>
-                Mis asuntos propios
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-red-200 rounded"></div>
-                Días bloqueados
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                Parcialmente ocupado
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                Completo
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Panel de asuntos */}
+        {/* Panel Reservas */}
         <div className="h-full">
           <PanelReservas
             uid={uid}
-            reloadKey={reloadPanel}
-            onReservaModificada={fetchAsuntos}
+            reservasEstancias={reservasEstancias || []}
+            asuntosPropios={asuntosPropios || []}
+            extraescolares={extraescolares || []}
+            estancias={estancias || []}
+            periodos={periodos || []}
           />
         </div>
       </div>

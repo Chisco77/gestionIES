@@ -17,6 +17,7 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function DialogoInsertarReserva({
   open,
@@ -34,7 +35,9 @@ export function DialogoInsertarReserva({
   const [fin, setFin] = useState("");
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
+  const queryClient = useQueryClient(); // React Query
 
+  // Reset de estado al abrir
   useEffect(() => {
     if (open) {
       setDescripcion("");
@@ -43,25 +46,19 @@ export function DialogoInsertarReserva({
     }
   }, [open, inicioSeleccionado, finSeleccionado]);
 
-  const handleGuardar = async () => {
-    if (!inicio || !fin) {
-      toast.error("Selecciona periodo de inicio y fin");
-      return;
-    }
+  // Mutation de React Query
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!inicio || !fin) {
+        throw new Error("Selecciona periodo de inicio y fin");
+      }
+      if (parseInt(fin) < parseInt(inicio)) {
+        throw new Error("El periodo final no puede ser anterior al inicial");
+      }
+      if (!user?.username) {
+        throw new Error("Usuario no autenticado");
+      }
 
-    if (parseInt(fin) < parseInt(inicio)) {
-      toast.error("El periodo final no puede ser anterior al inicial");
-      return;
-    }
-
-    if (!user?.username) {
-      toast.error("Usuario no autenticado");
-      return;
-    }
-
-   
-
-    try {
       const res = await fetch(`${API_URL}/db/reservas-estancias`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -76,22 +73,28 @@ export function DialogoInsertarReserva({
         }),
       });
 
-
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Error desconocido al insertar reserva");
-        return;
+        throw new Error(data.error || "Error desconocido al insertar reserva");
       }
 
+      return data;
+    },
+    onSuccess: () => {
       toast.success("Reserva insertada correctamente");
+      // Invalidar queries para recargar grid y panel
+      queryClient.invalidateQueries(["reservas", "dia", fecha]); // grid del día
+      queryClient.invalidateQueries(["reservas", "uid", user.username]); // panel de usuario
       onSuccess?.();
       onClose();
-    } catch (err) {
-      console.error("Error al hacer fetch:", err);
-      toast.error("Error de conexión al insertar reserva");
-    }
-  };
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error al insertar reserva");
+    },
+  });
+
+  const handleGuardar = () => mutation.mutate();
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>

@@ -10,11 +10,13 @@ import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
   const [descripcion, setDescripcion] = useState("");
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (open && asunto) {
@@ -22,37 +24,55 @@ export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
     }
   }, [open, asunto]);
 
-  const handleGuardar = async () => {
-    if (!descripcion.trim()) {
-      toast.error("La descripción no puede estar vacía");
-      return;
-    }
-
-    try {
+  // --------------------------
+  // Mutation con React Query
+  // --------------------------
+  const mutation = useMutation({
+    mutationFn: async (data) => {
       const res = await fetch(`${API_URL}/db/asuntos-propios/${asunto.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          descripcion,
-          uid: user.username,
-        }),
+        body: JSON.stringify(data),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.error || "Error desconocido al actualizar asunto propio");
-        return;
-      }
-
+      const result = await res.json();
+      if (!res.ok || !result.ok)
+        throw new Error(result.error || "Error actualizando asunto");
+      return result.asunto;
+    },
+    onSuccess: () => {
       toast.success("Asunto propio actualizado correctamente");
+
+      // 1️⃣ Actualizar PanelReservas
+      queryClient.invalidateQueries(["asuntosPropios", user.username]);
+
+      // 2️⃣ Actualizar calendario (useAsuntosMes)
+      const fechaObj = new Date(asunto.fecha);
+      const month = fechaObj.getMonth();
+      const year = fechaObj.getFullYear();
+      const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+      const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
+      queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
+
       onSuccess?.();
       onClose();
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error(err);
-      toast.error("Error de conexión al actualizar asunto propio");
+      toast.error(err.message || "Error al actualizar asunto propio");
+    },
+  });
+
+  const handleGuardar = () => {
+    if (!descripcion.trim()) {
+      toast.error("La descripción no puede estar vacía");
+      return;
     }
+    if (!user?.username) {
+      toast.error("Usuario no autenticado");
+      return;
+    }
+    mutation.mutate({ descripcion, uid: user.username });
   };
 
   return (
@@ -82,7 +102,13 @@ export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
 
         {/* PIE */}
         <DialogFooter className="px-6 py-4 bg-gray-50">
-          <Button variant="outline" onClick={handleGuardar}>Guardar cambios</Button>
+          <Button
+            variant="outline"
+            onClick={handleGuardar}
+            disabled={mutation.isLoading}
+          >
+            {mutation.isLoading ? "Guardando..." : "Guardar cambios"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

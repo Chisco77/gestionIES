@@ -11,12 +11,14 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { jsPDF } from "jspdf";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
+export function DialogoInsertarAsunto({ open, onClose, fecha }) {
   const [descripcion, setDescripcion] = useState("");
-  const [showPdfDialog, setShowPdfDialog] = useState(false); // 🔹 diálogo de confirmación
+  const [showPdfDialog, setShowPdfDialog] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (open) {
@@ -25,6 +27,44 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
     }
   }, [open]);
 
+  // --------------------------
+  // Mutation con React Query
+  // --------------------------
+  const mutation = useMutation({
+    mutationFn: async (nuevoAsunto) => {
+      const res = await fetch(`${API_URL}/db/asuntos-propios`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(nuevoAsunto),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok)
+        throw new Error(data.error || "Error insertando asunto");
+      return data.asunto;
+    },
+    onSuccess: () => {
+      toast.success("Asunto propio insertado correctamente");
+      queryClient.invalidateQueries(["asuntosPropios", user.username]);
+
+      // Actualizar el calendario (useAsuntosMes)
+      const month = new Date(fecha).getMonth();
+      const year = new Date(fecha).getFullYear();
+      const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+      const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
+      queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
+      
+      setShowPdfDialog(true); // mostrar diálogo PDF
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error(err.message || "Error al insertar asunto propio");
+    },
+  });
+
+  // --------------------------
+  // Generación de PDF completa
+  // --------------------------
   const generatePermisosPdf = () => {
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const pageWidth = 210;
@@ -35,7 +75,6 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
     const textPad = 3;
     let y = marginTop;
 
-    // Datos del usuario desde contexto
     const apellidoUsuario = user?.sn || "";
     const nombreUsuario = user?.givenName || "";
     const employeeNumber = user?.employeeNumber || "";
@@ -58,7 +97,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
     y += row1Height;
     doc.line(tableX, y, tableX + tableWidth, y);
 
-    // Fila 2: Apellidos, Nombre, Employee Number
+    // Fila 2: Apellidos, Nombre, DNI
     const row2Height = 10;
     const col1Width = 70;
     const col2Width = 60;
@@ -93,7 +132,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
     y += row2Height;
     doc.line(tableX, y, tableX + tableWidth, y);
 
-    // --- Fila 3: Teléfono, E-mail ---
+    // Fila 3: Teléfono y email
     const row3Height = 10;
     const col3_1Width = 85;
     doc.text("Teléfono móvil:", tableX + textPad, y + row3Height - 3);
@@ -102,7 +141,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
     y += row3Height;
     doc.line(tableX, y, tableX + tableWidth, y);
 
-    // --- Fila 4: Cuerpo, Grupo, Subgrupo ---
+    // Fila 4: Cuerpo, Grupo, Subgrupo
     const row4Height = 10;
     const col4_1Width = 70;
     const col4_2Width = 50;
@@ -123,7 +162,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
     y += row4Height;
     doc.line(tableX, y, tableX + tableWidth, y);
 
-    // --- Fila 5: Relación jurídica ---
+    // Fila 5: Relación jurídica
     const row5Height = 24;
     doc.setFontSize(11);
     doc.text(
@@ -143,24 +182,17 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
     ];
     doc.setFontSize(10);
     let checkY = y + 11;
-    doc.rect(tableX + 5, checkY, 3.5, 3.5);
-    doc.text(opciones[0], tableX + 10, checkY + 3);
-    doc.rect(tableX + 80, checkY, 3.5, 3.5);
-    doc.text(opciones[1], tableX + 85, checkY + 3);
-    checkY += 7;
-    doc.rect(tableX + 5, checkY, 3.5, 3.5);
-    doc.text(opciones[2], tableX + 10, checkY + 3);
-    doc.rect(tableX + 80, checkY, 3.5, 3.5);
-    doc.text(opciones[3], tableX + 85, checkY + 3);
-    checkY += 7;
-    doc.rect(tableX + 5, checkY, 3.5, 3.5);
-    doc.text(opciones[4], tableX + 10, checkY + 3);
+    opciones.forEach((opcion, index) => {
+      doc.rect(tableX + (index % 2 === 0 ? 5 : 80), checkY, 3.5, 3.5);
+      doc.text(opcion, tableX + (index % 2 === 0 ? 10 : 85), checkY + 3);
+      if (index === 5) checkY += 7;
+      if (index % 2 === 1) checkY += 7;
+    });
 
-    doc.setFontSize(11);
     y += row5Height + 10;
     doc.line(tableX, y, tableX + tableWidth, y);
 
-    // --- Fila 6: Fecha, Centro de destino, Jornada ---
+    // Fila 6: Fecha, Centro de destino, Jornada
     const row6Height = 10;
     const col6_1Width = 70;
     doc.text("Fecha:", tableX + textPad, y + row6Height - 3);
@@ -172,20 +204,13 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
     );
     y += row6Height;
     doc.line(tableX, y, tableX + tableWidth, y);
-
-    // --- Fila 7: Jornada ---
-    const row7Height = 10;
-    doc.text("Jornada:", tableX + col6_1Width + textPad, y + row7Height - 3);
-    doc.rect(tableX + 95, y + row7Height - 7, 3.5, 3.5);
-    doc.text("Completa", tableX + 100, y + row7Height - 3);
-    doc.rect(marginLeft + 125, y + row7Height - 7, 3.5, 3.5);
-    doc.text("Parcial", marginLeft + 130, y + row7Height - 3);
-    y += row7Height;
-
-    // Contenedor exterior sección 1
+    doc.text("Jornada:", tableX + col6_1Width + textPad, y + row6Height - 3);
+    doc.rect(tableX + 95, y + row6Height - 7, 3.5, 3.5);
+    doc.text("Completa", tableX + 100, y + row6Height - 3);
+    doc.rect(marginLeft + 125, y + row6Height - 7, 3.5, 3.5);
+    doc.text("Parcial", marginLeft + 130, y + row6Height - 3);
+    y += row6Height;
     doc.rect(tableX, startY, tableWidth, y - startY);
-
-    y += 10;
 
     // --- 2. PERMISO QUE SOLICITA ---
     doc.setFont("helvetica", "bold");
@@ -224,10 +249,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
 
     permisosLeft.forEach((texto, index) => {
       doc.rect(leftColTextX - 4, yLeft - 3, 3.5, 3.5);
-      if (index === 5) {
-        // Aquí está la opción "Por asuntos particulares"
-        doc.text("X", leftColTextX - 3.3, yLeft); // Marcamos la "X" en ese recuadro
-      }
+      if (index === 5) doc.text("X", leftColTextX - 3.3, yLeft);
       doc.text(doc.splitTextToSize(texto, textWidth), leftColTextX, yLeft);
       yLeft += 15;
     });
@@ -298,51 +320,22 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
     doc.save("anexo_v_concesion_permisos.pdf");
   };
 
-  const handleGuardar = async () => {
+  const handleConfirmarPdf = () => {
+    generatePermisosPdf();
+    setShowPdfDialog(false);
+    onClose();
+  };
+
+  const handleGuardar = () => {
     if (!descripcion.trim()) {
       toast.error("La descripción no puede estar vacía");
       return;
     }
-
     if (!user?.username) {
       toast.error("Usuario no autenticado");
       return;
     }
-
-    try {
-      const res = await fetch(`${API_URL}/db/asuntos-propios`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          uid: user.username,
-          fecha,
-          descripcion,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(
-          data.error || "Error desconocido al insertar asunto propio"
-        );
-        return;
-      }
-
-      toast.success("Asunto propio insertado correctamente");
-      onSuccess?.();
-      setShowPdfDialog(true); // 🔹 mostramos el diálogo de confirmación
-    } catch (err) {
-      console.error(err);
-      toast.error("Error de conexión al insertar asunto propio");
-    }
-  };
-
-  const handleConfirmarPdf = () => {
-    generatePermisosPdf();
-    setShowPdfDialog(false);
-    onClose(); // cerramos el diálogo principal
+    mutation.mutate({ uid: user.username, fecha, descripcion });
   };
 
   return (
@@ -355,8 +348,8 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
         >
           <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
             <DialogTitle className="text-lg font-semibold text-center leading-snug">
-              Solicitud de Asunto Propio ({new Date(fecha).toLocaleDateString("es-ES")}
-              )
+              Solicitud de Asunto Propio (
+              {new Date(fecha).toLocaleDateString("es-ES")})
             </DialogTitle>
           </DialogHeader>
 
@@ -374,8 +367,12 @@ export function DialogoInsertarAsunto({ open, onClose, fecha, onSuccess }) {
           </div>
 
           <DialogFooter className="px-6 py-4 bg-gray-50">
-            <Button variant="outline" onClick={handleGuardar}>
-              Guardar
+            <Button
+              variant="outline"
+              onClick={handleGuardar}
+              disabled={mutation.isLoading}
+            >
+              {mutation.isLoading ? "Guardando..." : "Guardar"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multiselect";
 import { MultiSelectProfesores } from "@/modules/Utilidades/components/MultiSelectProfesores";
-
 import {
   MapContainer,
   TileLayer,
@@ -29,9 +28,10 @@ import {
   useMap,
 } from "react-leaflet";
 import { OpenStreetMapProvider } from "leaflet-geosearch";
-import { useAuth } from "@/context/AuthContext"; // Importar el contexto de autenticación
+import { useAuth } from "@/context/AuthContext";
 import { Autocomplete } from "@/modules/Utilidades/components/Autocomplete";
 import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const provider = new OpenStreetMapProvider();
 
@@ -85,6 +85,9 @@ export function DialogoInsertarExtraescolar({
   fechaSeleccionada,
   periodos = [],
 }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
   const [titulo, setTitulo] = useState("Excursión a Alemania");
   const [descripcion, setDescripcion] = useState(
     "Viaje de intercambio durante varios días."
@@ -94,6 +97,7 @@ export function DialogoInsertarExtraescolar({
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFin, setPeriodoFin] = useState("");
   const [cursosSeleccionados, setCursosSeleccionados] = useState([]);
+  const [profesoresSeleccionados, setProfesoresSeleccionados] = useState([]);
   const [ubicacion, setUbicacion] = useState("");
   const [coords, setCoords] = useState({ lat: 40.4168, lng: -3.7038 });
   const [fechaInicio, setFechaInicio] = useState(
@@ -102,10 +106,8 @@ export function DialogoInsertarExtraescolar({
   const [fechaFin, setFechaFin] = useState(fechaSeleccionada || "2025-03-15");
   const [departamentos, setDepartamentos] = useState([]);
   const [cursos, setCursos] = useState([]);
-  const [profesoresSeleccionados, setProfesoresSeleccionados] = useState([]);
 
-  const { user } = useAuth(); // Acceder al usuario autenticado
-
+  // --- Inicialización de fechas y periodos ---
   useEffect(() => {
     if (open && fechaSeleccionada) {
       const f = fechaSeleccionada.split("T")[0];
@@ -121,12 +123,11 @@ export function DialogoInsertarExtraescolar({
     }
   }, [open, periodos]);
 
+  // --- Cargar departamentos y cursos ---
   useEffect(() => {
     if (!open) return;
-
     const API_URL = import.meta.env.VITE_API_URL;
 
-    // Cargar departamentos
     fetch(`${API_URL}/ldap/grupos?groupType=school_department`, {
       credentials: "include",
     })
@@ -140,7 +141,6 @@ export function DialogoInsertarExtraescolar({
       )
       .catch(() => setDepartamentos([]));
 
-    // Cargar cursos
     fetch(`${API_URL}/ldap/grupos?groupType=school_class`, {
       credentials: "include",
     })
@@ -155,16 +155,33 @@ export function DialogoInsertarExtraescolar({
       .catch(() => setCursos([]));
   }, [open]);
 
-  const handleMarkerDrag = async (event) => {
-    const { lat, lng } = event.target.getLatLng();
-    setCoords({ lat, lng });
-    const direccion = await reverseGeocode({ lat, lng });
-    setUbicacion(direccion);
-  };
+  // --- Mutation de React Query (CORREGIDO PARA V5) ---
+  const mutation = useMutation({
+    mutationFn: async (datos) => {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const resp = await fetch(`${API_URL}/db/extraescolares`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(datos),
+      });
+      const json = await resp.json();
+      if (!resp.ok || !json.ok)
+        throw new Error(json.error || "Error guardando actividad");
+      return json.actividad;
+    },
+    onSuccess: (actividad) => {
+      queryClient.invalidateQueries(["extraescolares", "uid", user.username]);
+      if (onGuardado) onGuardado(actividad);
+      onClose();
+    },
+    onError: (err) => {
+      console.error("Error creando extraescolar:", err);
+      toast.error(err.message || "Error guardando actividad");
+    },
+  });
 
-  const handleGuardar = async () => {
-    const API_URL = import.meta.env.VITE_API_URL;
-
+  const handleGuardar = () => {
     const datos = {
       uid: user.username,
       titulo,
@@ -180,34 +197,18 @@ export function DialogoInsertarExtraescolar({
       ubicacion,
       coords,
     };
+    mutation.mutate(datos);
+  };
 
-    try {
-      const resp = await fetch(`${API_URL}/db/extraescolares`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(datos),
-      });
-
-      const json = await resp.json();
-
-      if (!resp.ok || !json.ok) {
-        console.error("Error guardando extraescolar", json);
-        toast.error(json.error || "Error guardando actividad");
-        return;
-      }
-
-      toast.success("Actividad creada"); // muestra el toast
-      if (onGuardado) onGuardado(json.actividad); // recarga tabla/panel
-      onClose(); // cierra diálogo
-    } catch (e) {
-      console.error("Error haciendo la petición:", e);
-      toast.error("Error guardando actividad");
-    }
+  const handleMarkerDrag = async (event) => {
+    const { lat, lng } = event.target.getLatLng();
+    setCoords({ lat, lng });
+    const direccion = await reverseGeocode({ lat, lng });
+    setUbicacion(direccion);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose} modal={true}>
+    <Dialog open={open} onOpenChange={onClose} modal>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
         className="p-0 overflow-hidden rounded-lg max-w-5xl w-full"
@@ -256,13 +257,12 @@ export function DialogoInsertarExtraescolar({
                 </SelectContent>
               </Select>
             </div>
-            {/* ---------------- Profesores responsables ---------------- */}
 
             <MultiSelectProfesores
               value={profesoresSeleccionados}
               onChange={setProfesoresSeleccionados}
             />
-            {/* ---------------- Cursos participantes (MultiSelect) ---------------- */}
+
             <div className="space-y-2">
               <Label>Cursos participantes</Label>
               <MultiSelect
@@ -272,6 +272,7 @@ export function DialogoInsertarExtraescolar({
                 placeholder="Seleccionar cursos"
               />
             </div>
+
             <div className="space-y-1">
               <Label>Tipo de actividad</Label>
               <Select value={tipo} onValueChange={setTipo}>
@@ -288,6 +289,7 @@ export function DialogoInsertarExtraescolar({
                 </SelectContent>
               </Select>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>Fecha inicio</Label>
@@ -306,8 +308,7 @@ export function DialogoInsertarExtraescolar({
                 />
               </div>
             </div>
-            {/* ---------------- Periodo Inicio y Periodo Fin ---------------- */}
-            {/* Periodos */}
+
             {tipo === "complementaria" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -381,8 +382,12 @@ export function DialogoInsertarExtraescolar({
         </div>
 
         <DialogFooter className="px-6 py-4 bg-gray-50">
-          <Button variant="outline" onClick={handleGuardar}>
-            Guardar
+          <Button
+            variant="outline"
+            onClick={handleGuardar}
+            disabled={mutation.isLoading}
+          >
+            {mutation.isLoading ? "Guardando..." : "Guardar"}
           </Button>
         </DialogFooter>
       </DialogContent>

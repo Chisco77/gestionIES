@@ -38,6 +38,8 @@ export function usePeriodosHorarios() {
       return (data.periodos || []).map((p) => ({
         id: Number(p.id),
         nombre: p.nombre,
+        inicio: p.inicio,
+        fin: p.fin,
       }));
     },
     staleTime: 1000 * 60 * 30, // 30 minutos

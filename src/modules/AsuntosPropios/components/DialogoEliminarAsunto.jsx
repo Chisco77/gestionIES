@@ -7,27 +7,53 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
 
 export function DialogoEliminarAsunto({ open, onOpenChange, asunto, onDeleteSuccess }) {
   if (!asunto) return null;
 
   const API_URL = import.meta.env.VITE_API_URL;
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const handleEliminar = async () => {
-    try {
+  // --------------------------
+  // Mutation con React Query
+  // --------------------------
+  const mutation = useMutation({
+    mutationFn: async () => {
       const res = await fetch(`${API_URL}/db/asuntos-propios/${asunto.id}`, {
         method: "DELETE",
         credentials: "include",
       });
       if (!res.ok) throw new Error("Error al eliminar el asunto propio");
-
+      return true;
+    },
+    onSuccess: () => {
       toast.success("Asunto propio eliminado correctamente");
+
+      // 1️⃣ Actualizar PanelReservas
+      queryClient.invalidateQueries(["asuntosPropios", user.username]);
+
+      // 2️⃣ Actualizar calendario (useAsuntosMes)
+      const fechaObj = new Date(asunto.fecha);
+      const month = fechaObj.getMonth();
+      const year = fechaObj.getFullYear();
+      const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+      const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
+      queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
+
       onDeleteSuccess?.();
       onOpenChange(false);
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error(err);
       toast.error(err.message || "No se pudo eliminar el asunto propio");
-    }
+    },
+  });
+
+  const handleEliminar = () => {
+    mutation.mutate();
   };
 
   return (
@@ -64,8 +90,9 @@ export function DialogoEliminarAsunto({ open, onOpenChange, asunto, onDeleteSucc
             variant="destructive"
             className="bg-red-600 hover:bg-red-700"
             onClick={handleEliminar}
+            disabled={mutation.isLoading}
           >
-            Eliminar
+            {mutation.isLoading ? "Eliminando..." : "Eliminar"}
           </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar

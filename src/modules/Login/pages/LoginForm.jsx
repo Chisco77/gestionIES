@@ -70,6 +70,13 @@ export function LoginForm({ className, ...props }) {
       queryClient.invalidateQueries(["ldap-departamentos"]);
       queryClient.invalidateQueries(["ldap-cursos"]);
 
+      queryClient.invalidateQueries(["asuntos-propios"]);
+      queryClient.invalidateQueries(["estancias"]);
+      queryClient.invalidateQueries(["extraescolares"]);
+      queryClient.invalidateQueries(["reservas"]);
+      queryClient.invalidateQueries(["asuntosMes"]); 
+      queryClient.invalidateQueries(["reservas", "dia"]);
+
       // Hacer check-auth con reintento
       const checkAuth = async (retries = 2) => {
         for (let i = 0; i < retries; i++) {
