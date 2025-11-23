@@ -40,7 +40,6 @@
  * - El pie del sidebar incluye un botón de logout y la información del usuario activo.
  */
 
-
 import { useAuth } from "@/context/AuthContext";
 import React from "react";
 import { useNavigate } from "react-router-dom";
@@ -109,7 +108,7 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         items: [
           { title: "Aulas", url: "/reservasEstancias" },
           { title: "Asuntos Propios", url: "/asuntos_propios" },
-          { title: "Educadora", url: null  },
+          { title: "Educadora", url: null },
           { title: "Extraescolares", url: "/extraescolares" },
         ],
       },
@@ -339,24 +338,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
           <NavMain items={navMain} />
         )}
       </SidebarContent>
-
-      <SidebarFooter>
-        <SidebarMenu className="border-t p-4">
-          <div className="flex items-center justify-between w-full">
-            <Power
-              className="cursor-pointer"
-              color="red"
-              onClick={handleClickLogout}
-            />
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{user?.username}</span>
-              <User className="h-5 w-5 text-gray-500" />
-            </div>
-          </div>
-        </SidebarMenu>
-      </SidebarFooter>
-
-      <SidebarRail />
     </Sidebar>
   );
 }

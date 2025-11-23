@@ -39,6 +39,10 @@ import { Separator } from "@/components/ui/separator";
 import { useSidebarContext } from "@/context/SidebarContext";
 import { RelojPeriodo } from "@/modules/Utilidades/components/RelojPeriodo";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { Power, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -46,6 +50,19 @@ const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 export default function Header() {
   const { tituloActivo } = useSidebarContext();
   const [periodosDB, setPeriodosDB] = useState([]);
+  const { user, setUser, loading } = useAuth();
+  const navigate = useNavigate();
+
+
+  const handleClickLogout = () => {
+    fetch(`${API_URL}/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).finally(() => {
+      setUser(null);
+      navigate("/login");
+    });
+  };
 
   useEffect(() => {
     const fetchTodosPeriodos = async () => {
@@ -70,8 +87,8 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="relative flex h-[60px] items-center gap-4 border-b px-4">
-      {/* IZQUIERDA: menu + título */}
+    <header className="relative flex h-[60px] items-center border-b px-4">
+      {/* IZQUIERDA: menú + título */}
       <div className="flex items-center gap-3">
         <SidebarTrigger />
         <Separator orientation="vertical" className="h-5" />
@@ -81,6 +98,19 @@ export default function Header() {
       {/* CENTRO: reloj */}
       <div className="absolute left-1/2 transform -translate-x-1/2">
         <RelojPeriodo periodos={periodosDB} />
+      </div>
+
+      {/* DERECHA: usuario + logout */}
+      <div className="ml-auto flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{user?.username}</span>
+          <User className="h-5 w-5 text-gray-500" />
+        </div>
+        <Power
+          className="cursor-pointer"
+          color="red"
+          onClick={handleClickLogout}
+        />
       </div>
     </header>
   );

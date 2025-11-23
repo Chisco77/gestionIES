@@ -1,4 +1,4 @@
-// src/components/extraescolares/TablaExtraescolares.jsx
+// TablaExtraescolares.jsx
 
 import {
   flexRender,
@@ -30,6 +30,7 @@ import {
   Check,
   X,
   Pencil,
+  PlusCircle,
 } from "lucide-react";
 
 import { es } from "date-fns/locale";
@@ -45,14 +46,29 @@ import { toast } from "sonner";
 
 import { columnsExtraescolares } from "./columns";
 
-export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
+// Diálogos
+import { DialogoEditarExtraescolar } from "../components/DialogoEditarExtraescolar";
+import { DialogoConfirmacionExtraescolar } from "./DialogoConfirmacionExtraescolar";
+
+export function TablaExtraescolares({
+  data,
+  user,
+  periodos,
+  departamentos,
+  cursos,
+}) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const [dialogOpen, setDialogOpen] = useState(false);
+  // Estados de diálogos
+  const [insertOpen, setInsertOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+
+  const [dialogConfirmOpen, setDialogConfirmOpen] = useState(false);
   const [seleccionado, setSeleccionado] = useState(null);
   const [accion, setAccion] = useState(null);
 
@@ -65,23 +81,38 @@ export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
         header: "Acciones",
         cell: ({ row }) => (
           <div className="flex gap-2">
+            {(user.perfil === "administrador" ||
+              user.perfil === "directiva" ||
+              user.perfil === "extraescolares") && (
+              <>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="text-green-600"
+                  onClick={() => handleAccion(row.original, "aceptar")}
+                >
+                  <Check size={16} />
+                </Button>
+
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="text-red-600"
+                  onClick={() => handleAccion(row.original, "rechazar")}
+                >
+                  <X size={16} />
+                </Button>
+              </>
+            )}
+
             <Button
               size="icon"
               variant="ghost"
-              className="text-green-600"
-              onClick={() => handleClick(row.original, "aceptar")}
+              onClick={() => {
+                setEditItem(row.original);
+                setEditOpen(true);
+              }}
             >
-              <Check size={16} />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="text-red-600"
-              onClick={() => handleClick(row.original, "rechazar")}
-            >
-              <X size={16} />
-            </Button>
-            <Button variant="ghost" onClick={() => onEditar(row.original)}>
               <Pencil className="w-4 h-4 text-blue-600" />
             </Button>
           </div>
@@ -96,18 +127,19 @@ export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
-      pagination: { pageIndex: 0, pageSize: 6 },
+      pagination: { pageIndex: 0, pageSize: 5 },
     },
   });
 
-  const handleClick = (item, tipo) => {
+  // ----- Confirmar aceptar / rechazar ------
+  const handleAccion = (item, tipo) => {
     setSeleccionado(item);
     setAccion(tipo);
-    setDialogOpen(true);
+    setDialogConfirmOpen(true);
   };
 
   const confirmarAccion = async () => {
-    if (!seleccionado || !accion) return;
+    if (!seleccionado) return;
 
     const nuevoEstado = accion === "aceptar" ? 1 : 2;
 
@@ -132,13 +164,14 @@ export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
         nuevoEstado === 1 ? "Actividad aceptada" : "Actividad rechazada"
       );
 
-      onCambio?.();
-      setDialogOpen(false);
+      // React Query refrescará datos desde el diálogo
+      setDialogConfirmOpen(false);
     } catch (e) {
       toast.error("Error de conexión");
     }
   };
 
+  // ----- Filtros de fechas ------
   useEffect(() => {
     table
       .getColumn("fecha_inicio")
@@ -259,10 +292,7 @@ export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
                       onClick={h.column.getToggleSortingHandler()}
                     >
                       {flexRender(h.column.columnDef.header, h.getContext())}
-                      {{
-                        asc: "↑",
-                        desc: "↓",
-                      }[h.column.getIsSorted()] ?? ""}
+                      {{ asc: "↑", desc: "↓" }[h.column.getIsSorted()] ?? ""}
                     </div>
                   </TableHead>
                 ))}
@@ -295,12 +325,11 @@ export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
         </Table>
       </div>
 
-      {/* PAGINACIÓN */}
+      {/* Paginación */}
       <div className="flex flex-col sm:flex-row items-center py-1 space-y-4 sm:space-y-0 text-xs">
-        {/* Izquierda vacío para empujar el centro */}
         <div className="flex-1"></div>
+
         <div className="flex items-center justify-center space-x-1 flex-1">
-          {" "}
           <Button
             variant="outline"
             size="icon"
@@ -310,6 +339,7 @@ export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
           >
             <ChevronsLeft className="w-3 h-3" />
           </Button>
+
           <Button
             variant="outline"
             size="icon"
@@ -319,9 +349,11 @@ export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
           >
             <ChevronLeft className="w-3 h-3" />
           </Button>
+
           <span className="px-2 text-muted-foreground">
             Página {currentPage} de {totalPages}
           </span>
+
           <Button
             variant="outline"
             size="icon"
@@ -331,6 +363,7 @@ export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
           >
             <ChevronRight className="w-3 h-3" />
           </Button>
+
           <Button
             variant="outline"
             size="icon"
@@ -343,10 +376,34 @@ export function TablaExtraescolares({ data, user, onCambio, onEditar }) {
         </div>
 
         <div className="flex-1 text-right text-xs text-muted-foreground">
-          {" "}
           Total de registros: {table.getFilteredRowModel().rows.length}
         </div>
       </div>
+
+      {/* --- DIÁLOGO EDITAR --- */}
+      {editOpen && editItem && (
+        <DialogoEditarExtraescolar
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          actividad={editItem}
+          periodos={periodos}
+          departamentos={departamentos}
+          cursos={cursos}
+        />
+      )}
+
+      {dialogConfirmOpen && seleccionado && (
+        <DialogoConfirmacionExtraescolar
+          open={dialogConfirmOpen}
+          setOpen={setDialogConfirmOpen}
+          actividad={seleccionado}
+          accion={accion}
+          onSuccess={() => {
+            setSeleccionado(null);
+            setAccion(null);
+          }}
+        />
+      )}
     </div>
   );
 }

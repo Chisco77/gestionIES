@@ -2,42 +2,26 @@ import { useState, useEffect } from "react";
 import { TablaAsuntosDirectiva } from "../components/TablaAsuntosDirectiva";
 import { columnsAsuntos } from "../components/columns-asuntos";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TablaExtraescolares } from "@/modules/Extraescolares/components/TablaExtraescolares";
+import { useCursosLdap } from "@/hooks/useCursosLdap";
+import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
+import { useAsuntosTodos } from "@/hooks/Asuntos/useAsuntosTodos";
+import { useExtraescolaresAll } from "@/hooks/Extraescolares/useExtraescolaresAll";
 
-export function PanelReservasDirectiva({ reloadKey, onPanelCambiado }) {
-  const [data, setData] = useState([]);
-  const [asuntosFiltrados, setAsuntosFiltrados] = useState([]);
+export function PanelReservasDirectiva({ user }) {
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const fetchAsuntos = async () => {
-    try {
-      const resAsuntos = await fetch(
-        `${API_URL}/db/asuntos-propios-enriquecidos`,
-        { credentials: "include" }
-      );
-      if (!resAsuntos.ok)
-        throw new Error("Error al obtener los asuntos propios");
-      const data = await resAsuntos.json();
-      if (data.ok) {
-        setData(data.asuntos);
-        setAsuntosFiltrados(data.asuntos);
-      }
-    } catch (error) {
-      console.error("❌ Error al cargar los asuntos propios:", error);
-      setData([]);
-      setAsuntosFiltrados([]);
-    }
-  };
+  // Actividades extraescolares (solo lectura, igual que en ExtraescolaresIndex)
 
-  useEffect(() => {
-    fetchAsuntos();
-  }, [reloadKey]);
-
-  const handleCambio = () => {
-    fetchAsuntos();
-    onPanelCambiado?.(); // notifica al Dashboard
-  };
-
+  const handleCambio = () => {};
+  const { data: departamentos } = useDepartamentosLdap();
+  const { data: cursos } = useCursosLdap();
+  const { data: periodos } = usePeriodosHorarios();
+  const { data: asuntosPropiosTodos } = useAsuntosTodos();
+  const { data: extraescolaresTodas } = useExtraescolaresAll();
+  console.log("Asuntos propios: ", asuntosPropiosTodos);
   return (
     <Card className="shadow-lg rounded-2xl h-[480px] flex flex-col">
       <CardContent className="flex-1 flex flex-col p-2 overflow-hidden">
@@ -55,22 +39,34 @@ export function PanelReservasDirectiva({ reloadKey, onPanelCambiado }) {
           </TabsList>
 
           <div className="flex-1 overflow-hidden">
+            {/* Tabla de Asuntos Propios */}
             <TabsContent
               value="asuntos"
               className="h-full overflow-y-auto pr-2"
             >
-              <TablaAsuntosDirectiva
-                data={asuntosFiltrados}
-                columns={columnsAsuntos({ onCambio: handleCambio })}
-                onCambio={handleCambio}
-              />
+              <TablaAsuntosDirectiva asuntosTodos={asuntosPropiosTodos} />
             </TabsContent>
 
+            {/* Tabla de Extraescolares */}
             <TabsContent
               value="actividades"
-              className="h-full flex items-center justify-center text-gray-500"
+              className="h-full overflow-y-auto pr-2"
             >
-              Pendiente de implementar
+              <Card className="shadow-lg rounded-2xl flex flex-col p-2">
+                <CardHeader className="py-1">
+                  <CardTitle className="text-center text-lg font-semibold p-0">
+                    Actividades Extraescolares y Complementarias
+                  </CardTitle>
+                </CardHeader>
+
+                <TablaExtraescolares
+                  data={extraescolaresTodas || []}
+                  user={user}
+                  periodos={periodos}
+                  cursos={cursos}
+                  departamentos={departamentos}
+                />
+              </Card>
             </TabsContent>
           </div>
         </Tabs>

@@ -17,7 +17,7 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { useActualizarReservaUid } from "@/hooks/Reservas/useMutacionesReservasUid";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function DialogoEditarReserva({
   open,
@@ -29,55 +29,65 @@ export function DialogoEditarReserva({
   const [descripcion, setDescripcion] = useState("");
   const [inicio, setInicio] = useState("");
   const [fin, setFin] = useState("");
+
   const { user } = useAuth();
+  const API_URL = import.meta.env.VITE_API_URL;
 
-  // Mutation para actualizar reserva
-  const actualizarReserva = useActualizarReservaUid(user?.username);
+  const queryClient = useQueryClient();
 
+  // Reset de estado al abrir
   useEffect(() => {
     if (open && reserva) {
-      console.log("DialogoEditarReserva abierto");
-      console.log("Reserva recibida:", reserva);
-      console.log("Periodos recibidos:", periodos);
-
       setDescripcion(reserva.descripcion || "");
       setInicio(reserva.idperiodo_inicio?.toString() || "");
       setFin(reserva.idperiodo_fin?.toString() || "");
     }
-  }, [open, reserva, periodos]);
+  }, [open, reserva]);
 
-  const handleGuardar = () => {
-    if (!inicio || !fin) {
-      toast.error("Selecciona periodo de inicio y fin");
-      return;
-    }
-    if (parseInt(fin) < parseInt(inicio)) {
-      toast.error("El periodo final no puede ser anterior al inicial");
-      return;
-    }
+  // === MUTATION === (misma lógica que DialogoInsertarReserva)
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!inicio || !fin)
+        throw new Error("Selecciona periodo de inicio y fin");
 
-    actualizarReserva.mutate(
-      {
-        id: reserva.id,
-        datos: {
+      if (parseInt(fin) < parseInt(inicio))
+        throw new Error("El periodo final no puede ser anterior al inicial");
+
+      const res = await fetch(`${API_URL}/db/reservas-estancias/${reserva.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
           idperiodo_inicio: parseInt(inicio),
           idperiodo_fin: parseInt(fin),
           descripcion,
           uid: user.username,
-        },
-      },
-      {
-        onSuccess: () => {
-          toast.success("Reserva actualizada correctamente");
-          onClose();
-        },
-        onError: (err) => {
-          console.error(err);
-          toast.error(err.message || "Error actualizando reserva");
-        },
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Error actualizando reserva");
       }
-    );
-  };
+
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Reserva actualizada correctamente");
+
+      // Igual que en insertar
+      queryClient.invalidateQueries(["reservas", "dia", reserva.fecha]); // refresca grid del día
+      queryClient.invalidateQueries(["reservas", "uid", user.username]); // refresca panel del usuario
+
+      onClose();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error actualizando reserva");
+    },
+  });
+
+  const handleGuardar = () => mutation.mutate();
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
@@ -87,8 +97,7 @@ export function DialogoEditarReserva({
       >
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
-            Editar Reserva (
-            {new Date(reserva?.fecha).toLocaleDateString("es-ES")}) –{" "}
+            Editar Reserva ({new Date(reserva?.fecha).toLocaleDateString("es-ES")}) –{" "}
             <span className="font-bold">{descripcionEstancia}</span>
           </DialogTitle>
         </DialogHeader>
@@ -96,9 +105,7 @@ export function DialogoEditarReserva({
         <div className="flex flex-col space-y-4 p-6">
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">
-                Periodo Inicio
-              </label>
+              <label className="block text-sm font-medium mb-1">Periodo Inicio</label>
               <Select value={inicio} onValueChange={setInicio}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar inicio" />
@@ -114,9 +121,7 @@ export function DialogoEditarReserva({
             </div>
 
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">
-                Periodo Fin
-              </label>
+              <label className="block text-sm font-medium mb-1">Periodo Fin</label>
               <Select value={fin} onValueChange={setFin}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar fin" />
@@ -133,9 +138,7 @@ export function DialogoEditarReserva({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
-              Descripción
-            </label>
+            <label className="block text-sm font-medium mb-1">Descripción</label>
             <Input
               placeholder="Descripción"
               value={descripcion}
@@ -148,9 +151,9 @@ export function DialogoEditarReserva({
           <Button
             variant="outline"
             onClick={handleGuardar}
-            disabled={actualizarReserva.isLoading}
+            disabled={mutation.isLoading}
           >
-            {actualizarReserva.isLoading ? "Guardando..." : "Guardar cambios"}
+            {mutation.isLoading ? "Guardando..." : "Guardar cambios"}
           </Button>
         </DialogFooter>
       </DialogContent>

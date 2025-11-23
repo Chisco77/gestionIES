@@ -45,7 +45,7 @@ import { DialogoConfirmacion } from "./DialogoConfirmacion";
 import { toast } from "sonner";
 import { columnsAsuntos } from "./columns-asuntos";
 
-export function TablaAsuntosDirectiva({ data, user, onCambio }) {
+export function TablaAsuntosDirectiva({ asuntosTodos }) {
   const [sorting, setSorting] = useState([{ id: "fecha", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
@@ -57,11 +57,18 @@ export function TablaAsuntosDirectiva({ data, user, onCambio }) {
   const [asuntoSeleccionado, setAsuntoSeleccionado] = useState(null);
   const [accion, setAccion] = useState(null); // "aceptar" o "rechazar"
 
+  // Abrir diálogo al pinchar check o aspa
+  const handleClick = (asunto, tipo) => {
+    setAsuntoSeleccionado(asunto);
+    setAccion(tipo);
+    setDialogOpen(true);
+  };
+
   // Tabla
   const table = useReactTable({
-    data,
+    data: asuntosTodos || [], // <- aquí
     columns: [
-      ...columnsAsuntos(), // llamamos a la función para obtener las columnas
+      ...columnsAsuntos(),
       {
         id: "acciones",
         header: "Acciones",
@@ -98,16 +105,10 @@ export function TablaAsuntosDirectiva({ data, user, onCambio }) {
       pagination: { pageIndex: 0, pageSize: 6 },
     },
   });
+  console.log("Asuntos que llegan: ", asuntosTodos);
 
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
-
-  // Abrir diálogo al pinchar check o aspa
-  const handleClick = (asunto, tipo) => {
-    setAsuntoSeleccionado(asunto);
-    setAccion(tipo);
-    setDialogOpen(true);
-  };
 
   // Confirmar acción y llamar al backend
   const confirmarAccion = async () => {
@@ -146,7 +147,6 @@ export function TablaAsuntosDirectiva({ data, user, onCambio }) {
       setDialogOpen(false);
       setAsuntoSeleccionado(null);
       setAccion(null);
-      onCambio?.();
     } catch (err) {
       console.error(err);
       toast.error("Error de conexión al actualizar estado");
@@ -387,6 +387,7 @@ export function TablaAsuntosDirectiva({ data, user, onCambio }) {
       <DialogoConfirmacion
         open={dialogOpen}
         setOpen={setDialogOpen}
+        asunto={asuntoSeleccionado} // <-- esto faltaba
         mensaje={
           accion === "aceptar"
             ? "¿Desea aceptar este asunto propio?"

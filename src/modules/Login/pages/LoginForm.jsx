@@ -74,8 +74,10 @@ export function LoginForm({ className, ...props }) {
       queryClient.invalidateQueries(["estancias"]);
       queryClient.invalidateQueries(["extraescolares"]);
       queryClient.invalidateQueries(["reservas"]);
-      queryClient.invalidateQueries(["asuntosMes"]); 
+      queryClient.invalidateQueries(["asuntosMes"]);
       queryClient.invalidateQueries(["reservas", "dia"]);
+      queryClient.invalidateQueries(["extraescolares", "all"]);
+      queryClient.invalidateQueries(["asuntosPropios", "todos"]);
 
       // Hacer check-auth con reintento
       const checkAuth = async (retries = 2) => {
@@ -128,7 +130,7 @@ export function LoginForm({ className, ...props }) {
     >
       <Card>
         <CardHeader className="flex flex-col items-center justify-center text-center">
-          <CardTitle className="text-2xl">gestionIES</CardTitle>
+          <CardTitle className="text-2xl">miIES</CardTitle>
           <CardDescription>IES Francisco de Orellana</CardDescription>
         </CardHeader>
         <CardContent>

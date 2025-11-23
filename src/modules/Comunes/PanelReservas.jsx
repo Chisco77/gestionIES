@@ -6,6 +6,10 @@ import { DialogoEditarAsunto } from "../AsuntosPropios/components/DialogoEditarA
 import { DialogoEliminarAsunto } from "../AsuntosPropios/components/DialogoEliminarAsunto";
 import { DialogoEditarReserva } from "../ReservasEstancias/components/DialogoEditarReserva";
 import { DialogoEliminarReserva } from "../ReservasEstancias/components/DialogoEliminarReserva";
+import { DialogoEditarExtraescolar } from "../Extraescolares/components/DialogoEditarExtraescolar";
+import { DialogoEliminarExtraescolar } from "../Extraescolares/components/DialogoEliminarExtraescolar";
+import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
+import { useCursosLdap } from "@/hooks/useCursosLdap";
 
 export function PanelReservas({
   reservasEstancias = [],
@@ -29,14 +33,16 @@ export function PanelReservas({
   const [dialogoEliminarAsuntoAbierto, setDialogoEliminarAsuntoAbierto] =
     useState(false);
 
+  const [extraescolarSeleccionada, setExtraescolarSeleccionada] =
+    useState(null);
+  const [dialogoEditarExtraAbierto, setDialogoEditarExtraAbierto] =
+    useState(false);
+  const [extraescolarAEliminar, setExtraescolarAEliminar] = useState(null);
+  const [dialogoEliminarExtraAbierto, setDialogoEliminarExtraAbierto] =
+    useState(false);
+
   // ===== Handlers de selección =====
   const handleClickReserva = (reserva) => {
-    console.log("Reserva clicada:", reserva);
-    console.log("Periodos disponibles al abrir diálogo:", periodos);
-    console.log(
-      "Estancia asociada:",
-      estancias.find((e) => parseInt(e.id) === parseInt(reserva.idestancia))
-    );
     setReservaSeleccionada(reserva);
     setDialogoEditarAbierto(true);
   };
@@ -53,6 +59,18 @@ export function PanelReservas({
     setAsuntoAEliminar(asunto);
     setDialogoEliminarAsuntoAbierto(true);
   };
+
+  const handleClickExtraescolar = (actividad) => {
+    setExtraescolarSeleccionada(actividad);
+    setDialogoEditarExtraAbierto(true);
+  };
+  const handleEliminarExtraescolar = (actividad) => {
+    setExtraescolarAEliminar(actividad);
+    setDialogoEliminarExtraAbierto(true);
+  };
+
+  const { data: departamentos } = useDepartamentosLdap();
+  const { data: cursos } = useCursosLdap();
 
   // ===== Renderizados =====
   const renderReservas = (reservas) => {
@@ -173,17 +191,58 @@ export function PanelReservas({
     if (!extraescolares.length)
       return <p className="text-gray-500 text-center">No hay actividades</p>;
 
-    return extraescolares.map((a, i) => (
-      <Card
-        key={i}
-        className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative"
-      >
-        <p className="font-semibold">{a.titulo}</p>
-        <p className="text-gray-500">
-          {new Date(a.fecha_inicio).toLocaleDateString("es-ES")}
-        </p>
-      </Card>
-    ));
+    const estadoMap = {
+      0: { text: "Pendiente", color: "text-yellow-600 bg-yellow-100" },
+      1: { text: "Confirmada", color: "text-green-600 bg-green-100" },
+      2: { text: "Cancelada", color: "text-red-600 bg-red-100" },
+    };
+
+    return extraescolares.map((a, i) => {
+      const fechaStr = new Date(a.fecha_inicio).toLocaleDateString("es-ES", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+
+      const estado = estadoMap[a.estado] ?? { text: "—", color: "" };
+
+      return (
+        <Card
+          key={i}
+          className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative"
+          onClick={() => handleClickExtraescolar(a)}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p
+              className="font-semibold text-blue-600 truncate max-w-[80%]"
+              title={a.titulo || "Sin título"}
+            >
+              {a.titulo}
+            </p>
+            <button
+              type="button"
+              className="text-red-500 hover:text-red-700 flex-shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEliminarExtraescolar(a);
+              }}
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-gray-500">{fechaStr}</p>
+            <span
+              className={
+                "px-2 py-1 rounded-lg text-xs font-medium " + estado.color
+              }
+            >
+              {estado.text}
+            </span>
+          </div>
+        </Card>
+      );
+    });
   };
 
   if (loading) {
@@ -279,6 +338,30 @@ export function PanelReservas({
           onOpenChange={setDialogoEliminarAsuntoAbierto}
           onDeleteSuccess={() => {
             setAsuntoAEliminar(null);
+            onPanelCambiado?.();
+          }}
+        />
+      )}
+
+      {extraescolarSeleccionada && (
+        <DialogoEditarExtraescolar
+          actividad={extraescolarSeleccionada} // <-- CORRECTO
+          open={dialogoEditarExtraAbierto}
+          onClose={() => setDialogoEditarExtraAbierto(false)}
+          onGuardado={() => onPanelCambiado?.()}
+          periodos={periodos}
+          departamentos={departamentos}
+          cursos={cursos}
+        />
+      )}
+
+      {extraescolarAEliminar && (
+        <DialogoEliminarExtraescolar
+          actividad={extraescolarAEliminar}
+          open={dialogoEliminarExtraAbierto}
+          onOpenChange={setDialogoEliminarExtraAbierto}
+          onDeleteSuccess={() => {
+            setExtraescolarAEliminar(null);
             onPanelCambiado?.();
           }}
         />

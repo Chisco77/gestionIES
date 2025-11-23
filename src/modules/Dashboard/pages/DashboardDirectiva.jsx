@@ -15,6 +15,11 @@ import { Input } from "@/components/ui/input";
 import { PanelReservasDirectiva } from "@/modules/PanelReservasDirectiva/pages/PanelReservasDirectiva";
 import { PanelReservas } from "@/modules/Comunes/PanelReservas";
 import { useAuth } from "@/context/AuthContext";
+import { useReservasUid } from "@/hooks/Reservas/useReservasUid";
+import { useAsuntosUid } from "@/hooks/Asuntos/useAsuntosUid";
+import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
+import { useEstancias } from "@/hooks/Estancias/useEstancias";
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 
 // Para evitar problemas con el tiempo UTC
 const formatDateKey = (date) => {
@@ -39,39 +44,15 @@ export function DashboardDirectiva() {
   const [motivoDenegacion, setMotivoDenegacion] = useState("");
   const [solicitudActual, setSolicitudActual] = useState(null);
 
-  const [recargarPanelReservas, setRecargarPanelReservas] = useState(false);
-
-  const [reloadKey, setReloadKey] = useState(0);
-  const [periodosDB, setPeriodosDB] = useState([]);
-  const [todosLosPeriodos, setTodosLosPeriodos] = useState([]);
-  const [reloadPanelReservas, setReloadPanelReservas] = useState(0);
-  const [reloadPanelDirectiva, setReloadPanelDirectiva] = useState(0);
-
   const { user } = useAuth();
   const uid = user?.username;
-  const [reloadKeyDirectiva, setReloadKeyDirectiva] = useState(0);
 
-  // --- Cargar todos los periodos ---
-  useEffect(() => {
-    const fetchTodosPeriodos = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/periodos-horarios`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Error al obtener todos los periodos");
-        const data = await res.json();
-        const periodosData =
-          data.periodos?.map((p) => ({ ...p, id: parseInt(p.id) })) || [];
-        setTodosLosPeriodos(periodosData);
-        setPeriodosDB(periodosData);
-      } catch (err) {
-        console.error("[DEBUG] Error en carga de periodos:", err);
-        setTodosLosPeriodos([]);
-        setPeriodosDB([]);
-      }
-    };
-    fetchTodosPeriodos();
-  }, []);
+  const { data: asuntosPropios } = useAsuntosUid(uid);
+
+  const { data: reservasEstancias } = useReservasUid(uid);
+  const { data: estancias } = useEstancias();
+  const { data: extraescolares } = useExtraescolaresUid(uid);
+  const { data: periodos } = usePeriodosHorarios();
 
   const todayStr = formatDateKey(new Date());
 
@@ -242,18 +223,18 @@ export function DashboardDirectiva() {
         {/* Detalles del día. Si detecto cambio dentro del PanelReservas, notifico para recargar PanelReservasDirectiva y tener datos actualizados.*/}
         <PanelReservas
           uid={uid}
-          reloadKey={reloadPanelReservas}
-          onPanelCambiado={() => setReloadPanelDirectiva((k) => k + 1)}
+          reservasEstancias={reservasEstancias || []}
+          asuntosPropios={asuntosPropios || []}
+          extraescolares={extraescolares || []}
+          estancias={estancias || []}
+          periodos={periodos || []}
         />
       </div>
 
       {/* Tablas de peticiones pendientes */}
       <div className="mt-2 space-y-8">
         {/* Se pasa `reloadKey` a PanelReservasDirectiva . Si detecto cambio dentro del PanelReservasDirectiva, notifico para recargar panel reservas y tener datos actualizados.*/}
-        <PanelReservasDirectiva
-          reloadKey={reloadPanelDirectiva}
-          onPanelCambiado={() => setReloadPanelReservas((k) => k + 1)}
-        />
+        <PanelReservasDirectiva user={user} />
       </div>
 
       {/* Modal de denegación */}

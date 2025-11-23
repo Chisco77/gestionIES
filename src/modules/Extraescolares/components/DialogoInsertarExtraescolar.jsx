@@ -171,7 +171,10 @@ export function DialogoInsertarExtraescolar({
       return json.actividad;
     },
     onSuccess: (actividad) => {
-      queryClient.invalidateQueries(["extraescolares", "uid", user.username]);
+      // Actualizar panel
+      queryClient.invalidateQueries(["extraescolares", "uid", user.uid]);
+      queryClient.invalidateQueries(["extraescolares", "all",]);
+      toast.success ("Alta de actividad ", actividad.titulo);
       if (onGuardado) onGuardado(actividad);
       onClose();
     },

@@ -10,13 +10,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 
-export function DialogoConfirmacion({
+export function DialogoConfirmacionExtraescolar({
   open,
   setOpen,
-  asunto,
-  accion,
+  actividad,
+  accion, // "aceptar" o "rechazar"
   onSuccess,
 }) {
+  if (!actividad) return null;
+
   const esAceptar = accion === "aceptar";
   const API_URL = import.meta.env.VITE_API_URL;
   const queryClient = useQueryClient();
@@ -26,14 +28,15 @@ export function DialogoConfirmacion({
     mutationFn: async () => {
       const nuevoEstado = esAceptar ? 1 : 2;
       const res = await fetch(
-        `${API_URL}/db/asuntos-propios/estado/${asunto.id}`,
+        `${API_URL}/db/extraescolares/${actividad.id}/estado`, 
         {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          method: "PUT", 
           credentials: "include",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ estado: nuevoEstado }),
         }
       );
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error actualizando estado");
       return data;
@@ -41,22 +44,13 @@ export function DialogoConfirmacion({
     onSuccess: () => {
       toast.success(
         esAceptar
-          ? "Asunto aceptado correctamente"
-          : "Asunto rechazado correctamente"
+          ? "Actividad aceptada correctamente"
+          : "Actividad rechazada correctamente"
       );
 
-      // Actualizar panel del usuario
-      //queryClient.invalidateQueries(["asuntosMes", user.username]);
-      queryClient.invalidateQueries(["asuntosPropios", "todos"]);
-      queryClient.invalidateQueries(["asuntosPropios", user.uid]);
-
-      // Actualizar calendario (useAsuntosMes)
-      const fechaObj = new Date(asunto.fecha);
-      const month = fechaObj.getMonth();
-      const year = fechaObj.getFullYear();
-      const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-      const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
-      queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
+      // Invalidar queries para refrescar tabla y calendario
+      queryClient.invalidateQueries(["extraescolares"]);
+      queryClient.invalidateQueries(["extraescolaresMes"]);
 
       setOpen(false);
       onSuccess?.();
@@ -69,8 +63,6 @@ export function DialogoConfirmacion({
 
   const handleConfirm = () => mutation.mutate();
 
-  if (!asunto) return null;
-
   return (
     <Dialog open={open} onOpenChange={setOpen} modal>
       <DialogContent
@@ -78,7 +70,9 @@ export function DialogoConfirmacion({
         className="p-0 overflow-hidden rounded-lg"
       >
         <DialogHeader
-          className={`${esAceptar ? "bg-blue-500" : "bg-red-600"} text-white rounded-t-lg flex items-center justify-center py-3 px-6`}
+          className={`${
+            esAceptar ? "bg-blue-500" : "bg-red-600"
+          } text-white rounded-t-lg flex items-center justify-center py-3 px-6`}
         >
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             {esAceptar ? "Confirmar aceptación" : "Confirmar rechazo"}
@@ -87,8 +81,8 @@ export function DialogoConfirmacion({
 
         <div className="text-sm text-gray-700 space-y-4 px-6 pt-5 pb-2">
           {esAceptar
-            ? "¿Desea aceptar este asunto propio?"
-            : "¿Desea rechazar este asunto propio?"}
+            ? "¿Desea aceptar esta actividad extraescolar?"
+            : "¿Desea rechazar esta actividad extraescolar?"}
         </div>
 
         <DialogFooter className="px-6 py-4 bg-gray-50 flex gap-2">
