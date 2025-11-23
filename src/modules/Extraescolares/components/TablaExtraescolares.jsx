@@ -50,19 +50,17 @@ import { columnsExtraescolares } from "./columns";
 import { DialogoEditarExtraescolar } from "../components/DialogoEditarExtraescolar";
 import { DialogoConfirmacionExtraescolar } from "./DialogoConfirmacionExtraescolar";
 
-export function TablaExtraescolares({
-  data,
-  user,
-  periodos,
-  departamentos,
-  cursos,
-}) {
+import { useCursosLdap } from "@/hooks/useCursosLdap";
+import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
+import { useExtraescolaresAll } from "@/hooks/Extraescolares/useExtraescolaresAll";
+
+export function TablaExtraescolares({ user }) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const API_URL = import.meta.env.VITE_API_URL;
-
   // Estados de diálogos
   const [insertOpen, setInsertOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -72,10 +70,15 @@ export function TablaExtraescolares({
   const [seleccionado, setSeleccionado] = useState(null);
   const [accion, setAccion] = useState(null);
 
+  const { data: departamentos = [] } = useDepartamentosLdap();
+  const { data: cursos = [] } = useCursosLdap();
+  const { data: periodos = [] } = usePeriodosHorarios();
+  const { data: extraescolaresTodas = [] } = useExtraescolaresAll();
+
   const table = useReactTable({
-    data,
+     data: extraescolaresTodas,
     columns: [
-      ...columnsExtraescolares(),
+      ...columnsExtraescolares(cursos),
       {
         id: "acciones",
         header: "Acciones",
@@ -127,7 +130,7 @@ export function TablaExtraescolares({
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
-      pagination: { pageIndex: 0, pageSize: 5 },
+      pagination: { pageIndex: 0, pageSize: 6 },
     },
   });
 

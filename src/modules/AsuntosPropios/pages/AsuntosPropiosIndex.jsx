@@ -103,6 +103,19 @@ export function AsuntosPropiosIndex() {
     } else setCurrentMonth((m) => m + 1);
   };
 
+  useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    fetch(`${API_URL}/db/restricciones/asuntos/rangos`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => setRangosBloqueados(data.rangos || []))
+      .catch((err) =>
+        console.error("Error obteniendo rangos bloqueados:", err)
+      );
+  }, []);
+
   const handleDiaClick = (dateKey) => {
     const bloqueado = (asuntosPorDia[dateKey] || 0) >= maxConcurrentes;
     if (bloqueado) return;

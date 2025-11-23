@@ -165,7 +165,10 @@ export function LoginForm({ className, ...props }) {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
+              <Button
+                type="submit"
+                className="w-full bg-[#1DA1F2] text-white hover:bg-[#0d8ddb]"
+              >
                 Acceder
               </Button>
             </div>

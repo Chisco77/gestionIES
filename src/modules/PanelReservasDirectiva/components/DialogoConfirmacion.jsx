@@ -22,6 +22,7 @@ export function DialogoConfirmacion({
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+console.log ("Asunto: ", asunto);
   const mutation = useMutation({
     mutationFn: async () => {
       const nuevoEstado = esAceptar ? 1 : 2;
@@ -41,7 +42,7 @@ export function DialogoConfirmacion({
     onSuccess: () => {
       toast.success(
         esAceptar
-          ? "Asunto aceptado correctamente"
+          ? "Petición de asunto propio de " + asunto.uid + " ACEPTADA"
           : "Asunto rechazado correctamente"
       );
 

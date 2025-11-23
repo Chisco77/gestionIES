@@ -44,8 +44,10 @@ import { Button } from "@/components/ui/button";
 import { DialogoConfirmacion } from "./DialogoConfirmacion";
 import { toast } from "sonner";
 import { columnsAsuntos } from "./columns-asuntos";
+import { useAsuntosTodos } from "@/hooks/Asuntos/useAsuntosTodos";
 
-export function TablaAsuntosDirectiva({ asuntosTodos }) {
+
+export function TablaAsuntosDirectiva() {
   const [sorting, setSorting] = useState([{ id: "fecha", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
@@ -57,6 +59,9 @@ export function TablaAsuntosDirectiva({ asuntosTodos }) {
   const [asuntoSeleccionado, setAsuntoSeleccionado] = useState(null);
   const [accion, setAccion] = useState(null); // "aceptar" o "rechazar"
 
+  const { data: asuntosPropiosTodos = [] } = useAsuntosTodos();
+
+
   // Abrir diálogo al pinchar check o aspa
   const handleClick = (asunto, tipo) => {
     setAsuntoSeleccionado(asunto);
@@ -66,7 +71,7 @@ export function TablaAsuntosDirectiva({ asuntosTodos }) {
 
   // Tabla
   const table = useReactTable({
-    data: asuntosTodos || [], // <- aquí
+    data: asuntosPropiosTodos || [], // <- aquí
     columns: [
       ...columnsAsuntos(),
       {
@@ -105,8 +110,7 @@ export function TablaAsuntosDirectiva({ asuntosTodos }) {
       pagination: { pageIndex: 0, pageSize: 6 },
     },
   });
-  console.log("Asuntos que llegan: ", asuntosTodos);
-
+  
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
 

@@ -10,16 +10,14 @@ import { DialogoEditarExtraescolar } from "../Extraescolares/components/DialogoE
 import { DialogoEliminarExtraescolar } from "../Extraescolares/components/DialogoEliminarExtraescolar";
 import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
 import { useCursosLdap } from "@/hooks/useCursosLdap";
+import { useReservasUid } from "@/hooks/Reservas/useReservasUid";
+import { useAsuntosUid } from "@/hooks/Asuntos/useAsuntosUid";
+import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
+import { useEstancias } from "@/hooks/Estancias/useEstancias";
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
+import { toast } from "sonner"; // asegúrate de tenerlo importado
 
-export function PanelReservas({
-  reservasEstancias = [],
-  asuntosPropios = [],
-  extraescolares = [],
-  periodos = [],
-  estancias = [],
-  onPanelCambiado,
-  loading = false,
-}) {
+export function PanelReservas({ uid, loading = false }) {
   // ===== Selección y diálogos =====
   const [reservaSeleccionada, setReservaSeleccionada] = useState(null);
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false);
@@ -55,7 +53,15 @@ export function PanelReservas({
     setAsuntoSeleccionado(asunto);
     setDialogoEditarAsuntoAbierto(true);
   };
+
   const handleEliminarAsunto = (asunto) => {
+    if (asunto.estado === 1) {
+      toast.warning(
+        "No se puede eliminar un asunto propio que ha sido aceptado."
+      );
+      return; // no abrir el diálogo
+    }
+
     setAsuntoAEliminar(asunto);
     setDialogoEliminarAsuntoAbierto(true);
   };
@@ -65,15 +71,27 @@ export function PanelReservas({
     setDialogoEditarExtraAbierto(true);
   };
   const handleEliminarExtraescolar = (actividad) => {
+    if (actividad.estado == 1) {
+      toast.warning(
+        "No se puede eliminar una actividad extraescolar que ha sido aceptada."
+      );
+      return; // no abrir el diálogo
+    }
     setExtraescolarAEliminar(actividad);
     setDialogoEliminarExtraAbierto(true);
   };
 
-  const { data: departamentos } = useDepartamentosLdap();
-  const { data: cursos } = useCursosLdap();
+  const { data: departamentos = [] } = useDepartamentosLdap();
+  const { data: cursos = [] } = useCursosLdap();
+  const { data: estancias = [] } = useEstancias();
+  const { data: periodos = [] } = usePeriodosHorarios();
+
+  const { data: reservas = [] } = useReservasUid(uid);
+  const { data: asuntos = [] } = useAsuntosUid(uid);
+  const { data: extraescolares = [] } = useExtraescolaresUid(uid);
 
   // ===== Renderizados =====
-  const renderReservas = (reservas) => {
+  const renderReservas = () => {
     if (!reservas.length)
       return <p className="text-gray-500 text-center">No hay elementos</p>;
 
@@ -127,7 +145,7 @@ export function PanelReservas({
     });
   };
 
-  const renderAsuntosPropios = (asuntos) => {
+  const renderAsuntosPropios = () => {
     if (!asuntos.length)
       return (
         <p className="text-gray-500 text-center">No hay asuntos propios</p>
@@ -271,14 +289,14 @@ export function PanelReservas({
               value="estancias"
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
-              {renderReservas(reservasEstancias)}
+              {renderReservas()}
             </TabsContent>
 
             <TabsContent
               value="asuntos"
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
-              {renderAsuntosPropios(asuntosPropios)}
+              {renderAsuntosPropios()}
             </TabsContent>
 
             <TabsContent
@@ -297,7 +315,6 @@ export function PanelReservas({
           reserva={reservaSeleccionada}
           open={dialogoEditarAbierto}
           onClose={() => setDialogoEditarAbierto(false)}
-          onSuccess={() => onPanelCambiado?.()}
           periodos={periodos}
           descripcionEstancia={
             estancias.find(
@@ -316,7 +333,6 @@ export function PanelReservas({
           onOpenChange={setDialogoEliminarAbierto}
           onDeleteSuccess={() => {
             setReservaAEliminar(null);
-            onPanelCambiado?.();
           }}
         />
       )}
@@ -327,7 +343,6 @@ export function PanelReservas({
           asunto={asuntoSeleccionado}
           open={dialogoEditarAsuntoAbierto}
           onClose={() => setDialogoEditarAsuntoAbierto(false)}
-          onSuccess={() => onPanelCambiado?.()}
         />
       )}
 
@@ -338,7 +353,6 @@ export function PanelReservas({
           onOpenChange={setDialogoEliminarAsuntoAbierto}
           onDeleteSuccess={() => {
             setAsuntoAEliminar(null);
-            onPanelCambiado?.();
           }}
         />
       )}
@@ -348,7 +362,6 @@ export function PanelReservas({
           actividad={extraescolarSeleccionada} // <-- CORRECTO
           open={dialogoEditarExtraAbierto}
           onClose={() => setDialogoEditarExtraAbierto(false)}
-          onGuardado={() => onPanelCambiado?.()}
           periodos={periodos}
           departamentos={departamentos}
           cursos={cursos}
@@ -362,7 +375,6 @@ export function PanelReservas({
           onOpenChange={setDialogoEliminarExtraAbierto}
           onDeleteSuccess={() => {
             setExtraescolarAEliminar(null);
-            onPanelCambiado?.();
           }}
         />
       )}

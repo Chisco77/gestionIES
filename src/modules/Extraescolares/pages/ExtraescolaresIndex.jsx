@@ -70,11 +70,6 @@ export function ExtraescolaresIndex() {
       </div>
 
       <Card className="shadow-lg rounded-2xl flex flex-col p-2">
-        <CardHeader className="py-1">
-          <CardTitle className="text-center text-lg font-semibold p-0">
-            Actividades Extraescolares y Complementarias
-          </CardTitle>
-        </CardHeader>
 
         <TablaExtraescolares
           data={extraescolaresTodas || []}

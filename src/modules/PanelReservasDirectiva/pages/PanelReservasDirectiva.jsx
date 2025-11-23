@@ -4,24 +4,14 @@ import { columnsAsuntos } from "../components/columns-asuntos";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TablaExtraescolares } from "@/modules/Extraescolares/components/TablaExtraescolares";
-import { useCursosLdap } from "@/hooks/useCursosLdap";
-import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
-import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
-import { useAsuntosTodos } from "@/hooks/Asuntos/useAsuntosTodos";
-import { useExtraescolaresAll } from "@/hooks/Extraescolares/useExtraescolaresAll";
+
 
 export function PanelReservasDirectiva({ user }) {
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // Actividades extraescolares (solo lectura, igual que en ExtraescolaresIndex)
-
   const handleCambio = () => {};
-  const { data: departamentos } = useDepartamentosLdap();
-  const { data: cursos } = useCursosLdap();
-  const { data: periodos } = usePeriodosHorarios();
-  const { data: asuntosPropiosTodos } = useAsuntosTodos();
-  const { data: extraescolaresTodas } = useExtraescolaresAll();
-  console.log("Asuntos propios: ", asuntosPropiosTodos);
+
+
   return (
     <Card className="shadow-lg rounded-2xl h-[480px] flex flex-col">
       <CardContent className="flex-1 flex flex-col p-2 overflow-hidden">
@@ -44,7 +34,7 @@ export function PanelReservasDirectiva({ user }) {
               value="asuntos"
               className="h-full overflow-y-auto pr-2"
             >
-              <TablaAsuntosDirectiva asuntosTodos={asuntosPropiosTodos} />
+              <TablaAsuntosDirectiva />
             </TabsContent>
 
             {/* Tabla de Extraescolares */}
@@ -52,21 +42,9 @@ export function PanelReservasDirectiva({ user }) {
               value="actividades"
               className="h-full overflow-y-auto pr-2"
             >
-              <Card className="shadow-lg rounded-2xl flex flex-col p-2">
-                <CardHeader className="py-1">
-                  <CardTitle className="text-center text-lg font-semibold p-0">
-                    Actividades Extraescolares y Complementarias
-                  </CardTitle>
-                </CardHeader>
-
-                <TablaExtraescolares
-                  data={extraescolaresTodas || []}
-                  user={user}
-                  periodos={periodos}
-                  cursos={cursos}
-                  departamentos={departamentos}
-                />
-              </Card>
+              <TablaExtraescolares
+                user={user}
+              />
             </TabsContent>
           </div>
         </Tabs>

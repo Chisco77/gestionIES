@@ -61,14 +61,15 @@ async function getAsuntosPropios(req, res) {
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
 
     const { rows } = await db.query(
-      `SELECT id, uid, fecha, descripcion, estado
-       FROM asuntos_propios
-       ${where}
-       ORDER BY fecha ASC`,
+      `SELECT id, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion, estado
+   FROM asuntos_propios
+   ${where}
+   ORDER BY fecha ASC`,
       vals
     );
 
     res.json({ ok: true, asuntos: rows });
+
   } catch (err) {
     console.error("[getAsuntosPropios] Error:", err);
     res
@@ -119,10 +120,10 @@ async function getAsuntosPropiosEnriquecidos(req, res) {
 
     // Consulta de los asuntos propios
     const { rows: asuntos } = await db.query(
-      `SELECT ap.id, ap.uid, ap.fecha, ap.descripcion, ap.estado
-       FROM asuntos_propios ap
-       ${where}
-       ORDER BY ap.fecha ASC`,
+      `SELECT ap.id, ap.uid, TO_CHAR(ap.fecha, 'YYYY-MM-DD') AS fecha, ap.descripcion, ap.estado
+   FROM asuntos_propios ap
+   ${where}
+   ORDER BY ap.fecha ASC`,
       vals
     );
 
@@ -382,7 +383,9 @@ async function updateEstadoAsuntoPropio(req, res) {
     const { rows } = await db.query(query, [estado, id]);
 
     if (!rows[0]) {
-      return res.status(404).json({ ok: false, error: "Asunto propio no encontrado" });
+      return res
+        .status(404)
+        .json({ ok: false, error: "Asunto propio no encontrado" });
     }
 
     res.json({ ok: true, asunto: rows[0] });
@@ -391,7 +394,6 @@ async function updateEstadoAsuntoPropio(req, res) {
     res.status(500).json({ ok: false, error: "Error actualizando estado" });
   }
 }
-
 
 /**
  * ================================================================

@@ -253,23 +253,23 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
               pointerEvents: "auto",
             }}
           >
-            {size.w > 0 &&
-              size.h > 0 &&
-              estancias.map((s) => {
-                const { prestadas, estado } = estadoEstancia(s);
-                const absPts = scalePoints(s.coordenadas);
-                const color =
-                  estado === "none"
-                    ? "rgba(200,200,200,0.95)"
-                    : estado === "partial"
-                      ? "rgba(250,200,80,0.95)"
-                      : "rgba(250,80,80,0.95)";
-                return (
-                  <TooltipProvider delayDuration={100}>
+            <TooltipProvider delayDuration={100}>
+              {size.w > 0 &&
+                size.h > 0 &&
+                estancias.map((s) => {
+                  const { prestadas, estado } = estadoEstancia(s);
+                  const absPts = scalePoints(s.coordenadas);
+                  const color =
+                    estado === "none"
+                      ? "rgba(200,200,200,0.95)"
+                      : estado === "partial"
+                        ? "rgba(250,200,80,0.95)"
+                        : "rgba(250,80,80,0.95)";
+
+                  return (
                     <Tooltip key={s.id}>
                       <TooltipTrigger asChild>
                         <g
-                          key={s.id}
                           onClick={(e) => {
                             e.stopPropagation();
                             abrirModalLlaves(s);
@@ -323,9 +323,9 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                         {s.descripcion || s.codigo}
                       </TooltipContent>
                     </Tooltip>
-                  </TooltipProvider>
-                );
-              })}
+                  );
+                })}
+            </TooltipProvider>
 
             {/* Leyenda */}
             <g>
@@ -369,17 +369,25 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
             width: 340,
             display: "flex",
             flexDirection: "column",
-            border: "1px solid #e5e7eb",
             borderRadius: 8,
             background: "white",
             boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             height: "860px",
+            overflow: "hidden",
           }}
         >
+          {/* CABECERA ESTILO DIALOGHEADER */}
           <div
             style={{
-              borderBottom: "1px solid #e5e7eb",
+              background: "#3b82f6", // azul como bg-blue-500
+              color: "white", // texto blanco
               padding: "12px 16px",
+              borderTopLeftRadius: 8,
+              borderTopRightRadius: 8,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
             <h3
@@ -387,12 +395,17 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                 margin: 0,
                 fontSize: 17,
                 fontWeight: 600,
-                color: "#1e293b",
               }}
             >
               Llaves prestadas
             </h3>
-            <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 13,
+                opacity: 0.9,
+              }}
+            >
               Profesores con llaves prestadas
             </p>
           </div>

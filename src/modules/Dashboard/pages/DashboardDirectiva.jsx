@@ -47,12 +47,11 @@ export function DashboardDirectiva() {
   const { user } = useAuth();
   const uid = user?.username;
 
-  const { data: asuntosPropios } = useAsuntosUid(uid);
-
+  /*const { data: asuntosPropios } = useAsuntosUid(uid);
   const { data: reservasEstancias } = useReservasUid(uid);
   const { data: estancias } = useEstancias();
   const { data: extraescolares } = useExtraescolaresUid(uid);
-  const { data: periodos } = usePeriodosHorarios();
+  const { data: periodos } = usePeriodosHorarios();*/
 
   const todayStr = formatDateKey(new Date());
 
@@ -223,17 +222,12 @@ export function DashboardDirectiva() {
         {/* Detalles del día. Si detecto cambio dentro del PanelReservas, notifico para recargar PanelReservasDirectiva y tener datos actualizados.*/}
         <PanelReservas
           uid={uid}
-          reservasEstancias={reservasEstancias || []}
-          asuntosPropios={asuntosPropios || []}
-          extraescolares={extraescolares || []}
-          estancias={estancias || []}
-          periodos={periodos || []}
         />
       </div>
 
       {/* Tablas de peticiones pendientes */}
       <div className="mt-2 space-y-8">
-        {/* Se pasa `reloadKey` a PanelReservasDirectiva . Si detecto cambio dentro del PanelReservasDirectiva, notifico para recargar panel reservas y tener datos actualizados.*/}
+        {/* */}
         <PanelReservasDirectiva user={user} />
       </div>
 
