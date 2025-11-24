@@ -32,7 +32,10 @@ import { useAuth } from "@/context/AuthContext";
 import { Autocomplete } from "@/modules/Utilidades/components/Autocomplete";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
+import { useCursosLdap } from "@/hooks/useCursosLdap";
 
+import { schemaExtraescolar } from "@/zod/extraescolares";
 const provider = new OpenStreetMapProvider();
 
 /* ============================
@@ -104,8 +107,10 @@ export function DialogoInsertarExtraescolar({
     fechaSeleccionada || "2025-03-10"
   );
   const [fechaFin, setFechaFin] = useState(fechaSeleccionada || "2025-03-15");
-  const [departamentos, setDepartamentos] = useState([]);
-  const [cursos, setCursos] = useState([]);
+  const { data: departamentos = [] } = useDepartamentosLdap();
+  const { data: cursos = [] } = useCursosLdap();
+
+  const [errores, setErrores] = useState({});
 
   // --- Inicialización de fechas y periodos ---
   useEffect(() => {
@@ -116,46 +121,7 @@ export function DialogoInsertarExtraescolar({
     }
   }, [open, fechaSeleccionada]);
 
-  useEffect(() => {
-    if (open && periodos.length > 0) {
-      setPeriodoInicio(String(periodos[0].id));
-      setPeriodoFin(String(periodos[periodos.length - 1].id));
-    }
-  }, [open, periodos]);
-
-  // --- Cargar departamentos y cursos ---
-  useEffect(() => {
-    if (!open) return;
-    const API_URL = import.meta.env.VITE_API_URL;
-
-    fetch(`${API_URL}/ldap/grupos?groupType=school_department`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) =>
-        setDepartamentos(
-          data
-            .map((d) => ({ gidNumber: d.gidNumber, nombre: d.cn }))
-            .sort((a, b) => a.nombre.localeCompare(b.nombre))
-        )
-      )
-      .catch(() => setDepartamentos([]));
-
-    fetch(`${API_URL}/ldap/grupos?groupType=school_class`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) =>
-        setCursos(
-          data
-            .map((c) => ({ gid: c.gidNumber, nombre: c.cn }))
-            .sort((a, b) => a.nombre.localeCompare(b.nombre))
-        )
-      )
-      .catch(() => setCursos([]));
-  }, [open]);
-
-  // --- Mutation de React Query (CORREGIDO PARA V5) ---
+  // --- Mutation de React Query ---
   const mutation = useMutation({
     mutationFn: async (datos) => {
       const API_URL = import.meta.env.VITE_API_URL;
@@ -171,10 +137,9 @@ export function DialogoInsertarExtraescolar({
       return json.actividad;
     },
     onSuccess: (actividad) => {
-      // Actualizar panel
       queryClient.invalidateQueries(["extraescolares", "uid", user.uid]);
-      queryClient.invalidateQueries(["extraescolares", "all",]);
-      toast.success ("Alta de actividad ", actividad.titulo);
+      queryClient.invalidateQueries(["extraescolares", "all"]);
+      toast.success("Alta de actividad ", actividad.titulo);
       if (onGuardado) onGuardado(actividad);
       onClose();
     },
@@ -186,20 +151,38 @@ export function DialogoInsertarExtraescolar({
 
   const handleGuardar = () => {
     const datos = {
-      uid: user.username,
       titulo,
       descripcion,
-      tipo,
-      gidnumber: Number(departamento),
+      gid_number: Number(departamento),
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin,
-      idperiodo_inicio: tipo === "lectivo" ? Number(periodoInicio) : null,
-      idperiodo_fin: tipo === "lectivo" ? Number(periodoFin) : null,
       cursos_gids: cursosSeleccionados,
       responsables_uids: profesoresSeleccionados,
       ubicacion,
+      tipo,
+      idperiodo_inicio:
+        tipo === "complementaria" ? Number(periodoInicio) : null,
+      idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : null,
       coords,
+      uid: user.uid,
     };
+
+    console.log("Datos a guardar: ", datos);
+
+    const result = schemaExtraescolar.safeParse(datos);
+
+    if (!result.success) {
+      const nuevosErrores = {};
+      result.error.errors.forEach((err) => {
+        if (err.path?.length > 0) {
+          nuevosErrores[err.path[0]] = err.message;
+        }
+      });
+      setErrores(nuevosErrores);
+      return;
+    }
+
+    setErrores({});
     mutation.mutate(datos);
   };
 
@@ -223,31 +206,31 @@ export function DialogoInsertarExtraescolar({
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 py-5">
-          {/* Parte izquierda */}
+          {/* ===============================
+              PARTE IZQUIERDA
+          =============================== */}
           <div className="space-y-4">
+
+            {/* TÍTULO */}
             <div className="space-y-1">
               <Label>Título</Label>
-              <Input
-                value={titulo}
-                onChange={(e) => setTitulo(e.target.value)}
-              />
+              <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+              {errores.titulo && <p className="text-red-500 text-sm">{errores.titulo}</p>}
             </div>
+
+            {/* DESCRIPCIÓN */}
             <div className="space-y-1">
               <Label>Descripción</Label>
-              <Textarea
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-              />
+              <Textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+              {errores.descripcion && (
+                <p className="text-red-500 text-sm">{errores.descripcion}</p>
+              )}
             </div>
+
+            {/* DEPARTAMENTO ~ gid_number */}
             <div className="space-y-1">
               <Label>Departamento organizador</Label>
-              <Select
-                value={departamento}
-                onValueChange={(v) => {
-                  console.log("Seleccionado:", v);
-                  setDepartamento(v);
-                }}
-              >
+              <Select value={departamento} onValueChange={setDepartamento}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -259,14 +242,24 @@ export function DialogoInsertarExtraescolar({
                   ))}
                 </SelectContent>
               </Select>
+              {errores.gid_number && (
+                <p className="text-red-500 text-sm">{errores.gid_number}</p>
+              )}
             </div>
 
+            {/* PROFESORES ~ responsables_uids */}
             <MultiSelectProfesores
               value={profesoresSeleccionados}
               onChange={setProfesoresSeleccionados}
             />
+            {errores.responsables_uids && (
+              <p className="text-red-500 text-sm">
+                {errores.responsables_uids}
+              </p>
+            )}
 
-            <div className="space-y-2">
+            {/* CURSOS ~ cursos_gids */}
+            <div className="space-y-1">
               <Label>Cursos participantes</Label>
               <MultiSelect
                 values={cursosSeleccionados}
@@ -274,8 +267,12 @@ export function DialogoInsertarExtraescolar({
                 options={cursos.map((c) => ({ value: c.gid, label: c.nombre }))}
                 placeholder="Seleccionar cursos"
               />
+              {errores.cursos_gids && (
+                <p className="text-red-500 text-sm">{errores.cursos_gids}</p>
+              )}
             </div>
 
+            {/* TIPO */}
             <div className="space-y-1">
               <Label>Tipo de actividad</Label>
               <Select value={tipo} onValueChange={setTipo}>
@@ -283,16 +280,13 @@ export function DialogoInsertarExtraescolar({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="complementaria">
-                    Actividad complementaria
-                  </SelectItem>
-                  <SelectItem value="extraescolar">
-                    Actividad extraescolar
-                  </SelectItem>
+                  <SelectItem value="complementaria">Actividad complementaria</SelectItem>
+                  <SelectItem value="extraescolar">Actividad extraescolar</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
+            {/* FECHAS ~ fecha_inicio / fecha_fin */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>Fecha inicio</Label>
@@ -301,7 +295,11 @@ export function DialogoInsertarExtraescolar({
                   value={fechaInicio}
                   onChange={(e) => setFechaInicio(e.target.value)}
                 />
+                {errores.fecha_inicio && (
+                  <p className="text-red-500 text-sm">{errores.fecha_inicio}</p>
+                )}
               </div>
+
               <div className="space-y-1">
                 <Label>Fecha fin</Label>
                 <Input
@@ -309,17 +307,18 @@ export function DialogoInsertarExtraescolar({
                   value={fechaFin}
                   onChange={(e) => setFechaFin(e.target.value)}
                 />
+                {errores.fecha_fin && (
+                  <p className="text-red-500 text-sm">{errores.fecha_fin}</p>
+                )}
               </div>
             </div>
 
+            {/* PERIODOS (solo complementaria) */}
             {tipo === "complementaria" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label>Periodo inicio</Label>
-                  <Select
-                    value={periodoInicio}
-                    onValueChange={setPeriodoInicio}
-                  >
+                  <Select value={periodoInicio} onValueChange={setPeriodoInicio}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -332,6 +331,7 @@ export function DialogoInsertarExtraescolar({
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-1">
                   <Label>Periodo fin</Label>
                   <Select value={periodoFin} onValueChange={setPeriodoFin}>
@@ -351,7 +351,9 @@ export function DialogoInsertarExtraescolar({
             )}
           </div>
 
-          {/* Parte derecha */}
+          {/* ===============================
+              PARTE DERECHA (MAPA)
+          =============================== */}
           <div className="flex flex-col justify-center space-y-3">
             <Label>Ubicación / Lugar</Label>
             <Autocomplete
@@ -364,6 +366,10 @@ export function DialogoInsertarExtraescolar({
                 setCoords({ lat: lugar.lat, lng: lugar.lng });
               }}
             />
+            {errores.ubicacion && (
+              <p className="text-red-500 text-sm">{errores.ubicacion}</p>
+            )}
+
             <MapContainer
               center={coords}
               zoom={13}
@@ -371,6 +377,7 @@ export function DialogoInsertarExtraescolar({
               scrollWheelZoom={true}
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
               <Marker
                 position={coords}
                 draggable={true}
@@ -378,6 +385,7 @@ export function DialogoInsertarExtraescolar({
               >
                 <Popup>Arrastra para ajustar la ubicación</Popup>
               </Marker>
+
               <ClickHandler setCoords={setCoords} setUbicacion={setUbicacion} />
               <SetViewOnChange coords={coords} />
             </MapContainer>

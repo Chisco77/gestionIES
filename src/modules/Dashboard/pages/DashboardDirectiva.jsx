@@ -121,7 +121,6 @@ export function DashboardDirectiva() {
   };
 
   const confirmarDenegacion = () => {
-    console.log("Denegada:", solicitudActual, "Motivo:", motivoDenegacion);
     setDenegarAbierto(false);
   };
 

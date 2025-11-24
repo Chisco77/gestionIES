@@ -3,6 +3,8 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { useReservasUid } from "@/hooks/Reservas/useReservasUid";
+
 const formatDateKey = (date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -10,12 +12,14 @@ const formatDateKey = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-export function CalendarioReservas({ selectedDate, onSelectDate }) {
+export function CalendarioReservas({ selectedDate, onSelectDate, uid }) {
   const todayStr = formatDateKey(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-  // ===== Construcción de semanas =====
+  const { data: reservasUsuario = [] } = useReservasUid(uid);
+
+  // Construcción de semanas
   const weeks = useMemo(() => {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
@@ -77,7 +81,9 @@ export function CalendarioReservas({ selectedDate, onSelectDate }) {
             <thead>
               <tr>
                 {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
-                  <th key={d} className="p-1 font-medium">{d}</th>
+                  <th key={d} className="p-1 font-medium">
+                    {d}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -86,15 +92,26 @@ export function CalendarioReservas({ selectedDate, onSelectDate }) {
                 <tr key={i} className="align-top">
                   {week.map((d, j) => {
                     if (!d) return <td key={j} className="p-2"></td>;
-                    const dateKey = formatDateKey(new Date(currentYear, currentMonth, d));
+
+                    const dateKey = formatDateKey(
+                      new Date(currentYear, currentMonth, d)
+                    );
                     const isToday = dateKey === todayStr;
                     const isSelected = dateKey === selectedDate;
+
+                    // Filtra las reservas del usuario para esta fecha
+                    const reservasDelDia = reservasUsuario.filter(
+                      (r) => r.fecha === dateKey
+                    );
+                    const hayReserva = reservasDelDia.length > 0;
+                    
+
                     return (
                       <td
                         key={j}
                         className={`p-1 cursor-pointer relative rounded-lg transition
                           ${isToday ? "border-2 border-blue-400" : ""}
-                          ${isSelected ? "bg-blue-100" : ""}`}
+                          ${isSelected || hayReserva ? "bg-blue-100" : ""}`}
                         onClick={() => handleDiaClick(d)}
                       >
                         {d}

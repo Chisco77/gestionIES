@@ -70,14 +70,19 @@ export function LoginForm({ className, ...props }) {
       queryClient.invalidateQueries(["ldap-departamentos"]);
       queryClient.invalidateQueries(["ldap-cursos"]);
 
-      queryClient.invalidateQueries(["asuntos-propios"]);
       queryClient.invalidateQueries(["estancias"]);
-      queryClient.invalidateQueries(["extraescolares"]);
-      queryClient.invalidateQueries(["reservas"]);
-      queryClient.invalidateQueries(["asuntosMes"]);
-      queryClient.invalidateQueries(["reservas", "dia"]);
+
+      queryClient.invalidateQueries(["extraescolares", "uid"]);
       queryClient.invalidateQueries(["extraescolares", "all"]);
+
+      queryClient.invalidateQueries(["reservas"]);
+
+      queryClient.invalidateQueries(["reservas", "dia"]);
+      queryClient.invalidateQueries(["reservas", "uid"]);
+      
       queryClient.invalidateQueries(["asuntosPropios", "todos"]);
+      queryClient.invalidateQueries(["panel", "asuntos-propios"]);
+      queryClient.invalidateQueries(["asuntosMes"]);
 
       // Hacer check-auth con reintento
       const checkAuth = async (retries = 2) => {

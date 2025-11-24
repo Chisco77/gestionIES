@@ -2,14 +2,17 @@
 -- PostgreSQL database dump
 --
 
-\restrict 3RIn72vkrEYelkhgg1K6MqOLKG2JixTHa63ydr4G0LMvetgE0crvAZezGDBZdnn
+\restrict 4Tw9iGYqw9mgq6fpkaSUpVm8Hf0csoMF9YU0fw5so1zvsjQwBcG7rvJzEdHosld
 
--- Dumped from database version 14.19 (Ubuntu 14.19-1.pgdg22.04+1)
--- Dumped by pg_dump version 14.19 (Ubuntu 14.19-1.pgdg22.04+1)
+-- Dumped from database version 14.20 (Ubuntu 14.20-1.pgdg22.04+1)
+-- Dumped by pg_dump version 18.1 (Ubuntu 18.1-1.pgdg22.04+2)
+
+-- Started on 2025-11-24 13:45:35 CET
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -19,6 +22,7 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- TOC entry 209 (class 1259 OID 16719)
 -- Name: api_cursos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -30,32 +34,34 @@ CREATE SEQUENCE public.api_cursos_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.api_cursos_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.api_cursos_id_seq OWNER TO postgres;
 
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- Name: asuntos; Type: TABLE; Schema: public; Owner: postgres
+-- TOC entry 232 (class 1259 OID 16829)
+-- Name: asuntos_propios; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.asuntos (
+CREATE TABLE public.asuntos_propios (
     id integer NOT NULL,
-    uid character varying(255) NOT NULL,
-    descripcion character varying(255) NOT NULL,
-    fecha date NOT NULL
+    uid character varying NOT NULL,
+    fecha date NOT NULL,
+    descripcion text NOT NULL,
+    estado integer DEFAULT 0 NOT NULL
 );
 
 
-ALTER TABLE public.asuntos OWNER TO postgres;
+ALTER TABLE public.asuntos_propios OWNER TO postgres;
 
 --
--- Name: asuntos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- TOC entry 231 (class 1259 OID 16828)
+-- Name: asuntos_propios_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public.asuntos_id_seq
-    AS integer
+CREATE SEQUENCE public.asuntos_propios_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -63,16 +69,19 @@ CREATE SEQUENCE public.asuntos_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.asuntos_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.asuntos_propios_id_seq OWNER TO postgres;
 
 --
--- Name: asuntos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- TOC entry 3490 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: asuntos_propios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.asuntos_id_seq OWNED BY public.asuntos.id;
+ALTER SEQUENCE public.asuntos_propios_id_seq OWNED BY public.asuntos_propios.id;
 
 
 --
+-- TOC entry 210 (class 1259 OID 16720)
 -- Name: cursos; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -85,6 +94,7 @@ CREATE TABLE public.cursos (
 ALTER TABLE public.cursos OWNER TO postgres;
 
 --
+-- TOC entry 211 (class 1259 OID 16725)
 -- Name: cursos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -99,6 +109,7 @@ ALTER TABLE public.cursos ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
 
 
 --
+-- TOC entry 212 (class 1259 OID 16726)
 -- Name: estancias; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -109,15 +120,18 @@ CREATE TABLE public.estancias (
     descripcion text NOT NULL,
     totalllaves integer DEFAULT 1 NOT NULL,
     coordenadas_json jsonb NOT NULL,
-    armario character varying,
-    codigollave character varying,
-    reservable boolean DEFAULT false
+    armario character varying NOT NULL,
+    codigollave character varying NOT NULL,
+    reservable boolean DEFAULT false NOT NULL,
+    tipoestancia character varying,
+    numero_ordenadores integer DEFAULT 0 NOT NULL
 );
 
 
 ALTER TABLE public.estancias OWNER TO postgres;
 
 --
+-- TOC entry 213 (class 1259 OID 16733)
 -- Name: estancias_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -130,9 +144,11 @@ CREATE SEQUENCE public.estancias_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.estancias_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.estancias_id_seq OWNER TO postgres;
 
 --
+-- TOC entry 3491 (class 0 OID 0)
+-- Dependencies: 213
 -- Name: estancias_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -140,80 +156,50 @@ ALTER SEQUENCE public.estancias_id_seq OWNED BY public.estancias.id;
 
 
 --
+-- TOC entry 233 (class 1259 OID 16839)
+-- Name: extraescolares_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.extraescolares_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.extraescolares_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 234 (class 1259 OID 16840)
 -- Name: extraescolares; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.extraescolares (
-    id integer NOT NULL,
-    uid character varying(255) NOT NULL,
-    nombre character varying(255) NOT NULL,
-    descripcion text,
-    fechainicio date NOT NULL,
-    fechafin date NOT NULL
+    id integer DEFAULT nextval('public.extraescolares_id_seq'::regclass) NOT NULL,
+    uid character varying NOT NULL,
+    gidnumber integer NOT NULL,
+    cursos_gids integer[] NOT NULL,
+    tipo character varying(20) NOT NULL,
+    titulo character varying(200) NOT NULL,
+    descripcion text NOT NULL,
+    fecha_inicio timestamp without time zone NOT NULL,
+    fecha_fin timestamp without time zone NOT NULL,
+    idperiodo_inicio bigint,
+    idperiodo_fin bigint,
+    estado smallint DEFAULT 0 NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    responsables_uids character varying[],
+    ubicacion text,
+    coords jsonb
 );
 
 
 ALTER TABLE public.extraescolares OWNER TO postgres;
 
 --
--- Name: extraescolares_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.extraescolares_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.extraescolares_id_seq OWNER TO postgres;
-
---
--- Name: extraescolares_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.extraescolares_id_seq OWNED BY public.extraescolares.id;
-
-
---
--- Name: extraescolares_periodos; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.extraescolares_periodos (
-    id integer NOT NULL,
-    extraescolar_id integer NOT NULL,
-    hora_inicio smallint NOT NULL,
-    hora_fin smallint NOT NULL
-);
-
-
-ALTER TABLE public.extraescolares_periodos OWNER TO postgres;
-
---
--- Name: extraescolares_periodos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.extraescolares_periodos_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.extraescolares_periodos_id_seq OWNER TO postgres;
-
---
--- Name: extraescolares_periodos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.extraescolares_periodos_id_seq OWNED BY public.extraescolares_periodos.id;
-
-
---
+-- TOC entry 214 (class 1259 OID 16734)
 -- Name: libros; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -227,6 +213,7 @@ CREATE TABLE public.libros (
 ALTER TABLE public.libros OWNER TO postgres;
 
 --
+-- TOC entry 215 (class 1259 OID 16739)
 -- Name: libros_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -241,6 +228,7 @@ ALTER TABLE public.libros ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
 
 
 --
+-- TOC entry 216 (class 1259 OID 16740)
 -- Name: perfiles_usuario; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -254,6 +242,7 @@ CREATE TABLE public.perfiles_usuario (
 ALTER TABLE public.perfiles_usuario OWNER TO postgres;
 
 --
+-- TOC entry 217 (class 1259 OID 16743)
 -- Name: perfiles_usuario_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -266,9 +255,11 @@ CREATE SEQUENCE public.perfiles_usuario_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.perfiles_usuario_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.perfiles_usuario_id_seq OWNER TO postgres;
 
 --
+-- TOC entry 3492 (class 0 OID 0)
+-- Dependencies: 217
 -- Name: perfiles_usuario_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -276,6 +267,37 @@ ALTER SEQUENCE public.perfiles_usuario_id_seq OWNED BY public.perfiles_usuario.i
 
 
 --
+-- TOC entry 218 (class 1259 OID 16744)
+-- Name: periodos_horarios_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.periodos_horarios_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.periodos_horarios_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 219 (class 1259 OID 16745)
+-- Name: periodos_horarios; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.periodos_horarios (
+    id integer DEFAULT nextval('public.periodos_horarios_id_seq'::regclass) NOT NULL,
+    nombre character varying NOT NULL,
+    inicio time without time zone NOT NULL,
+    fin time without time zone NOT NULL
+);
+
+
+ALTER TABLE public.periodos_horarios OWNER TO postgres;
+
+--
+-- TOC entry 220 (class 1259 OID 16751)
 -- Name: prestamos; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -293,6 +315,7 @@ CREATE TABLE public.prestamos (
 ALTER TABLE public.prestamos OWNER TO postgres;
 
 --
+-- TOC entry 221 (class 1259 OID 16759)
 -- Name: prestamos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -307,6 +330,7 @@ ALTER TABLE public.prestamos ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
 
 
 --
+-- TOC entry 222 (class 1259 OID 16760)
 -- Name: prestamos_items_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -318,9 +342,10 @@ CREATE SEQUENCE public.prestamos_items_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.prestamos_items_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.prestamos_items_id_seq OWNER TO postgres;
 
 --
+-- TOC entry 223 (class 1259 OID 16761)
 -- Name: prestamos_items; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -338,6 +363,7 @@ CREATE TABLE public.prestamos_items (
 ALTER TABLE public.prestamos_items OWNER TO postgres;
 
 --
+-- TOC entry 224 (class 1259 OID 16767)
 -- Name: prestamos_llaves; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -355,6 +381,7 @@ CREATE TABLE public.prestamos_llaves (
 ALTER TABLE public.prestamos_llaves OWNER TO postgres;
 
 --
+-- TOC entry 225 (class 1259 OID 16774)
 -- Name: prestamos_llaves_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -369,27 +396,11 @@ ALTER TABLE public.prestamos_llaves ALTER COLUMN id ADD GENERATED ALWAYS AS IDEN
 
 
 --
--- Name: restricciones; Type: TABLE; Schema: public; Owner: postgres
+-- TOC entry 226 (class 1259 OID 16775)
+-- Name: reservas_estancias_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.restricciones (
-    id integer NOT NULL,
-    tipo character varying(255) NOT NULL,
-    restriccion character varying(255) NOT NULL,
-    descripcion character varying(255) NOT NULL,
-    valor_num integer NOT NULL,
-    valor_bool boolean NOT NULL
-);
-
-
-ALTER TABLE public.restricciones OWNER TO postgres;
-
---
--- Name: restricciones_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.restricciones_id_seq
-    AS integer
+CREATE SEQUENCE public.reservas_estancias_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -397,16 +408,61 @@ CREATE SEQUENCE public.restricciones_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.restricciones_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.reservas_estancias_id_seq OWNER TO postgres;
 
 --
--- Name: restricciones_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- TOC entry 227 (class 1259 OID 16776)
+-- Name: reservas_estancias; Type: TABLE; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.restricciones_id_seq OWNED BY public.restricciones.id;
+CREATE TABLE public.reservas_estancias (
+    id integer DEFAULT nextval('public.reservas_estancias_id_seq'::regclass) NOT NULL,
+    idestancia bigint NOT NULL,
+    idperiodo_inicio bigint NOT NULL,
+    idperiodo_fin bigint NOT NULL,
+    uid character varying NOT NULL,
+    fecha date,
+    descripcion text NOT NULL
+);
 
+
+ALTER TABLE public.reservas_estancias OWNER TO postgres;
 
 --
+-- TOC entry 228 (class 1259 OID 16782)
+-- Name: restricciones_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.restricciones_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.restricciones_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 229 (class 1259 OID 16783)
+-- Name: restricciones; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.restricciones (
+    id integer DEFAULT nextval('public.restricciones_id_seq'::regclass) NOT NULL,
+    tipo character varying(255) NOT NULL,
+    restriccion character varying(255) NOT NULL,
+    descripcion character varying(255) NOT NULL,
+    valor_num integer NOT NULL,
+    valor_bool boolean NOT NULL,
+    rangos_bloqueados_json jsonb
+);
+
+
+ALTER TABLE public.restricciones OWNER TO postgres;
+
+--
+-- TOC entry 230 (class 1259 OID 16789)
 -- Name: session; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -420,13 +476,15 @@ CREATE TABLE public.session (
 ALTER TABLE public.session OWNER TO postgres;
 
 --
--- Name: asuntos id; Type: DEFAULT; Schema: public; Owner: postgres
+-- TOC entry 3310 (class 2604 OID 16832)
+-- Name: asuntos_propios id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.asuntos ALTER COLUMN id SET DEFAULT nextval('public.asuntos_id_seq'::regclass);
+ALTER TABLE ONLY public.asuntos_propios ALTER COLUMN id SET DEFAULT nextval('public.asuntos_propios_id_seq'::regclass);
 
 
 --
+-- TOC entry 3294 (class 2604 OID 16794)
 -- Name: estancias id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -434,20 +492,7 @@ ALTER TABLE ONLY public.estancias ALTER COLUMN id SET DEFAULT nextval('public.es
 
 
 --
--- Name: extraescolares id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.extraescolares ALTER COLUMN id SET DEFAULT nextval('public.extraescolares_id_seq'::regclass);
-
-
---
--- Name: extraescolares_periodos id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.extraescolares_periodos ALTER COLUMN id SET DEFAULT nextval('public.extraescolares_periodos_id_seq'::regclass);
-
-
---
+-- TOC entry 3298 (class 2604 OID 16795)
 -- Name: perfiles_usuario id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -455,21 +500,16 @@ ALTER TABLE ONLY public.perfiles_usuario ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- Name: restricciones id; Type: DEFAULT; Schema: public; Owner: postgres
+-- TOC entry 3342 (class 2606 OID 16836)
+-- Name: asuntos_propios asuntos_propios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.restricciones ALTER COLUMN id SET DEFAULT nextval('public.restricciones_id_seq'::regclass);
-
-
---
--- Name: asuntos asuntos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.asuntos
-    ADD CONSTRAINT asuntos_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.asuntos_propios
+    ADD CONSTRAINT asuntos_propios_pkey PRIMARY KEY (id);
 
 
 --
+-- TOC entry 3317 (class 2606 OID 16797)
 -- Name: cursos cursos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -478,6 +518,7 @@ ALTER TABLE ONLY public.cursos
 
 
 --
+-- TOC entry 3319 (class 2606 OID 16799)
 -- Name: estancias estancias_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -486,14 +527,7 @@ ALTER TABLE ONLY public.estancias
 
 
 --
--- Name: extraescolares_periodos extraescolares_periodos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.extraescolares_periodos
-    ADD CONSTRAINT extraescolares_periodos_pkey PRIMARY KEY (id);
-
-
---
+-- TOC entry 3344 (class 2606 OID 16851)
 -- Name: extraescolares extraescolares_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -502,6 +536,7 @@ ALTER TABLE ONLY public.extraescolares
 
 
 --
+-- TOC entry 3321 (class 2606 OID 16801)
 -- Name: libros libros_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -510,6 +545,7 @@ ALTER TABLE ONLY public.libros
 
 
 --
+-- TOC entry 3323 (class 2606 OID 16803)
 -- Name: perfiles_usuario perfiles_usuario_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -518,6 +554,7 @@ ALTER TABLE ONLY public.perfiles_usuario
 
 
 --
+-- TOC entry 3325 (class 2606 OID 16805)
 -- Name: perfiles_usuario perfiles_usuario_uid_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -526,6 +563,16 @@ ALTER TABLE ONLY public.perfiles_usuario
 
 
 --
+-- TOC entry 3327 (class 2606 OID 16807)
+-- Name: periodos_horarios periodos_horarios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.periodos_horarios
+    ADD CONSTRAINT periodos_horarios_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3331 (class 2606 OID 16809)
 -- Name: prestamos_items prestamos_items_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -534,6 +581,7 @@ ALTER TABLE ONLY public.prestamos_items
 
 
 --
+-- TOC entry 3333 (class 2606 OID 16811)
 -- Name: prestamos_llaves prestamos_llaves_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -542,6 +590,7 @@ ALTER TABLE ONLY public.prestamos_llaves
 
 
 --
+-- TOC entry 3329 (class 2606 OID 16813)
 -- Name: prestamos prestamos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -550,6 +599,16 @@ ALTER TABLE ONLY public.prestamos
 
 
 --
+-- TOC entry 3335 (class 2606 OID 16815)
+-- Name: reservas_estancias reservas_estancias_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reservas_estancias
+    ADD CONSTRAINT reservas_estancias_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3337 (class 2606 OID 16817)
 -- Name: restricciones restricciones_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -558,6 +617,7 @@ ALTER TABLE ONLY public.restricciones
 
 
 --
+-- TOC entry 3340 (class 2606 OID 16819)
 -- Name: session session_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -566,6 +626,7 @@ ALTER TABLE ONLY public.session
 
 
 --
+-- TOC entry 3338 (class 1259 OID 16820)
 -- Name: IDX_session_expire; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -573,14 +634,7 @@ CREATE INDEX "IDX_session_expire" ON public.session USING btree (expire);
 
 
 --
--- Name: extraescolares_periodos extraescolares_periodos_extraescolar_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.extraescolares_periodos
-    ADD CONSTRAINT extraescolares_periodos_extraescolar_id_fkey FOREIGN KEY (extraescolar_id) REFERENCES public.extraescolares(id) ON DELETE CASCADE;
-
-
---
+-- TOC entry 3345 (class 2606 OID 16821)
 -- Name: prestamos_llaves prestamos_llaves_idestancia_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -588,9 +642,11 @@ ALTER TABLE ONLY public.prestamos_llaves
     ADD CONSTRAINT prestamos_llaves_idestancia_fkey FOREIGN KEY (idestancia) REFERENCES public.estancias(id) ON DELETE CASCADE;
 
 
+-- Completed on 2025-11-24 13:45:35 CET
+
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 3RIn72vkrEYelkhgg1K6MqOLKG2JixTHa63ydr4G0LMvetgE0crvAZezGDBZdnn
+\unrestrict 4Tw9iGYqw9mgq6fpkaSUpVm8Hf0csoMF9YU0fw5so1zvsjQwBcG7rvJzEdHosld
 

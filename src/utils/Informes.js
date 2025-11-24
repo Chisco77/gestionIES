@@ -1,0 +1,275 @@
+// --------------------------
+// Generación de PDF completa
+// --------------------------
+
+import { jsPDF } from "jspdf";
+
+export function generatePermisosPdf({ user, fecha }) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageWidth = 210;
+  const marginLeft = 20;
+  const marginTop = 20;
+  const tableX = marginLeft;
+  const tableWidth = pageWidth - marginLeft * 2;
+  const textPad = 3;
+  let y = marginTop;
+
+  const apellidoUsuario = user?.sn || "";
+  const nombreUsuario = user?.givenName || "";
+  const employeeNumber = user?.employeeNumber || "";
+
+  // --- Cabecera ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("ANEXO V", pageWidth / 2, y, { align: "center" });
+  y += 10;
+  doc.setFontSize(12);
+  doc.text("CONCESIÓN DE PERMISOS", pageWidth / 2, y, { align: "center" });
+  y += 15;
+
+  // --- 1. SOLICITANTE ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  let startY = y;
+  const row1Height = 8;
+  doc.text("1. SOLICITANTE", tableX + textPad, y + row1Height - 2);
+  y += row1Height;
+  doc.line(tableX, y, tableX + tableWidth, y);
+
+  // Fila 2: Apellidos, Nombre, DNI
+  const row2Height = 10;
+  const col1Width = 70;
+  const col2Width = 60;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+
+  doc.text("Apellidos:", tableX + textPad, y + row2Height - 3);
+  doc.text(apellidoUsuario, tableX + 22, y + row2Height - 3);
+  doc.line(tableX + col1Width, y, tableX + col1Width, y + row2Height);
+
+  doc.text("Nombre:", tableX + col1Width + textPad, y + row2Height - 3);
+  doc.text(nombreUsuario, tableX + col1Width + 22, y + row2Height - 3);
+  doc.line(
+    tableX + col1Width + col2Width,
+    y,
+    tableX + col1Width + col2Width,
+    y + row2Height
+  );
+
+  doc.text(
+    "DNI:",
+    tableX + col1Width + col2Width + textPad,
+    y + row2Height - 3
+  );
+  doc.text(
+    employeeNumber,
+    tableX + col1Width + col2Width + 15,
+    y + row2Height - 3
+  );
+
+  y += row2Height;
+  doc.line(tableX, y, tableX + tableWidth, y);
+
+  // Fila 3: Teléfono y email
+  const row3Height = 10;
+  const col3_1Width = 85;
+  doc.text("Teléfono móvil:", tableX + textPad, y + row3Height - 3);
+  doc.line(tableX + col3_1Width, y, tableX + col3_1Width, y + row3Height);
+  doc.text("E-mail:", tableX + col3_1Width + textPad, y + row3Height - 3);
+  y += row3Height;
+  doc.line(tableX, y, tableX + tableWidth, y);
+
+  // Fila 4: Cuerpo, Grupo, Subgrupo
+  const row4Height = 10;
+  const col4_1Width = 70;
+  const col4_2Width = 50;
+  doc.text("Cuerpo:", tableX + textPad, y + row4Height - 3);
+  doc.line(tableX + col4_1Width, y, tableX + col4_1Width, y + row4Height);
+  doc.text("Grupo:", tableX + col4_1Width + textPad, y + row4Height - 3);
+  doc.line(
+    tableX + col4_1Width + col4_2Width,
+    y,
+    tableX + col4_1Width + col4_2Width,
+    y + row4Height
+  );
+  doc.text(
+    "Subgrupo:",
+    tableX + col4_1Width + col4_2Width + textPad,
+    y + row4Height - 3
+  );
+  y += row4Height;
+  doc.line(tableX, y, tableX + tableWidth, y);
+
+  // Fila 5: Relación jurídica
+  const row5Height = 24;
+  doc.setFontSize(11);
+  doc.text(
+    "(Marcar con una x el recuadro correspondiente)",
+    tableX + 45,
+    y + 6
+  );
+  doc.setFont("helvetica", "bold");
+  doc.text("Relación jurídica:", tableX + textPad, y + 6);
+  doc.setFont("helvetica", "normal");
+  const opciones = [
+    "Personal funcionario de carrera",
+    "Personal funcionario en prácticas",
+    "Personal funcionario interino",
+    "Personal laboral indefinido",
+    "Personal laboral temporal",
+  ];
+  doc.setFontSize(10);
+  let checkY = y + 11;
+  opciones.forEach((opcion, index) => {
+    doc.rect(tableX + (index % 2 === 0 ? 5 : 80), checkY, 3.5, 3.5);
+    doc.text(opcion, tableX + (index % 2 === 0 ? 10 : 85), checkY + 3);
+    if (index === 5) checkY += 7;
+    if (index % 2 === 1) checkY += 7;
+  });
+
+  y += row5Height + 10;
+  doc.line(tableX, y, tableX + tableWidth, y);
+
+  // Fila 6: Fecha, Centro de destino, Jornada
+  const row6Height = 10;
+  const col6_1Width = 70;
+
+  // Texto "Fecha:"
+  doc.text("Fecha:", tableX + textPad, y + row6Height - 3);
+
+  // Mostrar la fecha pasada como parámetro en formato dd/mm/yyyy
+  const fechaStr = new Date(fecha).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+  doc.text(fechaStr, tableX + 30, y + row6Height - 3); // ajusta 30 según espacio
+
+  // Línea divisoria
+  doc.line(tableX + col6_1Width, y, tableX + col6_1Width, y + row6Height * 2);
+
+  doc.text(
+    "Centro de destino:    IES FRANCISCO DE ORELLANA",
+    tableX + col6_1Width + textPad,
+    y + row6Height - 3
+  );
+  y += row6Height;
+  doc.line(tableX, y, tableX + tableWidth, y);
+
+  doc.text("Jornada:", tableX + col6_1Width + textPad, y + row6Height - 3);
+  doc.rect(tableX + 95, y + row6Height - 7, 3.5, 3.5);
+  doc.text("Completa", tableX + 100, y + row6Height - 3);
+  doc.rect(marginLeft + 125, y + row6Height - 7, 3.5, 3.5);
+  doc.text("Parcial", marginLeft + 130, y + row6Height - 3);
+  y += row6Height;
+  doc.rect(tableX, startY, tableWidth, y - startY);
+
+  // --- 2. PERMISO QUE SOLICITA ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  startY = y;
+  const row2_1Height = 8;
+  doc.text("2. PERMISO QUE SOLICITA", tableX + textPad, y + row2_1Height - 2);
+  y += row2_1Height;
+  doc.line(tableX, y, tableX + tableWidth, y);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("PERMISOS:", tableX + textPad, y + 6);
+
+  const permisos = [
+    "Por fallecimiento, accidente o enfermedad grave, hospitalización o intervención quirúrgica de un familiar (art. 2).",
+    "Por enfermedad propia (art. 3).",
+    "Por traslado de domicilio (art. 4).",
+    "Realización de exámenes prenatales y técnicas de preparación al parto (art. 7).",
+    "Para el cumplimiento de un deber inexcusable de carácter público o personal (art. 11).",
+    "Por asuntos particulares (art. 13).",
+    "Para realización de funciones sindicales o de representación del personal (art. 14).",
+    "Para concurrir a exámenes finales o pruebas selectivas en el empleo público (art. 15).",
+    "Por reducción de jornada para mayores de 55 años (art. 32).",
+    "Otras situaciones.",
+  ];
+
+  const permisosLeft = permisos.slice(0, 6);
+  const permisosRight = permisos.slice(6);
+  let yLeft = y + 12;
+  let yRight = y + 12;
+  const colSplitX = tableX + 85;
+  const rightColTextX = colSplitX + 6;
+  const leftColTextX = tableX + 6;
+  const textWidth = 75;
+
+  permisosLeft.forEach((texto, index) => {
+    doc.rect(leftColTextX - 4, yLeft - 3, 3.5, 3.5);
+    if (index === 5) doc.text("X", leftColTextX - 3.3, yLeft);
+    doc.text(doc.splitTextToSize(texto, textWidth), leftColTextX, yLeft);
+    yLeft += 15;
+  });
+  permisosRight.forEach((texto) => {
+    doc.rect(rightColTextX - 4, yRight - 3, 3.5, 3.5);
+    doc.text(doc.splitTextToSize(texto, textWidth), rightColTextX, yRight);
+    yRight += 15;
+  });
+  y = Math.max(yLeft, yRight);
+  doc.rect(tableX, startY, tableWidth, y - startY);
+  doc.line(colSplitX, startY + row2_1Height, colSplitX, y);
+
+  // --- 3. DOCUMENTACIÓN QUE SE APORTA ---
+  doc.addPage();
+  y = marginTop;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  startY = y;
+  const row3_1Height = 8;
+  doc.text(
+    "3. DOCUMENTACIÓN QUE SE APORTA",
+    tableX + textPad,
+    y + row3_1Height - 2
+  );
+  y += row3_1Height;
+  doc.line(tableX, y, tableX + tableWidth, y);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+
+  const docs = [
+    "Fotocopia cotejada del libro de familia o certificaciones digitales que lo sustituyan/DNI.",
+    "Certificado de empadronamiento.",
+    "Certificado de defunción.",
+    "Fotocopia cotejada de la inscripción en el Registro Oficial de Parejas de Hecho.",
+    "Documento que acredite la hospitalización o intervención quirúrgica grave.",
+    "Certificado de convivencia o informe del trabajador social.",
+    "Documento acreditativo de la asistencia a la prueba o examen final.",
+    "Documento justificativo de revisiones médicas dentro de la jornada laboral.",
+    "Documento acreditativo de la donación de sangre, médula o plaquetas.",
+    "Otros: _______________________________",
+  ];
+
+  let yDocs = y + 6;
+  docs.forEach((texto) => {
+    if (yDocs > 270) {
+      doc.addPage();
+      yDocs = marginTop;
+    }
+    doc.rect(tableX + 2, yDocs - 3, 3.5, 3.5);
+    doc.text(doc.splitTextToSize(texto, 160), tableX + 8, yDocs);
+    yDocs += 10;
+  });
+  y = yDocs + 5;
+  doc.rect(tableX, startY, tableWidth, y - startY);
+
+  // --- Firma ---
+  y += 15;
+  doc.text(
+    "Trujillo, _____ de _________________________ de 20_______",
+    marginLeft,
+    y
+  );
+  y += 10;
+  doc.setFont("helvetica", "bold");
+  doc.text("DIRECTOR/A DEL CENTRO", pageWidth / 2, y, { align: "center" });
+
+  doc.save("anexo_v_concesion_permisos.pdf");
+}

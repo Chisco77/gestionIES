@@ -1,39 +1,126 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
 import { toast } from "sonner";
 
-// Este componente no contiene lógica, solo renderiza el Grid.
-// Toda la lógica viene desde ReservasEstanciasIndex.
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
+import { useEstancias } from "@/hooks/Estancias/useEstancias";
+import { useReservasDelDia } from "@/hooks/Reservas/useReservasDelDia";
+
+import { DialogoInsertarReserva } from "../components/DialogoInsertarReserva";
+import { DialogoEditarReserva } from "../components/DialogoEditarReserva";
+import { DialogoPlanoEstancia } from "../components/DialogoPlanoEstancia";
+
 export function GridReservasEstancias({
-  tipoEstancia,
-  setTipoEstancia,
-  estanciasDelGrid,
-  gridData,
-  periodosDB,
-  selectedDate,
-  handleEditarReserva,
-  handleDiaClick,
-  setEstanciaSeleccionadaPlano,
-  setAbrirPlano,
   uid,
   esReservaFutura,
   fechaSeleccionada,
 }) {
+  const { data: periodosDB = [] } = usePeriodosHorarios();
+  const { data: estancias = [] } = useEstancias();
+
+  const [tipoEstancia, setTipoEstancia] = useState("");
+  const [gridData, setGridData] = useState([]);
+  const [estanciasDelGrid, setEstanciasDelGrid] = useState([]);
+
+  const [celdaSeleccionada, setCeldaSeleccionada] = useState(null);
+  const [reservaSeleccionada, setReservaSeleccionada] = useState(null);
+  const [abrirDialogo, setAbrirDialogo] = useState(false);
+  const [abrirDialogoEditar, setAbrirDialogoEditar] = useState(false);
+  const [abrirPlano, setAbrirPlano] = useState(false);
+  const [estanciaSeleccionadaPlano, setEstanciaSeleccionadaPlano] =
+    useState(null);
+
+  const selectedDate = fechaSeleccionada;
+
+  const { data: reservasDelDia } = useReservasDelDia(
+    selectedDate,
+    tipoEstancia
+  );
+  console.log("Fecha seleccionada: ", fechaSeleccionada);
+
+  // Filtrar estancias según tipo seleccionado
+  useEffect(() => {
+    if (!reservasDelDia?.estancias) {
+      setEstanciasDelGrid([]);
+      return;
+    }
+    const filtradas = reservasDelDia.estancias.filter(
+      (e) => !tipoEstancia || e.tipo === tipoEstancia
+    );
+    setEstanciasDelGrid(filtradas);
+  }, [reservasDelDia, tipoEstancia]);
+
+  // Generar gridData
+  useEffect(() => {
+    if (!reservasDelDia) return;
+    const newGridData = (
+      reservasDelDia.periodos.length ? reservasDelDia.periodos : periodosDB
+    ).map((p) => {
+      const row = {};
+      estanciasDelGrid.forEach((e) => {
+        const reserva = (reservasDelDia.reservas || []).find(
+          (r) =>
+            parseInt(r.idestancia) === e.id &&
+            parseInt(r.idperiodo_inicio) <= p.id &&
+            parseInt(r.idperiodo_fin) >= p.id
+        );
+        row[e.id] = reserva || null;
+      });
+      return { periodoId: p.id, row };
+    });
+    setGridData(newGridData);
+  }, [reservasDelDia, estanciasDelGrid, periodosDB]);
+
+  // Handlers
+  const handleEditarReserva = (reserva) => {
+    if (reserva.uid !== uid) {
+      toast.error("Solo puedes modificar tus propias reservas.");
+      return;
+    }
+    const periodoFin = periodosDB.find(
+      (p) => parseInt(p.id) === parseInt(reserva.idperiodo_fin)
+    );
+    const horaFin = periodoFin?.fin;
+    if (!horaFin || !esReservaFutura(reserva.fecha, horaFin)) {
+      toast.error("No puedes modificar reservas ya finalizadas.");
+      return;
+    }
+    setReservaSeleccionada(reserva);
+    setAbrirDialogoEditar(true);
+  };
+
+  const handleDiaClick = (estanciaId, periodoId) => {
+    const periodo = periodosDB.find((p) => p.id === periodoId);
+    setCeldaSeleccionada({
+      estanciaId,
+      periodoId,
+      inicioId: periodo?.id,
+      finId: periodo?.id,
+    });
+    setAbrirDialogo(true);
+  };
+
   return (
     <Card className="shadow-lg rounded-2xl w-full">
-      <CardHeader className="pb-2 border-b">
+      <CardHeader className="py-1 px-3 border-b">
         <CardTitle className="text-center text-sm font-semibold">
-          <h2 className="text-lg font-semibold mb-2">
-            Reservas del día {fechaSeleccionada}
+          <h2 className="text-base font-semibold mb-0.5">
+            Reservas del día{" "}
+            {new Date(selectedDate).toLocaleDateString("es-ES", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })}
           </h2>
-          <div className="max-w-sm mx-auto">
-            <label className="text-sm font-medium">Tipo de Estancia</label>
+          <div className="max-w-sm mx-auto mt-1">
+            <label className="text-xs font-medium">Tipo de Estancia</label>
             <select
               value={tipoEstancia}
               onChange={(e) => setTipoEstancia(e.target.value)}
-              className="border p-2 rounded w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="border p-1 rounded w-full text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
-              <option value="">Seleccionar tipo</option>
+              <option value="">Todos</option>
               <option value="Almacen">Almacén</option>
               <option value="Aula">Aula</option>
               <option value="Departamento">Departamento</option>
@@ -95,6 +182,11 @@ export function GridReservasEstancias({
 
                     {estanciasDelGrid.map((e) => {
                       const reserva = rowData.row[e.id];
+                      const periodoActual = periodosDB.find(
+                        (p) => p.id === rowData.periodoId
+                      );
+                      const horaFin = periodoActual?.fin;
+                      const esFutura = esReservaFutura(selectedDate, horaFin);
 
                       if (
                         reserva &&
@@ -104,21 +196,16 @@ export function GridReservasEstancias({
                           parseInt(reserva.idperiodo_fin) -
                           parseInt(reserva.idperiodo_inicio) +
                           1;
-
                         return (
                           <td
                             key={e.id}
                             rowSpan={rowspan}
-                            className={`p-2 border cursor-pointer transition ${
-                              reserva.uid === uid
-                                ? "bg-green-200 hover:bg-green-300"
-                                : "bg-yellow-200 hover:bg-yellow-300"
-                            }`}
+                            className={`p-2 border cursor-pointer transition ${reserva.uid === uid ? "bg-green-200 hover:bg-green-300" : "bg-yellow-200 hover:bg-yellow-300"}`}
                             onClick={() => handleEditarReserva(reserva)}
                           >
                             {reserva.uid === uid
                               ? "Mi reserva"
-                              : reserva.nombre || "Ocupado"}
+                              : (reserva.nombre || "Ocupado").slice(0, 23)}
                           </td>
                         );
                       }
@@ -129,21 +216,10 @@ export function GridReservasEstancias({
                       )
                         return null;
 
-                      const periodoActual = periodosDB.find(
-                        (p) => p.id === rowData.periodoId
-                      );
-                      const horaFin = periodoActual?.fin;
-
-                      const esFutura = esReservaFutura(selectedDate, horaFin);
-
                       return (
                         <td
                           key={e.id}
-                          className={`p-2 border text-gray-700 transition ${
-                            esFutura
-                              ? "bg-blue-200 cursor-pointer hover:bg-blue-300"
-                              : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          }`}
+                          className={`p-2 border text-gray-700 transition ${esFutura ? "bg-blue-200 cursor-pointer hover:bg-blue-300" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
                           onClick={() => {
                             if (!esFutura) {
                               toast.error(
@@ -151,11 +227,7 @@ export function GridReservasEstancias({
                               );
                               return;
                             }
-                            handleDiaClick(
-                              selectedDate,
-                              e.id,
-                              rowData.periodoId
-                            );
+                            handleDiaClick(e.id, rowData.periodoId);
                           }}
                         >
                           {esFutura ? "Libre" : ""}
@@ -169,6 +241,38 @@ export function GridReservasEstancias({
           </div>
         )}
       </CardContent>
+
+      {/* Diálogos */}
+      <DialogoInsertarReserva
+        open={abrirDialogo}
+        onClose={() => {
+          setAbrirDialogo(false);
+          setCeldaSeleccionada(null);
+        }}
+        fecha={selectedDate}
+        idestancia={celdaSeleccionada?.estanciaId}
+        periodos={periodosDB}
+        inicioSeleccionado={celdaSeleccionada?.inicioId}
+        finSeleccionado={celdaSeleccionada?.finId}
+      />
+
+      <DialogoPlanoEstancia
+        open={abrirPlano}
+        onClose={() => setAbrirPlano(false)}
+        estancia={estanciaSeleccionadaPlano}
+      />
+
+      {reservaSeleccionada && (
+        <DialogoEditarReserva
+          reserva={reservaSeleccionada}
+          open={abrirDialogoEditar}
+          onClose={() => {
+            setAbrirDialogoEditar(false);
+            setReservaSeleccionada(null);
+          }}
+          periodos={periodosDB}
+        />
+      )}
     </Card>
   );
 }

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { PanelReservas } from "../../Comunes/PanelReservas";
+import { CalendarioExtraescolares } from "@/modules/Extraescolares/components/CalendarioExtraescolares";
 import { useAuth } from "@/context/AuthContext";
+import { TablaExtraescolares } from "@/modules/Extraescolares/components/TablaExtraescolares";
+
+import {
+  Card,
+} from "@/components/ui/card";
 
 // Para evitar problemas con el tiempo UTC
 const formatDateKey = (date) => {
@@ -16,7 +18,6 @@ const formatDateKey = (date) => {
 
 export function DashboardProfesor() {
   const [fechaHora, setFechaHora] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(formatDateKey(new Date()));
   const [currentMonth, setCurrentMonth] = useState(fechaHora.getMonth());
   const [currentYear, setCurrentYear] = useState(fechaHora.getFullYear());
   const { user } = useAuth();
@@ -30,25 +31,6 @@ export function DashboardProfesor() {
   const [mostrarTodas, setMostrarTodas] = useState(false);
 
   const todayStr = formatDateKey(new Date());
-
-  // Datos de ejemplo
-  const reservas = {
-    [formatDateKey(new Date(2025, 9, 1))]: {
-      aulas: ["Aula 101", "Aula 205"],
-      armarios: ["Armario 3"],
-      asuntos: false,
-    },
-    [formatDateKey(new Date(2025, 9, 2))]: {
-      aulas: [],
-      armarios: ["Armario 5"],
-      asuntos: true,
-    },
-    [formatDateKey(new Date(2025, 9, 5))]: {
-      aulas: ["Aula 110"],
-      armarios: [],
-      asuntos: false,
-    },
-  };
 
   const getDateKey = (y, m, d) => formatDateKey(new Date(y, m, d));
 
@@ -90,116 +72,19 @@ export function DashboardProfesor() {
     }
   };
 
-  const selectedInfo = reservas[selectedDate] || {
-    aulas: [],
-    armarios: [],
-    asuntos: false,
-  };
-
   return (
     <div className="p-4">
       {/* Grid con calendario y detalles */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Calendario */}
-        <Card className="shadow-lg rounded-2xl flex flex-col h-[350px]">
-          <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
-            <button onClick={handlePrevMonth}>
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <CardTitle>
-              {new Date(currentYear, currentMonth).toLocaleDateString("es-ES", {
-                month: "long",
-                year: "numeric",
-              })}
-            </CardTitle>
-            <button onClick={handleNextMonth}>
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </CardHeader>
-          <CardContent className="p-2 flex-grow flex items-start justify-center overflow-auto">
-            <table className="w-full border-collapse text-center align-top">
-              <thead>
-                <tr>
-                  {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
-                    <th key={d} className="p-2 font-medium">
-                      {d}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="align-top">
-                {weeks.map((week, i) => (
-                  <tr key={i}>
-                    {week.map((d, j) => {
-                      if (!d) return <td key={j} className="p-2"></td>;
-                      const dateKey = getDateKey(currentYear, currentMonth, d);
-                      const info = reservas[dateKey] || {};
-                      const isToday = dateKey === todayStr;
-                      const isSelected = dateKey === selectedDate;
-                      return (
-                        <td
-                          key={j}
-                          className={`relative p-1 rounded-lg transition-all align-top ${
-                            isToday ? "border-2 border-blue-400" : ""
-                          } ${isSelected ? "bg-gray-200" : ""} ${
-                            info.asuntos ? "bg-red-200" : ""
-                          }`}
-                          onClick={() => setSelectedDate(dateKey)}
-                        >
-                          {d}
-                          {/* Marcadores */}
-                          <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-1">
-                            {info.aulas && info.aulas.length > 0 && (
-                              <div className="w-6 h-1 bg-green-500 rounded"></div>
-                            )}
-                            {info.armarios && info.armarios.length > 0 && (
-                              <div className="w-6 h-1 bg-blue-500 rounded"></div>
-                            )}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-          {/* Leyenda + Switch */}
-          <div className="mt-4 mb-4 flex justify-center items-center text-sm">
-            {/* Leyenda */}
-            <div className="flex gap-6">
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-green-500 rounded"></div> Aula
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-blue-500 rounded"></div> Armario
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-red-200 rounded"></div> Asuntos
-                propios
-              </div>
-            </div>
-
-            {/* Interruptor */}
-            <div className="flex items-center gap-2">
-              <Label htmlFor="switch-reservas" className="text-sm">
-                Mostrar todas las reservas
-              </Label>
-              <Switch
-                id="switch-reservas"
-                checked={mostrarTodas}
-                onCheckedChange={setMostrarTodas}
-              />
-            </div>
-          </div>
-        </Card>
+        <CalendarioExtraescolares uid={uid} />
 
         {/* Detalles del día */}
-        <PanelReservas
-          uid={uid}
-          onClickReserva={(r) => console.log("Editar reserva:", r)}
-        />
+        <PanelReservas uid={uid} />
       </div>
+      <Card className="shadow-lg rounded-2xl flex flex-col p-2">
+        <TablaExtraescolares user={user} />
+      </Card>
     </div>
   );
 }

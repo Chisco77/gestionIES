@@ -28,7 +28,6 @@
 
 const pool = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
-//const { getEstanciasFiltradas } = require("../db/estanciasController");
 const { filtrarEstancias } = require("../db/estanciasController");
 
 function formatearFecha(reservas) {
@@ -60,7 +59,7 @@ async function getReservasEstancias(req, res) {
 
   try {
     const { rows } = await pool.query(
-      `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion
+      `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion
        FROM reservas_estancias
        ${where}
        ORDER BY fecha ASC, idperiodo_inicio ASC`,
@@ -193,7 +192,7 @@ async function getReservasEstanciasPorDia(req, res) {
     const { rows: reservas } = await pool.query(
       `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, descripcion
        FROM reservas_estancias
-       WHERE fecha = $1
+       WHERE TO_CHAR(fecha, 'YYYY-MM-DD') = $1
        AND idestancia = ANY($2::int[])
        ORDER BY idperiodo_inicio`,
       [fecha, idsEstancias]
@@ -238,7 +237,7 @@ async function getReservasFiltradas(req, res) {
     let i = 0;
 
     if (fecha) {
-      filtros.push(`fecha = $${++i}`);
+      filtros.push(`TO_CHAR(fecha, 'YYYY-MM-DD') = $${++i}`);
       vals.push(fecha);
     }
     if (desde) {
@@ -291,10 +290,10 @@ async function getReservasFiltradas(req, res) {
     }
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
-
+    console.log ("Where: ", where);
     // 3️⃣ Obtener reservas
     const { rows: reservas } = await pool.query(
-      `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion
+      `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion
        FROM reservas_estancias
        ${where}
        ORDER BY fecha ASC, idperiodo_inicio ASC`,

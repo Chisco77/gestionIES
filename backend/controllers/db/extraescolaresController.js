@@ -45,7 +45,7 @@ async function getExtraescolaresEnriquecidos(req, res) {
       `SELECT 
         e.id, e.uid, e.gidnumber, e.cursos_gids, e.tipo,
         e.titulo, e.descripcion,
-        e.fecha_inicio, e.fecha_fin,
+        TO_CHAR(e.fecha_inicio, 'YYYY-MM-DD') AS fecha_inicio, TO_CHAR(e.fecha_fin, 'YYYY-MM-DD') AS fecha_fin,
         e.idperiodo_inicio, e.idperiodo_fin,
         e.estado, e.responsables_uids,
         e.ubicacion, e.coords

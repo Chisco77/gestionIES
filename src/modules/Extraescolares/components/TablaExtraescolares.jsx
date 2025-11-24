@@ -61,8 +61,8 @@ export function TablaExtraescolares({ user }) {
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const API_URL = import.meta.env.VITE_API_URL;
+  
   // Estados de diálogos
-  const [insertOpen, setInsertOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, File } from "lucide-react";
 import { DialogoEditarAsunto } from "../AsuntosPropios/components/DialogoEditarAsunto";
 import { DialogoEliminarAsunto } from "../AsuntosPropios/components/DialogoEliminarAsunto";
 import { DialogoEditarReserva } from "../ReservasEstancias/components/DialogoEditarReserva";
@@ -16,6 +16,8 @@ import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUi
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { toast } from "sonner"; // asegúrate de tenerlo importado
+import { generatePermisosPdf } from "@/utils/Informes";
+import { useAuth } from "@/context/AuthContext";
 
 export function PanelReservas({ uid, loading = false }) {
   // ===== Selección y diálogos =====
@@ -89,6 +91,8 @@ export function PanelReservas({ uid, loading = false }) {
   const { data: reservas = [] } = useReservasUid(uid);
   const { data: asuntos = [] } = useAsuntosUid(uid);
   const { data: extraescolares = [] } = useExtraescolaresUid(uid);
+
+  const { user } = useAuth();
 
   // ===== Renderizados =====
   const renderReservas = () => {
@@ -172,6 +176,7 @@ export function PanelReservas({ uid, loading = false }) {
           className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative"
           onClick={() => handleClickAsunto(a)}
         >
+          {/* Cabecera: descripción y papelera */}
           <div className="flex items-center justify-between gap-2">
             <p
               className="font-semibold text-blue-600 truncate max-w-[80%]"
@@ -190,15 +195,32 @@ export function PanelReservas({ uid, loading = false }) {
               <Trash2 className="w-5 h-5" />
             </button>
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-gray-500">{fechaStr}</p>
-            <span
-              className={
-                "px-2 py-1 rounded-lg text-xs font-medium " + estado.color
-              }
-            >
-              {estado.text}
-            </span>
+
+          {/* Pie: fecha, estado y PDF a la derecha */}
+          <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center gap-2">
+              <p className="text-gray-500">{fechaStr}</p>
+              <span
+                className={
+                  "px-2 py-1 rounded-lg text-xs font-medium " + estado.color
+                }
+              >
+                {estado.text}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="text-red-600 hover:text-red-800 flex items-center gap-1"
+                onClick={(e) => {
+                  e.stopPropagation(); // evita abrir el diálogo de edición
+                  generatePermisosPdf({ user, fecha: a.fecha });
+                }}
+              >
+                <File className="w-4 h-4" />
+                <span className="text-xs font-bold">PDF</span>
+              </button>
+            </div>
           </div>
         </Card>
       );
