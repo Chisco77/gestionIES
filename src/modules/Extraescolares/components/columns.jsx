@@ -63,8 +63,8 @@ export const columnsExtraescolares = (cursos) => [
       const e = row.original.estado;
       const map = {
         0: { text: "Pendiente", color: "text-yellow-600 bg-yellow-100" },
-        1: { text: "Aceptado", color: "text-green-600 bg-green-100" },
-        2: { text: "Rechazado", color: "text-red-600 bg-red-100" },
+        1: { text: "Aceptada", color: "text-green-600 bg-green-100" },
+        2: { text: "Rechazada", color: "text-red-600 bg-red-100" },
       };
       return (
         <span

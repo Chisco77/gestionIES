@@ -47,10 +47,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
-  SidebarRail,
-  SidebarMenu,
 } from "@/components/ui/sidebar";
 
 import { NavMain } from "@/components/nav-main";
@@ -108,7 +105,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         items: [
           { title: "Aulas", url: "/reservasEstancias" },
           { title: "Asuntos Propios", url: "/asuntos_propios" },
-          { title: "Educadora", url: null },
           { title: "Extraescolares", url: "/extraescolares" },
         ],
       },
@@ -175,7 +171,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         items: [
           { title: "Aulas", url: "/reservasEstancias" },
           { title: "Asuntos Propios", url: "/asuntos_propios" },
-          { title: "Educadora", url: null },
           { title: "Extraescolares", url: "/extraescolares" },
         ],
       },
@@ -221,7 +216,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         items: [
           { title: "Aulas", url: "/reservasEstancias" },
           { title: "Asuntos Propios", url: "/asuntos_propios" },
-          { title: "Educadora", url: null },
           { title: "Extraescolares", url: "/extraescolares" },
         ],
       },
@@ -290,7 +284,11 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         title: "Reservas",
         url: "#",
         icon: CalendarCheck,
-        items: [{ title: "Estancias", url: "/reservasEstancias" }],
+        items: [
+          { title: "Aulas", url: "/reservasEstancias" },
+          { title: "Asuntos Propios", url: "/asuntos_propios" },
+          { title: "Extraescolares", url: "/extraescolares" },
+        ],
       },
       {
         title: "Préstamo Libros",
@@ -307,16 +305,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
   };
 
   const navMain = user ? (menusPorPerfil[user.perfil] ?? []) : [];
-
-  const handleClickLogout = () => {
-    fetch(`${API_URL}/logout`, {
-      method: "POST",
-      credentials: "include",
-    }).finally(() => {
-      setUser(null);
-      navigate("/login");
-    });
-  };
 
   // Cuando se abre etiquetas, notificar al padre
   React.useEffect(() => {

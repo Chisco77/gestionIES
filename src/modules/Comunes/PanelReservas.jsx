@@ -233,8 +233,8 @@ export function PanelReservas({ uid, loading = false }) {
 
     const estadoMap = {
       0: { text: "Pendiente", color: "text-yellow-600 bg-yellow-100" },
-      1: { text: "Confirmada", color: "text-green-600 bg-green-100" },
-      2: { text: "Cancelada", color: "text-red-600 bg-red-100" },
+      1: { text: "Aceptada", color: "text-green-600 bg-green-100" },
+      2: { text: "Rechazada", color: "text-red-600 bg-red-100" },
     };
 
     return extraescolares.map((a, i) => {

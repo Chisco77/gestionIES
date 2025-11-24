@@ -36,10 +36,18 @@ import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
 import { useCursosLdap } from "@/hooks/useCursosLdap";
 
 import { schemaExtraescolar } from "@/zod/extraescolares";
+
 const provider = new OpenStreetMapProvider();
 
 /* ============================
-   FUNCIONES GEO
+   Componente de error
+============================ */
+function CampoError({ children }) {
+  return <p className="text-red-600 text-sm mt-1">{children}</p>;
+}
+
+/* ============================
+   Funciones geolocalización
 ============================ */
 const buscarLugar = async (query) => {
   if (!query || query.length < 3) return [];
@@ -58,7 +66,7 @@ async function reverseGeocode({ lat, lng }) {
 }
 
 /* ============================
-   COMPONENTES MAP
+   Componentes Map
 ============================ */
 function ClickHandler({ setCoords, setUbicacion }) {
   useMapEvent("click", async (e) => {
@@ -79,7 +87,7 @@ function SetViewOnChange({ coords }) {
 }
 
 /* ============================
-   COMPONENTE PRINCIPAL
+   Componente principal
 ============================ */
 export function DialogoInsertarExtraescolar({
   open,
@@ -91,10 +99,8 @@ export function DialogoInsertarExtraescolar({
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const [titulo, setTitulo] = useState("Excursión a Alemania");
-  const [descripcion, setDescripcion] = useState(
-    "Viaje de intercambio durante varios días."
-  );
+  const [titulo, setTitulo] = useState("");
+  const [descripcion, setDescripcion] = useState("");
   const [tipo, setTipo] = useState("complementaria");
   const [departamento, setDepartamento] = useState("");
   const [periodoInicio, setPeriodoInicio] = useState("");
@@ -112,7 +118,7 @@ export function DialogoInsertarExtraescolar({
 
   const [errores, setErrores] = useState({});
 
-  // --- Inicialización de fechas y periodos ---
+  // --- Inicialización de fechas ---
   useEffect(() => {
     if (open && fechaSeleccionada) {
       const f = fechaSeleccionada.split("T")[0];
@@ -121,7 +127,15 @@ export function DialogoInsertarExtraescolar({
     }
   }, [open, fechaSeleccionada]);
 
-  // --- Mutation de React Query ---
+  // --- Inicializar periodos por defecto ---
+  useEffect(() => {
+    if (open && periodos.length > 0) {
+      setPeriodoInicio(String(periodos[0].id));
+      setPeriodoFin(String(periodos[periodos.length - 1].id));
+    }
+  }, [open, periodos]);
+
+  // --- Mutation React Query ---
   const mutation = useMutation({
     mutationFn: async (datos) => {
       const API_URL = import.meta.env.VITE_API_URL;
@@ -137,7 +151,7 @@ export function DialogoInsertarExtraescolar({
       return json.actividad;
     },
     onSuccess: (actividad) => {
-      queryClient.invalidateQueries(["extraescolares", "uid", user.uid]);
+      queryClient.invalidateQueries(["extraescolares", "uid", user.username]);
       queryClient.invalidateQueries(["extraescolares", "all"]);
       toast.success("Alta de actividad ", actividad.titulo);
       if (onGuardado) onGuardado(actividad);
@@ -149,11 +163,14 @@ export function DialogoInsertarExtraescolar({
     },
   });
 
+  /* ============================
+     Guardar actividad
+  ============================= */
   const handleGuardar = () => {
     const datos = {
       titulo,
       descripcion,
-      gid_number: Number(departamento),
+      gidnumber: departamento ? Number(departamento) : 0,
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin,
       cursos_gids: cursosSeleccionados,
@@ -164,11 +181,10 @@ export function DialogoInsertarExtraescolar({
         tipo === "complementaria" ? Number(periodoInicio) : null,
       idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : null,
       coords,
-      uid: user.uid,
+      uid: user.username,
     };
 
-    console.log("Datos a guardar: ", datos);
-
+    // Validación Zod
     const result = schemaExtraescolar.safeParse(datos);
 
     if (!result.success) {
@@ -207,31 +223,40 @@ export function DialogoInsertarExtraescolar({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 py-5">
           {/* ===============================
-              PARTE IZQUIERDA
+              Parte izquierda
           =============================== */}
           <div className="space-y-4">
-
-            {/* TÍTULO */}
+            {/* Título */}
             <div className="space-y-1">
               <Label>Título</Label>
-              <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-              {errores.titulo && <p className="text-red-500 text-sm">{errores.titulo}</p>}
+              <Input
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+                className={errores.titulo ? "border-red-500" : ""}
+              />
+              {errores.titulo && <CampoError>{errores.titulo}</CampoError>}
             </div>
 
-            {/* DESCRIPCIÓN */}
+            {/* Descripción */}
             <div className="space-y-1">
               <Label>Descripción</Label>
-              <Textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+              <Textarea
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                className={errores.descripcion ? "border-red-500" : ""}
+              />
               {errores.descripcion && (
-                <p className="text-red-500 text-sm">{errores.descripcion}</p>
+                <CampoError>{errores.descripcion}</CampoError>
               )}
             </div>
 
-            {/* DEPARTAMENTO ~ gid_number */}
+            {/* Departamento */}
             <div className="space-y-1">
               <Label>Departamento organizador</Label>
               <Select value={departamento} onValueChange={setDepartamento}>
-                <SelectTrigger>
+                <SelectTrigger
+                  className={errores.gidnumber ? "border-red-500" : ""}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -242,23 +267,23 @@ export function DialogoInsertarExtraescolar({
                   ))}
                 </SelectContent>
               </Select>
-              {errores.gid_number && (
-                <p className="text-red-500 text-sm">{errores.gid_number}</p>
+              {errores.gidnumber && (
+                <CampoError>{errores.gidnumber}</CampoError>
               )}
             </div>
 
-            {/* PROFESORES ~ responsables_uids */}
-            <MultiSelectProfesores
-              value={profesoresSeleccionados}
-              onChange={setProfesoresSeleccionados}
-            />
-            {errores.responsables_uids && (
-              <p className="text-red-500 text-sm">
-                {errores.responsables_uids}
-              </p>
-            )}
+            {/* Profesores */}
+            <div className="space-y-1">
+              <MultiSelectProfesores
+                value={profesoresSeleccionados}
+                onChange={setProfesoresSeleccionados}
+              />
+              {errores.responsables_uids && (
+                <CampoError>{errores.responsables_uids}</CampoError>
+              )}
+            </div>
 
-            {/* CURSOS ~ cursos_gids */}
+            {/* Cursos */}
             <div className="space-y-1">
               <Label>Cursos participantes</Label>
               <MultiSelect
@@ -268,11 +293,11 @@ export function DialogoInsertarExtraescolar({
                 placeholder="Seleccionar cursos"
               />
               {errores.cursos_gids && (
-                <p className="text-red-500 text-sm">{errores.cursos_gids}</p>
+                <CampoError>{errores.cursos_gids}</CampoError>
               )}
             </div>
 
-            {/* TIPO */}
+            {/* Tipo de actividad */}
             <div className="space-y-1">
               <Label>Tipo de actividad</Label>
               <Select value={tipo} onValueChange={setTipo}>
@@ -280,13 +305,17 @@ export function DialogoInsertarExtraescolar({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="complementaria">Actividad complementaria</SelectItem>
-                  <SelectItem value="extraescolar">Actividad extraescolar</SelectItem>
+                  <SelectItem value="complementaria">
+                    Actividad complementaria
+                  </SelectItem>
+                  <SelectItem value="extraescolar">
+                    Actividad extraescolar
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* FECHAS ~ fecha_inicio / fecha_fin */}
+            {/* Fechas */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>Fecha inicio</Label>
@@ -294,9 +323,10 @@ export function DialogoInsertarExtraescolar({
                   type="date"
                   value={fechaInicio}
                   onChange={(e) => setFechaInicio(e.target.value)}
+                  className={errores.fecha_inicio ? "border-red-500" : ""}
                 />
                 {errores.fecha_inicio && (
-                  <p className="text-red-500 text-sm">{errores.fecha_inicio}</p>
+                  <CampoError>{errores.fecha_inicio}</CampoError>
                 )}
               </div>
 
@@ -306,19 +336,23 @@ export function DialogoInsertarExtraescolar({
                   type="date"
                   value={fechaFin}
                   onChange={(e) => setFechaFin(e.target.value)}
+                  className={errores.fecha_fin ? "border-red-500" : ""}
                 />
                 {errores.fecha_fin && (
-                  <p className="text-red-500 text-sm">{errores.fecha_fin}</p>
+                  <CampoError>{errores.fecha_fin}</CampoError>
                 )}
               </div>
             </div>
 
-            {/* PERIODOS (solo complementaria) */}
+            {/* Periodos */}
             {tipo === "complementaria" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label>Periodo inicio</Label>
-                  <Select value={periodoInicio} onValueChange={setPeriodoInicio}>
+                  <Select
+                    value={periodoInicio}
+                    onValueChange={setPeriodoInicio}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -352,23 +386,25 @@ export function DialogoInsertarExtraescolar({
           </div>
 
           {/* ===============================
-              PARTE DERECHA (MAPA)
+              Parte derecha: Mapa
           =============================== */}
           <div className="flex flex-col justify-center space-y-3">
-            <Label>Ubicación / Lugar</Label>
-            <Autocomplete
-              value={ubicacion}
-              placeholder="Nombre de la localidad o lugar..."
-              buscar={buscarLugar}
-              onChange={setUbicacion}
-              onSelect={(lugar) => {
-                setUbicacion(lugar.label);
-                setCoords({ lat: lugar.lat, lng: lugar.lng });
-              }}
-            />
-            {errores.ubicacion && (
-              <p className="text-red-500 text-sm">{errores.ubicacion}</p>
-            )}
+            <div className="space-y-1">
+              <Label>Ubicación / Lugar</Label>
+              <Autocomplete
+                value={ubicacion}
+                placeholder="Nombre de la localidad o lugar..."
+                buscar={buscarLugar}
+                onChange={setUbicacion}
+                onSelect={(lugar) => {
+                  setUbicacion(lugar.label);
+                  setCoords({ lat: lugar.lat, lng: lugar.lng });
+                }}
+              />
+              {errores.ubicacion && (
+                <CampoError>{errores.ubicacion}</CampoError>
+              )}
+            </div>
 
             <MapContainer
               center={coords}
@@ -377,7 +413,6 @@ export function DialogoInsertarExtraescolar({
               scrollWheelZoom={true}
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
               <Marker
                 position={coords}
                 draggable={true}
@@ -385,7 +420,6 @@ export function DialogoInsertarExtraescolar({
               >
                 <Popup>Arrastra para ajustar la ubicación</Popup>
               </Marker>
-
               <ClickHandler setCoords={setCoords} setUbicacion={setUbicacion} />
               <SetViewOnChange coords={coords} />
             </MapContainer>

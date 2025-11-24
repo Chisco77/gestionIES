@@ -103,7 +103,7 @@ export default function Header() {
       {/* DERECHA: usuario + logout */}
       <div className="ml-auto flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{user?.username}</span>
+          <span className="text-sm font-medium">{user?.givenName} {user?.sn} ({user?.username})</span>
           <User className="h-5 w-5 text-gray-500" />
         </div>
         <Power

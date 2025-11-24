@@ -1,28 +1,34 @@
-// src/schemas/extraescolares.js
 import { z } from "zod";
 
 export const schemaExtraescolar = z.object({
-  titulo: z.string().optional(),
+  titulo: z.string().min(3, "El título es obligatorio"),
   descripcion: z
     .string()
     .min(25, "La descripción debe tener al menos 25 caracteres"),
-  departamento: z.string().nonempty("Debe seleccionar un departamento"),
-  fechaInicio: z.string().nonempty("Debe indicar la fecha de inicio"),
-  fechaFin: z
-    .string()
-    .nonempty("Debe indicar la fecha de fin"),
-  cursosSeleccionados: z
-    .array(z.string())
-    .min(1, "Debe seleccionar al menos un curso"),
-  profesoresSeleccionados: z
+  gidnumber: z.number().min(1, "Debe seleccionar un departamento"),
+
+  fecha_inicio: z.string().nonempty("Debe indicar la fecha de inicio"),
+  fecha_fin: z.string().nonempty("Debe indicar la fecha de fin"),
+
+  cursos_gids: z.array(z.string()).min(1, "Debe seleccionar al menos un curso"),
+  responsables_uids: z
     .array(z.string())
     .min(1, "Debe seleccionar al menos un profesor"),
+
   ubicacion: z.string().nonempty("La ubicación es obligatoria"),
+  tipo: z.enum(["complementaria", "extraescolar"]),
+
+  idperiodo_inicio: z.number().optional(),
+  idperiodo_fin: z.number().optional(),
+
+  coords: z.object({
+    lat: z.number(),
+    lng: z.number(),
+  }),
 }).refine(
-  (data) =>
-    !data.fechaFin || !data.fechaInicio || new Date(data.fechaFin) >= new Date(data.fechaInicio),
+  (data) => new Date(data.fecha_fin) >= new Date(data.fecha_inicio),
   {
     message: "La fecha de fin no puede ser anterior a la fecha de inicio",
-    path: ["fechaFin"],
+    path: ["fecha_fin"],
   }
 );

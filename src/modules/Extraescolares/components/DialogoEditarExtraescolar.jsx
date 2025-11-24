@@ -52,8 +52,9 @@ async function reverseGeocode({ lat, lng }) {
   }
 }
 
-function ClickHandler({ setCoords, setUbicacion }) {
+function ClickHandler({ setCoords, setUbicacion, disabled }) {
   useMapEvent("click", async (e) => {
+    if (disabled) return;
     const { lat, lng } = e.latlng;
     setCoords({ lat, lng });
     const direccion = await reverseGeocode({ lat, lng });
@@ -95,7 +96,12 @@ export function DialogoEditarExtraescolar({
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
 
-  // Cargar datos de la actividad al abrir el diálogo
+  // --- Determina permisos ---
+  const esPropietario = user.username === actividad?.uid;
+  const editableCamposGenerales = esPropietario && actividad?.estado === 0; // fechas, periodos, tipo, ubicación
+  const editableCamposBasicos = esPropietario; // título, descripción, departamento, cursos, profesores
+
+  // Cargar datos de la actividad
   useEffect(() => {
     if (!actividad) return;
 
@@ -130,7 +136,7 @@ export function DialogoEditarExtraescolar({
     setCoords(actividad.coords || { lat: 40.4168, lng: -3.7038 });
   }, [actividad, periodos, departamentos, cursos]);
 
-  // --- Mutation para actualizar actividad ---
+  // --- Mutation ---
   const mutation = useMutation({
     mutationFn: async (datos) => {
       const API_URL = import.meta.env.VITE_API_URL;
@@ -146,10 +152,9 @@ export function DialogoEditarExtraescolar({
       return json.actividad;
     },
     onSuccess: (actividad) => {
-      // Actualizar panel
       queryClient.invalidateQueries(["extraescolares", "uid", user.uid]);
       queryClient.invalidateQueries(["extraescolares", "all"]);
-      toast.success ("Extraescolar actualizada");
+      toast.success("Extraescolar actualizada");
       if (onGuardado) onGuardado(actividad);
       onClose();
     },
@@ -191,7 +196,34 @@ export function DialogoEditarExtraescolar({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 py-5">
+        {/* Estado centrado */}
+        {actividad && (
+          <div className="w-full flex justify-center my-1">
+            {(() => {
+              const estados = {
+                0: {
+                  text: "Pendiente",
+                  color: "text-yellow-600 bg-yellow-100",
+                },
+                1: { text: "Aceptada", color: "text-green-600 bg-green-100" },
+                2: { text: "Rechazada", color: "text-red-600 bg-red-100" },
+              };
+              const estado = estados[actividad.estado] || {
+                text: "Desconocido",
+                color: "text-gray-600 bg-gray-100",
+              };
+              return (
+                <span
+                  className={`${estado.color} px-3 py-1 rounded-full font-semibold`}
+                >
+                  {estado.text}
+                </span>
+              );
+            })()}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 py-1">
           {/* Izquierda */}
           <div className="space-y-4">
             <div className="space-y-1">
@@ -199,18 +231,26 @@ export function DialogoEditarExtraescolar({
               <Input
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
+                disabled={!editableCamposBasicos}
               />
             </div>
+
             <div className="space-y-1">
               <Label>Descripción</Label>
               <Textarea
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
+                disabled={!editableCamposBasicos}
               />
             </div>
+
             <div className="space-y-1">
               <Label>Departamento organizador</Label>
-              <Select value={departamento} onValueChange={setDepartamento}>
+              <Select
+                value={departamento}
+                onValueChange={setDepartamento}
+                disabled={!editableCamposBasicos}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -227,6 +267,7 @@ export function DialogoEditarExtraescolar({
             <MultiSelectProfesores
               value={profesoresSeleccionados}
               onChange={setProfesoresSeleccionados}
+              disabled={!editableCamposBasicos}
             />
 
             <div className="space-y-2">
@@ -238,12 +279,17 @@ export function DialogoEditarExtraescolar({
                   value: String(c.gid),
                   label: c.nombre,
                 }))}
+                disabled={!editableCamposBasicos}
               />
             </div>
 
             <div className="space-y-1">
               <Label>Tipo</Label>
-              <Select value={tipo} onValueChange={setTipo}>
+              <Select
+                value={tipo}
+                onValueChange={setTipo}
+                disabled={!editableCamposGenerales}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -261,6 +307,7 @@ export function DialogoEditarExtraescolar({
                   type="date"
                   value={fechaInicio}
                   onChange={(e) => setFechaInicio(e.target.value)}
+                  disabled={!editableCamposGenerales}
                 />
               </div>
               <div>
@@ -269,6 +316,7 @@ export function DialogoEditarExtraescolar({
                   type="date"
                   value={fechaFin}
                   onChange={(e) => setFechaFin(e.target.value)}
+                  disabled={!editableCamposGenerales}
                 />
               </div>
             </div>
@@ -280,6 +328,7 @@ export function DialogoEditarExtraescolar({
                   <Select
                     value={periodoInicio}
                     onValueChange={setPeriodoInicio}
+                    disabled={!editableCamposGenerales}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -295,7 +344,11 @@ export function DialogoEditarExtraescolar({
                 </div>
                 <div>
                   <Label>Periodo fin</Label>
-                  <Select value={periodoFin} onValueChange={setPeriodoFin}>
+                  <Select
+                    value={periodoFin}
+                    onValueChange={setPeriodoFin}
+                    disabled={!editableCamposGenerales}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -320,9 +373,11 @@ export function DialogoEditarExtraescolar({
               onChange={setUbicacion}
               buscar={buscarLugar}
               onSelect={(lugar) => {
+                if (!editableCamposGenerales) return;
                 setUbicacion(lugar.label);
                 setCoords({ lat: lugar.lat, lng: lugar.lng });
               }}
+              disabled={!editableCamposGenerales}
             />
             <MapContainer
               center={coords}
@@ -333,9 +388,10 @@ export function DialogoEditarExtraescolar({
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <Marker
                 position={coords}
-                draggable
+                draggable={editableCamposGenerales}
                 eventHandlers={{
                   dragend: async (e) => {
+                    if (!editableCamposGenerales) return;
                     const { lat, lng } = e.target.getLatLng();
                     setCoords({ lat, lng });
                     const dir = await reverseGeocode({ lat, lng });
@@ -345,7 +401,11 @@ export function DialogoEditarExtraescolar({
               >
                 <Popup>Mueve el marcador</Popup>
               </Marker>
-              <ClickHandler setCoords={setCoords} setUbicacion={setUbicacion} />
+              <ClickHandler
+                setCoords={setCoords}
+                setUbicacion={setUbicacion}
+                disabled={!editableCamposGenerales}
+              />
               <SetViewOnChange coords={coords} />
             </MapContainer>
           </div>
@@ -355,7 +415,7 @@ export function DialogoEditarExtraescolar({
           <Button
             variant="outline"
             onClick={handleGuardar}
-            disabled={mutation.isLoading}
+            disabled={!esPropietario || mutation.isLoading}
           >
             {mutation.isLoading ? "Guardando..." : "Guardar cambios"}
           </Button>

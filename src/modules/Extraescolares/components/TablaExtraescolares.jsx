@@ -1,5 +1,3 @@
-// TablaExtraescolares.jsx
-
 import {
   flexRender,
   getCoreRowModel,
@@ -30,7 +28,6 @@ import {
   Check,
   X,
   Pencil,
-  PlusCircle,
 } from "lucide-react";
 
 import { es } from "date-fns/locale";
@@ -55,28 +52,29 @@ import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { useExtraescolaresAll } from "@/hooks/Extraescolares/useExtraescolaresAll";
 
-export function TablaExtraescolares({ user }) {
+export function TablaExtraescolares({ user, fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const API_URL = import.meta.env.VITE_API_URL;
-  
+
   // Estados de diálogos
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
-
   const [dialogConfirmOpen, setDialogConfirmOpen] = useState(false);
   const [seleccionado, setSeleccionado] = useState(null);
   const [accion, setAccion] = useState(null);
 
+  // Hooks de datos
   const { data: departamentos = [] } = useDepartamentosLdap();
   const { data: cursos = [] } = useCursosLdap();
   const { data: periodos = [] } = usePeriodosHorarios();
   const { data: extraescolaresTodas = [] } = useExtraescolaresAll();
 
+  // Tabla
   const table = useReactTable({
-     data: extraescolaresTodas,
+    data: extraescolaresTodas,
     columns: [
       ...columnsExtraescolares(cursos),
       {
@@ -96,7 +94,6 @@ export function TablaExtraescolares({ user }) {
                 >
                   <Check size={16} />
                 </Button>
-
                 <Button
                   size="icon"
                   variant="ghost"
@@ -107,7 +104,6 @@ export function TablaExtraescolares({ user }) {
                 </Button>
               </>
             )}
-
             <Button
               size="icon"
               variant="ghost"
@@ -129,12 +125,28 @@ export function TablaExtraescolares({ user }) {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: { pageIndex: 0, pageSize: 6 },
-    },
+    initialState: { pagination: { pageIndex: 0, pageSize: 6 } },
   });
 
-  // ----- Confirmar aceptar / rechazar ------
+  // ----- Actualizamos el filtro de rango cuando cambia la prop fecha -----
+  useEffect(() => {
+    if (fecha) {
+      setFechaDesde(fecha);
+      setFechaHasta(fecha);
+    } else {
+      setFechaDesde("");
+      setFechaHasta("");
+    }
+  }, [fecha]);
+
+  // ----- Aplicamos el filtro de rango a la columna -----
+  useEffect(() => {
+    table
+      .getColumn("fecha_inicio")
+      ?.setFilterValue({ desde: fechaDesde, hasta: fechaHasta });
+  }, [fechaDesde, fechaHasta, table]);
+
+  // ----- Confirmar aceptar / rechazar -----
   const handleAccion = (item, tipo) => {
     setSeleccionado(item);
     setAccion(tipo);
@@ -143,7 +155,6 @@ export function TablaExtraescolares({ user }) {
 
   const confirmarAccion = async () => {
     if (!seleccionado) return;
-
     const nuevoEstado = accion === "aceptar" ? 1 : 2;
 
     try {
@@ -156,30 +167,19 @@ export function TablaExtraescolares({ user }) {
           body: JSON.stringify({ estado: nuevoEstado }),
         }
       );
-
       const r = await res.json();
       if (!res.ok) {
         toast.error(r.error || "Error al actualizar");
         return;
       }
-
       toast.success(
         nuevoEstado === 1 ? "Actividad aceptada" : "Actividad rechazada"
       );
-
-      // React Query refrescará datos desde el diálogo
       setDialogConfirmOpen(false);
     } catch (e) {
       toast.error("Error de conexión");
     }
   };
-
-  // ----- Filtros de fechas ------
-  useEffect(() => {
-    table
-      .getColumn("fecha_inicio")
-      ?.setFilterValue({ desde: fechaDesde, hasta: fechaHasta });
-  }, [fechaDesde, fechaHasta]);
 
   const formatLocalDate = (d) => d.toLocaleDateString("sv-SE");
 
@@ -383,7 +383,7 @@ export function TablaExtraescolares({ user }) {
         </div>
       </div>
 
-      {/* --- DIÁLOGO EDITAR --- */}
+      {/* DIÁLOGOS */}
       {editOpen && editItem && (
         <DialogoEditarExtraescolar
           open={editOpen}
