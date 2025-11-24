@@ -75,9 +75,8 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-function SidebarComponent({ onOpenEtiquetas, ...props }) {
+function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
   const navigate = useNavigate();
-  const [openEtiquetas, setOpenEtiquetas] = React.useState(false);
   const { user, setUser, loading } = useAuth();
 
   // Menús por perfil con iconos mejorados
@@ -137,12 +136,17 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
         items: [
           { title: "Perfiles de Usuario", url: "/perfiles" },
           { title: "Estancias", url: "/estancias" },
-          { title: "Reglas Asuntos Propios", url: "/asuntos_restricciones" },
+          { title: "Avisos", url: "/avisos", icon: Building2 },
+
+          {
+            title: "Reglas Asuntos Propios",
+            url: "#",
+            onClick: () => onOpenRestricciones(),
+          },
           {
             title: "Etiquetas genéricas",
             url: "#",
-            onClick: () => setOpenEtiquetas(true),
-            icon: Tag,
+            onClick: () => onOpenEtiquetas(),
           },
         ],
       },
@@ -254,6 +258,8 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
             icon: ListChecks,
           },
           { title: "Estancias", url: "/estancias", icon: Building2 },
+          { title: "Avisos", url: "/avisos", icon: Building2 },
+
           {
             title: "Etiquetas genéricas",
             url: "#",
@@ -305,14 +311,6 @@ function SidebarComponent({ onOpenEtiquetas, ...props }) {
   };
 
   const navMain = user ? (menusPorPerfil[user.perfil] ?? []) : [];
-
-  // Cuando se abre etiquetas, notificar al padre
-  React.useEffect(() => {
-    if (openEtiquetas && onOpenEtiquetas) {
-      onOpenEtiquetas();
-      setOpenEtiquetas(false);
-    }
-  }, [openEtiquetas, onOpenEtiquetas]);
 
   return (
     <Sidebar collapsible="icon" {...props}>

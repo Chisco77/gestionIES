@@ -38,11 +38,10 @@ import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DialogoEliminarRango } from "./DialogoEliminarRango";
 
-export function DialogoAsuntosRestricciones() {
+export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
   const location = useLocation();
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const [open, setOpen] = useState(true);
   const [restricciones, setRestricciones] = useState({
     asuntosDisponibles: 0,
     maxPorDia: 0,
@@ -64,12 +63,11 @@ export function DialogoAsuntosRestricciones() {
   const [cargandoRangos, setCargandoRangos] = useState(false);
 
   useEffect(() => {
-    setOpen(true);
     if (open) {
       fetchRestricciones();
       fetchRangos();
     }
-  }, [location.key]);
+  }, [open]);
 
   const fetchRestricciones = async () => {
     try {
@@ -136,14 +134,14 @@ export function DialogoAsuntosRestricciones() {
       if (!res.ok) throw new Error("Error al guardar restricciones");
 
       toast.success("Restricciones de asuntos propios guardadas correctamente");
-      setOpen(false);
+      onOpenChange(false);
     } catch (err) {
       console.error(err);
       toast.error("Error al guardar restricciones de asuntos propios");
     }
   };
 
-  const handleCancelar = () => setOpen(false);
+  const handleCancelar = () => onOpenChange(false);
 
   const handleAddRango = async () => {
     if (!nuevoRango.inicio || !nuevoRango.fin) {
@@ -193,7 +191,7 @@ export function DialogoAsuntosRestricciones() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen} modal={true}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogContent
         className="p-0 rounded-lg h-[550px] flex flex-col"
         onInteractOutside={(e) => e.preventDefault()}
@@ -418,7 +416,6 @@ export function DialogoAsuntosRestricciones() {
         </Card>
       </DialogContent>
 
-      
       {rangoAEliminar && (
         <DialogoEliminarRango
           rango={rangoAEliminar}

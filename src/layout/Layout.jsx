@@ -47,14 +47,14 @@ import Header from "./Header";
 import { DialogoEtiquetasGenericas } from "@/modules/Utilidades/components/DialogoEtiquetasGenericas";
 import { useSidebarContext } from "@/context/SidebarContext";
 
+import { DialogoAsuntosRestricciones } from "../modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
+
 export default function Layout(props) {
   const [openEtiquetas, setOpenEtiquetas] = useState(false);
+  const [openRestricciones, setOpenRestricciones] = useState(false);
+
   const location = useLocation();
   const { setTituloActivo } = useSidebarContext();
-
-  const handleOpenEtiquetas = useCallback(() => {
-    setOpenEtiquetas(true);
-  }, []);
 
   useEffect(() => {
     const pathToTitleMap = {
@@ -86,10 +86,19 @@ export default function Layout(props) {
 
   return (
     <SidebarProvider>
-      <Sidebar {...props} onOpenEtiquetas={handleOpenEtiquetas} />
+      <Sidebar
+        onOpenRestricciones={() => setOpenRestricciones(true)}
+        onOpenEtiquetas={() => setOpenEtiquetas(true)}
+      />
+
       <SidebarInset>
         <Header />
         {!openEtiquetas && <Outlet />}
+        <DialogoAsuntosRestricciones
+          open={openRestricciones}
+          onOpenChange={setOpenRestricciones}
+        />
+
         <DialogoEtiquetasGenericas
           open={openEtiquetas}
           onOpenChange={setOpenEtiquetas}

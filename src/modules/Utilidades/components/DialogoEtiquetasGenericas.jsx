@@ -217,7 +217,7 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
               try {
                 await generatePdfLabels();
                 setShowSuccessToast(true);
-                onOpenChange?.(false);
+                onOpenChange(false);
               } finally {
                 setLoading(false);
                 setProgress(0);

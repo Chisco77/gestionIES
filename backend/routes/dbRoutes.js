@@ -27,6 +27,15 @@ const {
   getPeriodosHorarios,
 } = require("../controllers/db/periodosHorariosController");
 
+// --- Controlador de avisos ---
+const {
+  getAvisos,
+  insertAviso,
+  updateAviso,
+  deleteAviso,
+} = require("../controllers/db/avisosController");
+
+
 // --- Controlador de Extraescolares ---
 const {
   getExtraescolaresEnriquecidos,
@@ -241,5 +250,14 @@ router.post("/extraescolares", insertExtraescolar);
 router.put("/extraescolares/:id", updateExtraescolar);          // <-- ruta para actualizar toda la actividad
 router.put("/extraescolares/:id/estado", updateEstadoExtraescolar);
 router.delete("/extraescolares/:id", deleteExtraescolar);
+
+// ================================================================
+//   Rutas de Avisos
+// ================================================================
+router.get("/avisos", getAvisos);           // ?modulo=extraescolares
+router.post("/avisos", insertAviso);
+router.put("/avisos/:id", updateAviso);
+router.delete("/avisos/:id", deleteAviso);
+
 
 module.exports = router;

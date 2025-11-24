@@ -41,6 +41,7 @@ import { AsuntosPropiosIndex } from "./modules/AsuntosPropios/pages/AsuntosPropi
 import { ReservasEstanciasIndex } from "./modules/ReservasEstancias/pages/ReservasEstanciasIndex";
 import { DialogoEtiquetasGenericas } from "./modules/Utilidades/components/DialogoEtiquetasGenericas";
 import { ExtraescolaresIndex } from "./modules/Extraescolares/pages/ExtraescolaresIndex";
+import { AvisosIndex } from "./modules/Avisos/pages/AvisosIndex";
 
 const queryClient = new QueryClient();
 
@@ -103,14 +104,11 @@ const router = createBrowserRouter(
         },
         { path: "perfiles", element: <PerfilesUsuarioIndex /> },
         { path: "estancias", element: <EstanciasIndex /> },
-        {
-          path: "asuntos_restricciones",
-          element: <DialogoAsuntosRestricciones />,
-        },
-        { path: "etiquetas_genericas", element: <DialogoEtiquetasGenericas /> },
+
         { path: "asuntos_propios", element: <AsuntosPropiosIndex /> },
         { path: "extraescolares", element: <ExtraescolaresIndex /> },
         { path: "reservasEstancias", element: <ReservasEstanciasIndex /> },
+        { path: "avisos", element: <AvisosIndex /> },
       ],
     },
   ],
