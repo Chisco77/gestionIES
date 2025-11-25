@@ -1,5 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -17,7 +23,7 @@ export function DialogoEliminarAviso({ open, onClose, avisoSeleccionado }) {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Error al eliminar aviso");
-      return res.json();
+      return true;
     },
     onSuccess: () => {
       toast.success("Aviso eliminado correctamente");
@@ -36,19 +42,29 @@ export function DialogoEliminarAviso({ open, onClose, avisoSeleccionado }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Eliminar Aviso</DialogTitle>
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="p-0 overflow-hidden rounded-lg"
+      >
+        <DialogHeader className="bg-red-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+          <DialogTitle className="text-lg font-semibold text-center leading-snug">
+            Eliminar Aviso
+          </DialogTitle>
         </DialogHeader>
-
-        <div className="py-4">
-          ¿Seguro que deseas eliminar el aviso del módulo{" "}
-          <strong>{avisoSeleccionado?.modulo}</strong>?
+        <div className="text-sm text-gray-700 mb-4 space-y-2 px-6 pt-4">
+          <div className="py-4">
+            ¿Seguro que deseas eliminar el aviso del módulo{" "}
+            <strong>{avisoSeleccionado?.modulo}</strong>?
+          </div>
+          <div className="text-red-600 font-semibold mt-2">
+            Esta acción no se puede deshacer.
+          </div>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+        <DialogFooter className="px-6 py-4 bg-gray-50">
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
           <Button
             variant="destructive"
             onClick={handleEliminar}

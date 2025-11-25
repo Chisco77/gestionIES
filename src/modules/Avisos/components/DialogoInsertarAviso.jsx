@@ -13,6 +13,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
+
+
+import { toast } from "sonner";
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL.replace(/\/$/, "")}/db`
@@ -23,6 +27,13 @@ export function DialogoInsertarAviso({ open, onClose }) {
   const [emails, setEmails] = useState("");
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (open) {
+      setModulo("");
+      setEmails("");
+    }
+  }, [open]);
 
   const mutation = useMutation({
     mutationFn: async (newAviso) => {
@@ -61,13 +72,18 @@ export function DialogoInsertarAviso({ open, onClose }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Insertar Aviso</DialogTitle>
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="p-0 overflow-hidden rounded-lg"
+      >
+        <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+          <DialogTitle className="text-lg font-semibold text-center leading-snug">
+            Insertar Aviso
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="flex flex-col space-y-4 p-6">
           <div>
             <label className="block text-sm font-medium">Módulo</label>
             <Input
@@ -89,7 +105,7 @@ export function DialogoInsertarAviso({ open, onClose }) {
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 bg-gray-50">
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>

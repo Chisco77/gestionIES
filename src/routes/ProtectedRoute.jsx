@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Componente de ruta protegida para React Router.
  *
  * Funcionalidades:
@@ -29,7 +29,7 @@
  *
  */
 
-
+/*
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 const API_URL = import.meta.env.VITE_API_URL;
@@ -64,3 +64,29 @@ function ProtectedRoute({ children }) {
 }
 
 export default ProtectedRoute;
+*/
+
+// routes/ProtectedRoute.jsx
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+
+export default function ProtectedRoute({ children, perfilesPermitidos }) {
+  const { user, loading } = useAuth();
+
+  if (loading) return <div className="p-4 text-center">Cargando...</div>;
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  // Control de perfil
+  if (perfilesPermitidos && !perfilesPermitidos.includes(user.perfil)) {
+    return (
+      <div className="p-4 text-center">
+        No tienes permiso para acceder a esta página
+      </div>
+    );
+    // O redirigir al dashboard:
+    // return <Navigate to="/" replace />;
+  }
+
+  return children;
+}

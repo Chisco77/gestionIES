@@ -87,28 +87,130 @@ const router = createBrowserRouter(
         { path: "alumnos", element: <AlumnosIndex /> },
         { path: "profesores", element: <ProfesoresIndex /> },
         { path: "todos", element: <TodosIndex /> },
-        { path: "cursos", element: <CursosIndex /> },
-        { path: "libros", element: <LibrosIndex /> },
-        { path: "prestamos", element: <PrestamosAlumnosIndex /> },
-        { path: "prestamosProfesores", element: <PrestamosProfesoresIndex /> },
-        { path: "llavesPrestadas", element: <PrestamosLlavesIndex /> },
-        { path: "edicionPlanos", element: <PlanoEstanciasEdicion /> },
-        { path: "llavesPlantaBaja", element: <PlanoPlanta planta="baja" /> },
+        {
+          path: "cursos",
+          element: (
+            <ProtectedRoute
+              perfilesPermitidos={["administrador", "directiva", "educadora"]}
+            >
+              {" "}
+              <CursosIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "libros",
+          element: (
+            <ProtectedRoute
+              perfilesPermitidos={["administrador", "directiva", "educadora"]}
+            >
+              {" "}
+              <LibrosIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "prestamos",
+          element: (
+            <ProtectedRoute
+              perfilesPermitidos={["administrador", "directiva", "educadora"]}
+            >
+              {" "}
+              <PrestamosAlumnosIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "prestamosProfesores",
+          element: (
+            <ProtectedRoute
+              perfilesPermitidos={["administrador", "directiva", "educadora"]}
+            >
+              {" "}
+              <PrestamosProfesoresIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "llavesPrestadas",
+          element: (
+            <ProtectedRoute
+              perfilesPermitidos={["administrador", "directiva", "ordenanza"]}
+            >
+              {" "}
+              <PrestamosLlavesIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "edicionPlanos",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador"]}>
+              {" "}
+              <PlanoEstanciasEdicion />{" "}
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "llavesPlantaBaja",
+          element: (
+            <ProtectedRoute
+              perfilesPermitidos={["administrador", "directiva", "ordenanza"]}
+            >
+              <PlanoPlanta planta="baja" />{" "}
+            </ProtectedRoute>
+          ),
+        },
         {
           path: "llavesPlantaPrimera",
-          element: <PlanoPlanta planta="primera" />,
+          element: (
+            <ProtectedRoute
+              perfilesPermitidos={["administrador", "directiva", "ordenanza"]}
+            >
+              <PlanoPlanta planta="primera" />
+            </ProtectedRoute>
+          ),
         },
         {
           path: "llavesPlantaSegunda",
-          element: <PlanoPlanta planta="segunda" />,
+          element: (
+            <ProtectedRoute
+              perfilesPermitidos={["administrador", "directiva", "ordenanza"]}
+            >
+              <PlanoPlanta planta="segunda" />
+            </ProtectedRoute>
+          ),
         },
-        { path: "perfiles", element: <PerfilesUsuarioIndex /> },
-        { path: "estancias", element: <EstanciasIndex /> },
+        {
+          path: "perfiles",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+              <PerfilesUsuarioIndex />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "estancias",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+              {" "}
+              <EstanciasIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
 
         { path: "asuntos_propios", element: <AsuntosPropiosIndex /> },
         { path: "extraescolares", element: <ExtraescolaresIndex /> },
         { path: "reservasEstancias", element: <ReservasEstanciasIndex /> },
-        { path: "avisos", element: <AvisosIndex /> },
+        {
+          path: "avisos",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+              {" "}
+              <AvisosIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
       ],
     },
   ],

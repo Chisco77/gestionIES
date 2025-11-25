@@ -210,7 +210,7 @@ export function DialogoInsertarExtraescolar({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose} modal>
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
         className="p-0 overflow-hidden rounded-lg max-w-5xl w-full"

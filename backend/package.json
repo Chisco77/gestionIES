@@ -20,6 +20,7 @@
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.2",
     "ldapjs": "^3.0.7",
+    "nodemailer": "^7.0.10",
     "pg": "^8.16.3",
     "xml2js": "^0.6.2"
   },
