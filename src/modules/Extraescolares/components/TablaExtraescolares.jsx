@@ -189,8 +189,8 @@ export function TablaExtraescolares({ user, fecha }) {
   return (
     <div className="space-y-2">
       {/* FILTROS */}
-      <div className="p-2 border rounded-md bg-muted/40 space-y-3 text-sm">
-        <div className="flex flex-wrap gap-4 items-end">
+      <div className="p-2 border rounded-md space-y-3 bg-muted/40">
+       <div className="flex flex-wrap gap-4 items-end text-sm">
           <div>
             <label className="text-xs font-medium">Profesor</label>
             <Input
@@ -308,7 +308,7 @@ export function TablaExtraescolares({ user, fecha }) {
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-0.5 text-xs">
+                    <TableCell key={cell.id} className="py-0.5">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

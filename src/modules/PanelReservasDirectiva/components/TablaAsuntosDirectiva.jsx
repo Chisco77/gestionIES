@@ -46,8 +46,7 @@ import { toast } from "sonner";
 import { columnsAsuntos } from "./columns-asuntos";
 import { useAsuntosTodos } from "@/hooks/Asuntos/useAsuntosTodos";
 
-
-export function TablaAsuntosDirectiva() {
+export function TablaAsuntosDirectiva({ fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
@@ -60,7 +59,6 @@ export function TablaAsuntosDirectiva() {
   const [accion, setAccion] = useState(null); // "aceptar" o "rechazar"
 
   const { data: asuntosPropiosTodos = [] } = useAsuntosTodos();
-
 
   // Abrir diálogo al pinchar check o aspa
   const handleClick = (asunto, tipo) => {
@@ -110,7 +108,18 @@ export function TablaAsuntosDirectiva() {
       pagination: { pageIndex: 0, pageSize: 6 },
     },
   });
-  
+
+  // ----- Actualizamos el filtro de rango cuando cambia la prop fecha -----
+  useEffect(() => {
+    if (fecha) {
+      setFechaDesde(fecha);
+      setFechaHasta(fecha);
+    } else {
+      setFechaDesde("");
+      setFechaHasta("");
+    }
+  }, [fecha]);
+
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
 
@@ -162,7 +171,9 @@ export function TablaAsuntosDirectiva() {
     table
       .getColumn("fecha")
       ?.setFilterValue({ desde: fechaDesde, hasta: fechaHasta });
-  }, [fechaDesde, fechaHasta]);
+  }, [fechaDesde, fechaHasta, table]);
+
+
   const formatLocalDate = (d) => d.toLocaleDateString("sv-SE");
 
   return (

@@ -95,3 +95,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* === Celdas diagonales para días con extraescolares + asuntos === */
+
+.bg-diagonal-extra-asuntos {
+  position: relative;
+  overflow: hidden;
+  z-index: 0; /* base */
+}
+
+.bg-diagonal-extra-asuntos::before,
+.bg-diagonal-extra-asuntos::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1; /* ⬅️ Ahora SÍ quedan por encima del fondo del td */
+}
+
+/* Triángulo superior izquierdo → EXTRAESCOLARES (lila) */
+.bg-diagonal-extra-asuntos::before {
+  background: #f3e8ff; /* purple-100 */
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+/* Triángulo inferior derecho → ASUNTOS (verde) */
+.bg-diagonal-extra-asuntos::after {
+  background: #dcfce7; /* green-100 */
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}

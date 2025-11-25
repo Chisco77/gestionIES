@@ -5,12 +5,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TablaExtraescolares } from "@/modules/Extraescolares/components/TablaExtraescolares";
 
-
-export function PanelReservasDirectiva({ user }) {
+export function PanelReservasDirectiva({ user, fecha }) {
   const API_URL = import.meta.env.VITE_API_URL;
 
   const handleCambio = () => {};
-
 
   return (
     <Card className="shadow-lg rounded-2xl h-[480px] flex flex-col">
@@ -34,7 +32,7 @@ export function PanelReservasDirectiva({ user }) {
               value="asuntos"
               className="h-full overflow-y-auto pr-2"
             >
-              <TablaAsuntosDirectiva />
+              <TablaAsuntosDirectiva fecha={fecha} />
             </TabsContent>
 
             {/* Tabla de Extraescolares */}
@@ -42,9 +40,7 @@ export function PanelReservasDirectiva({ user }) {
               value="actividades"
               className="h-full overflow-y-auto pr-2"
             >
-              <TablaExtraescolares
-                user={user}
-              />
+              <TablaExtraescolares user={user} fecha={fecha} />
             </TabsContent>
           </div>
         </Tabs>
