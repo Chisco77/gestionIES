@@ -52,6 +52,13 @@ import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { useExtraescolaresAll } from "@/hooks/Extraescolares/useExtraescolaresAll";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 export function TablaExtraescolares({ user, fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -118,45 +125,88 @@ export function TablaExtraescolares({ user, fecha }) {
         header: "Acciones",
         cell: ({ row }) => (
           <div className="flex gap-2">
+            {/* ACEPTAR */}
             {(user.perfil === "administrador" ||
               user.perfil === "directiva" ||
               user.perfil === "extraescolares") && (
               <>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="text-green-600"
-                  onClick={() => handleAccion(row.original, "aceptar")}
-                >
-                  <Check size={16} />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="text-red-600"
-                  onClick={() => handleAccion(row.original, "rechazar")}
-                >
-                  <X size={16} />
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-green-600"
+                        onClick={() => handleAccion(row.original, "aceptar")}
+                      >
+                        <Check size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-green-500 text-white">
+                      <p>Aceptar actividad</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                {/* RECHAZAR */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-red-600"
+                        onClick={() => handleAccion(row.original, "rechazar")}
+                      >
+                        <X size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
+                      <p>Rechazar actividad</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </>
             )}
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => {
-                setEditItem(row.original);
-                setEditOpen(true);
-              }}
-            >
-              <Pencil className="w-4 h-4 text-blue-600" />
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => handleGenerarExcel(row.original)}
-              className="p-0 h-auto bg-transparent hover:bg-transparent text-green-600 hover:text-green-700 font-bold text-xs"
-            >
-              XLS
-            </Button>
+
+            {/* EDITAR */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditItem(row.original);
+                      setEditOpen(true);
+                    }}
+                  >
+                    <Pencil className="w-4 h-4 text-blue-600" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-[#1DA1F2] text-white">
+                  <p>Editar actividad</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* XLS */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleGenerarExcel(row.original)}
+                    className="p-0 h-auto bg-transparent hover:bg-transparent text-green-600 hover:text-green-700 font-bold text-xs"
+                  >
+                    XLS
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-[#1DA1F2] text-white">
+                  <p>Generar Excel Dietas</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         ),
       },
