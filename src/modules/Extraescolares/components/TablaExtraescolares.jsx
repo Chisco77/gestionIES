@@ -72,6 +72,42 @@ export function TablaExtraescolares({ user, fecha }) {
   const { data: periodos = [] } = usePeriodosHorarios();
   const { data: extraescolaresTodas = [] } = useExtraescolaresAll();
 
+  const handleGenerarExcel = async (actividad) => {
+    try {
+      const res = await fetch(`${API_URL}/excel-dietas/generar-excel`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(actividad),
+      });
+
+      if (!res.ok) {
+        toast.error("Error generando el documento ZIP");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Dietas.zip`;
+      a.style.display = "none";
+      document.body.appendChild(a);
+
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+      toast.success("ZIP generado");
+    } catch (e) {
+      console.error(e);
+      toast.error("Error de conexión");
+    }
+  };
+
   // Tabla
   const table = useReactTable({
     data: extraescolaresTodas,
@@ -113,6 +149,13 @@ export function TablaExtraescolares({ user, fecha }) {
               }}
             >
               <Pencil className="w-4 h-4 text-blue-600" />
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => handleGenerarExcel(row.original)}
+              className="p-0 h-auto bg-transparent hover:bg-transparent text-green-600 hover:text-green-700 font-bold text-xs"
+            >
+              XLS
             </Button>
           </div>
         ),
@@ -190,7 +233,7 @@ export function TablaExtraescolares({ user, fecha }) {
     <div className="space-y-2">
       {/* FILTROS */}
       <div className="p-2 border rounded-md space-y-3 bg-muted/40">
-       <div className="flex flex-wrap gap-4 items-end text-sm">
+        <div className="flex flex-wrap gap-4 items-end text-sm">
           <div>
             <label className="text-xs font-medium">Profesor</label>
             <Input

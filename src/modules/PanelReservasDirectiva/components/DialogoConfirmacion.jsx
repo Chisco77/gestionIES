@@ -22,7 +22,6 @@ export function DialogoConfirmacion({
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-console.log ("Asunto: ", asunto);
   const mutation = useMutation({
     mutationFn: async () => {
       const nuevoEstado = esAceptar ? 1 : 2;

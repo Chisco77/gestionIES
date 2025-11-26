@@ -1,3 +1,5 @@
+// Muestra en el calendario TODAS las actividades extraescolares y TODOS los asuntos propios de todos los profesores
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";

@@ -1,17 +1,10 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+
 import { useAuth } from "@/context/AuthContext";
 import { PanelReservas } from "@/modules/Comunes/PanelReservas";
 import { DialogoInsertarAsunto } from "../components/DialogoInsertarAsunto";
 import { DialogoEditarAsunto } from "../components/DialogoEditarAsunto";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Label } from "@/components/ui/label";
+
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 
 import { useReservasUid } from "@/hooks/Reservas/useReservasUid";

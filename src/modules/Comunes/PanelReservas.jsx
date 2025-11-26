@@ -217,7 +217,6 @@ export function PanelReservas({ uid, loading = false }) {
                   generatePermisosPdf({ user, fecha: a.fecha });
                 }}
               >
-                <File className="w-4 h-4" />
                 <span className="text-xs font-bold">PDF</span>
               </button>
             </div>

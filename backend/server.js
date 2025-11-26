@@ -11,6 +11,7 @@ const https = require("https");
 const authRoutes = require("./routes/authRoutes");
 const ldapRoutes = require("./routes/ldapRoutes");
 const dbRoutes = require("./routes/dbRoutes");
+const excelDietasRoutes = require ("./routes/excelDietasRoutes");
 
 const app = express();
 
@@ -73,6 +74,8 @@ app.use(
 app.use("/api", authRoutes);
 app.use("/api/ldap", ldapRoutes);
 app.use("/api/db", dbRoutes);
+app.use("/api/excel-dietas", excelDietasRoutes);
+
 // sirve rutas de fotos de alumnos para que puedan obtenerse por GET
 app.use('/uploads/alumnos', express.static(path.join(__dirname, 'uploads/alumnos')));
 

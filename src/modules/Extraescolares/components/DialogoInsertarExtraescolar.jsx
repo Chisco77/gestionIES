@@ -73,6 +73,7 @@ function ClickHandler({ setCoords, setUbicacion }) {
     const { lat, lng } = e.latlng;
     setCoords({ lat, lng });
     const direccion = await reverseGeocode({ lat, lng });
+
     setUbicacion(direccion);
   });
   return null;
@@ -167,6 +168,7 @@ export function DialogoInsertarExtraescolar({
      Guardar actividad
   ============================= */
   const handleGuardar = () => {
+    // Construir objeto de datos
     const datos = {
       titulo,
       descripcion,
@@ -178,16 +180,17 @@ export function DialogoInsertarExtraescolar({
       ubicacion,
       tipo,
       idperiodo_inicio:
-        tipo === "complementaria" ? Number(periodoInicio) : null,
-      idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : null,
+        tipo === "complementaria" ? Number(periodoInicio) : undefined,
+      idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : undefined,
       coords,
       uid: user.username,
     };
 
-    // Validación Zod
+    // Validación con Zod
     const result = schemaExtraescolar.safeParse(datos);
 
     if (!result.success) {
+      // Mapear errores a estado local
       const nuevosErrores = {};
       result.error.errors.forEach((err) => {
         if (err.path?.length > 0) {
@@ -195,17 +198,23 @@ export function DialogoInsertarExtraescolar({
         }
       });
       setErrores(nuevosErrores);
+      console.log("Errores Zod:", nuevosErrores);
       return;
     }
 
+    // Limpiar errores previos
     setErrores({});
+
+    // Ejecutar la mutation
     mutation.mutate(datos);
   };
 
   const handleMarkerDrag = async (event) => {
     const { lat, lng } = event.target.getLatLng();
+
     setCoords({ lat, lng });
     const direccion = await reverseGeocode({ lat, lng });
+
     setUbicacion(direccion);
   };
 
@@ -397,6 +406,7 @@ export function DialogoInsertarExtraescolar({
                 buscar={buscarLugar}
                 onChange={setUbicacion}
                 onSelect={(lugar) => {
+
                   setUbicacion(lugar.label);
                   setCoords({ lat: lugar.lat, lng: lugar.lng });
                 }}

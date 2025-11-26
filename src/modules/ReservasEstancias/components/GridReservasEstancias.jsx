@@ -37,7 +37,6 @@ export function GridReservasEstancias({
     selectedDate,
     tipoEstancia
   );
-  console.log("Fecha seleccionada: ", fechaSeleccionada);
 
   // Filtrar estancias según tipo seleccionado
   useEffect(() => {

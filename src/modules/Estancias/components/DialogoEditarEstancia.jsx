@@ -69,7 +69,6 @@ export function DialogoEditarEstancia({
       setNumeroOrdenadores(estanciaSeleccionada.numero_ordenadores || "");
     }
   }, [estanciaSeleccionada]);
-  console.log(estanciaSeleccionada);
   const handleEditar = async () => {
     try {
       const res = await fetch(

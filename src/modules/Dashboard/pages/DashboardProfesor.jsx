@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { TablaExtraescolares } from "@/modules/Extraescolares/components/TablaExtraescolares";
 
 import { Card } from "@/components/ui/card";
+import { CalendarioProfesor } from "../components/CalendarioProfesor";
 
 // Para evitar problemas con el tiempo UTC
 const formatDateKey = (date) => {
@@ -27,8 +28,8 @@ export function DashboardProfesor() {
       {/* Grid con calendario y detalles */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Calendario */}
-        <CalendarioExtraescolares
-          uid={uid}
+
+        <CalendarioProfesor
           selectedDate={fechaSeleccionada}
           onSelectDate={(dateKey) => setFechaSeleccionada(dateKey)}
           disableInsert={true}
