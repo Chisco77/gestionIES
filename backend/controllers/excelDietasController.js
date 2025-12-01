@@ -8,7 +8,6 @@ const archiver = require("archiver");
 const generarDocumentoExcel = async (req, res) => {
   try {
     const actividad = req.body;
-    console.log("Actividad que llega al backend:", actividad);
 
     const plantillaPath = path.join(__dirname, "../uploads/DIETAS.xlsx");
 

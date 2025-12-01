@@ -290,7 +290,6 @@ async function getReservasFiltradas(req, res) {
     }
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
-    console.log ("Where: ", where);
     // 3️⃣ Obtener reservas
     const { rows: reservas } = await pool.query(
       `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion

@@ -259,5 +259,20 @@ router.post("/avisos", insertAviso);
 router.put("/avisos/:id", updateAviso);
 router.delete("/avisos/:id", deleteAviso);
 
+// ================================================================
+//   Rutas de Empleados (profesores)
+// ================================================================
+const {
+  getEmpleado,
+  updateEmpleado,
+  listEmpleados,
+} = require("../controllers/db/empleadosController");
+
+router.get("/empleados/:uid", getEmpleado);
+router.put("/empleados/:uid", updateEmpleado);
+router.get("/empleados", listEmpleados);
+
+
+
 
 module.exports = router;
