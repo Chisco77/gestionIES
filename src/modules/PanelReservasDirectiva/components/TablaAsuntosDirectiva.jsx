@@ -46,6 +46,13 @@ import { toast } from "sonner";
 import { columnsAsuntos } from "./columns-asuntos";
 import { useAsuntosTodos } from "@/hooks/Asuntos/useAsuntosTodos";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 export function TablaAsuntosDirectiva({ fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -77,22 +84,43 @@ export function TablaAsuntosDirectiva({ fecha }) {
         header: "Acciones",
         cell: ({ row }) => (
           <div className="flex gap-2">
-            <Button
-              size="icon"
-              variant="ghost"
-              className="text-green-600"
-              onClick={() => handleClick(row.original, "aceptar")}
-            >
-              <Check size={16} />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="text-red-600"
-              onClick={() => handleClick(row.original, "rechazar")}
-            >
-              <X size={16} />
-            </Button>
+            {/* ACEPTAR */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-green-600"
+                    onClick={() => handleClick(row.original, "aceptar")}
+                  >
+                    <Check size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-green-500 text-white">
+                  <p>Aceptar solicitud</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* RECHAZAR */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-red-600"
+                    onClick={() => handleClick(row.original, "rechazar")}
+                  >
+                    <X size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent  className="bg-red-600 text-white rounded-lg shadow-md">
+                  <p>Rechazar solicitud</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         ),
       },
@@ -172,7 +200,6 @@ export function TablaAsuntosDirectiva({ fecha }) {
       .getColumn("fecha")
       ?.setFilterValue({ desde: fechaDesde, hasta: fechaHasta });
   }, [fechaDesde, fechaHasta, table]);
-
 
   const formatLocalDate = (d) => d.toLocaleDateString("sv-SE");
 

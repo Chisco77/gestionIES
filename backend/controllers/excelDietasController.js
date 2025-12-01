@@ -1,62 +1,5 @@
 // controllers/excelDietasController.js
 
-/*const ExcelJS = require("exceljs");
-const path = require("path");
-const fs = require("fs");
-
-exports.generarDocumentoExcel = async (req, res) => {
-  try {
-    const actividad = req.body; 
-    // Ejemplo de actividad enviada:
-    // { id, nombreProfesor, titulo, fecha_inicio, fecha_fin, departamento, curso, descripcion, ... }
-    console.log ("Actiidad que llega al backend: ", actividad);
-
-    // 1. Ruta de plantilla
-    const plantillaPath = path.join(__dirname, "../uploads/DIETAS.xlsx");
-
-    // 2. Cargar Excel
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(plantillaPath);
-
-    // 3. Seleccionar hoja (puedes ajustar el nombre)
-    const hoja = workbook.getWorksheet("Actividad") || workbook.worksheets[0];
-
-    // 4. Rellenar celdas concretas (AJUSTA SEGÚN TU PLANTILLA)
-    hoja.getCell("B2").value = actividad.nombreProfesor || "";
-    hoja.getCell("B3").value = actividad.titulo || "";
-    hoja.getCell("B4").value = actividad.fecha_inicio || "";
-    hoja.getCell("B5").value = actividad.fecha_fin || "";
-    hoja.getCell("B6").value = actividad.departamento || "";
-    hoja.getCell("B7").value = actividad.curso || "";
-    hoja.getCell("B8").value = actividad.descripcion || "";
-
-    // 5. Guardar archivo temporal
-    const outputFile = `dietas_${actividad.id}.xlsx`;
-    const outputPath = path.join(__dirname, `../tmp/${outputFile}`);
-
-    await workbook.xlsx.writeFile(outputPath);
-
-    // 6. Enviar archivo al cliente para descarga
-    res.download(outputPath, outputFile, (err) => {
-      if (err) console.error("Error enviando archivo:", err);
-
-      // 7. Borrar archivo temporal después de enviarlo
-      setTimeout(() => {
-        try {
-          fs.unlinkSync(outputPath);
-        } catch (e) {
-          console.error("No se pudo borrar el archivo temporal:", e);
-        }
-      }, 5000);
-    });
-
-  } catch (err) {
-    console.error("Error en generarDocumentoExcel:", err);
-    res.status(500).json({ error: "Error al generar el Excel" });
-  }
-};
-*/
-
 const path = require("path");
 const fs = require("fs");
 const ExcelJS = require("exceljs");
@@ -65,7 +8,6 @@ const archiver = require("archiver");
 const generarDocumentoExcel = async (req, res) => {
   try {
     const actividad = req.body;
-    console.log("Actividad que llega al backend:", actividad);
 
     const plantillaPath = path.join(__dirname, "../uploads/DIETAS.xlsx");
 
@@ -101,7 +43,7 @@ const generarDocumentoExcel = async (req, res) => {
       }
 
       // Rellenar celdas
-      hoja.getCell("D3").value = ubicacion;
+      //hoja.getCell("D3").value = ubicacion;
       hoja.getCell("K3").value = nombreProfesor;
 
       // Nombre del archivo para este profesor

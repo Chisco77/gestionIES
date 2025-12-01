@@ -251,20 +251,19 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: ShieldCheck,
         items: [
-          { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
-          {
-            title: "Asuntos Propios",
-            url: "/asuntos_restricciones",
-            icon: ListChecks,
-          },
-          { title: "Estancias", url: "/estancias", icon: Building2 },
+          { title: "Perfiles de Usuario", url: "/perfiles" },
+          { title: "Estancias", url: "/estancias" },
           { title: "Avisos", url: "/avisos", icon: Building2 },
 
           {
+            title: "Reglas Asuntos Propios",
+            url: "#",
+            onClick: () => onOpenRestricciones(),
+          },
+          {
             title: "Etiquetas genéricas",
             url: "#",
-            onClick: () => setOpenEtiquetas(true),
-            icon: Tag,
+            onClick: () => onOpenEtiquetas(),
           },
         ],
       },

@@ -30,6 +30,8 @@ const { getRestriccionesAsuntos } = require("./restriccionesController");
 const { buscarPorUid } = require("../ldap/usuariosController");
 const mailer = require("../../mailer");
 
+const { obtenerEmpleado } = require("./empleadosController");
+
 /**
  * Obtener asuntos propios con filtros opcionales
  */
@@ -117,12 +119,10 @@ async function getAsuntosPropiosEnriquecidos(req, res) {
     res.json({ ok: true, asuntos: asuntosEnriquecidos });
   } catch (err) {
     console.error("[getAsuntosPropiosEnriquecidos] Error:", err);
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: "Error obteniendo asuntos propios enriquecidos",
-      });
+    res.status(500).json({
+      ok: false,
+      error: "Error obteniendo asuntos propios enriquecidos",
+    });
   }
 }
 
@@ -147,36 +147,38 @@ async function insertAsuntoPropio(req, res) {
 
     const diffDias = Math.ceil((fechaSolicitada - hoy) / (1000 * 60 * 60 * 24));
     if (diffDias < antelacion)
+      return res.status(400).json({
+        ok: false,
+        error: `Debes solicitar el asunto propio con al menos ${antelacion} días de antelación.`,
+      });
+
+    const empleado = await obtenerEmpleado(uid);
+    if (!empleado)
       return res
-        .status(400)
-        .json({
-          ok: false,
-          error: `Debes solicitar el asunto propio con al menos ${antelacion} días de antelación.`,
-        });
+        .status(404)
+        .json({ ok: false, error: "Empleado no encontrado" });
+
+    const maxDias = empleado.asuntos_propios; 
 
     const { rows: totalCurso } = await db.query(
       `SELECT COUNT(*)::int AS total FROM asuntos_propios WHERE uid = $1`,
       [uid]
     );
-    if (totalCurso[0].total >= dias)
-      return res
-        .status(400)
-        .json({
-          ok: false,
-          error: `Ya has solicitado el máximo de ${dias} días de asuntos propios este curso.`,
-        });
+    if (totalCurso[0].total >= maxDias)
+      return res.status(400).json({
+        ok: false,
+        error: `Ya has solicitado el máximo de ${maxDias} días de asuntos propios este curso.`,
+      });
 
     const { rows: concurrencia } = await db.query(
       `SELECT COUNT(*)::int AS total FROM asuntos_propios WHERE fecha = $1`,
       [fecha]
     );
     if (concurrencia[0].total >= concurrentes)
-      return res
-        .status(400)
-        .json({
-          ok: false,
-          error: `Ya hay ${concurrentes} profesores con asuntos propios ese día.`,
-        });
+      return res.status(400).json({
+        ok: false,
+        error: `Ya hay ${concurrentes} profesores con asuntos propios ese día.`,
+      });
 
     const { rows: diasCercanos } = await db.query(
       `SELECT fecha FROM asuntos_propios WHERE uid = $1 AND fecha BETWEEN ($2::date - INTERVAL '10 days') AND ($2::date + INTERVAL '10 days') ORDER BY fecha`,
@@ -198,12 +200,10 @@ async function insertAsuntoPropio(req, res) {
         maxConsecutivos = consecutivosActual;
     }
     if (maxConsecutivos > consecutivos)
-      return res
-        .status(400)
-        .json({
-          ok: false,
-          error: `No puedes solicitar más de ${consecutivos} días consecutivos de asuntos propios.`,
-        });
+      return res.status(400).json({
+        ok: false,
+        error: `No puedes solicitar más de ${consecutivos} días consecutivos de asuntos propios.`,
+      });
 
     const { rows } = await db.query(
       `INSERT INTO asuntos_propios (uid, fecha, descripcion) VALUES ($1, $2, $3) RETURNING id, uid, fecha, descripcion`,

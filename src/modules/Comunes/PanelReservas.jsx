@@ -19,6 +19,13 @@ import { toast } from "sonner"; // asegúrate de tenerlo importado
 import { generatePermisosPdf } from "@/utils/Informes";
 import { useAuth } from "@/context/AuthContext";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 export function PanelReservas({ uid, loading = false }) {
   // ===== Selección y diálogos =====
   const [reservaSeleccionada, setReservaSeleccionada] = useState(null);
@@ -136,7 +143,16 @@ export function PanelReservas({ uid, loading = false }) {
                 handleEliminarReserva(r);
               }}
             >
-              <Trash2 className="w-5 h-5" />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Trash2 className="w-5 h-5" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
+                    <p>Eliminar reserva</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </button>
           </div>
           <p>
@@ -192,7 +208,16 @@ export function PanelReservas({ uid, loading = false }) {
                 handleEliminarAsunto(a);
               }}
             >
-              <Trash2 className="w-5 h-5" />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Trash2 className="w-5 h-5" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
+                    <p>Eliminar asunto</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </button>
           </div>
 
@@ -209,16 +234,25 @@ export function PanelReservas({ uid, loading = false }) {
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                className="text-red-600 hover:text-red-800 flex items-center gap-1"
-                onClick={(e) => {
-                  e.stopPropagation(); // evita abrir el diálogo de edición
-                  generatePermisosPdf({ user, fecha: a.fecha });
-                }}
-              >
-                <span className="text-xs font-bold">PDF</span>
-              </button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-red-600 hover:text-red-800 flex items-center gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation(); // evita abrir el diálogo de edición
+                        generatePermisosPdf({ user, fecha: a.fecha });
+                      }}
+                    >
+                      <span className="text-xs font-bold">PDF</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-[#1DA1F2] text-white">
+                    <p>Generar PDF solicitud</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </Card>
@@ -266,7 +300,16 @@ export function PanelReservas({ uid, loading = false }) {
                 handleEliminarExtraescolar(a);
               }}
             >
-              <Trash2 className="w-5 h-5" />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Trash2 className="w-5 h-5" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
+                    <p>Eliminar actividad</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </button>
           </div>
           <div className="flex items-center gap-2 mt-1">
