@@ -85,8 +85,26 @@ const router = createBrowserRouter(
           element: <DashboardSelector />, // Dashboard dinámico
         },
         { path: "alumnos", element: <AlumnosIndex /> },
-        { path: "profesores", element: <ProfesoresIndex /> },
-        { path: "todos", element: <TodosIndex /> },
+        {
+          path: "profesores",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+              {" "}
+              <ProfesoresIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "todos",
+          element: (
+            <ProtectedRoute
+              perfilesPermitidos={["administrador", "directiva", "educadora"]}
+            >
+              {" "}
+              <TodosIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
         {
           path: "cursos",
           element: (

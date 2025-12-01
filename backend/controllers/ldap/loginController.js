@@ -97,8 +97,8 @@ exports.loginLdap = (req, res) => {
           .then(() =>
             console.log("🟢 Volcado completo ejecutado tras login de admin.")
           )
-          .catch((err) => console.error("❌ Error en volcado:", err));
-*/
+          .catch((err) => console.error("❌ Error en volcado:", err));*/
+
         searchRes.on("end", () => {
           client.unbind();
           return res.json({ message: "Login correcto (usuario admin)" });

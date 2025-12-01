@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,8 +17,20 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
+
 import { MultiSelect } from "@/components/ui/multiselect";
 import { MultiSelectProfesores } from "@/modules/Utilidades/components/MultiSelectProfesores";
+
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+import { TimePicker } from "@/components/ui/TimePicker";
+
 import {
   MapContainer,
   TileLayer,
@@ -27,28 +39,23 @@ import {
   useMapEvent,
   useMap,
 } from "react-leaflet";
+
 import { OpenStreetMapProvider } from "leaflet-geosearch";
-import { useAuth } from "@/context/AuthContext";
 import { Autocomplete } from "@/modules/Utilidades/components/Autocomplete";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
 import { useCursosLdap } from "@/hooks/useCursosLdap";
-
+import { format } from "date-fns";
 import { schemaExtraescolar } from "@/zod/extraescolares";
 
 const provider = new OpenStreetMapProvider();
 
-/* ============================
-   Componente de error
-============================ */
 function CampoError({ children }) {
   return <p className="text-red-600 text-sm mt-1">{children}</p>;
 }
 
-/* ============================
-   Funciones geolocalización
-============================ */
 const buscarLugar = async (query) => {
   if (!query || query.length < 3) return [];
   const resultados = await provider.search({ query });
@@ -65,15 +72,11 @@ async function reverseGeocode({ lat, lng }) {
   }
 }
 
-/* ============================
-   Componentes Map
-============================ */
 function ClickHandler({ setCoords, setUbicacion }) {
   useMapEvent("click", async (e) => {
     const { lat, lng } = e.latlng;
     setCoords({ lat, lng });
     const direccion = await reverseGeocode({ lat, lng });
-
     setUbicacion(direccion);
   });
   return null;
@@ -83,13 +86,10 @@ function SetViewOnChange({ coords }) {
   const map = useMap();
   useEffect(() => {
     if (map) map.setView([coords.lat, coords.lng], map.getZoom());
-  }, [coords, map]);
+  }, [coords]);
   return null;
 }
 
-/* ============================
-   Componente principal
-============================ */
 export function DialogoInsertarExtraescolar({
   open,
   onClose,
@@ -104,31 +104,37 @@ export function DialogoInsertarExtraescolar({
   const [descripcion, setDescripcion] = useState("");
   const [tipo, setTipo] = useState("complementaria");
   const [departamento, setDepartamento] = useState("");
+
+  const [fechaInicio, setFechaInicio] = useState(new Date());
+  const [fechaFin, setFechaFin] = useState(new Date());
+
+  const [horaInicio, setHoraInicio] = useState("09:00");
+  const [horaFin, setHoraFin] = useState("14:00");
+
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFin, setPeriodoFin] = useState("");
+
   const [cursosSeleccionados, setCursosSeleccionados] = useState([]);
   const [profesoresSeleccionados, setProfesoresSeleccionados] = useState([]);
+
   const [ubicacion, setUbicacion] = useState("");
   const [coords, setCoords] = useState({ lat: 40.4168, lng: -3.7038 });
-  const [fechaInicio, setFechaInicio] = useState(
-    fechaSeleccionada || "2025-03-10"
-  );
-  const [fechaFin, setFechaFin] = useState(fechaSeleccionada || "2025-03-15");
+
   const { data: departamentos = [] } = useDepartamentosLdap();
   const { data: cursos = [] } = useCursosLdap();
 
   const [errores, setErrores] = useState({});
 
-  // --- Inicialización de fechas ---
+  // Inicializar fechas si viene una seleccionada
   useEffect(() => {
     if (open && fechaSeleccionada) {
-      const f = fechaSeleccionada.split("T")[0];
+      const f = new Date(fechaSeleccionada);
       setFechaInicio(f);
       setFechaFin(f);
     }
   }, [open, fechaSeleccionada]);
 
-  // --- Inicializar periodos por defecto ---
+  // Inicializar periodos
   useEffect(() => {
     if (open && periodos.length > 0) {
       setPeriodoInicio(String(periodos[0].id));
@@ -136,7 +142,6 @@ export function DialogoInsertarExtraescolar({
     }
   }, [open, periodos]);
 
-  // --- Mutation React Query ---
   const mutation = useMutation({
     mutationFn: async (datos) => {
       const API_URL = import.meta.env.VITE_API_URL;
@@ -146,6 +151,7 @@ export function DialogoInsertarExtraescolar({
         credentials: "include",
         body: JSON.stringify(datos),
       });
+
       const json = await resp.json();
       if (!resp.ok || !json.ok)
         throw new Error(json.error || "Error guardando actividad");
@@ -154,67 +160,80 @@ export function DialogoInsertarExtraescolar({
     onSuccess: (actividad) => {
       queryClient.invalidateQueries(["extraescolares", "uid", user.username]);
       queryClient.invalidateQueries(["extraescolares", "all"]);
-      toast.success("Alta de actividad ", actividad.titulo);
-      if (onGuardado) onGuardado(actividad);
+      toast.success("Alta de actividad", actividad.titulo);
+      onGuardado?.(actividad);
       onClose();
     },
     onError: (err) => {
-      console.error("Error creando extraescolar:", err);
       toast.error(err.message || "Error guardando actividad");
     },
   });
 
-  /* ============================
-     Guardar actividad
-  ============================= */
   const handleGuardar = () => {
-    // Construir objeto de datos
+    let fechaInicioCompleta, fechaFinCompleta;
+
+    if (tipo === "extraescolar") {
+      const [hIni, mIni] = horaInicio.split(":").map(Number);
+      const [hFin, mFin] = horaFin.split(":").map(Number);
+
+      fechaInicioCompleta = new Date(fechaInicio);
+      fechaInicioCompleta.setHours(hIni, mIni, 0, 0);
+
+      fechaFinCompleta = new Date(fechaFin);
+      fechaFinCompleta.setHours(hFin, mFin, 0, 0);
+
+      // Validación estricta extraescolar
+      if (fechaFinCompleta <= fechaInicioCompleta) {
+        setErrores({
+          fecha_fin: "La fecha y hora de fin debe ser posterior a la de inicio",
+        });
+        return;
+      }
+    } else {
+      // Complementaria: solo fecha, sin validar horas
+      fechaInicioCompleta = new Date(fechaInicio);
+      fechaFinCompleta = new Date(fechaFin);
+
+      // Ajustar horas a 00:00 local
+      fechaInicioCompleta.setHours(0, 0, 0, 0);
+      fechaFinCompleta.setHours(0, 0, 0, 0);
+    }
+
     const datos = {
       titulo,
       descripcion,
-      gidnumber: departamento ? Number(departamento) : 0,
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin,
-      cursos_gids: cursosSeleccionados,
-      responsables_uids: profesoresSeleccionados,
-      ubicacion,
+      gidnumber: Number(departamento),
       tipo,
+      fecha_inicio: format(fechaInicioCompleta, "yyyy-MM-dd HH:mm:ss"),
+      fecha_fin: format(fechaFinCompleta, "yyyy-MM-dd HH:mm:ss"),
       idperiodo_inicio:
         tipo === "complementaria" ? Number(periodoInicio) : undefined,
       idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : undefined,
+      cursos_gids: cursosSeleccionados,
+      responsables_uids: profesoresSeleccionados,
+      ubicacion,
       coords,
       uid: user.username,
     };
 
-    // Validación con Zod
     const result = schemaExtraescolar.safeParse(datos);
-
     if (!result.success) {
-      // Mapear errores a estado local
       const nuevosErrores = {};
       result.error.errors.forEach((err) => {
-        if (err.path?.length > 0) {
-          nuevosErrores[err.path[0]] = err.message;
-        }
+        nuevosErrores[err.path[0]] = err.message;
       });
       setErrores(nuevosErrores);
-      console.log("Errores Zod:", nuevosErrores);
       return;
     }
 
-    // Limpiar errores previos
     setErrores({});
-
-    // Ejecutar la mutation
     mutation.mutate(datos);
   };
 
   const handleMarkerDrag = async (event) => {
     const { lat, lng } = event.target.getLatLng();
-
     setCoords({ lat, lng });
     const direccion = await reverseGeocode({ lat, lng });
-
     setUbicacion(direccion);
   };
 
@@ -231,9 +250,7 @@ export function DialogoInsertarExtraescolar({
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 py-5">
-          {/* ===============================
-              Parte izquierda
-          =============================== */}
+          {/* === PARTE IZQUIERDA === */}
           <div className="space-y-4">
             {/* Título */}
             <div className="space-y-1">
@@ -241,7 +258,7 @@ export function DialogoInsertarExtraescolar({
               <Input
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
-                className={errores.titulo ? "border-red-500" : ""}
+                className={errores.titulo && "border-red-500"}
               />
               {errores.titulo && <CampoError>{errores.titulo}</CampoError>}
             </div>
@@ -252,7 +269,7 @@ export function DialogoInsertarExtraescolar({
               <Textarea
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
-                className={errores.descripcion ? "border-red-500" : ""}
+                className={errores.descripcion && "border-red-500"}
               />
               {errores.descripcion && (
                 <CampoError>{errores.descripcion}</CampoError>
@@ -264,9 +281,9 @@ export function DialogoInsertarExtraescolar({
               <Label>Departamento organizador</Label>
               <Select value={departamento} onValueChange={setDepartamento}>
                 <SelectTrigger
-                  className={errores.gidnumber ? "border-red-500" : ""}
+                  className={errores.gidnumber && "border-red-500"}
                 >
-                  <SelectValue />
+                  <SelectValue placeholder="Seleccionar departamento" />
                 </SelectTrigger>
                 <SelectContent>
                   {departamentos.map((d) => (
@@ -287,9 +304,6 @@ export function DialogoInsertarExtraescolar({
                 value={profesoresSeleccionados}
                 onChange={setProfesoresSeleccionados}
               />
-              {errores.responsables_uids && (
-                <CampoError>{errores.responsables_uids}</CampoError>
-              )}
             </div>
 
             {/* Cursos */}
@@ -301,12 +315,9 @@ export function DialogoInsertarExtraescolar({
                 options={cursos.map((c) => ({ value: c.gid, label: c.nombre }))}
                 placeholder="Seleccionar cursos"
               />
-              {errores.cursos_gids && (
-                <CampoError>{errores.cursos_gids}</CampoError>
-              )}
             </div>
 
-            {/* Tipo de actividad */}
+            {/* Tipo */}
             <div className="space-y-1">
               <Label>Tipo de actividad</Label>
               <Select value={tipo} onValueChange={setTipo}>
@@ -324,33 +335,85 @@ export function DialogoInsertarExtraescolar({
               </Select>
             </div>
 
-            {/* Fechas */}
+            {/* === FECHA INICIO + HORA (solo si es extraescolar) === */}
             <div className="grid grid-cols-2 gap-4">
+              {/* FECHA INICIO — SIEMPRE */}
               <div className="space-y-1">
                 <Label>Fecha inicio</Label>
-                <Input
-                  type="date"
-                  value={fechaInicio}
-                  onChange={(e) => setFechaInicio(e.target.value)}
-                  className={errores.fecha_inicio ? "border-red-500" : ""}
-                />
-                {errores.fecha_inicio && (
-                  <CampoError>{errores.fecha_inicio}</CampoError>
-                )}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        errores.fecha_inicio && "border-red-500"
+                      )}
+                    >
+                      {fechaInicio
+                        ? format(fechaInicio, "dd/MM/yyyy")
+                        : "Seleccionar fecha"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="p-0">
+                    <Calendar
+                      mode="single"
+                      selected={fechaInicio}
+                      onSelect={setFechaInicio}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
+              {/* HORA INICIO — SOLO EXTRAESCOLAR */}
+              {tipo === "extraescolar" && (
+                <div className="space-y-1">
+                  <Label>Hora inicio</Label>
+                  <TimePicker value={horaInicio} onChange={setHoraInicio} />
+                </div>
+              )}
+            </div>
+
+            {/* === FECHA FIN + HORA (solo si es extraescolar) === */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* FECHA FIN — SIEMPRE */}
               <div className="space-y-1">
                 <Label>Fecha fin</Label>
-                <Input
-                  type="date"
-                  value={fechaFin}
-                  onChange={(e) => setFechaFin(e.target.value)}
-                  className={errores.fecha_fin ? "border-red-500" : ""}
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        errores.fecha_fin && "border-red-500"
+                      )}
+                    >
+                      {fechaFin
+                        ? format(fechaFin, "dd/MM/yyyy")
+                        : "Seleccionar fecha"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="p-0">
+                    <Calendar
+                      mode="single"
+                      selected={fechaFin}
+                      onSelect={setFechaFin}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
                 {errores.fecha_fin && (
                   <CampoError>{errores.fecha_fin}</CampoError>
                 )}
               </div>
+
+              {/* HORA FIN — SOLO EXTRAESCOLAR */}
+              {tipo === "extraescolar" && (
+                <div className="space-y-1">
+                  <Label>Hora fin</Label>
+                  <TimePicker value={horaFin} onChange={setHoraFin} />
+                </div>
+              )}
             </div>
 
             {/* Periodos */}
@@ -394,9 +457,7 @@ export function DialogoInsertarExtraescolar({
             )}
           </div>
 
-          {/* ===============================
-              Parte derecha: Mapa
-          =============================== */}
+          {/* === PARTE DERECHA: MAPA === */}
           <div className="flex flex-col justify-center space-y-3">
             <div className="space-y-1">
               <Label>Ubicación / Lugar</Label>
@@ -406,14 +467,10 @@ export function DialogoInsertarExtraescolar({
                 buscar={buscarLugar}
                 onChange={setUbicacion}
                 onSelect={(lugar) => {
-
                   setUbicacion(lugar.label);
                   setCoords({ lat: lugar.lat, lng: lugar.lng });
                 }}
               />
-              {errores.ubicacion && (
-                <CampoError>{errores.ubicacion}</CampoError>
-              )}
             </div>
 
             <MapContainer
@@ -430,6 +487,7 @@ export function DialogoInsertarExtraescolar({
               >
                 <Popup>Arrastra para ajustar la ubicación</Popup>
               </Marker>
+
               <ClickHandler setCoords={setCoords} setUbicacion={setUbicacion} />
               <SetViewOnChange coords={coords} />
             </MapContainer>

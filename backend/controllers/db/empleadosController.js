@@ -17,7 +17,7 @@ exports.insertEmpleado = async ({
   `;
 
   const params = [uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada];
-
+  console.log ("Consulta: ", query, "parámetros: ", params);
   try {
     const result = await db.query(query, params);
     return result.rows[0];

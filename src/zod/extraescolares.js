@@ -26,9 +26,15 @@ export const schemaExtraescolar = z.object({
     lng: z.number(),
   }),
 }).refine(
-  (data) => new Date(data.fecha_fin) >= new Date(data.fecha_inicio),
+  (data) => {
+    // Solo validar fecha_fin > fecha_inicio si es extraescolar
+    if (data.tipo === "extraescolar") {
+      return new Date(data.fecha_fin) >= new Date(data.fecha_inicio);
+    }
+    return true;
+  },
   {
-    message: "La fecha de fin no puede ser anterior a la fecha de inicio",
+    message: "La fecha y hora de fin debe ser posterior a la de inicio",
     path: ["fecha_fin"],
   }
 );

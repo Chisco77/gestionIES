@@ -57,6 +57,7 @@
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.2.0",
     "react-select": "^5.10.1",
+    "react-time-picker": "^8.0.2",
     "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "tabler": "^1.0.0",

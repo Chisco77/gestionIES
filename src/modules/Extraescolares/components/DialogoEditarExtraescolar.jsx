@@ -71,6 +71,27 @@ function SetViewOnChange({ coords }) {
   return null;
 }
 
+function parseFechaLocal(isoStr) {
+  if (!isoStr) return "";
+  const dt = new Date(isoStr);
+
+  const yyyy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function parseHoraLocal(isoStr) {
+  if (!isoStr) return "";
+  const dt = new Date(isoStr);
+
+  const hh = String(dt.getHours()).padStart(2, "0");
+  const mi = String(dt.getMinutes()).padStart(2, "0");
+
+  return `${hh}:${mi}`;
+}
+
 export function DialogoEditarExtraescolar({
   open,
   onClose,
@@ -93,6 +114,10 @@ export function DialogoEditarExtraescolar({
   const [profesoresSeleccionados, setProfesoresSeleccionados] = useState([]);
   const [ubicacion, setUbicacion] = useState("");
   const [coords, setCoords] = useState({ lat: 40.4168, lng: -3.7038 });
+
+  const [horaInicio, setHoraInicio] = useState("09:00");
+  const [horaFin, setHoraFin] = useState("14:00");
+
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
 
@@ -105,18 +130,27 @@ export function DialogoEditarExtraescolar({
   useEffect(() => {
     if (!actividad) return;
 
+    const tipoActividad = actividad.tipo || "complementaria";
+    setTipo(tipoActividad);
+
+    setFechaInicio(parseFechaLocal(actividad.fecha_inicio));
+    setFechaFin(parseFechaLocal(actividad.fecha_fin));
+
+    if (tipoActividad === "extraescolar") {
+      setHoraInicio(parseHoraLocal(actividad.fecha_inicio));
+      setHoraFin(parseHoraLocal(actividad.fecha_fin));
+    }
+
     setTitulo(actividad.titulo || "");
     setDescripcion(actividad.descripcion || "");
-    setTipo(actividad.tipo || "complementaria");
 
+    // Departamento
     const depto = departamentos.find(
       (d) => String(d.gidNumber) === String(actividad.gidnumber)
     );
     setDepartamento(depto ? String(depto.gidNumber) : "");
 
-    setFechaInicio(actividad.fecha_inicio?.split("T")[0] || "");
-    setFechaFin(actividad.fecha_fin?.split("T")[0] || "");
-
+    // Periodos
     const periodoIni = periodos.find(
       (p) => String(p.id) === String(actividad.idperiodo_inicio)
     );
@@ -126,6 +160,7 @@ export function DialogoEditarExtraescolar({
     setPeriodoInicio(periodoIni ? String(periodoIni.id) : "");
     setPeriodoFin(periodoFi ? String(periodoFi.id) : "");
 
+    // Cursos
     const cursosSel = cursos
       .filter((c) => actividad.cursos_gids?.map(String).includes(String(c.gid)))
       .map((c) => String(c.gid));
@@ -165,22 +200,46 @@ export function DialogoEditarExtraescolar({
   });
 
   const handleGuardar = () => {
+    // Combinar fecha y hora como string literal
+    const pad = (n) => String(n).padStart(2, "0");
+
+    const fechaInicioDt = new Date(fechaInicio);
+    const fechaFinDt = new Date(fechaFin);
+
+    if (tipo === "extraescolar") {
+      const [hIni, mIni] = horaInicio.split(":").map(Number);
+      const [hFin, mFin] = horaFin.split(":").map(Number);
+
+      fechaInicioDt.setHours(hIni, mIni, 0, 0);
+      fechaFinDt.setHours(hFin, mFin, 0, 0);
+    } else {
+      fechaInicioDt.setHours(0, 0, 0, 0);
+      fechaFinDt.setHours(0, 0, 0, 0);
+    }
+
+    const formatLiteral = (d) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
+        d.getHours()
+      )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
     const datos = {
       uid: user.username,
       titulo,
       descripcion,
       tipo,
       gidnumber: Number(departamento),
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin,
-      idperiodo_inicio: periodoInicio ? Number(periodoInicio) : null,
-      idperiodo_fin: periodoFin ? Number(periodoFin) : null,
+      fecha_inicio: formatLiteral(fechaInicioDt),
+      fecha_fin: formatLiteral(fechaFinDt),
+      idperiodo_inicio:
+        tipo === "complementaria" ? Number(periodoInicio) : null,
+      idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : null,
       estado: actividad.estado,
       cursos_gids: cursosSeleccionados,
       responsables_uids: profesoresSeleccionados,
       ubicacion,
       coords,
     };
+
     mutation.mutate(datos);
   };
 
@@ -300,7 +359,9 @@ export function DialogoEditarExtraescolar({
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* === FECHAS + HORAS === */}
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              {/* Fecha inicio — siempre */}
               <div>
                 <Label>Fecha inicio</Label>
                 <Input
@@ -310,6 +371,8 @@ export function DialogoEditarExtraescolar({
                   disabled={!editableCamposGenerales}
                 />
               </div>
+
+              {/* Fecha fin — siempre */}
               <div>
                 <Label>Fecha fin</Label>
                 <Input
@@ -320,6 +383,30 @@ export function DialogoEditarExtraescolar({
                 />
               </div>
             </div>
+
+            {/* Horas — solo extraescolar */}
+            {tipo === "extraescolar" && (
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <Label>Hora inicio</Label>
+                  <Input
+                    type="time"
+                    value={horaInicio}
+                    onChange={(e) => setHoraInicio(e.target.value)}
+                    disabled={!editableCamposGenerales}
+                  />
+                </div>
+                <div>
+                  <Label>Hora fin</Label>
+                  <Input
+                    type="time"
+                    value={horaFin}
+                    onChange={(e) => setHoraFin(e.target.value)}
+                    disabled={!editableCamposGenerales}
+                  />
+                </div>
+              </div>
+            )}
 
             {tipo === "complementaria" && (
               <div className="grid grid-cols-2 gap-4">

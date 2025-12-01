@@ -251,7 +251,6 @@ export function DialogoEditarUsuario({
   esAlumno,
 }) {
   const queryClient = useQueryClient();
-
   // LDAP
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
@@ -268,6 +267,21 @@ export function DialogoEditarUsuario({
 
   const API_URL = import.meta.env.VITE_API_URL;
   const SERVER_URL = import.meta.env.VITE_SERVER_URL;
+
+  useEffect(() => {
+    if (!open || !usuarioSeleccionado || gruposDisponibles.length === 0) return;
+
+    // Tomamos el segundo grupo
+    const segundoGrupo = usuarioSeleccionado.groups?.[1];
+
+    if (segundoGrupo) {
+      // Solo lo seleccionamos si existe en gruposDisponibles
+      const existe = gruposDisponibles.some((g) => g.cn === segundoGrupo);
+      if (existe) {
+        setGrupo(segundoGrupo);
+      }
+    }
+  }, [open, usuarioSeleccionado, gruposDisponibles]);
 
   // Sincronizar datos LDAP
   useEffect(() => {

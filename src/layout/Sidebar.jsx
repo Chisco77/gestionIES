@@ -164,8 +164,6 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         icon: Users,
         items: [
           { title: "Alumnos", url: "/alumnos" },
-          { title: "Profesores", url: "/profesores" },
-          { title: "Todos", url: "/todos" },
         ],
       },
       {
@@ -281,8 +279,6 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         icon: Users,
         items: [
           { title: "Alumnos", url: "/alumnos" },
-          { title: "Profesores", url: "/profesores" },
-          { title: "Todos", url: "/todos" },
         ],
       },
       {

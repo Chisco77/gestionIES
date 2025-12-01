@@ -27,7 +27,6 @@ import { useQuery } from "@tanstack/react-query";
 const API_URL = import.meta.env.VITE_API_URL;
 // Login externo o interno
 
-
 export function useProfesoresLdap() {
   return useQuery({
     queryKey: ["profesores-ldap"],
