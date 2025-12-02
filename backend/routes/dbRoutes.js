@@ -25,6 +25,9 @@ const router = express.Router();
 // --- Controladores ---
 const {
   getPeriodosHorarios,
+  insertPeriodo,
+  updatePeriodo,
+  deletePeriodo,
 } = require("../controllers/db/periodosHorariosController");
 
 // --- Controlador de avisos ---
@@ -206,6 +209,9 @@ router.patch("/asuntos-propios/estado/:id", updateEstadoAsuntoPropio);
 //   Rutas de Periodos Horarios
 // ================================================================
 router.get("/periodos-horarios", getPeriodosHorarios);
+router.post("/periodos-horarios", insertPeriodo);
+router.put("/periodos-horarios/:id", updatePeriodo);
+router.delete("/periodos-horarios/:id", deletePeriodo);
 
 // ================================================================
 //   Rutas de Reservas de estancias

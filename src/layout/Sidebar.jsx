@@ -39,6 +39,26 @@
  *   que a su vez dispara el callback `onOpenEtiquetas` si está definido.
  * - El pie del sidebar incluye un botón de logout y la información del usuario activo.
  */
+/**
+ * Sidebar.jsx - Componente de barra lateral de la aplicación
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Componente que renderiza la barra lateral de navegación principal.
+ * - Integra secciones de menú organizadas (Personas, Máquinas, Préstamo Libros, Préstamo Llaves, Utilidades).
+ * - Obtiene y muestra el nombre del usuario autenticado mediante `/check-auth`.
+ * - Permite cerrar sesión mediante `/logout`, redirigiendo a la vista de login.
+ * - Gestiona la apertura del diálogo de etiquetas de ordenadores a través del prop `onOpenEtiquetas`.
+ */
 
 import { useAuth } from "@/context/AuthContext";
 import React from "react";
@@ -57,6 +77,7 @@ import {
   Users,
   CalendarCheck,
   Library,
+  BookOpen,
   BookMarked,
   GraduationCap,
   UserCheck,
@@ -92,9 +113,9 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: Users,
         items: [
-          { title: "Alumnos", url: "/alumnos" },
-          { title: "Profesores", url: "/profesores" },
-          { title: "Todos", url: "/todos" },
+          { title: "Alumnos", url: "/alumnos", icon: GraduationCap },
+          { title: "Profesores", url: "/profesores", icon: UserCheck },
+          { title: "Todos", url: "/todos", icon: User },
         ],
       },
       {
@@ -102,9 +123,17 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Aulas", url: "/reservasEstancias" },
-          { title: "Asuntos Propios", url: "/asuntos_propios" },
-          { title: "Extraescolares", url: "/extraescolares" },
+          { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
+          {
+            title: "Asuntos Propios",
+            url: "/asuntos_propios",
+            icon: ListChecks,
+          },
+          {
+            title: "Extraescolares",
+            url: "/extraescolares",
+            icon: CalendarCheck,
+          },
         ],
       },
       {
@@ -112,10 +141,10 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: Library,
         items: [
-          { title: "Alumnos", url: "/prestamos" },
-          { title: "Profesores", url: "/prestamosProfesores" },
-          { title: "Libros", url: "/libros" },
-          { title: "Cursos", url: "/cursos" },
+          { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
+          { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
+          { title: "Libros", url: "/libros", icon: BookMarked },
+          { title: "Cursos", url: "/cursos", icon: BookOpen },
         ],
       },
       {
@@ -123,10 +152,22 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: KeySquare,
         items: [
-          { title: "Llaves prestadas", url: "/llavesPrestadas" },
-          { title: "Planta BAJA", url: "/llavesPlantaBaja" },
-          { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
-          { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
+          {
+            title: "Llaves prestadas",
+            url: "/llavesPrestadas",
+            icon: KeyRound,
+          },
+          { title: "Planta BAJA", url: "/llavesPlantaBaja", icon: KeySquare },
+          {
+            title: "Planta PRIMERA",
+            url: "/llavesPlantaPrimera",
+            icon: KeySquare,
+          },
+          {
+            title: "Planta SEGUNDA",
+            url: "/llavesPlantaSegunda",
+            icon: KeySquare,
+          },
         ],
       },
       {
@@ -134,24 +175,29 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: ShieldCheck,
         items: [
-          { title: "Perfiles de Usuario", url: "/perfiles" },
+          { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
           { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
           { title: "Avisos", url: "/avisos", icon: Building2 },
-
+          {
+            title: "Periodos Horarios",
+            url: "/periodos-horarios",
+            icon: ListChecks,
+          },
           {
             title: "Reglas Asuntos Propios",
             url: "#",
             onClick: () => onOpenRestricciones(),
+            icon: Wrench,
           },
           {
             title: "Etiquetas genéricas",
             url: "#",
             onClick: () => onOpenEtiquetas(),
+            icon: Tag,
           },
         ],
       },
     ],
-
     profesor: [
       {
         title: "Inicio",
@@ -162,20 +208,27 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         title: "Usuarios",
         url: "#",
         icon: Users,
-        items: [{ title: "Alumnos", url: "/alumnos" }],
+        items: [{ title: "Alumnos", url: "/alumnos", icon: GraduationCap }],
       },
       {
         title: "Reservas",
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Aulas", url: "/reservasEstancias" },
-          { title: "Asuntos Propios", url: "/asuntos_propios" },
-          { title: "Extraescolares", url: "/extraescolares" },
+          { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
+          {
+            title: "Asuntos Propios",
+            url: "/asuntos_propios",
+            icon: ListChecks,
+          },
+          {
+            title: "Extraescolares",
+            url: "/extraescolares",
+            icon: CalendarCheck,
+          },
         ],
       },
     ],
-
     ordenanza: [
       {
         title: "Préstamo Llaves",
@@ -183,14 +236,25 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         icon: KeySquare,
         isActive: true,
         items: [
-          { title: "Llaves prestadas", url: "/llavesPrestadas" },
-          { title: "Planta BAJA", url: "/llavesPlantaBaja" },
-          { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
-          { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
+          {
+            title: "Llaves prestadas",
+            url: "/llavesPrestadas",
+            icon: KeyRound,
+          },
+          { title: "Planta BAJA", url: "/llavesPlantaBaja", icon: KeySquare },
+          {
+            title: "Planta PRIMERA",
+            url: "/llavesPlantaPrimera",
+            icon: KeySquare,
+          },
+          {
+            title: "Planta SEGUNDA",
+            url: "/llavesPlantaSegunda",
+            icon: KeySquare,
+          },
         ],
       },
     ],
-
     administrador: [
       {
         title: "Inicio",
@@ -202,21 +266,28 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: Users,
         items: [
-          { title: "Alumnos", url: "/alumnos" },
-          { title: "Profesores", url: "/profesores" },
-          { title: "Todos", url: "/todos" },
-          { title: "Perfiles de Usuario", url: "/perfiles" },
+          { title: "Alumnos", url: "/alumnos", icon: GraduationCap },
+          { title: "Profesores", url: "/profesores", icon: UserCheck },
+          { title: "Todos", url: "/todos", icon: User },
+          { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
         ],
       },
-
       {
         title: "Reservas",
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Aulas", url: "/reservasEstancias" },
-          { title: "Asuntos Propios", url: "/asuntos_propios" },
-          { title: "Extraescolares", url: "/extraescolares" },
+          { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
+          {
+            title: "Asuntos Propios",
+            url: "/asuntos_propios",
+            icon: ListChecks,
+          },
+          {
+            title: "Extraescolares",
+            url: "/extraescolares",
+            icon: CalendarCheck,
+          },
         ],
       },
       {
@@ -224,10 +295,10 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: Library,
         items: [
-          { title: "Alumnos", url: "/prestamos" },
-          { title: "Profesores", url: "/prestamosProfesores" },
-          { title: "Libros", url: "/libros" },
-          { title: "Cursos", url: "/cursos" },
+          { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
+          { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
+          { title: "Libros", url: "/libros", icon: BookMarked },
+          { title: "Cursos", url: "/cursos", icon: BookOpen },
         ],
       },
       {
@@ -235,10 +306,22 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: KeySquare,
         items: [
-          { title: "Llaves prestadas", url: "/llavesPrestadas" },
-          { title: "Planta BAJA", url: "/llavesPlantaBaja" },
-          { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
-          { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
+          {
+            title: "Llaves prestadas",
+            url: "/llavesPrestadas",
+            icon: KeyRound,
+          },
+          { title: "Planta BAJA", url: "/llavesPlantaBaja", icon: KeySquare },
+          {
+            title: "Planta PRIMERA",
+            url: "/llavesPlantaPrimera",
+            icon: KeySquare,
+          },
+          {
+            title: "Planta SEGUNDA",
+            url: "/llavesPlantaSegunda",
+            icon: KeySquare,
+          },
         ],
       },
       {
@@ -246,24 +329,29 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: ShieldCheck,
         items: [
-          { title: "Perfiles de Usuario", url: "/perfiles" },
+          { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
           { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
           { title: "Avisos", url: "/avisos", icon: Building2 },
-
+          {
+            title: "Periodos Horarios",
+            url: "/periodos-horarios",
+            icon: ListChecks,
+          },
           {
             title: "Reglas Asuntos Propios",
             url: "#",
             onClick: () => onOpenRestricciones(),
+            icon: Wrench,
           },
           {
             title: "Etiquetas genéricas",
             url: "#",
             onClick: () => onOpenEtiquetas(),
+            icon: Tag,
           },
         ],
       },
     ],
-
     educadora: [
       {
         title: "Inicio",
@@ -274,16 +362,24 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         title: "Usuarios",
         url: "#",
         icon: Users,
-        items: [{ title: "Alumnos", url: "/alumnos" }],
+        items: [{ title: "Alumnos", url: "/alumnos", icon: GraduationCap }],
       },
       {
         title: "Reservas",
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Aulas", url: "/reservasEstancias" },
-          { title: "Asuntos Propios", url: "/asuntos_propios" },
-          { title: "Extraescolares", url: "/extraescolares" },
+          { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
+          {
+            title: "Asuntos Propios",
+            url: "/asuntos_propios",
+            icon: ListChecks,
+          },
+          {
+            title: "Extraescolares",
+            url: "/extraescolares",
+            icon: CalendarCheck,
+          },
         ],
       },
       {
@@ -291,10 +387,10 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: Library,
         items: [
-          { title: "Alumnos", url: "/prestamos" },
-          { title: "Profesores", url: "/prestamosProfesores" },
-          { title: "Libros", url: "/libros" },
-          { title: "Cursos", url: "/cursos" },
+          { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
+          { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
+          { title: "Libros", url: "/libros", icon: BookMarked },
+          { title: "Cursos", url: "/cursos", icon: BookOpen },
         ],
       },
     ],

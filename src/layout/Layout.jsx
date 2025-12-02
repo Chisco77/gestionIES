@@ -76,6 +76,7 @@ export default function Layout(props) {
       "/extraescolares": "Actividades Extraescolares",
       "/estancias": "Estancias",
       "/perfiles": "Perfiles de Usuario",
+      "/periodos-horarios": "Periodos Horarios",
     };
 
     const titulo = pathToTitleMap[location.pathname];

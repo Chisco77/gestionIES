@@ -42,6 +42,7 @@ import { ReservasEstanciasIndex } from "./modules/ReservasEstancias/pages/Reserv
 import { DialogoEtiquetasGenericas } from "./modules/Utilidades/components/DialogoEtiquetasGenericas";
 import { ExtraescolaresIndex } from "./modules/Extraescolares/pages/ExtraescolaresIndex";
 import { AvisosIndex } from "./modules/Avisos/pages/AvisosIndex";
+import { PeriodosHorariosIndex } from "./modules/PeriodosHorarios/pages/PeriodosHorariosIndex";
 
 const queryClient = new QueryClient();
 
@@ -226,6 +227,15 @@ const router = createBrowserRouter(
             <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
               {" "}
               <AvisosIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+              {
+          path: "periodos-horarios",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+              {" "}
+              <PeriodosHorariosIndex />{" "}
             </ProtectedRoute>
           ),
         },

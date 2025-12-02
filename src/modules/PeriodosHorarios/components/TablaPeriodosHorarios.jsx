@@ -23,24 +23,17 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
-export function TablaPerfilesUsuario({
+export function TablaPeriodosHorarios({
   columns,
   data,
   onFilteredChange,
   acciones,
 }) {
-  const [sorting, setSorting] = useState([{ id: "uid", desc: false }]);
+  const [sorting, setSorting] = useState([{ id: "nombre", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
-  const [filtroUid, setFiltroUid] = useState("");
-  const [filtroPerfil, setFiltroPerfil] = useState("");
+  const [filtroNombre, setFiltroNombre] = useState("");
   const [selectedId, setSelectedId] = useState(null);
 
   const table = useReactTable({
@@ -57,17 +50,10 @@ export function TablaPerfilesUsuario({
     state: { sorting, columnFilters },
   });
 
-  // Filtro uid
+  // Filtro por nombre
   useEffect(() => {
-    table.getColumn("uid")?.setFilterValue(filtroUid || undefined);
-  }, [filtroUid]);
-
-  // filtro perfil
-  useEffect(() => {
-    table
-      .getColumn("perfil")
-      ?.setFilterValue(filtroPerfil === "all" ? undefined : filtroPerfil);
-  }, [filtroPerfil]);
+    table.getColumn("nombre")?.setFilterValue(filtroNombre || undefined);
+  }, [filtroNombre]);
 
   // Callback al padre con los datos filtrados
   useEffect(() => {
@@ -88,33 +74,15 @@ export function TablaPerfilesUsuario({
       {/* Filtros */}
       <div className="flex flex-wrap gap-4 py-2 text-sm text-muted-foreground items-end">
         <div className="space-y-1">
-          <label className="block font-medium text-xs">Buscar por UID</label>
-          <input
+          <label className="block font-medium text-xs">Buscar por Nombre</label>
+          <Input
             type="text"
-            placeholder="UID"
-            className="border p-2 rounded text-sm"
-            value={filtroUid}
-            onChange={(e) => setFiltroUid(e.target.value)}
+            placeholder="Ej: Recreo, 1ª Hora..."
+            className="w-[250px]"
+            value={filtroNombre}
+            onChange={(e) => setFiltroNombre(e.target.value)}
           />
         </div>
-
-        <div className="space-y-1">
-          <label className="block font-medium text-xs">
-            Filtrar por perfil
-          </label>
-          <Select value={filtroPerfil} onValueChange={setFiltroPerfil}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Todos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="directiva">Directiva</SelectItem>
-              <SelectItem value="educadora">Educadora</SelectItem>
-              <SelectItem value="ordenanza">Ordenanza</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
       </div>
 
       {/* Tabla */}
@@ -146,7 +114,7 @@ export function TablaPerfilesUsuario({
                   } hover:bg-gray-100 transition-colors`}
                   onClick={() => {
                     row.toggleSelected();
-                    setSelectedId(row.original.uid);
+                    setSelectedId(row.original.id);
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (

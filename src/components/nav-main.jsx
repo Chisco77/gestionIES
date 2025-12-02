@@ -36,7 +36,7 @@
  * - Rotación de icono ChevronRight al abrir/cerrar Collapsible
  */
 
-"use client";
+/*"use client";
 
 import { ChevronRight } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
@@ -145,6 +145,170 @@ export function NavMain({ items }) {
               ) : (
                 <SidebarMenuButton tooltip={item.title}>
                   {item.icon && <item.icon />}
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              )}
+            </SidebarMenuItem>
+          );
+        })}
+      </SidebarMenu>
+    </SidebarGroup>
+  );
+}
+*/ "use client";
+
+import { ChevronRight } from "lucide-react";
+import { useLocation, Link } from "react-router-dom";
+
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+
+import {
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+} from "@/components/ui/sidebar";
+
+export function NavMain({ items }) {
+  const location = useLocation();
+
+  // Colores del sidebar
+  const azulInactivo = "#1e3a8a"; // text-blue-900
+  const azulActivo = "#2563eb"; // text-blue-600
+
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>IES Francisco de Orellana</SidebarGroupLabel>
+      <SidebarMenu>
+        {items.map((item) => {
+          const isItemActive =
+            item.url === location.pathname ||
+            item.items?.some((sub) => sub.url === location.pathname);
+
+          return (
+            <SidebarMenuItem key={item.title}>
+              {item.items?.length > 0 ? (
+                <Collapsible defaultOpen={isItemActive}>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      className={
+                        isItemActive
+                          ? `!bg-blue-100 !text-blue-600 font-semibold`
+                          : `text-blue-900`
+                      }
+                    >
+                      {item.icon && (
+                        <item.icon
+                          className="w-4 h-4"
+                          stroke={isItemActive ? azulActivo : azulInactivo}
+                        />
+                      )}
+                      <span>{item.title}</span>
+                      <ChevronRight
+                        className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                        stroke={isItemActive ? azulActivo : azulInactivo}
+                      />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {item.items.map((subItem) => {
+                        const isSubActive = subItem.url === location.pathname;
+
+                        return (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild>
+                              {subItem.onClick ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    subItem.onClick();
+                                  }}
+                                  className={`w-full text-left ${
+                                    isSubActive
+                                      ? "!bg-blue-100 !text-blue-600 font-semibold"
+                                      : "text-blue-900"
+                                  } flex items-center gap-2`}
+                                >
+                                  {subItem.icon && (
+                                    <subItem.icon
+                                      className="w-4 h-4"
+                                      stroke={
+                                        isSubActive ? azulActivo : azulInactivo
+                                      }
+                                    />
+                                  )}
+                                  {subItem.title}
+                                </button>
+                              ) : (
+                                <Link
+                                  to={subItem.url}
+                                  className={`block w-full ${
+                                    isSubActive
+                                      ? "!bg-blue-100 !text-blue-600 font-semibold"
+                                      : "text-blue-900"
+                                  } flex items-center gap-2`}
+                                >
+                                  {subItem.icon && (
+                                    <subItem.icon
+                                      className="w-4 h-4"
+                                      stroke={
+                                        isSubActive ? azulActivo : azulInactivo
+                                      }
+                                    />
+                                  )}
+                                  {subItem.title}
+                                </Link>
+                              )}
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </Collapsible>
+              ) : item.url ? (
+                <Link to={item.url}>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    className={
+                      item.url === location.pathname
+                        ? "!bg-blue-100 !text-blue-600 font-semibold"
+                        : "text-blue-900"
+                    }
+                  >
+                    {item.icon && (
+                      <item.icon
+                        className="w-4 h-4"
+                        stroke={
+                          item.url === location.pathname
+                            ? azulActivo
+                            : azulInactivo
+                        }
+                      />
+                    )}
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </Link>
+              ) : (
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  className="text-blue-900"
+                >
+                  {item.icon && (
+                    <item.icon className="w-4 h-4" stroke={azulInactivo} />
+                  )}
                   <span>{item.title}</span>
                 </SidebarMenuButton>
               )}

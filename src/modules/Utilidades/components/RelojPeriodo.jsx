@@ -126,7 +126,7 @@ export function RelojPeriodo({ periodos }) {
     <div className="flex items-center gap-6 min-w-[350px]">
       {/* Hora + periodo */}
       <div className="flex items-center gap-4 whitespace-nowrap">
-        <div className="text-2xl font-bold text-blue-600">
+        <div className="text-2xl font-bold text-white">
           {fechaHora.toLocaleTimeString("es-ES", {
             hour: "2-digit",
             minute: "2-digit",
@@ -134,7 +134,7 @@ export function RelojPeriodo({ periodos }) {
           })}
         </div>
 
-        <div className="text-lg font-semibold text-blue-600 truncate max-w-[260px]">
+        <div className="text-lg font-semibold truncate max-w-[260px] text-white">
           {periodoActual
             ? `${periodoActual.nombre} (${formatHora(periodoActual.inicio)} – ${formatHora(periodoActual.fin)})`
             : "Fuera de los periodos horarios"}
@@ -142,10 +142,13 @@ export function RelojPeriodo({ periodos }) {
       </div>
 
       {/* Barra de progreso */}
-      <div className="relative w-72 h-4 bg-gray-200 rounded-full overflow-hidden">
+      <div className="relative w-72 h-4 bg-white/30 rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500"
-          style={{ width: `${progreso}%` }}
+          className="h-full transition-all duration-500"
+          style={{
+            width: `${progreso}%`,
+            background: "white",
+          }}
         />
       </div>
     </div>
