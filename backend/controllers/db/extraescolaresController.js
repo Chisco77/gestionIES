@@ -6,6 +6,7 @@
 
 const db = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
+const mailer = require("../../mailer");
 
 /**
  * Obtener actividades extraescolares enriquecidas
@@ -97,26 +98,92 @@ async function getExtraescolaresEnriquecidos(req, res) {
 }
 
 /**
- * Actualizar estado (aceptar / rechazar)
+ * ================================================================
+ *  ACTUALIZAR ESTADO (ACEPTAR / RECHAZAR)
  * ================================================================
  */
 async function updateEstadoExtraescolar(req, res) {
   try {
     const id = req.params.id;
-    const { estado } = req.body;
+    const { estado } = req.body; // 1 = Aceptado, 2 = Rechazado
+
+    if (![1, 2].includes(estado))
+      return res.status(400).json({ ok: false, error: "Estado inválido" });
 
     const { rows } = await db.query(
-      `UPDATE extraescolares
-       SET estado = $1
-       WHERE id = $2
-       RETURNING *`,
+      `
+      UPDATE extraescolares
+      SET estado = $1
+      WHERE id = $2
+      RETURNING *
+    `,
       [estado, id]
     );
 
     if (!rows[0])
       return res.status(404).json({ ok: false, error: "No encontrado" });
 
-    res.json({ ok: true, actividad: rows[0] });
+    const actividad = rows[0];
+
+    // 👉 Respuesta inmediata al frontend
+    res.json({ ok: true, actividad });
+
+    // ============================================================
+    //  ENVÍO DEL EMAIL ASÍNCRONO
+    // ============================================================
+    setImmediate(async () => {
+      try {
+        // Emails de avisos para este módulo
+        const { rows: avisos } = await db.query(
+          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
+        );
+        const emailsRaw = avisos[0]?.emails || [];
+        const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
+        if (!emails.length) return;
+
+        // Datos del profesor creador
+        const ldapSession = req.session?.ldap;
+        const datosUsuario = await new Promise((resolve) => {
+          buscarPorUid(ldapSession, actividad.uid, (err, datos) =>
+            resolve(
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
+            )
+          );
+        });
+
+        const nombreProfesor =
+          `${datosUsuario.givenName} ${datosUsuario.sn}`.trim();
+
+        const fechaInicioFmt = new Date(
+          actividad.fecha_inicio
+        ).toLocaleDateString("es-ES");
+        const estadoTxt = estado === 1 ? "Aceptada" : "Rechazada";
+        const subjectPrefix =
+          estado === 1 ? "[EXTRAESCOLAR ACEPTADA]" : "[EXTRAESCOLAR RECHAZADA]";
+
+        await mailer.sendMail({
+          from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
+          to: emails.join(", "),
+          subject: `${subjectPrefix} ${actividad.titulo} (${fechaInicioFmt})`,
+          html: `
+            <p><b>Actividad:</b> ${actividad.titulo}</p>
+            <p><b>Profesor responsable:</b> ${nombreProfesor}</p>
+            <p><b>Fecha de inicio:</b> ${fechaInicioFmt}</p>
+            <p><b>Estado:</b> ${estadoTxt}</p>
+            <p><b>Descripción:</b> ${actividad.descripcion}</p>
+          `,
+        });
+
+        console.log(
+          `[updateEstadoExtraescolar] Email enviado a: ${emails.join(", ")}`
+        );
+      } catch (errMail) {
+        console.error(
+          "[updateEstadoExtraescolar] Error enviando email:",
+          errMail
+        );
+      }
+    });
   } catch (err) {
     console.error("[updateEstadoExtraescolar] Error:", err);
     res.status(500).json({ ok: false, error: "Error actualizando estado" });
@@ -170,7 +237,82 @@ async function insertExtraescolar(req, res) {
       ]
     );
 
-    res.status(201).json({ ok: true, actividad: rows[0] });
+    const actividad = rows[0];
+
+    // 👉 Respuesta inmediata
+    res.status(201).json({ ok: true, actividad });
+
+    // ============================================================
+    //  ENVÍO EMAIL ASÍNCRONO (Nueva actividad)
+    // ============================================================
+    setImmediate(async () => {
+      try {
+        const { rows: avisos } = await db.query(
+          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
+        );
+        const emailsRaw = avisos[0]?.emails || [];
+        const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
+        if (!emails.length) return;
+
+        const ldapSession = req.session?.ldap;
+
+        const datosUsuario = await new Promise((resolve) => {
+          buscarPorUid(ldapSession, uid, (err, datos) =>
+            resolve(
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
+            )
+          );
+        });
+
+        const nombreProfesor =
+          `${datosUsuario.givenName} ${datosUsuario.sn}`.trim();
+
+        const fechaInicioFmt = actividad.fecha_inicio
+          ? new Date(actividad.fecha_inicio).toLocaleDateString("es-ES")
+          : "-";
+
+        const fechaFinFmt = actividad.fecha_fin
+          ? new Date(actividad.fecha_fin).toLocaleDateString("es-ES")
+          : "-";
+
+        // ============================
+        //  CONTENIDO VARIABLE DEL EMAIL
+        // ============================
+        let extraCamposHTML = "";
+
+        if (actividad.tipo === "complementaria") {
+          extraCamposHTML = `
+        <p><b>Periodo de inicio:</b> ${actividad.idperiodo_inicio || "-"}</p>
+        <p><b>Periodo de fin:</b> ${actividad.idperiodo_fin || "-"}</p>
+      `;
+        }
+
+        // ============================
+        //  ENVÍO DEL EMAIL FINAL
+        // ============================
+        await mailer.sendMail({
+          from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
+          to: emails.join(", "),
+          subject: `[EXTRAESCOLARES - Solicitud] ${actividad.titulo} (${fechaInicioFmt})`,
+          html: `
+        <p><b>Nueva actividad ${actividad.tipo} creada</b></p>
+        <p><b>Título:</b> ${actividad.titulo}</p>
+        <p><b>Profesor responsable:</b> ${nombreProfesor}</p>
+        <p><b>Fecha de inicio:</b> ${fechaInicioFmt}</p>
+        <p><b>Fecha de fin:</b> ${fechaFinFmt}</p>        
+        <p><b>Descripción:</b> ${actividad.descripcion}</p>
+        <p><b>Ubicación:</b> ${actividad.ubicacion || "-"}</p>
+        ${extraCamposHTML}
+      `,
+        });
+
+        console.log(
+          `[insertExtraescolar] Email enviado a: ${emails.join(", ")}`
+        );
+      } catch (errMail) {
+        console.error("[insertExtraescolar] Error enviando email:", errMail);
+      }
+    });
   } catch (err) {
     console.error("[insertExtraescolar] Error:", err);
     res.status(500).json({ ok: false, error: "Error insertando actividad" });

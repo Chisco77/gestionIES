@@ -91,13 +91,13 @@ exports.loginLdap = (req, res) => {
           console.log("✅ Admin login correcto, employeeNumber:", empNum);
         });
         // ➜ Lanzar volcado completo usando contraseña del admin
-        /*const volcarProfesoresALaBD = require("../../utils/volcadoProfesores");
+        const volcarProfesoresALaBD = require("../../utils/volcadoProfesores");
 
         volcarProfesoresALaBD(password)
           .then(() =>
             console.log("🟢 Volcado completo ejecutado tras login de admin.")
           )
-          .catch((err) => console.error("❌ Error en volcado:", err));*/
+          .catch((err) => console.error("❌ Error en volcado:", err));
 
         searchRes.on("end", () => {
           client.unbind();

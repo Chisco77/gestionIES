@@ -163,7 +163,7 @@ const router = createBrowserRouter(
         {
           path: "edicionPlanos",
           element: (
-            <ProtectedRoute perfilesPermitidos={["administrador"]}>
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
               {" "}
               <PlanoEstanciasEdicion />{" "}
             </ProtectedRoute>
