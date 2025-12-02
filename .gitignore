@@ -9,3 +9,4 @@ deploy_gestionIES.sh
 .env
 backend/.env
 backend/uploads/
+backend/tmp

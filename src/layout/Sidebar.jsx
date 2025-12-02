@@ -135,7 +135,7 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         icon: ShieldCheck,
         items: [
           { title: "Perfiles de Usuario", url: "/perfiles" },
-          { title: "Estancias", url: "/estancias" },
+          { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
           { title: "Avisos", url: "/avisos", icon: Building2 },
 
           {
@@ -162,9 +162,7 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         title: "Usuarios",
         url: "#",
         icon: Users,
-        items: [
-          { title: "Alumnos", url: "/alumnos" },
-        ],
+        items: [{ title: "Alumnos", url: "/alumnos" }],
       },
       {
         title: "Reservas",
@@ -238,7 +236,6 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         icon: KeySquare,
         items: [
           { title: "Llaves prestadas", url: "/llavesPrestadas" },
-          { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
           { title: "Planta BAJA", url: "/llavesPlantaBaja" },
           { title: "Planta PRIMERA", url: "/llavesPlantaPrimera" },
           { title: "Planta SEGUNDA", url: "/llavesPlantaSegunda" },
@@ -250,7 +247,7 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         icon: ShieldCheck,
         items: [
           { title: "Perfiles de Usuario", url: "/perfiles" },
-          { title: "Estancias", url: "/estancias" },
+          { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
           { title: "Avisos", url: "/avisos", icon: Building2 },
 
           {
@@ -277,9 +274,7 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         title: "Usuarios",
         url: "#",
         icon: Users,
-        items: [
-          { title: "Alumnos", url: "/alumnos" },
-        ],
+        items: [{ title: "Alumnos", url: "/alumnos" }],
       },
       {
         title: "Reservas",

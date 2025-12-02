@@ -240,7 +240,7 @@ async function insertAsuntoPropio(req, res) {
         await mailer.sendMail({
           from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
           to: emails.join(", "),
-          subject: `[PETICION - ASUNTO PROPIO] Nuevo asunto propio (${fechaFmt})`,
+          subject: `[ASUNTOS PROPIOS - Solicitud] Solicitud asunto propio (${fechaFmt})`,
           html: `<p>Profesor: ${nombreProfesor}</p><p>Fecha: ${fechaFmt}</p><p>Descripción: ${descripcion}</p>`,
         });
 

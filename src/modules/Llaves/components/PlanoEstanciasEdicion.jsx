@@ -168,6 +168,7 @@ export default function PlanoEstanciasEdicion() {
       coordenadas: draw.coordenadas,
       armario: nuevo.armario,
       codigollave: nuevo.codigollave,
+      numero_ordenadores: nuevo.numero_ordenadores,
     };
     try {
       setCargando(true);
@@ -184,6 +185,7 @@ export default function PlanoEstanciasEdicion() {
           estNueva.coordenadas,
         armario: guardada.armario || "",
         codigollave: guardada.codigollave || "",
+        numero_ordenadores: guardada.numero_ordenadores || 0,
       };
       setEstancias((prev) => {
         const i = prev.findIndex((e) => e.id === norma.id);
@@ -356,7 +358,7 @@ export default function PlanoEstanciasEdicion() {
         {/* Panel lateral */}
         <div style={{ width: 340 }}>
 
-          {user?.perfil === "administrador" && (
+          {(user?.perfil === "administrador" || user?.perfil === "directiva") && (
             <div style={{ marginTop: 12 }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input
