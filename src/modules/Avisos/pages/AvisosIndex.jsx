@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Mail } from "lucide-react";
 
 import { useAvisos } from "@/hooks/useAvisos";
 import { TablaAvisos } from "../components/TablaAvisos";
@@ -9,12 +9,14 @@ import { columns } from "../components/columnsAvisos";
 import { DialogoInsertarAviso } from "../components/DialogoInsertarAviso";
 import { DialogoEditarAviso } from "../components/DialogoEditarAviso";
 import { DialogoEliminarAviso } from "../components/DialogoEliminarAviso";
+import { DialogoSMTP } from "../components/DialogoSMTP";
 
 export function AvisosIndex() {
   const [abrirDialogoInsertar, setAbrirDialogoInsertar] = useState(false);
   const [abrirDialogoEditar, setAbrirDialogoEditar] = useState(false);
   const [abrirDialogoEliminar, setAbrirDialogoEliminar] = useState(false);
   const [avisoSeleccionado, setAvisoSeleccionado] = useState(null);
+  const [abrirDialogoSMTP, setAbrirDialogoSMTP] = useState(false);
 
   // 🔹 Hook React Query para obtener todos los avisos
   const { data: avisos = [], isLoading } = useAvisos();
@@ -64,6 +66,13 @@ export function AvisosIndex() {
             >
               <Trash2 className="w-4 h-4" />
             </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setAbrirDialogoSMTP(true)}
+            >
+              <Mail className="w-4 h-4" />
+            </Button>
           </>
         )}
       />
@@ -82,6 +91,10 @@ export function AvisosIndex() {
         open={abrirDialogoEliminar}
         onClose={() => setAbrirDialogoEliminar(false)}
         avisoSeleccionado={avisoSeleccionado}
+      />
+      <DialogoSMTP
+        open={abrirDialogoSMTP}
+        onClose={() => setAbrirDialogoSMTP(false)}
       />
     </div>
   );

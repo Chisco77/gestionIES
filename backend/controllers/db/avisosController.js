@@ -54,7 +54,33 @@ exports.getAvisos = async (req, res) => {
 };
 
 // ================================================================
-// Insertar aviso
+// Obtener avisos SMTP (incluye app_password)
+// GET /db/avisos/smtp?modulo=asuntos_propios
+// ================================================================
+exports.getAvisosSMTP = async (req, res) => {
+  try {
+    const { modulo } = req.query;
+
+    let text = "SELECT id, modulo, emails, app_password FROM avisos";
+    const params = [];
+
+    if (modulo) {
+      text += " WHERE modulo = $1";
+      params.push(modulo);
+    }
+
+    text += " ORDER BY id";
+
+    const result = await db.query(text, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("❌ Error al obtener avisos SMTP:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+// ================================================================
+// Insertar aviso → ahora incluye app_password = ""
 // POST /db/avisos
 // Body: { modulo: "...", emails: ["a@b.com","c@d.com"] }
 // ================================================================
@@ -69,8 +95,8 @@ exports.insertAviso = async (req, res) => {
 
   try {
     const result = await db.query(
-      "INSERT INTO avisos (modulo, emails) VALUES ($1, $2) RETURNING *",
-      [modulo, emails]
+      "INSERT INTO avisos (modulo, emails, app_password) VALUES ($1, $2, $3) RETURNING *",
+      [modulo, emails, ""]
     );
 
     res.status(201).json(result.rows[0]);
@@ -81,29 +107,83 @@ exports.insertAviso = async (req, res) => {
 };
 
 // ================================================================
-// Actualizar aviso
-// PUT /db/avisos/:id
+// Insertar aviso SMTP (incluye app_password explícito)
+// POST /db/avisos/smtp
+// Body: { modulo: "...", emails: [...], app_password: "xxxx" }
 // ================================================================
-exports.updateAviso = async (req, res) => {
-  const { id } = req.params;
-  const { modulo, emails } = req.body;
+exports.insertAvisoSMTP = async (req, res) => {
+  const { modulo, emails, app_password } = req.body;
 
-  if (!modulo || !emails || !Array.isArray(emails)) {
+  if (!modulo || !emails || !Array.isArray(emails) || !app_password) {
     return res.status(400).json({
-      message: 'Los campos "modulo" y "emails" (array) son obligatorios',
+      message:
+        'Los campos "modulo", "emails" (array) y "app_password" son obligatorios',
     });
   }
 
   try {
     const result = await db.query(
-      "UPDATE avisos SET modulo = $1, emails = $2 WHERE id = $3 RETURNING *",
-      [modulo, emails, id]
+      "INSERT INTO avisos (modulo, emails, app_password) VALUES ($1, $2, $3) RETURNING *",
+      [modulo, emails, app_password]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("❌ Error al insertar aviso SMTP:", error);
+    res.status(500).json({ message: "Error interno al insertar aviso SMTP" });
+  }
+};
+
+// ================================================================
+// Actualizar aviso SMTP (incluye app_password)
+// PUT /db/avisos/smtp/:id
+// ================================================================
+exports.updateAvisoSMTP = async (req, res) => {
+  const { id } = req.params;
+  const { modulo, emails, app_password } = req.body;
+
+  if (!modulo || !emails || !Array.isArray(emails) || !app_password) {
+    return res.status(400).json({
+      message:
+        'Los campos "modulo", "emails" (array) y "app_password" son obligatorios',
+    });
+  }
+
+  try {
+    const result = await db.query(
+      "UPDATE avisos SET modulo = $1, emails = $2, app_password = $3 WHERE id = $4 RETURNING *",
+      [modulo, emails, app_password, id]
     );
 
     if (result.rowCount === 0) {
       return res.status(404).json({ message: "Aviso no encontrado" });
     }
 
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("❌ Error al modificar aviso SMTP:", error);
+    res.status(500).json({ message: "Error interno al modificar aviso SMTP" });
+  }
+};
+
+exports.updateAviso = async (req, res) => {
+  const { id } = req.params;
+  const { modulo, emails } = req.body;
+  if (!modulo || !emails || !Array.isArray(emails)) {
+    return res
+      .status(400)
+      .json({
+        message: 'Los campos "modulo" y "emails" (array) son obligatorios',
+      });
+  }
+  try {
+    const result = await db.query(
+      "UPDATE avisos SET modulo = $1, emails = $2 WHERE id = $3 RETURNING *",
+      [modulo, emails, id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Aviso no encontrado" });
+    }
     res.json(result.rows[0]);
   } catch (error) {
     console.error("❌ Error al modificar aviso:", error);
@@ -113,7 +193,6 @@ exports.updateAviso = async (req, res) => {
 
 // ================================================================
 // Eliminar aviso
-// DELETE /db/avisos/:id
 // ================================================================
 exports.deleteAviso = async (req, res) => {
   const { id } = req.params;

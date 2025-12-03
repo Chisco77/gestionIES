@@ -36,6 +36,9 @@ const {
   insertAviso,
   updateAviso,
   deleteAviso,
+  getAvisosSMTP,
+  insertAvisoSMTP,
+  updateAvisoSMTP,
 } = require("../controllers/db/avisosController");
 
 
@@ -260,10 +263,13 @@ router.delete("/extraescolares/:id", deleteExtraescolar);
 // ================================================================
 //   Rutas de Avisos
 // ================================================================
-router.get("/avisos", getAvisos);           // ?modulo=extraescolares
+router.get("/avisos", getAvisos);           
 router.post("/avisos", insertAviso);
 router.put("/avisos/:id", updateAviso);
 router.delete("/avisos/:id", deleteAviso);
+router.get("/avisos/smtp", getAvisosSMTP);               
+router.post("/avisos/smtp", insertAvisoSMTP);
+router.put("/avisos/smtp/:id", updateAvisoSMTP);
 
 // ================================================================
 //   Rutas de Empleados (profesores)
