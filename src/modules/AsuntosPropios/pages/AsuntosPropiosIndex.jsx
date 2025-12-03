@@ -12,6 +12,7 @@ import { useAsuntosUid } from "@/hooks/Asuntos/useAsuntosUid";
 import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { useAsuntosMes } from "@/hooks/Asuntos/useAsuntosMes";
+import { useRestriccionesAsuntos } from "@/hooks/useRestricciones";
 
 import { CalendarioAsuntos } from "../components/CalendarioAsuntos";
 
@@ -36,9 +37,7 @@ export function AsuntosPropiosIndex() {
   const [abrirDialogoEdicion, setAbrirDialogoEdicion] = useState(false);
   const [asuntoSeleccionado, setAsuntoSeleccionado] = useState(null);
 
-  const [maxConcurrentes, setMaxConcurrentes] = useState(2);
   const [reloadPanel, setReloadPanel] = useState(0);
-  const [rangosBloqueados, setRangosBloqueados] = useState([]);
 
   // ===== Hooks de PanelReservas =====
   const { data: reservasEstancias } = useReservasUid(uid);
@@ -46,6 +45,29 @@ export function AsuntosPropiosIndex() {
   const { data: extraescolares } = useExtraescolaresUid(uid);
   const { data: estancias } = useEstancias();
   const { data: periodos } = usePeriodosHorarios();
+
+  // ===================== Restricciones desde el hook =====================
+  const { data: restricciones = [] } = useRestriccionesAsuntos();
+  console.log("Restricciones: ", restricciones);
+
+  // Obtener maxConcurrentes desde la fila "maximas_aceptadas"
+  const maxConcurrentes =
+    restricciones.find((r) => r.descripcion === "concurrentes")?.valor_num ?? 2; // valor por defecto: 2
+
+  // Obtener rangos bloqueados desde "rangos_bloqueados"
+  let rangosBloqueados =
+    restricciones.find((r) => r.descripcion === "rangos_bloqueados")
+      ?.rangos_bloqueados_json?.rango_bloqueado ?? [];
+
+  // Normalizamos a array
+  if (!Array.isArray(rangosBloqueados)) {
+    try {
+      rangosBloqueados =
+        JSON.parse(rangosBloqueados || "[]")?.rango_bloqueado ?? [];
+    } catch {
+      rangosBloqueados = [];
+    }
+  }
 
   // === Hook para asuntos del mes ===
   const { data: asuntosPropiosMes = [], refetch: refetchAsuntosMes } =
@@ -96,19 +118,6 @@ export function AsuntosPropiosIndex() {
     } else setCurrentMonth((m) => m + 1);
   };
 
-  useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL;
-
-    fetch(`${API_URL}/db/restricciones/asuntos/rangos`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => setRangosBloqueados(data.rangos || []))
-      .catch((err) =>
-        console.error("Error obteniendo rangos bloqueados:", err)
-      );
-  }, []);
-
   const handleDiaClick = (dateKey) => {
     const bloqueado = (asuntosPorDia[dateKey] || 0) >= maxConcurrentes;
     if (bloqueado) return;
@@ -129,7 +138,8 @@ export function AsuntosPropiosIndex() {
     refetchAsuntosMes(); // actualizamos el mes usando el hook
     recargarPanel(); // recargamos el panel
   };
-
+  console.log("Concurrentes: ", maxConcurrentes);
+  console.log("Rango: ", rangosBloqueados);
   return (
     <div className="p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -8,6 +8,18 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DialogoGestionLlaves } from "./DialogoGestionLlaves";
 import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -67,6 +79,7 @@ export default function PlanoEstanciasEdicion() {
     totalllaves: 1,
     armario: "",
     codigollave: "",
+    numero_ordenadores: 0,
   });
   const [modalLlaves, setModalLlaves] = useState({
     open: false,
@@ -107,7 +120,6 @@ export default function PlanoEstanciasEdicion() {
           codigollave: r.codigollave,
         }));
         if (!cancelado) setEstancias(normal);
-
       } catch (e) {
         if (!cancelado) setError(e?.message || "Error cargando datos");
         console.error(e);
@@ -213,7 +225,7 @@ export default function PlanoEstanciasEdicion() {
       .join(" ") + " Z";
   const scalePoints = (pts) => pts.map(([x, y]) => [x * size.w, y * size.h]);
 
-    // ------------------- Render -------------------
+  // ------------------- Render -------------------
   return (
     <div style={{ padding: 12 }}>
       {/* Tabs de ShadCN */}
@@ -229,7 +241,7 @@ export default function PlanoEstanciasEdicion() {
         </TabsList>
       </Tabs>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "row", gap: 12 }}>
         {/* Plano */}
         <div
           ref={wrapperRef}
@@ -356,33 +368,27 @@ export default function PlanoEstanciasEdicion() {
         </div>
 
         {/* Panel lateral */}
-        <div style={{ width: 340 }}>
-
-          {(user?.perfil === "administrador" || user?.perfil === "directiva") && (
-            <div style={{ marginTop: 12 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={modoEdicion}
-                  onChange={(e) => setModoEdicion(e.target.checked)}
-                />{" "}
-                <strong>Modo edición</strong>
-              </label>
+        {/* Panel lateral (estilo Panel Llaves) */}
+        <div className="w-80">
+          {(user?.perfil === "administrador" ||
+            user?.perfil === "directiva") && (
+            <Card className="mt-3 border border-slate-300 shadow-sm">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={modoEdicion}
+                    onCheckedChange={(v) => setModoEdicion(Boolean(v))}
+                  />
+                  <CardTitle className="text-base">Modo edición</CardTitle>
+                </div>
+              </CardHeader>
 
               {modoEdicion && (
-                <div
-                  style={{
-                    marginTop: 8,
-                    border: "1px dashed #e6eef0",
-                    padding: 8,
-                    borderRadius: 6,
-                  }}
-                >
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ display: "block", fontSize: 13 }}>
-                      Código de la estancia
-                    </label>
-                    <input
+                <CardContent className="space-y-3">
+                  {/* Código */}
+                  <div className="space-y-1">
+                    <Label className="text-sm">Código de la estancia</Label>
+                    <Input
                       placeholder="ej. Aula 1.01"
                       value={nuevo.codigo}
                       onChange={(e) =>
@@ -390,11 +396,11 @@ export default function PlanoEstanciasEdicion() {
                       }
                     />
                   </div>
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ display: "block", fontSize: 13 }}>
-                      Descripción
-                    </label>
-                    <input
+
+                  {/* Descripción */}
+                  <div className="space-y-1">
+                    <Label className="text-sm">Descripción</Label>
+                    <Input
                       placeholder="Descripción"
                       value={nuevo.descripcion}
                       onChange={(e) =>
@@ -402,24 +408,24 @@ export default function PlanoEstanciasEdicion() {
                       }
                     />
                   </div>
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ display: "block", fontSize: 13 }}>
-                      Total llaves
-                    </label>
-                    <input
+
+                  {/* Total llaves */}
+                  <div className="space-y-1">
+                    <Label className="text-sm">Total llaves</Label>
+                    <Input
                       type="number"
-                      value={nuevo.totalllaves}
                       min={1}
+                      value={nuevo.totalllaves}
                       onChange={(e) =>
                         setNuevo((n) => ({ ...n, totalllaves: e.target.value }))
                       }
                     />
                   </div>
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ display: "block", fontSize: 13 }}>
-                      Código de la llave
-                    </label>
-                    <input
+
+                  {/* Código de llave */}
+                  <div className="space-y-1">
+                    <Label className="text-sm">Código de la llave</Label>
+                    <Input
                       placeholder="Ej: Aula de informática"
                       value={nuevo.codigollave}
                       onChange={(e) =>
@@ -428,32 +434,65 @@ export default function PlanoEstanciasEdicion() {
                     />
                   </div>
 
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ display: "block", fontSize: 13 }}>
-                      Llavera
-                    </label>
-                    <select
-                      value={nuevo.armario}
-                      onChange={(e) =>
-                        setNuevo((n) => ({ ...n, armario: e.target.value }))
+                  {/* Llavera */}
+                  <div className="space-y-1">
+                    <Label className="text-sm">Llavera</Label>
+                    <Select
+                      value={nuevo.armario || "sin-asignar"}
+                      onValueChange={(v) =>
+                        setNuevo((n) => ({
+                          ...n,
+                          armario: v === "sin-asignar" ? "" : v,
+                        }))
                       }
                     >
-                      <option value="">Selecciona un armario</option>
-                      <option value="Llavera 1">Llavera 1</option>
-                      <option value="Llavera 2">Llavera 2</option>
-                    </select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un armario" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sin-asignar">Sin asignar</SelectItem>
+                        <SelectItem value="Llavera 1">Llavera 1</SelectItem>
+                        <SelectItem value="Llavera 2">Llavera 2</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <button
-                    onClick={finishPolygon}
-                    disabled={draw.coordenadas.length < 3}
-                    style={{ marginRight: 6 }}
-                  >
-                    Guardar polígono
-                  </button>
-                  <button onClick={cancelDraw}>Cancelar dibujo</button>
-                </div>
+
+                  {/* Número de ordenadores */}
+                  <div className="space-y-1">
+                    <Label className="text-sm">Número de ordenadores</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={nuevo.numero_ordenadores}
+                      onChange={(e) =>
+                        setNuevo((n) => ({
+                          ...n,
+                          numero_ordenadores: Number(e.target.value),
+                        }))
+                      }
+                    />
+                  </div>
+
+                  {/* Botones */}
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      className="w-full"
+                      disabled={draw.coordenadas.length < 3}
+                      onClick={finishPolygon}
+                    >
+                      Guardar polígono
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="w-full"
+                      onClick={cancelDraw}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </CardContent>
               )}
-            </div>
+            </Card>
           )}
         </div>
       </div>

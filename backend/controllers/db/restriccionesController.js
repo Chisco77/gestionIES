@@ -51,22 +51,17 @@ async function getRestricciones(req, res) {
 async function getRestriccionesAsuntos(req, res) {
   try {
     const { rows } = await db.query(
-      `SELECT descripcion, valor_num, valor_bool
+      `SELECT id, tipo, valor_num, valor_bool, descripcion, rangos_bloqueados_json
        FROM restricciones
        WHERE restriccion = 'asuntos'`
     );
 
-    const restricciones = {};
-    for (const r of rows) {
-      restricciones[r.descripcion] =
-        r.valor_bool !== false ? r.valor_bool : r.valor_num;
-    }
-
+    // Devolver directamente las filas, incluyendo rangos_bloqueados_json
     if (res) {
-      return res.json({ restricciones });
+      return res.json(rows);
     }
 
-    return restricciones;
+    return rows;
   } catch (error) {
     console.error(
       "❌ Error al obtener restricciones de asuntos propios:",
@@ -77,7 +72,7 @@ async function getRestriccionesAsuntos(req, res) {
         .status(500)
         .json({ message: "Error al obtener restricciones de asuntos propios" });
     }
-    throw new Error("Error al obtener restricciones de asuntos propios");
+    throw error;
   }
 }
 

@@ -92,6 +92,7 @@ import {
   Wrench,
   Power,
   User,
+  Info,
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -177,14 +178,15 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         items: [
           { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
           { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
-          { title: "Avisos", url: "/avisos", icon: Building2 },
+          { title: "Avisos", url: "/avisos", icon: Info },
+          { title: "Estancias", url: "/estancias", icon: Building2 },
           {
             title: "Periodos Horarios",
             url: "/periodos-horarios",
             icon: ListChecks,
           },
           {
-            title: "Reglas Asuntos Propios",
+            title: "Asuntos Propios",
             url: "#",
             onClick: () => onOpenRestricciones(),
             icon: Wrench,
@@ -331,14 +333,14 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         items: [
           { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
           { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
-          { title: "Avisos", url: "/avisos", icon: Building2 },
+          { title: "Avisos", url: "/avisos", icon: Info },
           {
             title: "Periodos Horarios",
             url: "/periodos-horarios",
             icon: ListChecks,
           },
           {
-            title: "Reglas Asuntos Propios",
+            title: "Asuntos Propios",
             url: "#",
             onClick: () => onOpenRestricciones(),
             icon: Wrench,

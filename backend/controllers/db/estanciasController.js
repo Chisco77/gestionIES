@@ -131,7 +131,7 @@ async function insertEstancia(req, res) {
   try {
     const { rows } = await db.query(
       `INSERT INTO estancias (planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, numero_ordenadores)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        RETURNING id, planta, codigo, descripcion, totalllaves, coordenadas_json, armario, codigollave, reservable, tipoestancia, numero_ordenadores`,
       [
         planta.toLowerCase(),

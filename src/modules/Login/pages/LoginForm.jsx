@@ -85,7 +85,8 @@ export function LoginForm({ className, ...props }) {
       queryClient.invalidateQueries(["asuntosMes"]);
 
       queryClient.invalidateQueries(["avisos"]);
-      queryClient.invalidateQueries(["empleados"]);
+      queryClient.invalidateQueries(["empleados"]); 
+      queryClient.invalidateQueries(["restricciones_asuntos"]);
 
       // Hacer check-auth con reintento
       const checkAuth = async (retries = 2) => {

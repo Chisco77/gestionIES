@@ -26,7 +26,8 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
   const [progress, setProgress] = useState(0);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [totalEtiquetas, setTotalEtiquetas] = useState(40);
-  const [posicionInicial, setPosicionInicial] = useState(1);
+  const [posicionInicial, setPosicionInicial] = useState(1); // posición en la hoja
+  const [numeroInicial, setNumeroInicial] = useState(1); // número inicial de etiqueta (sufijo)
 
   const generatePdfLabels = async () => {
     const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -55,13 +56,15 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
     }[cantidad];
 
     const labelsPerPage = layout.cols * layout.rows;
+
+    // Array de etiquetas con sufijo comenzando desde numeroInicial
     const etiquetas = Array.from(
       { length: totalEtiquetas },
-      (_, i) => `${prefijo}${i + 1}`
+      (_, i) => `${prefijo}${i + numeroInicial}`
     );
 
     for (let i = 0; i < etiquetas.length; i++) {
-      const globalIndex = i + (posicionInicial - 1);
+      const globalIndex = i + (posicionInicial - 1); // posición en la hoja
       if (i > 0 && globalIndex % labelsPerPage === 0) doc.addPage();
 
       const indexInPage = globalIndex % labelsPerPage;
@@ -74,7 +77,7 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
       const centerX = x + layout.width / 2;
       const centerY = y + layout.height / 2;
 
-      const numero = i + 1;
+      const numero = i + numeroInicial; // número de la etiqueta según sufijo
 
       // Medimos los textos
       doc.setFontSize(14);
@@ -115,7 +118,7 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
       >
         <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
-            Generar etiquetas genéricas{" "}
+            Generar etiquetas genéricas
           </DialogTitle>
         </DialogHeader>
         <div className="flex flex-col space-y-4 p-6">
@@ -137,7 +140,7 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
               value={cantidad}
               onValueChange={(value) => {
                 setCantidad(value);
-                setTotalEtiquetas(Number(value)); // Valor por defecto
+                setTotalEtiquetas(Number(value));
               }}
             >
               <SelectTrigger className="w-full">
@@ -163,7 +166,7 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
-              Posición inicial en la página (1 a {cantidad})
+              Posición inicial en la página
             </label>
             <Input
               type="number"
@@ -171,6 +174,18 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
               max={parseInt(cantidad)}
               value={posicionInicial}
               onChange={(e) => setPosicionInicial(Number(e.target.value))}
+              placeholder="Ej: 1"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Comenzar numeración en
+            </label>
+            <Input
+              type="number"
+              min="1"
+              value={numeroInicial}
+              onChange={(e) => setNumeroInicial(Number(e.target.value))}
               placeholder="Ej: 1"
             />
           </div>
@@ -209,7 +224,7 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
               nombrePdf.trim() === "" ||
               totalEtiquetas < 1 ||
               posicionInicial < 1 ||
-              posicionInicial > parseInt(cantidad)
+              numeroInicial < 1
             }
             onClick={async () => {
               setLoading(true);
