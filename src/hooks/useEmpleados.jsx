@@ -38,7 +38,7 @@ export function useEmpleados() {
         uid: e.uid,
         tipo_usuario: Number(e.tipo_usuario ?? 0),
         dni: e.dni ?? "",
-        asuntos_propios: Number(e.asuntos_propios ?? 0),
+        permisos: Number(e.permisos ?? 0),
         tipo_empleado: e.tipo_empleado ?? "",
         jornada: Number(e.jornada ?? 0),
       }));

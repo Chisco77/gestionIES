@@ -12,7 +12,7 @@ export function useCrearAsuntoUid(uid) {
 
   return useMutation({
     mutationFn: async (nuevoAsunto) => {
-      const res = await fetch(`${API_BASE}/panel/asuntos-propios?uid=${uid}`, {
+      const res = await fetch(`${API_BASE}/panel/permisos?uid=${uid}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -35,7 +35,7 @@ export function useActualizarAsuntoUid(uid) {
 
   return useMutation({
     mutationFn: async ({ id, datos }) => {
-      const res = await fetch(`${API_BASE}/panel/asuntos-propios/${id}?uid=${uid}`, {
+      const res = await fetch(`${API_BASE}/panel/permisos/${id}?uid=${uid}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -58,7 +58,7 @@ export function useEliminarAsuntoUid(uid) {
 
   return useMutation({
     mutationFn: async (id) => {
-      const res = await fetch(`${API_BASE}/panel/asuntos-propios/${id}?uid=${uid}`, {
+      const res = await fetch(`${API_BASE}/panel/permisos/${id}?uid=${uid}`, {
         method: "DELETE",
         credentials: "include",
       });

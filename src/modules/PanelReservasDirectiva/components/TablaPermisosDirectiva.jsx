@@ -1,4 +1,4 @@
-// src/components/asuntos/TablaAsuntosDirectiva.jsx
+// src/components/asuntos/TablaPermisosDirectiva.jsx
 import {
   flexRender,
   getCoreRowModel,
@@ -43,8 +43,8 @@ import { Button } from "@/components/ui/button";
 
 import { DialogoConfirmacion } from "./DialogoConfirmacion";
 import { toast } from "sonner";
-import { columnsAsuntos } from "./columns-asuntos";
-import { useAsuntosTodos } from "@/hooks/Asuntos/useAsuntosTodos";
+import { columnsPermisos } from "./columns-permisos";
+import { usePermisosTodos } from "@/hooks/Permisos/usePermisosTodos";
 
 import {
   Tooltip,
@@ -53,7 +53,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-export function TablaAsuntosDirectiva({ fecha }) {
+export function TablaPermisosDirectiva({ fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
@@ -65,7 +65,7 @@ export function TablaAsuntosDirectiva({ fecha }) {
   const [asuntoSeleccionado, setAsuntoSeleccionado] = useState(null);
   const [accion, setAccion] = useState(null); // "aceptar" o "rechazar"
 
-  const { data: asuntosPropiosTodos = [] } = useAsuntosTodos();
+  const { data: asuntosPropiosTodos = [] } = usePermisosTodos();
 
   // Abrir diálogo al pinchar check o aspa
   const handleClick = (asunto, tipo) => {
@@ -78,7 +78,7 @@ export function TablaAsuntosDirectiva({ fecha }) {
   const table = useReactTable({
     data: asuntosPropiosTodos || [], // <- aquí
     columns: [
-      ...columnsAsuntos(),
+      ...columnsPermisos(),
       {
         id: "acciones",
         header: "Acciones",
@@ -116,7 +116,7 @@ export function TablaAsuntosDirectiva({ fecha }) {
                     <X size={16} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent  className="bg-red-600 text-white rounded-lg shadow-md">
+                <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
                   <p>Rechazar solicitud</p>
                 </TooltipContent>
               </Tooltip>
@@ -159,7 +159,7 @@ export function TablaAsuntosDirectiva({ fecha }) {
 
     try {
       const res = await fetch(
-        `${API_URL}/db/asuntos-propios/estado/${asuntoSeleccionado.id}`,
+        `${API_URL}/db/permisos/estado/${asuntoSeleccionado.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -236,6 +236,21 @@ export function TablaAsuntosDirectiva({ fecha }) {
               value={table.getColumn("descripcion")?.getFilterValue() ?? ""}
               onChange={(e) =>
                 table.getColumn("descripcion")?.setFilterValue(e.target.value)
+              }
+            />
+          </div>
+
+          {/* Filtro tipo */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Tipo
+            </label>
+            <Input
+              className="h-8 w-[220px] text-sm"
+              placeholder="Buscar tipo..."
+              value={table.getColumn("tipo")?.getFilterValue() ?? ""}
+              onChange={(e) =>
+                table.getColumn("tipo")?.setFilterValue(e.target.value)
               }
             />
           </div>

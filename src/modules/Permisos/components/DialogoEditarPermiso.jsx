@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
+export function DialogoEditarPermiso({ open, onClose, asunto, onSuccess }) {
   const [descripcion, setDescripcion] = useState("");
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();

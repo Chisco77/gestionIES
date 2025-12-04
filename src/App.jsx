@@ -43,6 +43,7 @@ import { DialogoEtiquetasGenericas } from "./modules/Utilidades/components/Dialo
 import { ExtraescolaresIndex } from "./modules/Extraescolares/pages/ExtraescolaresIndex";
 import { AvisosIndex } from "./modules/Avisos/pages/AvisosIndex";
 import { PeriodosHorariosIndex } from "./modules/PeriodosHorarios/pages/PeriodosHorariosIndex";
+import { PermisosIndex } from "./modules/Permisos/pages/PermisosIndex";
 
 const queryClient = new QueryClient();
 
@@ -218,7 +219,9 @@ const router = createBrowserRouter(
           ),
         },
 
-        { path: "asuntos_propios", element: <AsuntosPropiosIndex /> },
+        { path: "asuntos", element: <AsuntosPropiosIndex /> },
+        { path: "permisos", element: <PermisosIndex /> },
+
         { path: "extraescolares", element: <ExtraescolaresIndex /> },
         { path: "reservasEstancias", element: <ReservasEstanciasIndex /> },
         {
@@ -230,7 +233,7 @@ const router = createBrowserRouter(
             </ProtectedRoute>
           ),
         },
-              {
+        {
           path: "periodos-horarios",
           element: (
             <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>

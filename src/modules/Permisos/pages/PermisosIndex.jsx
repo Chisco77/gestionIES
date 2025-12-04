@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { PanelReservas } from "@/modules/Comunes/PanelReservas";
-import { DialogoInsertarAsunto } from "../components/DialogoInsertarAsunto";
-import { DialogoEditarAsunto } from "../components/DialogoEditarAsunto";
+import { DialogoInsertarPermiso } from "../components/DialogoInsertarPermiso";
+import { DialogoEditarPermiso } from "../components/DialogoEditarPermiso";
 
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 
@@ -14,7 +14,7 @@ import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { usePermisosMes } from "@/hooks/Permisos/usePermisosMes";
 import { useRestriccionesAsuntos } from "@/hooks/useRestricciones";
 
-import { CalendarioAsuntos } from "../components/CalendarioAsuntos";
+import { CalendarioPermisos } from "../components/CalendarioPermisos";
 
 const formatDateKey = (date) => {
   const y = date.getFullYear();
@@ -23,7 +23,7 @@ const formatDateKey = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-export function AsuntosPropiosIndex() {
+export function PermisosIndex() {
   const { user } = useAuth();
   const uid = user?.username;
   const todayStr = formatDateKey(new Date());
@@ -143,7 +143,7 @@ export function AsuntosPropiosIndex() {
   return (
     <div className="p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <CalendarioAsuntos
+        <CalendarioPermisos
           currentMonth={currentMonth}
           currentYear={currentYear}
           todayStr={todayStr}
@@ -174,7 +174,7 @@ export function AsuntosPropiosIndex() {
 
       {/* Diálogos */}
       {abrirDialogo && (
-        <DialogoInsertarAsunto
+        <DialogoInsertarPermiso
           open={abrirDialogo}
           onClose={() => setAbrirDialogo(false)}
           fecha={selectedDate}
@@ -182,7 +182,7 @@ export function AsuntosPropiosIndex() {
         />
       )}
       {abrirDialogoEdicion && asuntoSeleccionado && (
-        <DialogoEditarAsunto
+        <DialogoEditarPermiso
           open={abrirDialogoEdicion}
           onClose={() => setAbrirDialogoEdicion(false)}
           asunto={asuntoSeleccionado}

@@ -42,10 +42,10 @@ CREATE SEQUENCE public.api_cursos_id_seq
 ALTER TABLE public.api_cursos_id_seq OWNER TO postgres;
 
 --
--- Name: asuntos_propios_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: permisos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public.asuntos_propios_id_seq
+CREATE SEQUENCE public.permisos_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -53,18 +53,18 @@ CREATE SEQUENCE public.asuntos_propios_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.asuntos_propios_id_seq OWNER TO postgres;
+ALTER TABLE public.permisos_id_seq OWNER TO postgres;
 
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- Name: asuntos_propios; Type: TABLE; Schema: public; Owner: postgres
+-- Name: permisos; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.asuntos_propios (
-    id integer DEFAULT nextval('public.asuntos_propios_id_seq'::regclass) NOT NULL,
+CREATE TABLE public.permisos (
+    id integer DEFAULT nextval('public.permisos_id_seq'::regclass) NOT NULL,
     uid character varying NOT NULL,
     fecha date NOT NULL,
     descripcion text NOT NULL,
@@ -72,7 +72,7 @@ CREATE TABLE public.asuntos_propios (
 );
 
 
-ALTER TABLE public.asuntos_propios OWNER TO postgres;
+ALTER TABLE public.permisos OWNER TO postgres;
 
 --
 -- Name: cursos; Type: TABLE; Schema: public; Owner: postgres
@@ -415,10 +415,10 @@ ALTER TABLE ONLY public.perfiles_usuario ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- Data for Name: asuntos_propios; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: permisos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.asuntos_propios (id, uid, fecha, descripcion, estado) FROM stdin;
+COPY public.permisos (id, uid, fecha, descripcion, estado) FROM stdin;
 4	cblancoa02	2025-12-18	cristina blanco	0
 7	chisco	2025-12-29	chisco	0
 5	chisco	2025-12-26	chisco	0
@@ -1857,10 +1857,10 @@ SELECT pg_catalog.setval('public.api_cursos_id_seq', 4, true);
 
 
 --
--- Name: asuntos_propios_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+-- Name: permisos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.asuntos_propios_id_seq', 12, true);
+SELECT pg_catalog.setval('public.permisos_id_seq', 12, true);
 
 
 --
@@ -1934,11 +1934,11 @@ SELECT pg_catalog.setval('public.restricciones_id_seq', 16, true);
 
 
 --
--- Name: asuntos_propios asuntos_propios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: permisos permisos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.asuntos_propios
-    ADD CONSTRAINT asuntos_propios_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.permisos
+    ADD CONSTRAINT permisos_pkey PRIMARY KEY (id);
 
 
 --

@@ -32,6 +32,8 @@
  * - La altura está fijada en h-16 con borde inferior.
  * - Se emplea flexbox con gap para distribuir los elementos horizontalmente.
  */
+// Updated Header.jsx with ShadCN tooltip for logout icon
+// (only the relevant part modified)
 
 import React, { useState, useEffect } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -41,6 +43,12 @@ import { RelojPeriodo } from "@/modules/Utilidades/components/RelojPeriodo";
 import { useAuth } from "@/context/AuthContext";
 import { Power, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -85,20 +93,16 @@ export default function Header() {
 
   return (
     <header className="relative flex h-[60px] items-center px-4 bg-blue-500 text-white">
-
-      {/* IZQUIERDA: menú + título */}
       <div className="flex items-center gap-3">
         <SidebarTrigger className="text-white" />
         <Separator orientation="vertical" className="h-5 border-white/50" />
         <h1 className="text-lg font-semibold">{tituloActivo}</h1>
       </div>
 
-      {/* CENTRO: reloj */}
       <div className="absolute left-1/2 transform -translate-x-1/2">
         <RelojPeriodo periodos={periodosDB} />
       </div>
 
-      {/* DERECHA: usuario + logout */}
       <div className="ml-auto flex items-center gap-4">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">
@@ -106,11 +110,22 @@ export default function Header() {
           </span>
           <User className="h-5 w-5 text-white" />
         </div>
-        <Power
-          className="cursor-pointer"
-          color="white"
-          onClick={handleClickLogout}
-        />
+
+        {/* Tooltip en el icono de logout */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Power
+                className="cursor-pointer"
+                color="white"
+                onClick={handleClickLogout}
+              />
+            </TooltipTrigger>
+            <TooltipContent className="bg-blue-500 text-white">
+              Cerrar sesión
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </header>
   );

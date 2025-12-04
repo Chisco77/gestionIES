@@ -63,7 +63,7 @@ async function getPanelReservas(req, res) {
     // 2️⃣ Asuntos propios (pendiente de implementación)
     // =============================================================
     // const { rows: asuntosPropios } = await pool.query(
-    //   `SELECT * FROM asuntos_propios WHERE uid = $1 AND fecha >= CURRENT_DATE ORDER BY fecha ASC`,
+    //   `SELECT * FROM permisos WHERE uid = $1 AND fecha >= CURRENT_DATE ORDER BY fecha ASC`,
     //   [uid]
     // );
     const asuntosPropios = []; // Por ahora vacío

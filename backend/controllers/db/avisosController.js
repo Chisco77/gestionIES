@@ -29,7 +29,7 @@ const db = require("../../db");
 
 // ================================================================
 // Obtener avisos (con filtro opcional por módulo)
-// GET /db/avisos?modulo=asuntos_propios
+// GET /db/avisos?modulo=permisos
 // ================================================================
 exports.getAvisos = async (req, res) => {
   try {
@@ -55,7 +55,7 @@ exports.getAvisos = async (req, res) => {
 
 // ================================================================
 // Obtener avisos SMTP (incluye app_password)
-// GET /db/avisos/smtp?modulo=asuntos_propios
+// GET /db/avisos/smtp?modulo=permisos
 // ================================================================
 exports.getAvisosSMTP = async (req, res) => {
   try {

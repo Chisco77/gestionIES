@@ -11,7 +11,7 @@ import { DialogoEliminarExtraescolar } from "../Extraescolares/components/Dialog
 import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
 import { useCursosLdap } from "@/hooks/useCursosLdap";
 import { useReservasUid } from "@/hooks/Reservas/useReservasUid";
-import { useAsuntosUid } from "@/hooks/Asuntos/useAsuntosUid";
+import { usePermisosUid } from "@/hooks/Permisos/usePermisosUid";
 import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
@@ -96,7 +96,7 @@ export function PanelReservas({ uid, loading = false }) {
   const { data: periodos = [] } = usePeriodosHorarios();
 
   const { data: reservas = [] } = useReservasUid(uid);
-  const { data: asuntos = [] } = useAsuntosUid(uid);
+  const { data: asuntos = [] } = usePermisosUid(uid);
   const { data: extraescolares = [] } = useExtraescolaresUid(uid);
 
   const { user } = useAuth();
@@ -119,7 +119,7 @@ export function PanelReservas({ uid, loading = false }) {
         }`,
       };
 
-      console.log ("Empleado: ", empleado);
+      console.log("Empleado: ", empleado);
 
       // 3. Generar PDF
       await generatePermisosPdf({
@@ -197,7 +197,10 @@ export function PanelReservas({ uid, loading = false }) {
   };
 
   const renderAsuntosPropios = () => {
-    if (!asuntos.length)
+    const asuntosPropios = asuntos.filter((a) => a.tipo === 13);
+    console.log ("Asuntos Propios: ", asuntosPropios);
+    console.log ("Asuntos: ", asuntos);
+    if (!asuntosPropios.length)
       return (
         <p className="text-gray-500 text-center">No hay asuntos propios</p>
       );
@@ -208,7 +211,7 @@ export function PanelReservas({ uid, loading = false }) {
       2: { text: "Rechazado", color: "text-red-600 bg-red-100" },
     };
 
-    return asuntos.map((a, i) => {
+    return asuntosPropios.map((a, i) => {
       const fechaStr = new Date(a.fecha).toLocaleDateString("es-ES", {
         day: "numeric",
         month: "long",
@@ -246,6 +249,101 @@ export function PanelReservas({ uid, loading = false }) {
                   </TooltipTrigger>
                   <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
                     <p>Eliminar asunto</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </button>
+          </div>
+
+          {/* Pie: fecha, estado y PDF a la derecha */}
+          <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center gap-2">
+              <p className="text-gray-500">{fechaStr}</p>
+              <span
+                className={
+                  "px-2 py-1 rounded-lg text-xs font-medium " + estado.color
+                }
+              >
+                {estado.text}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-red-600 hover:text-red-800 flex items-center gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation(); // evita abrir el diálogo de edición
+                        handleGenerarPdfAsunto(a);
+                      }}
+                    >
+                      <span className="text-xs font-bold">PDF</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-[#1DA1F2] text-white">
+                    <p>Generar PDF solicitud</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+        </Card>
+      );
+    });
+  };
+
+  const renderPermisos = () => {
+    const permisos = asuntos.filter((a) => a.tipo !== 13);
+
+    if (!permisos.length)
+      return <p className="text-gray-500 text-center">No hay permisos</p>;
+
+    const estadoMap = {
+      0: { text: "Pendiente", color: "text-yellow-600 bg-yellow-100" },
+      1: { text: "Aceptado", color: "text-green-600 bg-green-100" },
+      2: { text: "Rechazado", color: "text-red-600 bg-red-100" },
+    };
+
+    return permisos.map((a, i) => {
+      const fechaStr = new Date(a.fecha).toLocaleDateString("es-ES", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+
+      const estado = estadoMap[a.estado] ?? { text: "—", color: "" };
+
+      return (
+        <Card
+          key={i}
+          className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative"
+          onClick={() => handleClickAsunto(a)}
+        >
+          {/* Cabecera: descripción y papelera */}
+          <div className="flex items-center justify-between gap-2">
+            <p
+              className="font-semibold text-blue-600 truncate max-w-[80%]"
+              title={a.descripcion || a.titulo || "Sin título"}
+            >
+              {a.descripcion || a.titulo || "Sin título"}
+            </p>
+            <button
+              type="button"
+              className="text-red-500 hover:text-red-700 flex-shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEliminarAsunto(a);
+              }}
+            >
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Trash2 className="w-5 h-5" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
+                    <p>Eliminar permiso</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -373,10 +471,11 @@ export function PanelReservas({ uid, loading = false }) {
           defaultValue="estancias"
           className="flex-1 flex flex-col overflow-hidden"
         >
-          <TabsList className="grid grid-cols-3 mb-2 mt-2">
+          <TabsList className="grid grid-cols-4 mb-2 mt-2">
             <TabsTrigger value="estancias">Mis Reservas</TabsTrigger>
-            <TabsTrigger value="asuntos">Mis asuntos propios</TabsTrigger>
             <TabsTrigger value="actividades">Mis extraescolares</TabsTrigger>
+            <TabsTrigger value="asuntos">Mis asuntos propios</TabsTrigger>
+            <TabsTrigger value="permisos">Mis permisos</TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-y-auto pr-2 mt-0">
@@ -392,6 +491,13 @@ export function PanelReservas({ uid, loading = false }) {
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
               {renderAsuntosPropios()}
+            </TabsContent>
+
+            <TabsContent
+              value="permisos"
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            >
+              {renderPermisos()}
             </TabsContent>
 
             <TabsContent

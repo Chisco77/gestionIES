@@ -41,7 +41,6 @@ const {
   updateAvisoSMTP,
 } = require("../controllers/db/avisosController");
 
-
 // --- Controlador de Extraescolares ---
 const {
   getExtraescolaresEnriquecidos,
@@ -133,13 +132,14 @@ const {
 
 // --- Controlador de asuntos propios unificado ---
 const {
-  getAsuntosPropios,
+  getPermisos,
   insertAsuntoPropio,
-  updateAsuntoPropio,
-  deleteAsuntoPropio,
-  getAsuntosPropiosEnriquecidos,
-  updateEstadoAsuntoPropio,
-} = require("../controllers/db/asuntosPropiosController");
+  insertPermiso, 
+  updatePermiso,
+  deletePermiso,
+  getPermisosEnriquecidos,
+  updateEstadoPermiso,
+} = require("../controllers/db/permisosController");
 
 // ================================================================
 //   Rutas de Estancias
@@ -201,12 +201,24 @@ router.delete("/restricciones/asuntos/rangos", deleteRangoBloqueado);
 // ================================================================
 //   Rutas de Asuntos Propios
 // ================================================================
-router.get("/asuntos-propios", getAsuntosPropios); // Filtrable por uid, fecha, descripcion
-router.post("/asuntos-propios", insertAsuntoPropio);
-router.put("/asuntos-propios/:id", updateAsuntoPropio);
-router.delete("/asuntos-propios/:id", deleteAsuntoPropio);
-router.get("/asuntos-propios-enriquecidos", getAsuntosPropiosEnriquecidos); // Nuevas rutas enriquecidas con nombre del profesor
-router.patch("/asuntos-propios/estado/:id", updateEstadoAsuntoPropio);
+// ================================================================
+//   Rutas de Permisos y Asuntos Propios
+// ================================================================
+router.get("/permisos", getPermisos); // Filtrable por uid, fecha, descripcion
+
+// Asuntos propios (tipo = 13 con restricciones)
+router.post("/permisos", insertAsuntoPropio);
+
+// Permisos genéricos sin restricciones
+router.post("/permisos/generico", insertPermiso);
+
+router.put("/permisos/:id", updatePermiso);
+router.delete("/permisos/:id", deletePermiso);
+
+router.get("/permisos-enriquecidos", getPermisosEnriquecidos);
+router.patch("/permisos/estado/:id", updateEstadoPermiso);
+
+
 
 // ================================================================
 //   Rutas de Periodos Horarios
@@ -250,24 +262,23 @@ const {
 } = require("../controllers/db/panelReservasController");
 router.get("/panel/reservas", getPanelReservas);
 
-
 // ================================================================
 //   Rutas de Actividades Extraescolares
 // ================================================================
 router.get("/extraescolares/enriquecidos", getExtraescolaresEnriquecidos);
 router.post("/extraescolares", insertExtraescolar);
-router.put("/extraescolares/:id", updateExtraescolar);          // <-- ruta para actualizar toda la actividad
+router.put("/extraescolares/:id", updateExtraescolar); // <-- ruta para actualizar toda la actividad
 router.put("/extraescolares/:id/estado", updateEstadoExtraescolar);
 router.delete("/extraescolares/:id", deleteExtraescolar);
 
 // ================================================================
 //   Rutas de Avisos
 // ================================================================
-router.get("/avisos", getAvisos);           
+router.get("/avisos", getAvisos);
 router.post("/avisos", insertAviso);
 router.put("/avisos/:id", updateAviso);
 router.delete("/avisos/:id", deleteAviso);
-router.get("/avisos/smtp", getAvisosSMTP);               
+router.get("/avisos/smtp", getAvisosSMTP);
 router.post("/avisos/smtp", insertAvisoSMTP);
 router.put("/avisos/smtp/:id", updateAvisoSMTP);
 
@@ -283,8 +294,5 @@ const {
 router.get("/empleados/:uid", getEmpleado);
 router.put("/empleados/:uid", updateEmpleado);
 router.get("/empleados", listEmpleados);
-
-
-
 
 module.exports = router;

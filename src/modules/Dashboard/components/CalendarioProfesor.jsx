@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { useExtraescolaresAll } from "@/hooks/Extraescolares/useExtraescolaresAll";
-import { useAsuntosUid } from "@/hooks/Asuntos/useAsuntosUid";
+import { usePermisosUid } from "@/hooks/Permisos/usePermisosUid";
 import { useAuth } from "@/context/AuthContext";
 
 const formatDateKey = (date) => {
@@ -23,7 +23,7 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const { data: extraescolares = [] } = useExtraescolaresAll();
-  const { data: asuntos = [] } = useAsuntosUid(uid);
+  const { data: asuntos = [] } = usePermisosUid(uid);
 
   const [fechaInsertar, setFechaInsertar] = useState(null);
 

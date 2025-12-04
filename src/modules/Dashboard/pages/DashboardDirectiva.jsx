@@ -41,7 +41,7 @@ export function DashboardDirectiva() {
   const { user } = useAuth();
   const uid = user?.username;
 
-  /*const { data: asuntosPropios } = useAsuntosUid(uid);
+  /*const { data: asuntosPropios } = usePermisosUid(uid);
   const { data: reservasEstancias } = useReservasUid(uid);
   const { data: estancias } = useEstancias();
   const { data: extraescolares } = useExtraescolaresUid(uid);
@@ -49,26 +49,7 @@ export function DashboardDirectiva() {
 
   const todayStr = formatDateKey(new Date());
 
-  // Datos de ejemplo
-  const reservas = {
-    [formatDateKey(new Date(2025, 9, 1))]: {
-      aulas: ["Aula 101", "Aula 205"],
-      armarios: ["Armario 3"],
-      asuntos: false,
-    },
-    [formatDateKey(new Date(2025, 9, 2))]: {
-      aulas: [],
-      armarios: ["Armario 5"],
-      asuntos: true,
-    },
-    [formatDateKey(new Date(2025, 9, 5))]: {
-      aulas: ["Aula 110"],
-      armarios: [],
-      asuntos: false,
-    },
-  };
-
-  const getDateKey = (y, m, d) => formatDateKey(new Date(y, m, d));
+   const getDateKey = (y, m, d) => formatDateKey(new Date(y, m, d));
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay(); // 0=domingo

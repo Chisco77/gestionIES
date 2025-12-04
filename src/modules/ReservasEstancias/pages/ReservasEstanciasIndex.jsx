@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { DialogoPlanoEstancia } from "../components/DialogoPlanoEstancia";
 import { MapPin } from "lucide-react";
 
-import { useAsuntosUid } from "@/hooks/Asuntos/useAsuntosUid";
+import { usePermisosUid } from "@/hooks/Permisos/usePermisosUid";
 import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
 
 import { CalendarioReservas } from "../components/CalendarioReservas";

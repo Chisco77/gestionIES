@@ -124,7 +124,7 @@ export function DialogoEditarUsuario({
     if (!empleadoSeleccionado || !open) return;
 
     setDni(empleadoSeleccionado.dni || "");
-    setAsuntosPropios(empleadoSeleccionado.asuntos_propios || 0);
+    setAsuntosPropios(empleadoSeleccionado.permisos || 0);
     setTipoEmpleado(empleadoSeleccionado.tipo_empleado || "");
     setJornada(empleadoSeleccionado.jornada ?? 0);
   }, [empleadoSeleccionado, open]);
@@ -179,7 +179,7 @@ export function DialogoEditarUsuario({
 
     const datos = {
       dni,
-      asuntos_propios: asuntosPropios,
+      permisos: asuntosPropios,
       tipo_empleado: tipoEmpleado,
       jornada,
     };

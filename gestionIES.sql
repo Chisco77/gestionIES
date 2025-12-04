@@ -38,10 +38,10 @@ ALTER SEQUENCE public.api_cursos_id_seq OWNER TO postgres;
 
 --
 -- TOC entry 231 (class 1259 OID 16828)
--- Name: asuntos_propios_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: permisos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public.asuntos_propios_id_seq
+CREATE SEQUENCE public.permisos_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -49,7 +49,7 @@ CREATE SEQUENCE public.asuntos_propios_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.asuntos_propios_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.permisos_id_seq OWNER TO postgres;
 
 --
 -- TOC entry 235 (class 1259 OID 16852)

@@ -26,7 +26,7 @@ export function DialogoConfirmacion({
     mutationFn: async () => {
       const nuevoEstado = esAceptar ? 1 : 2;
       const res = await fetch(
-        `${API_URL}/db/asuntos-propios/estado/${asunto.id}`,
+        `${API_URL}/db/permisos/estado/${asunto.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -50,7 +50,7 @@ export function DialogoConfirmacion({
       queryClient.invalidateQueries(["asuntosPropios", "todos"]);
       queryClient.invalidateQueries(["asuntosPropios", user.uid]);
 
-      // Actualizar calendario (useAsuntosMes)
+      // Actualizar calendario (usePermisosMes)
       const fechaObj = new Date(asunto.fecha);
       const month = fechaObj.getMonth();
       const year = fechaObj.getFullYear();

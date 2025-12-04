@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { useExtraescolaresAll } from "@/hooks/Extraescolares/useExtraescolaresAll";
-import { useAsuntosTodos } from "@/hooks/Asuntos/useAsuntosTodos";
+import { usePermisosTodos } from "@/hooks/Permisos/usePermisosTodos";
 
 const formatDateKey = (date) => {
   const y = date.getFullYear();
@@ -20,7 +20,7 @@ export function CalendarioDirectiva({ onSelectDate, disableInsert = false }) {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const { data: extraescolares = [] } = useExtraescolaresAll();
-  const { data: asuntos = [] } = useAsuntosTodos();
+  const { data: asuntos = [] } = usePermisosTodos();
 
   const [fechaInsertar, setFechaInsertar] = useState(null);
 
@@ -155,7 +155,7 @@ export function CalendarioDirectiva({ onSelectDate, disableInsert = false }) {
           <div className="flex gap-6">
             <div className="flex items-center gap-1">
               <div className="w-4 h-4 bg-green-100 rounded"></div>
-              Asuntos Propios
+              Permisos
             </div>
             <div className="flex items-center gap-1">
               <div className="w-4 h-4 bg-purple-100 rounded"></div>

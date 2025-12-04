@@ -12,9 +12,13 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { generatePermisosPdf } from "@/utils/Informes";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
 
-export function DialogoInsertarAsunto({ open, onClose, fecha }) {
+
+export function DialogoInsertarPermiso({ open, onClose, fecha }) {
   const [descripcion, setDescripcion] = useState("");
+  const [tipo, setTipo] = useState(null);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
@@ -24,6 +28,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
     if (open) {
       setDescripcion("");
       setShowPdfDialog(false);
+      setTipo(null);
     }
   }, [open]);
 
@@ -31,13 +36,13 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
   // Mutation con React Query
   // --------------------------
   const mutation = useMutation({
-    mutationFn: async (nuevoAsunto) => {
-      console.log ("Nuevo asunto: ", nuevoAsunto);
-      const res = await fetch(`${API_URL}/db/permisos`, {
+    mutationFn: async (nuevoPermiso) => {
+      console.log("Nuevo permiso: ", nuevoPermiso);
+      const res = await fetch(`${API_URL}/db/permisos/generico`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(nuevoAsunto),
+        body: JSON.stringify(nuevoPermiso),
       });
       const data = await res.json();
       if (!res.ok || !data.ok)
@@ -103,7 +108,17 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
       toast.error("Usuario no autenticado");
       return;
     }
-    mutation.mutate({ uid: user.username, fecha, descripcion, tipo: 13 });
+    if (!tipo) {
+      toast.error("Debe seleccionar un tipo de permiso");
+      return;
+    }
+
+    mutation.mutate({
+      uid: user.username,
+      fecha,
+      descripcion,
+      tipo: Number(tipo), // ¡el valor viene como string!
+    });
   };
 
   return (
@@ -122,12 +137,48 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
           </DialogHeader>
 
           <div className="flex flex-col space-y-4 p-6">
+            {/* Selector de tipo */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Tipo de permiso
+              </label>
+
+              <RadioGroup
+                value={tipo}
+                onValueChange={setTipo}
+                className="space-y-2"
+              >
+                {Object.entries({
+                  2: "(Art. 2) Fallecimiento, accidente o enfermedad grave, hospitalización o intervención quirúrgica",
+                  3: "(Art. 3) Enfermedad propia",
+                  4: "(Art. 4) Traslado de domicilio",
+                  7: "(Art. 7) Exámenes prenatales y técnicas de preparación al parto",
+                  11: "(Art. 11) Deber inexcusable de carácter público o personal",
+                  14: "(Art. 14) Funciones sindicales / representación del personal",
+                  15: "(Art. 15) Exámenes finales o pruebas selectivas",
+                  32: "(Art. 32) Reducción de jornada para mayores de 55 años",
+                  0: "Otros",
+                }).map(([key, label]) => (
+                  <div key={key} className="flex items-start space-x-2">
+                    <RadioGroupItem value={key} id={`tipo-${key}`} />
+                    <Label
+                      htmlFor={`tipo-${key}`}
+                      className="text-sm cursor-pointer leading-tight"
+                    >
+                      {label}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+
+            {/* Descripción */}
             <div>
               <label className="block text-sm font-medium mb-1">
                 Descripción
               </label>
               <Input
-                placeholder="Descripción del asunto propio"
+                placeholder="Descripción del permiso"
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
               />

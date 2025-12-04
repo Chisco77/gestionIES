@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 
-export function DialogoEliminarAsunto({ open, onOpenChange, asunto, onDeleteSuccess }) {
+export function DialogoEliminarPermiso({ open, onOpenChange, asunto, onDeleteSuccess }) {
   if (!asunto) return null;
 
   const API_URL = import.meta.env.VITE_API_URL;

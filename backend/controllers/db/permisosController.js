@@ -1,12 +1,12 @@
 /**
  * ================================================================
- *  Controller: asuntosPropiosController.js
+ *  Controller: permisosController.js
  *  Proyecto: gestionIES
  * ================================================================
  *
  *  Descripción:
  *    Controlador para la gestión de asuntos propios.
- *    Proporciona operaciones CRUD sobre la tabla "asuntos_propios"
+ *    Proporciona operaciones CRUD sobre la tabla "permisos"
  *    de la base de datos PostgreSQL.
  *
  *  Funcionalidades:
@@ -35,9 +35,9 @@ const { obtenerEmpleado } = require("./empleadosController");
 /**
  * Obtener asuntos propios con filtros opcionales
  */
-async function getAsuntosPropios(req, res) {
+async function getPermisos(req, res) {
   try {
-    const { uid, fecha, descripcion, estado } = req.query;
+    const { uid, fecha, descripcion, estado, tipo } = req.query;
 
     const filtros = [];
     const vals = [];
@@ -50,12 +50,14 @@ async function getAsuntosPropios(req, res) {
         vals.push(`%${descripcion}%`);
     if (typeof estado !== "undefined")
       filtros.push(`estado = $${++i}`) && vals.push(Number(estado));
+    if (typeof tipo !== "undefined")
+      filtros.push(`tipo = $${++i}`) && vals.push(Number(tipo));
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
 
     const { rows } = await db.query(
-      `SELECT id, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion, estado
-       FROM asuntos_propios
+      `SELECT id, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion, estado, tipo
+       FROM permisos
        ${where}
        ORDER BY fecha ASC`,
       vals
@@ -63,17 +65,15 @@ async function getAsuntosPropios(req, res) {
 
     res.json({ ok: true, asuntos: rows });
   } catch (err) {
-    console.error("[getAsuntosPropios] Error:", err);
-    res
-      .status(500)
-      .json({ ok: false, error: "Error obteniendo asuntos propios" });
+    console.error("[getPermisos] Error:", err);
+    res.status(500).json({ ok: false, error: "Error obteniendo permisos" });
   }
 }
 
 /**
  * Obtener asuntos propios enriquecidos con nombre del profesor
  */
-async function getAsuntosPropiosEnriquecidos(req, res) {
+async function getPermisosEnriquecidos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession)
@@ -81,7 +81,7 @@ async function getAsuntosPropiosEnriquecidos(req, res) {
         .status(401)
         .json({ ok: false, error: "No autenticado en LDAP" });
 
-    const { uid, fecha, descripcion, estado } = req.query;
+    const { uid, fecha, descripcion, estado, tipo } = req.query;
     const filtros = [];
     const vals = [];
     let i = 0;
@@ -93,12 +93,14 @@ async function getAsuntosPropiosEnriquecidos(req, res) {
         vals.push(`%${descripcion}%`);
     if (typeof estado !== "undefined")
       filtros.push(`ap.estado = $${++i}`) && vals.push(Number(estado));
+    if (typeof tipo !== "undefined")
+      filtros.push(`ap.tipo = $${++i}`) && vals.push(Number(tipo));
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
 
     const { rows: asuntos } = await db.query(
-      `SELECT ap.id, ap.uid, TO_CHAR(ap.fecha, 'YYYY-MM-DD') AS fecha, ap.descripcion, ap.estado
-       FROM asuntos_propios ap
+      `SELECT ap.id, ap.uid, TO_CHAR(ap.fecha, 'YYYY-MM-DD') AS fecha, ap.descripcion, ap.estado, ap.tipo
+       FROM permisos ap
        ${where}
        ORDER BY ap.fecha ASC`,
       vals
@@ -118,10 +120,10 @@ async function getAsuntosPropiosEnriquecidos(req, res) {
 
     res.json({ ok: true, asuntos: asuntosEnriquecidos });
   } catch (err) {
-    console.error("[getAsuntosPropiosEnriquecidos] Error:", err);
+    console.error("[getPermisosEnriquecidos] Error:", err);
     res.status(500).json({
       ok: false,
-      error: "Error obteniendo asuntos propios enriquecidos",
+      error: "Error obteniendo permisos enriquecidos",
     });
   }
 }
@@ -130,11 +132,14 @@ async function getAsuntosPropiosEnriquecidos(req, res) {
  * Insertar un asunto propio con comprobaciones de restricciones
  */
 async function insertAsuntoPropio(req, res) {
-  const { uid, fecha, descripcion } = req.body || {};
-  if (!uid || !fecha || !descripcion)
+  const { uid, fecha, descripcion, tipo } = req.body || {};
+  if (!uid || !fecha || !descripcion || !tipo)
     return res
       .status(400)
-      .json({ ok: false, error: "UID, fecha y descripción son obligatorios" });
+      .json({
+        ok: false,
+        error: "UID, fecha, descripción y tipo son obligatorios",
+      });
 
   try {
     const restricciones = await getRestriccionesAsuntos();
@@ -154,7 +159,6 @@ async function insertAsuntoPropio(req, res) {
     const dias = restriccionesMap.dias.valor_num;
     const ofuscar = restriccionesMap.ofuscar.valor_bool;
 
-   
     const fechaSolicitada = new Date(fecha);
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
@@ -186,7 +190,7 @@ async function insertAsuntoPropio(req, res) {
     if (maxDias == 0) maxDias = dias;
 
     const { rows: totalCurso } = await db.query(
-      `SELECT COUNT(*)::int AS total FROM asuntos_propios WHERE uid = $1`,
+      `SELECT COUNT(*)::int AS total FROM permisos WHERE uid = $1 AND tipo=13`,
       [uid]
     );
     if (totalCurso[0].total >= maxDias)
@@ -196,7 +200,7 @@ async function insertAsuntoPropio(req, res) {
       });
 
     const { rows: concurrencia } = await db.query(
-      `SELECT COUNT(*)::int AS total FROM asuntos_propios WHERE fecha = $1`,
+      `SELECT COUNT(*)::int AS total FROM permisos WHERE fecha = $1 AND tipo=13`,
       [fecha]
     );
     if (concurrencia[0].total >= concurrentes)
@@ -206,7 +210,7 @@ async function insertAsuntoPropio(req, res) {
       });
 
     const { rows: diasCercanos } = await db.query(
-      `SELECT fecha FROM asuntos_propios WHERE uid = $1 AND fecha BETWEEN ($2::date - INTERVAL '10 days') AND ($2::date + INTERVAL '10 days') ORDER BY fecha`,
+      `SELECT fecha FROM permisos WHERE uid = $1 AND fecha BETWEEN ($2::date - INTERVAL '10 days') AND ($2::date + INTERVAL '10 days') ORDER BY fecha`,
       [uid, fecha]
     );
 
@@ -231,8 +235,8 @@ async function insertAsuntoPropio(req, res) {
       });
 
     const { rows } = await db.query(
-      `INSERT INTO asuntos_propios (uid, fecha, descripcion) VALUES ($1, $2, $3) RETURNING id, uid, fecha, descripcion`,
-      [uid, fecha, descripcion]
+      `INSERT INTO permisos (uid, fecha, descripcion, tipo) VALUES ($1, $2, $3, $4) RETURNING id, uid, fecha, descripcion, tipo`,
+      [uid, fecha, descripcion, tipo]
     );
 
     // ✅ Responder al frontend **antes** de enviar email
@@ -283,9 +287,95 @@ async function insertAsuntoPropio(req, res) {
 }
 
 /**
+ *
+ *  PARA INSERCIÓN DE PERMISOS DISTINTOS DE ASUNTOS PROPIOS
+ *  NO HAY RESTRICCIONES PARA PEDIR ESTE TIPO DE PERMISOS
+ *
+ * /*/
+async function insertPermiso(req, res) {
+  const { uid, fecha, descripcion, tipo } = req.body || {};
+
+  // Validación mínima
+  if (!uid || !fecha || !descripcion || !tipo) {
+    return res.status(400).json({
+      ok: false,
+      error: "UID, fecha, descripción y tipo son obligatorios",
+    });
+  }
+
+  try {
+    console.log("[insertPermiso] Insertando permiso sin restricciones:", {
+      uid,
+      fecha,
+      tipo,
+    });
+
+    const { rows } = await db.query(
+      `INSERT INTO permisos (uid, fecha, descripcion, tipo)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, uid, fecha, descripcion, tipo`,
+      [uid, fecha, descripcion, tipo]
+    );
+
+    // Respuesta inmediata
+    res.status(201).json({
+      ok: true,
+      permiso: rows[0],
+    });
+
+    // --- Email opcional (solo si quieres copiar el comportamiento de asuntos propios) ---
+    setImmediate(async () => {
+      try {
+        const { rows: avisos } = await db.query(
+          `SELECT emails FROM avisos WHERE modulo = 'permisos' LIMIT 1`
+        );
+
+        const emailsRaw = avisos[0]?.emails || [];
+        const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
+        if (!emails.length) return;
+
+        const ldapSession = req.session?.ldap;
+        const datosUsuario = await new Promise((resolve) => {
+          buscarPorUid(ldapSession, uid, (err, datos) =>
+            resolve(datos || { givenName: "Desconocido", sn: "" })
+          );
+        });
+
+        const nombreProfesor =
+          `${datosUsuario.givenName || ""} ${datosUsuario.sn || ""}`.trim();
+
+        const fechaFmt = new Date(rows[0].fecha).toLocaleDateString("es-ES");
+
+        await mailer.sendMail({
+          from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
+          to: emails.join(", "),
+          subject: `[PERMISOS] Nueva solicitud (${fechaFmt})`,
+          html: `
+            <p><b>Profesor:</b> ${nombreProfesor}</p>
+            <p><b>Fecha:</b> ${fechaFmt}</p>
+            <p><b>Descripción:</b> ${descripcion}</p>
+            <p><b>Tipo:</b> ${tipo}</p>
+          `,
+        });
+
+        console.log(`[insertPermiso] Email enviado a: ${emails.join(", ")}`);
+      } catch (err) {
+        console.error("[insertPermiso] Error enviando email:", err);
+      }
+    });
+  } catch (err) {
+    console.error("[insertPermiso] Error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Error guardando permiso",
+    });
+  }
+}
+
+/**
  * Actualizar parcialmente un asunto propio
  */
-async function updateAsuntoPropio(req, res) {
+async function updatePermiso(req, res) {
   const id = req.params.id;
   const { fecha, descripcion } = req.body || {};
 
@@ -298,7 +388,7 @@ async function updateAsuntoPropio(req, res) {
     return res.status(400).json({ ok: false, error: "Nada que actualizar" });
 
   try {
-    const query = `UPDATE asuntos_propios SET ${sets.join(", ")} WHERE id = $${++i} RETURNING id, uid, fecha, descripcion`;
+    const query = `UPDATE permisos SET ${sets.join(", ")} WHERE id = $${++i} RETURNING id, uid, fecha, descripcion, tipo`;
     vals.push(id);
     const { rows } = await db.query(query, vals);
     if (!rows[0])
@@ -318,13 +408,12 @@ async function updateAsuntoPropio(req, res) {
 /**
  * Eliminar un asunto propio
  */
-async function deleteAsuntoPropio(req, res) {
+async function deletePermiso(req, res) {
   const id = req.params.id;
   try {
-    const { rowCount } = await db.query(
-      `DELETE FROM asuntos_propios WHERE id = $1`,
-      [id]
-    );
+    const { rowCount } = await db.query(`DELETE FROM permisos WHERE id = $1`, [
+      id,
+    ]);
     if (!rowCount)
       return res
         .status(404)
@@ -342,14 +431,14 @@ async function deleteAsuntoPropio(req, res) {
 /**
  * Actualizar solo el estado de un asunto propio (para la directiva)
  */
-async function updateEstadoAsuntoPropio(req, res) {
+async function updateEstadoPermiso(req, res) {
   const id = req.params.id;
   const { estado } = req.body; // 1 = Aceptado, 2 = Rechazado
   if (![1, 2].includes(estado))
     return res.status(400).json({ ok: false, error: "Estado inválido" });
 
   try {
-    const query = `UPDATE asuntos_propios SET estado = $1 WHERE id = $2 RETURNING id, uid, fecha, descripcion, estado`;
+    const query = `UPDATE permisos SET estado = $1 WHERE id = $2 RETURNING id, uid, fecha, descripcion, estado, tipo`;
     const { rows } = await db.query(query, [estado, id]);
     if (!rows[0])
       return res
@@ -397,17 +486,14 @@ async function updateEstadoAsuntoPropio(req, res) {
         });
 
         console.log(
-          `[updateEstadoAsuntoPropio] Email enviado a: ${emails.join(", ")}`
+          `[updateEstadoPermiso] Email enviado a: ${emails.join(", ")}`
         );
       } catch (errMail) {
-        console.error(
-          "[updateEstadoAsuntoPropio] Error enviando email:",
-          errMail
-        );
+        console.error("[updateEstadoPermiso] Error enviando email:", errMail);
       }
     });
   } catch (err) {
-    console.error("[updateEstadoAsuntoPropio] Error:", err);
+    console.error("[updateEstadoPermiso] Error:", err);
     res.status(500).json({ ok: false, error: "Error actualizando estado" });
   }
 }
@@ -418,10 +504,11 @@ async function updateEstadoAsuntoPropio(req, res) {
  * ================================================================
  */
 module.exports = {
-  getAsuntosPropios,
+  getPermisos,
   insertAsuntoPropio,
-  updateAsuntoPropio,
-  deleteAsuntoPropio,
-  getAsuntosPropiosEnriquecidos,
-  updateEstadoAsuntoPropio,
+  insertPermiso,
+  updatePermiso,
+  deletePermiso,
+  getPermisosEnriquecidos,
+  updateEstadoPermiso,
 };
