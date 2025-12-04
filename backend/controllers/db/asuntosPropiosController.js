@@ -138,18 +138,41 @@ async function insertAsuntoPropio(req, res) {
 
   try {
     const restricciones = await getRestriccionesAsuntos();
-    const { dias, concurrentes, ofuscar, antelacion, consecutivos } =
-      restricciones;
 
+    // mapeammos restrcciones para luego indexarla
+    const restriccionesMap = restricciones.reduce((acc, r) => {
+      acc[r.descripcion] = r;
+      return acc;
+    }, {});
+
+    console.log("Restricciones: ", restriccionesMap);
+
+    const concurrentes = restriccionesMap.concurrentes.valor_num;
+    const antelacion_min = restriccionesMap.antelacion_min.valor_num;
+    const antelacion_max = restriccionesMap.antelacion_max.valor_num;
+    const consecutivos = restriccionesMap.consecutivos.valor_num;
+    const dias = restriccionesMap.dias.valor_num;
+    const ofuscar = restriccionesMap.ofuscar.valor_bool;
+
+   
     const fechaSolicitada = new Date(fecha);
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
     const diffDias = Math.ceil((fechaSolicitada - hoy) / (1000 * 60 * 60 * 24));
-    if (diffDias < antelacion)
+
+    // Control de antelación mínima
+    if (diffDias < antelacion_min)
       return res.status(400).json({
         ok: false,
-        error: `Debes solicitar el asunto propio con al menos ${antelacion} días de antelación.`,
+        error: `Debes solicitar el asunto propio con al menos ${antelacion_min} días de antelación.`,
+      });
+
+    // ✅ Nuevo control de antelación máxima
+    if (diffDias > antelacion_max)
+      return res.status(400).json({
+        ok: false,
+        error: `No puedes solicitar el asunto propio con más de ${antelacion_max} días de antelación.`,
       });
 
     const empleado = await obtenerEmpleado(uid);
@@ -158,7 +181,9 @@ async function insertAsuntoPropio(req, res) {
         .status(404)
         .json({ ok: false, error: "Empleado no encontrado" });
 
-    const maxDias = empleado.asuntos_propios; 
+    // Si no tiene días asignados, por defecto le asignamos los definidos de forma general en restricciones
+    const maxDias = empleado.asuntos_propios;
+    if (maxDias == 0) maxDias = dias;
 
     const { rows: totalCurso } = await db.query(
       `SELECT COUNT(*)::int AS total FROM asuntos_propios WHERE uid = $1`,

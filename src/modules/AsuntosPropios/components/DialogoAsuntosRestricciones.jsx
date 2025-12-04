@@ -77,7 +77,8 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
       const map = {
         dias: "asuntosDisponibles",
         concurrentes: "maxPorDia",
-        antelacion: "antelacionMinima",
+        antelacion_min: "antelacionMinima",
+        antelacion_max: "antelacionMaxima",
         consecutivos: "maxConsecutivos",
         ofuscar: "ofuscar",
       };
@@ -196,7 +197,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
-      <DialogContent className="p-0 rounded-lg h-[550px] flex flex-col">
+      <DialogContent className="p-0 rounded-lg h-[600px] flex flex-col">
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Restricciones de Asuntos Propios
@@ -236,6 +237,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                     className="w-28 text-right"
                   />
                 </div>
+
                 <div className="flex items-center justify-between">
                   <Label htmlFor="maxPorDia" className="text-sm font-medium">
                     Máximo de peticiones por día
@@ -250,6 +252,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                     className="w-28 text-right"
                   />
                 </div>
+
                 <div className="flex items-center justify-between">
                   <Label
                     htmlFor="antelacionMinima"
@@ -267,6 +270,26 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                     className="w-28 text-right"
                   />
                 </div>
+
+                {/* ✅ Nuevo input: Antelación máxima */}
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="antelacionMaxima"
+                    className="text-sm font-medium"
+                  >
+                    Antelación máxima (días)
+                  </Label>
+                  <Input
+                    id="antelacionMaxima"
+                    type="number"
+                    value={restricciones.antelacionMaxima}
+                    onChange={(e) =>
+                      handleChange("antelacionMaxima", Number(e.target.value))
+                    }
+                    className="w-28 text-right"
+                  />
+                </div>
+
                 <div className="flex items-center justify-between">
                   <Label
                     htmlFor="maxConsecutivos"

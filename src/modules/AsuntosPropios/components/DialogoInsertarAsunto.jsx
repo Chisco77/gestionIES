@@ -62,10 +62,35 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
     },
   });
 
-  const handleConfirmarPdf = () => {
-    generatePermisosPdf({ user, fecha });
-    setShowPdfDialog(false);
-    onClose();
+  const handleConfirmarPdf = async () => {
+    try {
+      console.log("Usuario: ", user);
+
+      const res = await fetch(`/api/db/empleados/${user.username}`);
+      if (!res.ok) throw new Error("Error obteniendo empleado");
+
+      let empleado = await res.json();
+      console.log("Empleado original: ", empleado);
+
+      // -----------------------------------------------------
+      // 🔥 ENRIQUECER EL OBJETO AÑADIENDO givenName Y sn
+      // -----------------------------------------------------
+      empleado = {
+        ...empleado,
+        givenName: user.givenName,
+        sn: user.sn,
+        nombre_completo: `${user.givenName} ${user.sn}`,
+      };
+
+      console.log("Empleado enriquecido:", empleado);
+
+      await generatePermisosPdf({ empleado, fecha });
+
+      setShowPdfDialog(false);
+      onClose();
+    } catch (error) {
+      console.error("Error generando el PDF:", error);
+    }
   };
 
   const handleGuardar = () => {

@@ -158,17 +158,6 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
             url: "/llavesPrestadas",
             icon: KeyRound,
           },
-          { title: "Planta BAJA", url: "/llavesPlantaBaja", icon: KeySquare },
-          {
-            title: "Planta PRIMERA",
-            url: "/llavesPlantaPrimera",
-            icon: KeySquare,
-          },
-          {
-            title: "Planta SEGUNDA",
-            url: "/llavesPlantaSegunda",
-            icon: KeySquare,
-          },
         ],
       },
       {
@@ -177,7 +166,6 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         icon: ShieldCheck,
         items: [
           { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
-          { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
           { title: "Avisos", url: "/avisos", icon: Info },
           { title: "Estancias", url: "/estancias", icon: Building2 },
           {

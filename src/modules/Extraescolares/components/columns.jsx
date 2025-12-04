@@ -1,7 +1,7 @@
 // src/components/extraescolares/columns.jsx
 export const columnsExtraescolares = (cursos) => [
   // <-- recibe cursosMap
-  {
+  /*{
     accessorKey: "fecha_inicio",
     header: "Inicio",
     cell: ({ row }) => new Date(row.original.fecha_inicio).toLocaleDateString(),
@@ -14,7 +14,29 @@ export const columnsExtraescolares = (cursos) => [
       if (hasta && rowDate > hasta) return false;
       return true;
     },
+  },*/
+  {
+    accessorKey: "fecha_inicio",
+    header: "Inicio",
+    cell: ({ row }) => new Date(row.original.fecha_inicio).toLocaleDateString(),
+    filterFn: (row, columnId, filterValue) => {
+      if (!filterValue) return true;
+
+      const rowDate = new Date(row.original.fecha_inicio);
+      rowDate.setHours(0, 0, 0, 0);
+
+      const desde = filterValue.desde ? new Date(filterValue.desde) : null;
+      if (desde) desde.setHours(0, 0, 0, 0);
+
+      const hasta = filterValue.hasta ? new Date(filterValue.hasta) : null;
+      if (hasta) hasta.setHours(0, 0, 0, 0);
+
+      if (desde && rowDate < desde) return false;
+      if (hasta && rowDate > hasta) return false;
+      return true;
+    },
   },
+
   {
     accessorKey: "fecha_fin",
     header: "Fin",

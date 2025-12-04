@@ -81,6 +81,7 @@ async function insertRestriccionesAsuntos(req, res) {
     asuntosDisponibles = 0,
     maxPorDia = 0,
     antelacionMinima = 0,
+    antelacionMaxima=0,
     maxConsecutivos = 0,
     ofuscar = false,
   } = req.body;
@@ -105,8 +106,15 @@ async function insertRestriccionesAsuntos(req, res) {
     {
       tipo,
       restriccion: "asuntos",
-      descripcion: "antelacion",
+      descripcion: "antelacion_min",
       valor_num: antelacionMinima,
+      valor_bool: false,
+    },
+    {
+      tipo,
+      restriccion: "asuntos",
+      descripcion: "antelacion_max",
+      valor_num: antelacionMaxima,
       valor_bool: false,
     },
     {

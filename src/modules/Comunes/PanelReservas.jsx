@@ -101,6 +101,37 @@ export function PanelReservas({ uid, loading = false }) {
 
   const { user } = useAuth();
 
+  const handleGenerarPdfAsunto = async (asunto) => {
+    try {
+      // 1. Obtener empleado desde backend
+      const res = await fetch(`/api/db/empleados/${user.username}`);
+      if (!res.ok) throw new Error("Error obteniendo empleado");
+
+      let empleado = await res.json();
+
+      // 2. Enriquecer empleado con datos LDAP del usuario
+      empleado = {
+        ...empleado,
+        givenName: user.givenName || user.ldap?.givenName,
+        sn: user.sn || user.ldap?.sn,
+        nombre_completo: `${user.givenName || user.ldap?.givenName} ${
+          user.sn || user.ldap?.sn
+        }`,
+      };
+
+      console.log ("Empleado: ", empleado);
+
+      // 3. Generar PDF
+      await generatePermisosPdf({
+        empleado,
+        fecha: asunto.fecha,
+      });
+    } catch (err) {
+      console.error("Error generando PDF:", err);
+      toast.error("No se pudo generar el PDF");
+    }
+  };
+
   // ===== Renderizados =====
   const renderReservas = () => {
     if (!reservas.length)
@@ -242,7 +273,7 @@ export function PanelReservas({ uid, loading = false }) {
                       className="text-red-600 hover:text-red-800 flex items-center gap-1"
                       onClick={(e) => {
                         e.stopPropagation(); // evita abrir el diálogo de edición
-                        generatePermisosPdf({ user, fecha: a.fecha });
+                        handleGenerarPdfAsunto(a);
                       }}
                     >
                       <span className="text-xs font-bold">PDF</span>
