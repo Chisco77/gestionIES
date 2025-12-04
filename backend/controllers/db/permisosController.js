@@ -308,6 +308,7 @@ async function insertPermiso(req, res) {
       uid,
       fecha,
       tipo,
+      descripcion,
     });
 
     const { rows } = await db.query(
@@ -323,7 +324,6 @@ async function insertPermiso(req, res) {
       permiso: rows[0],
     });
 
-    // --- Email opcional (solo si quieres copiar el comportamiento de asuntos propios) ---
     setImmediate(async () => {
       try {
         const { rows: avisos } = await db.query(

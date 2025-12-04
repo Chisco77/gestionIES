@@ -18,6 +18,8 @@ import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { toast } from "sonner"; // asegúrate de tenerlo importado
 import { generatePermisosPdf } from "@/utils/Informes";
 import { useAuth } from "@/context/AuthContext";
+import { DialogoEliminarPermiso } from "../Permisos/components/DialogoEliminarPermiso";
+import { DialogoEditarPermiso } from "../Permisos/components/DialogoEditarPermiso";
 
 import {
   Tooltip,
@@ -32,6 +34,13 @@ export function PanelReservas({ uid, loading = false }) {
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false);
   const [reservaAEliminar, setReservaAEliminar] = useState(null);
   const [dialogoEliminarAbierto, setDialogoEliminarAbierto] = useState(false);
+
+  const [permisoSeleccionado, setPermisoSeleccionado] = useState(null);
+  const [dialogoEditarPermisoAbierto, setDialogoEditarPermisoAbierto] =
+    useState(false);
+  const [permisoAEliminar, setPermisoAEliminar] = useState(null);
+  const [dialogoEliminarPermisoAbierto, setDialogoEliminarPermisoAbierto] =
+    useState(false);
 
   const [asuntoSeleccionado, setAsuntoSeleccionado] = useState(null);
   const [dialogoEditarAsuntoAbierto, setDialogoEditarAsuntoAbierto] =
@@ -90,6 +99,20 @@ export function PanelReservas({ uid, loading = false }) {
     setDialogoEliminarExtraAbierto(true);
   };
 
+  const handleClickPermiso = (permiso) => {
+    setPermisoSeleccionado(permiso);
+    setDialogoEditarPermisoAbierto(true);
+  };
+
+  const handleEliminarPermiso = (permiso) => {
+    if (permiso.estado === 1) {
+      toast.warning("No se puede eliminar un permiso que ha sido aceptado.");
+      return;
+    }
+    setPermisoAEliminar(permiso);
+    setDialogoEliminarPermisoAbierto(true);
+  };
+
   const { data: departamentos = [] } = useDepartamentosLdap();
   const { data: cursos = [] } = useCursosLdap();
   const { data: estancias = [] } = useEstancias();
@@ -118,13 +141,11 @@ export function PanelReservas({ uid, loading = false }) {
           user.sn || user.ldap?.sn
         }`,
       };
-
-      console.log("Empleado: ", empleado);
-
+      console.log("Asunto: ", asunto);
       // 3. Generar PDF
       await generatePermisosPdf({
         empleado,
-        fecha: asunto.fecha,
+        permiso: asunto,
       });
     } catch (err) {
       console.error("Error generando PDF:", err);
@@ -198,8 +219,7 @@ export function PanelReservas({ uid, loading = false }) {
 
   const renderAsuntosPropios = () => {
     const asuntosPropios = asuntos.filter((a) => a.tipo === 13);
-    console.log ("Asuntos Propios: ", asuntosPropios);
-    console.log ("Asuntos: ", asuntos);
+
     if (!asuntosPropios.length)
       return (
         <p className="text-gray-500 text-center">No hay asuntos propios</p>
@@ -314,12 +334,12 @@ export function PanelReservas({ uid, loading = false }) {
       });
 
       const estado = estadoMap[a.estado] ?? { text: "—", color: "" };
-
+      console.log ("Permiso a", a);
       return (
         <Card
           key={i}
           className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative"
-          onClick={() => handleClickAsunto(a)}
+          onClick={() => handleClickPermiso(a)}
         >
           {/* Cabecera: descripción y papelera */}
           <div className="flex items-center justify-between gap-2">
@@ -334,7 +354,7 @@ export function PanelReservas({ uid, loading = false }) {
               className="text-red-500 hover:text-red-700 flex-shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
-                handleEliminarAsunto(a);
+                handleEliminarPermiso(a);
               }}
             >
               <TooltipProvider>
@@ -576,6 +596,26 @@ export function PanelReservas({ uid, loading = false }) {
           onOpenChange={setDialogoEliminarExtraAbierto}
           onDeleteSuccess={() => {
             setExtraescolarAEliminar(null);
+          }}
+        />
+      )}
+
+      {/* === Diálogos de permisos === */}
+      {permisoSeleccionado && (
+        <DialogoEditarPermiso
+          permiso={permisoSeleccionado}
+          open={dialogoEditarPermisoAbierto}
+          onClose={() => setDialogoEditarPermisoAbierto(false)}
+        />
+      )}
+
+      {permisoAEliminar && (
+        <DialogoEliminarPermiso
+          permiso={permisoAEliminar}
+          open={dialogoEliminarPermisoAbierto}
+          onOpenChange={setDialogoEliminarPermisoAbierto}
+          onDeleteSuccess={() => {
+            setPermisoAEliminar(null);
           }}
         />
       )}

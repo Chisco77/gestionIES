@@ -1,17 +1,17 @@
-// src/modules/Asuntos/CalendarioAsuntos.jsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function CalendarioPermisos({
   currentMonth,
   currentYear,
   todayStr,
-  selectedDate,
-  asuntosPorDia,
-  asuntosPropiosUsuario,
-  rangosBloqueados,
-  maxConcurrentes,
+  permisosUsuario,
   onDiaClick,
   onMonthChange,
 }) {
@@ -76,7 +76,9 @@ export function CalendarioPermisos({
             <thead>
               <tr>
                 {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
-                  <th key={d} className="p-1 font-medium">{d}</th>
+                  <th key={d} className="p-1 font-medium">
+                    {d}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -89,44 +91,26 @@ export function CalendarioPermisos({
                     const dateObj = new Date(currentYear, currentMonth, d);
                     const dateKey = formatDateKey(dateObj);
                     const isToday = dateKey === todayStr;
-                    const numAsuntos = asuntosPorDia[dateKey] || 0;
-                    const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
-                    const rangoDelDia = rangosBloqueados.find(
-                      (r) => dateKey >= r.inicio && dateKey <= r.fin
-                    );
-                    const motivoRango = rangoDelDia?.motivo || "";
-                    const rangoBloqueado = !!rangoDelDia;
-                    const bloqueado = numAsuntos >= maxConcurrentes || rangoBloqueado || isWeekend;
-                    const isMine = !!asuntosPropiosUsuario[dateKey];
+                    const hasPermiso = !!permisosUsuario[dateKey];
 
                     return (
                       <TooltipProvider key={j}>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <td
-                              className={`relative p-1 rounded-lg transition-all align-top
-                                ${bloqueado ? "bg-red-100 text-gray-400 cursor-not-allowed" : "cursor-pointer hover:bg-green-50"}
-                                ${isToday ? "border border-green-400" : ""}
-                                ${isMine ? "bg-green-100" : ""}
-                              `}
-                              onClick={() => !bloqueado && onDiaClick(dateKey)}
+                              className={`relative p-2 rounded-lg transition-all align-top cursor-pointer
+                                ${hasPermiso ? "bg-green-100" : "hover:bg-gray-100"}
+                                ${isToday ? "border border-green-400" : ""}`}
+                              onClick={() => onDiaClick(dateKey)} // clic activo siempre
                             >
-                              <div className="relative flex items-center justify-center flex-col">
-                                <span>{d}</span>
-                                {numAsuntos > 0 && (
-                                  <span
-                                    className={`absolute right-1 flex items-center justify-center w-5 h-5 text-[0.7rem] text-white font-semibold rounded-full
-                                      ${bloqueado ? "bg-red-500" : "bg-green-500"}`}
-                                  >
-                                    {numAsuntos}
-                                  </span>
-                                )}
+                              <div className="flex items-center justify-center">
+                                {d}
                               </div>
                             </td>
                           </TooltipTrigger>
-                          {bloqueado && motivoRango && (
-                            <TooltipContent className="bg-red-100 text-black p-2 rounded-md">
-                              {motivoRango}
+                          {hasPermiso && (
+                            <TooltipContent className="bg-green-100 text-black p-2 rounded-md">
+                              Permiso solicitado
                             </TooltipContent>
                           )}
                         </Tooltip>
@@ -139,27 +123,6 @@ export function CalendarioPermisos({
           </table>
         </div>
       </CardContent>
-
-      <div className="mt-4 mb-4 flex justify-center items-center text-sm">
-        <div className="flex gap-6">
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-green-200 rounded"></div>
-            Mis asuntos propios
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-red-200 rounded"></div>
-            Días bloqueados
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-            Parcialmente ocupado
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-            Completo
-          </div>
-        </div>
-      </div>
     </Card>
   );
 }

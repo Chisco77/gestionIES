@@ -46,7 +46,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
     },
     onSuccess: () => {
       toast.success("Asunto propio insertado correctamente");
-      queryClient.invalidateQueries(["asuntosPropios", user.username]);
+      queryClient.invalidateQueries(["panel", "permisos", user.username]);
 
       // Actualizar el calendario (usePermisosMes)
       const month = new Date(fecha).getMonth();
@@ -85,7 +85,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
 
       console.log("Empleado enriquecido:", empleado);
 
-      await generatePermisosPdf({ empleado, fecha });
+      await generatePermisosPdf({ empleado, permiso: nuevoAsunto });
 
       setShowPdfDialog(false);
       onClose();

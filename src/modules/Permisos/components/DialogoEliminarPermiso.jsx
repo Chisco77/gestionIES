@@ -10,8 +10,8 @@ import { toast } from "sonner";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 
-export function DialogoEliminarPermiso({ open, onOpenChange, asunto, onDeleteSuccess }) {
-  if (!asunto) return null;
+export function DialogoEliminarPermiso({ open, onOpenChange, permiso, onDeleteSuccess }) {
+  if (!permiso) return null;
 
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
@@ -22,33 +22,33 @@ export function DialogoEliminarPermiso({ open, onOpenChange, asunto, onDeleteSuc
   // --------------------------
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API_URL}/db/permisos/${asunto.id}`, {
+      const res = await fetch(`${API_URL}/db/permisos/${permiso.id}`, {
         method: "DELETE",
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Error al eliminar el asunto propio");
+      if (!res.ok) throw new Error("Error al eliminar el permiso");
       return true;
     },
     onSuccess: () => {
-      toast.success("Asunto propio eliminado correctamente");
+      toast.success("Permiso eliminado correctamente");
 
       // 1️⃣ Actualizar PanelReservas
-      queryClient.invalidateQueries(["asuntosPropios", user.uid]);
+      queryClient.invalidateQueries(["panel", "permisos", user.uid]);
 
       // 2️⃣ Actualizar calendario (usePermisosMes)
-      const fechaObj = new Date(asunto.fecha);
+      const fechaObj = new Date(permiso.fecha);
       const month = fechaObj.getMonth();
       const year = fechaObj.getFullYear();
       const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
       const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
-      queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
+      queryClient.invalidateQueries({ queryKey: ["permisosMes", start, end] });
 
       onDeleteSuccess?.();
       onOpenChange(false);
     },
     onError: (err) => {
       console.error(err);
-      toast.error(err.message || "No se pudo eliminar el asunto propio");
+      toast.error(err.message || "No se pudo eliminar el permiso");
     },
   });
 
@@ -65,7 +65,7 @@ export function DialogoEliminarPermiso({ open, onOpenChange, asunto, onDeleteSuc
         {/* ENCABEZADO ROJO */}
         <DialogHeader className="bg-red-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
-            Eliminar Asunto Propio
+            Eliminar Permiso
           </DialogTitle>
         </DialogHeader>
 
@@ -73,11 +73,11 @@ export function DialogoEliminarPermiso({ open, onOpenChange, asunto, onDeleteSuc
         <div className="text-sm text-gray-700 mb-4 space-y-2 px-6 pt-4">
           <div>
             <span className="font-medium">Fecha:</span>{" "}
-            {new Date(asunto.fecha).toLocaleDateString("es-ES")}
+            {new Date(permiso.fecha).toLocaleDateString("es-ES")}
           </div>
           <div>
             <span className="font-medium">Descripción:</span>{" "}
-            {asunto.descripcion || "Sin descripción"}
+            {permiso.descripcion || "Sin descripción"}
           </div>
           <div className="text-red-600 font-semibold mt-2">
             Esta acción no se puede deshacer.

@@ -12,7 +12,6 @@ import { usePermisosUid } from "@/hooks/Permisos/usePermisosUid";
 import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { usePermisosMes } from "@/hooks/Permisos/usePermisosMes";
-import { useRestriccionesAsuntos } from "@/hooks/useRestricciones";
 
 import { CalendarioPermisos } from "../components/CalendarioPermisos";
 
@@ -41,40 +40,19 @@ export function PermisosIndex() {
 
   // ===== Hooks de PanelReservas =====
   const { data: reservasEstancias } = useReservasUid(uid);
-  const { data: asuntosPropios } = usePermisosUid(uid);
+  const { data: permisos } = usePermisosUid(uid);
+  const asuntosPropios = permisos.filter((a) => a.tipo !== 13);
   const { data: extraescolares } = useExtraescolaresUid(uid);
   const { data: estancias } = useEstancias();
   const { data: periodos } = usePeriodosHorarios();
 
-  // ===================== Restricciones desde el hook =====================
-  const { data: restricciones = [] } = useRestriccionesAsuntos();
-  console.log("Restricciones: ", restricciones);
-
-  // Obtener maxConcurrentes desde la fila "maximas_aceptadas"
-  const maxConcurrentes =
-    restricciones.find((r) => r.descripcion === "concurrentes")?.valor_num ?? 2; // valor por defecto: 2
-
-  // Obtener rangos bloqueados desde "rangos_bloqueados"
-  let rangosBloqueados =
-    restricciones.find((r) => r.descripcion === "rangos_bloqueados")
-      ?.rangos_bloqueados_json?.rango_bloqueado ?? [];
-
-  // Normalizamos a array
-  if (!Array.isArray(rangosBloqueados)) {
-    try {
-      rangosBloqueados =
-        JSON.parse(rangosBloqueados || "[]")?.rango_bloqueado ?? [];
-    } catch {
-      rangosBloqueados = [];
-    }
-  }
-
   // === Hook para asuntos del mes ===
-  const { data: asuntosPropiosMes = [], refetch: refetchAsuntosMes } =
-    usePermisosMes(
-      currentYear,
-      currentMonth + 1 // el hook espera mes 1-12
-    );
+  const { data: permisosMes = [], refetch: refetchAsuntosMes } = usePermisosMes(
+    currentYear,
+    currentMonth + 1 // el hook espera mes 1-12
+  );
+
+  const asuntosPropiosMes = permisosMes.filter((a) => a.tipo !== 13);
 
   // --- Función para recargar PanelReservas ---
   const recargarPanel = () => setReloadPanel((r) => r + 1);
@@ -119,9 +97,6 @@ export function PermisosIndex() {
   };
 
   const handleDiaClick = (dateKey) => {
-    const bloqueado = (asuntosPorDia[dateKey] || 0) >= maxConcurrentes;
-    if (bloqueado) return;
-
     const asuntoExistente = asuntosPropiosUsuario[dateKey];
     setSelectedDate(dateKey);
 
@@ -138,8 +113,7 @@ export function PermisosIndex() {
     refetchAsuntosMes(); // actualizamos el mes usando el hook
     recargarPanel(); // recargamos el panel
   };
-  console.log("Concurrentes: ", maxConcurrentes);
-  console.log("Rango: ", rangosBloqueados);
+
   return (
     <div className="p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -148,10 +122,7 @@ export function PermisosIndex() {
           currentYear={currentYear}
           todayStr={todayStr}
           selectedDate={selectedDate}
-          asuntosPorDia={asuntosPorDia}
-          asuntosPropiosUsuario={asuntosPropiosUsuario}
-          rangosBloqueados={rangosBloqueados}
-          maxConcurrentes={maxConcurrentes}
+          permisosUsuario={asuntosPropiosUsuario}
           onDiaClick={handleDiaClick}
           onMonthChange={({ newMonth, newYear }) => {
             setCurrentMonth(newMonth);
@@ -185,7 +156,7 @@ export function PermisosIndex() {
         <DialogoEditarPermiso
           open={abrirDialogoEdicion}
           onClose={() => setAbrirDialogoEdicion(false)}
-          asunto={asuntoSeleccionado}
+          permiso={asuntoSeleccionado}
           onSuccess={onSuccess}
         />
       )}
