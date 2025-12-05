@@ -48,7 +48,6 @@ export function AsuntosPropiosIndex() {
 
   // ===================== Restricciones desde el hook =====================
   const { data: restricciones = [] } = useRestriccionesAsuntos();
-  console.log("Restricciones: ", restricciones);
 
   // Obtener maxConcurrentes desde la fila "maximas_aceptadas"
   const maxConcurrentes =
@@ -138,8 +137,6 @@ export function AsuntosPropiosIndex() {
     refetchAsuntosMes(); // actualizamos el mes usando el hook
     recargarPanel(); // recargamos el panel
   };
-  console.log("Concurrentes: ", maxConcurrentes);
-  console.log("Rango: ", rangosBloqueados);
   return (
     <div className="p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

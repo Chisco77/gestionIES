@@ -141,7 +141,6 @@ export function PanelReservas({ uid, loading = false }) {
           user.sn || user.ldap?.sn
         }`,
       };
-      console.log("Asunto: ", asunto);
       // 3. Generar PDF
       await generatePermisosPdf({
         empleado,
@@ -334,7 +333,6 @@ export function PanelReservas({ uid, loading = false }) {
       });
 
       const estado = estadoMap[a.estado] ?? { text: "—", color: "" };
-      console.log ("Permiso a", a);
       return (
         <Card
           key={i}

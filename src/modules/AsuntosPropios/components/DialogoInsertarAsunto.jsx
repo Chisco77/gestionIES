@@ -19,11 +19,13 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [asuntoCreado, setAsuntoCreado] = useState(null);
 
   useEffect(() => {
     if (open) {
       setDescripcion("");
       setShowPdfDialog(false);
+      setAsuntoCreado(null);
     }
   }, [open]);
 
@@ -32,7 +34,6 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
   // --------------------------
   const mutation = useMutation({
     mutationFn: async (nuevoAsunto) => {
-      console.log ("Nuevo asunto: ", nuevoAsunto);
       const res = await fetch(`${API_URL}/db/permisos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,19 +45,30 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
         throw new Error(data.error || "Error insertando asunto");
       return data.asunto;
     },
-    onSuccess: () => {
+    onSuccess: (asuntoInsertado, variables) => {
+      const nuevoAsunto = {
+        uid: variables.uid,
+        fecha: variables.fecha,
+        descripcion: variables.descripcion,
+        tipo: variables.tipo,
+      };
+
+      setAsuntoCreado(nuevoAsunto);
+
       toast.success("Asunto propio insertado correctamente");
+
       queryClient.invalidateQueries(["panel", "permisos", user.username]);
 
-      // Actualizar el calendario (usePermisosMes)
       const month = new Date(fecha).getMonth();
       const year = new Date(fecha).getFullYear();
       const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
       const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
+
       queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
 
-      setShowPdfDialog(true); // mostrar diálogo PDF
+      setShowPdfDialog(true);
     },
+
     onError: (err) => {
       console.error(err);
       toast.error(err.message || "Error al insertar asunto propio");
@@ -64,18 +76,14 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
   });
 
   const handleConfirmarPdf = async () => {
-    try {
-      console.log("Usuario: ", user);
+    if (!asuntoCreado) return;
 
+    try {
       const res = await fetch(`/api/db/empleados/${user.username}`);
       if (!res.ok) throw new Error("Error obteniendo empleado");
 
       let empleado = await res.json();
-      console.log("Empleado original: ", empleado);
 
-      // -----------------------------------------------------
-      // 🔥 ENRIQUECER EL OBJETO AÑADIENDO givenName Y sn
-      // -----------------------------------------------------
       empleado = {
         ...empleado,
         givenName: user.givenName,
@@ -83,14 +91,13 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
         nombre_completo: `${user.givenName} ${user.sn}`,
       };
 
-      console.log("Empleado enriquecido:", empleado);
-
-      await generatePermisosPdf({ empleado, permiso: nuevoAsunto });
+      await generatePermisosPdf({ empleado, permiso: asuntoCreado });
 
       setShowPdfDialog(false);
       onClose();
     } catch (error) {
       console.error("Error generando el PDF:", error);
+      toast.error("Error generando el PDF");
     }
   };
 
@@ -155,7 +162,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
             </DialogTitle>
           </DialogHeader>
           <p className="text-center text-sm text-gray-600">
-            ¿Desea generar el documento PDF del permiso ahora?
+            ¿Desea generar el documento PDF del asunto propio ahora?
           </p>
           <DialogFooter className="flex justify-center mt-4">
             <Button
