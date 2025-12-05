@@ -32,6 +32,18 @@ const mailer = require("../../mailer");
 
 const { obtenerEmpleado } = require("./empleadosController");
 
+const MAPA_TIPOS = {
+  2: "(Art. 2) Fallecimiento, accidente o enfermedad grave, hospitalización o intervención quirúrgica",
+  3: "(Art. 3) Enfermedad propia",
+  4: "(Art. 4) Traslado de domicilio",
+  7: "(Art. 7) Exámenes prenatales y técnicas de preparación al parto",
+  11: "(Art. 11) Deber inexcusable de carácter público o personal",
+  14: "(Art. 14) Funciones sindicales / representación del personal",
+  15: "(Art. 15) Exámenes finales o pruebas selectivas",
+  32: "(Art. 32) Reducción de jornada para mayores de 55 años",
+  0: "Otros",
+};
+
 /**
  * Obtener asuntos propios con filtros opcionales
  */
@@ -134,12 +146,10 @@ async function getPermisosEnriquecidos(req, res) {
 async function insertAsuntoPropio(req, res) {
   const { uid, fecha, descripcion, tipo } = req.body || {};
   if (!uid || !fecha || !descripcion || !tipo)
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: "UID, fecha, descripción y tipo son obligatorios",
-      });
+    return res.status(400).json({
+      ok: false,
+      error: "UID, fecha, descripción y tipo son obligatorios",
+    });
 
   try {
     const restricciones = await getRestriccionesAsuntos();
@@ -296,7 +306,7 @@ async function insertPermiso(req, res) {
   const { uid, fecha, descripcion, tipo } = req.body || {};
 
   // Validación mínima
-  if (!uid || !fecha || !descripcion || !tipo) {
+  if (!uid || !fecha || !descripcion || tipo === null || tipo === undefined) {
     return res.status(400).json({
       ok: false,
       error: "UID, fecha, descripción y tipo son obligatorios",
@@ -346,16 +356,19 @@ async function insertPermiso(req, res) {
 
         const fechaFmt = new Date(rows[0].fecha).toLocaleDateString("es-ES");
 
+        // 👉 Aquí se hace el mapeo del tipo
+        const tipoTexto = MAPA_TIPOS[tipo] || "Otros";
+
         await mailer.sendMail({
           from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
           to: emails.join(", "),
           subject: `[PERMISOS] Nueva solicitud (${fechaFmt})`,
           html: `
-            <p><b>Profesor:</b> ${nombreProfesor}</p>
-            <p><b>Fecha:</b> ${fechaFmt}</p>
-            <p><b>Descripción:</b> ${descripcion}</p>
-            <p><b>Tipo:</b> ${tipo}</p>
-          `,
+        <p><b>Profesor:</b> ${nombreProfesor}</p>
+        <p><b>Fecha:</b> ${fechaFmt}</p>
+        <p><b>Descripción:</b> ${descripcion}</p>
+        <p><b>Tipo:</b> ${tipoTexto}</p>
+      `,
         });
 
         console.log(`[insertPermiso] Email enviado a: ${emails.join(", ")}`);

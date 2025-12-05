@@ -24,13 +24,24 @@ export function DialogoConfirmacionExtraescolar({
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  // Formato de fechas
+  const fechaInicioLocal = actividad.fecha_inicio
+    ? new Date(actividad.fecha_inicio).toLocaleDateString("es-ES")
+    : "";
+  const fechaFinLocal = actividad.fecha_fin
+    ? new Date(actividad.fecha_fin).toLocaleDateString("es-ES")
+    : "";
+
+  // Profesor organizador
+  const profesor = actividad.nombreProfesor || "";
+
   const mutation = useMutation({
     mutationFn: async () => {
       const nuevoEstado = esAceptar ? 1 : 2;
       const res = await fetch(
-        `${API_URL}/db/extraescolares/${actividad.id}/estado`, 
+        `${API_URL}/db/extraescolares/${actividad.id}/estado`,
         {
-          method: "PUT", 
+          method: "PUT",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ estado: nuevoEstado }),
@@ -48,7 +59,6 @@ export function DialogoConfirmacionExtraescolar({
           : "Actividad rechazada correctamente"
       );
 
-      // Invalidar queries para refrescar tabla y calendario
       queryClient.invalidateQueries(["extraescolares"]);
       queryClient.invalidateQueries(["extraescolaresMes"]);
 
@@ -79,10 +89,52 @@ export function DialogoConfirmacionExtraescolar({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="text-sm text-gray-700 space-y-4 px-6 pt-5 pb-2">
-          {esAceptar
-            ? "¿Desea aceptar esta actividad extraescolar?"
-            : "¿Desea rechazar esta actividad extraescolar?"}
+        <div className="text-sm text-gray-700 px-6 pt-5 pb-2 space-y-4">
+          {/* Pregunta */}
+          <p className="font-medium">
+            {esAceptar
+              ? "¿Desea aceptar esta actividad extraescolar?"
+              : "¿Desea rechazar esta actividad extraescolar?"}
+          </p>
+
+          {/* Información de la actividad */}
+          <div className="border rounded-md bg-gray-50 p-3 space-y-1">
+            {actividad.nombre && (
+              <p>
+                <strong>Actividad:</strong> {actividad.nombre}
+              </p>
+            )}
+
+            {fechaInicioLocal && (
+              <p>
+                <strong>Fecha inicio:</strong> {fechaInicioLocal}
+              </p>
+            )}
+
+            {fechaFinLocal && (
+              <p>
+                <strong>Fecha fin:</strong> {fechaFinLocal}
+              </p>
+            )}
+
+            {profesor && (
+              <p>
+                <strong>Profesor organizador:</strong> {profesor}
+              </p>
+            )}
+
+            {actividad.ubicacion && (
+              <p>
+                <strong>Ubicación:</strong> {actividad.ubicacion}
+              </p>
+            )}
+
+            {actividad.descripcion && (
+              <p>
+                <strong>Descripción:</strong> {actividad.descripcion}
+              </p>
+            )}
+          </div>
         </div>
 
         <DialogFooter className="px-6 py-4 bg-gray-50 flex gap-2">

@@ -1,4 +1,3 @@
-// src/modules/Reservas/components/CalendarioReservas.jsx
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -19,7 +18,6 @@ export function CalendarioReservas({ selectedDate, onSelectDate, uid }) {
 
   const { data: reservasUsuario = [] } = useReservasUid(uid);
 
-  // Construcción de semanas
   const weeks = useMemo(() => {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
@@ -55,7 +53,9 @@ export function CalendarioReservas({ selectedDate, onSelectDate, uid }) {
   const handleDiaClick = (d) => {
     if (!d) return;
     const dateKey = formatDateKey(new Date(currentYear, currentMonth, d));
-    onSelectDate?.(dateKey);
+    const isPast =
+      new Date(dateKey + "T00:00:00") < new Date(todayStr + "T00:00:00");
+    if (!isPast) onSelectDate?.(dateKey);
   };
 
   return (
@@ -93,25 +93,19 @@ export function CalendarioReservas({ selectedDate, onSelectDate, uid }) {
                   {week.map((d, j) => {
                     if (!d) return <td key={j} className="p-2"></td>;
 
-                    const dateKey = formatDateKey(
-                      new Date(currentYear, currentMonth, d)
-                    );
+                    const dateObj = new Date(currentYear, currentMonth, d);
+                    const dateKey = formatDateKey(dateObj);
                     const isToday = dateKey === todayStr;
                     const isSelected = dateKey === selectedDate;
-
-                    // Filtra las reservas del usuario para esta fecha
-                    const reservasDelDia = reservasUsuario.filter(
-                      (r) => r.fecha === dateKey
-                    );
-                    const hayReserva = reservasDelDia.length > 0;
-                    
+                    const isPast = dateObj < new Date(todayStr + "T00:00:00");
 
                     return (
                       <td
                         key={j}
-                        className={`p-1 cursor-pointer relative rounded-lg transition
+                        className={`p-1 relative rounded-lg transition
+                          ${isPast ? "bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-blue-100"}
                           ${isToday ? "border-2 border-blue-400" : ""}
-                          ${isSelected || hayReserva ? "bg-blue-100" : ""}`}
+                          ${isSelected && !isPast ? "bg-blue-100" : ""}`}
                         onClick={() => handleDiaClick(d)}
                       >
                         {d}

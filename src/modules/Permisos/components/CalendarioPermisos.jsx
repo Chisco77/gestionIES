@@ -93,23 +93,34 @@ export function CalendarioPermisos({
                     const isToday = dateKey === todayStr;
                     const hasPermiso = !!permisosUsuario[dateKey];
 
+                    const isPast = dateObj < new Date(todayStr + "T00:00:00");
+
+                    const baseClass = isPast
+                      ? "bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed"
+                      : hasPermiso
+                        ? "bg-yellow-100 cursor-pointer hover:bg-yellow-200"
+                        : "cursor-pointer hover:bg-gray-100";
+
                     return (
                       <TooltipProvider key={j}>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <td
-                              className={`relative p-2 rounded-lg transition-all align-top cursor-pointer
-                                ${hasPermiso ? "bg-green-100" : "hover:bg-gray-100"}
-                                ${isToday ? "border border-green-400" : ""}`}
-                              onClick={() => onDiaClick(dateKey)} // clic activo siempre
+                              className={`relative p-2 rounded-lg transition-all align-top
+                                ${baseClass}
+                                ${isToday ? "border border-yellow-400" : ""}`}
+                              onClick={() => {
+                                if (!isPast) onDiaClick(dateKey);
+                              }}
                             >
                               <div className="flex items-center justify-center">
                                 {d}
                               </div>
                             </td>
                           </TooltipTrigger>
-                          {hasPermiso && (
-                            <TooltipContent className="bg-green-100 text-black p-2 rounded-md">
+
+                          {hasPermiso && !isPast && (
+                            <TooltipContent className="bg-yellow-100 text-black p-2 rounded-md">
                               Permiso solicitado
                             </TooltipContent>
                           )}
@@ -123,6 +134,15 @@ export function CalendarioPermisos({
           </table>
         </div>
       </CardContent>
+
+      <div className="mt-4 mb-4 flex justify-center items-center text-sm">
+        <div className="flex gap-6">
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 bg-yellow-100 rounded"></div>
+            Mis solicitudes de Permisos
+          </div>
+        </div>
+      </div>
     </Card>
   );
 }

@@ -1,12 +1,8 @@
-// src/modules/Extraescolares/components/CalendarioExtraescolares.jsx
-//
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-//import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
 import { useExtraescolaresAll } from "@/hooks/Extraescolares/useExtraescolaresAll";
-
 import { DialogoInsertarExtraescolar } from "./DialogoInsertarExtraescolar";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 
@@ -16,6 +12,7 @@ const formatDateKey = (date) => {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 };
+
 export function CalendarioExtraescolares({
   uid,
   onSelectDate,
@@ -25,13 +22,13 @@ export function CalendarioExtraescolares({
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-  //const { data: extraescolares } = useExtraescolaresUid(uid);
   const { data: extraescolares = [] } = useExtraescolaresAll();
   const { data: periodos } = usePeriodosHorarios();
 
   const [dialogoInsertarAbierto, setDialogoInsertarAbierto] = useState(false);
   const [fechaInsertar, setFechaInsertar] = useState(null);
 
+  // Construir calendario
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
   const startDay = (firstDay + 6) % 7; // lunes = 0
@@ -46,8 +43,9 @@ export function CalendarioExtraescolares({
     weeks.push(week);
   }
 
+  // Extraescolares por día
   const extraescolaresPorDia = {};
-  (extraescolares || []).forEach((a) => {
+  extraescolares.forEach((a) => {
     const fechaObj = new Date(a.fecha_inicio);
     const fecha = formatDateKey(fechaObj);
     extraescolaresPorDia[fecha] = (extraescolaresPorDia[fecha] || 0) + 1;
@@ -66,12 +64,13 @@ export function CalendarioExtraescolares({
     if (!d) return;
     const dateKey = formatDateKey(new Date(currentYear, currentMonth, d));
 
+    // Bloquear inserción en días pasados
+    if (dateKey < todayStr) return;
+
     if (!disableInsert) {
       setFechaInsertar(dateKey);
       setDialogoInsertarAbierto(true);
     }
-
-    // Llamamos al callback para notificar al padre aunque disableInsert sea true
     if (onSelectDate) onSelectDate(dateKey);
   };
 
@@ -92,6 +91,7 @@ export function CalendarioExtraescolares({
             <ChevronRight className="w-6 h-6" />
           </button>
         </CardHeader>
+
         <CardContent className="p-2 flex-grow flex items-start justify-center overflow-auto">
           <table className="w-full border-collapse text-center align-top">
             <thead>
@@ -108,19 +108,23 @@ export function CalendarioExtraescolares({
                 <tr key={i}>
                   {week.map((d, j) => {
                     if (!d) return <td key={j} className="p-2"></td>;
-                    const dateKey = formatDateKey(
-                      new Date(currentYear, currentMonth, d)
-                    );
+                    const dateObj = new Date(currentYear, currentMonth, d);
+                    const dateKey = formatDateKey(dateObj);
                     const numExtra = extraescolaresPorDia[dateKey] || 0;
                     const esHoy = dateKey === todayStr;
+
+                    // Días pasados bloqueados para insertar
+                    const isDisabled = dateKey < todayStr;
+
                     return (
                       <td
                         key={j}
-                        onClick={() => handleDiaClick(d)}
-                        className={`p-1 rounded-lg cursor-pointer transition-all
+                        onClick={() => !isDisabled && handleDiaClick(d)}
+                        className={`p-1 rounded-lg transition-all text-center
                           ${numExtra ? "bg-purple-100" : ""}
                           ${esHoy ? "border-2 border-purple-300" : "border border-transparent"}
-                          hover:bg-purple-200`}
+                          ${isDisabled ? "text-gray-400 cursor-not-allowed" : "cursor-pointer hover:bg-purple-200"}
+                        `}
                       >
                         {d}
                       </td>
@@ -131,6 +135,7 @@ export function CalendarioExtraescolares({
             </tbody>
           </table>
         </CardContent>
+
         <div className="mt-4 mb-4 flex justify-center items-center text-sm">
           <div className="flex gap-6">
             <div className="flex items-center gap-1">

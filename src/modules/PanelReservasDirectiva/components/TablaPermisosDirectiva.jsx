@@ -450,7 +450,7 @@ export function TablaPermisosDirectiva({ fecha }) {
             ? "¿Desea aceptar este asunto propio?"
             : "¿Desea rechazar este asunto propio?"
         }
-        accion={accion} // <-- FALTA ESTA LÍNEA
+        accion={accion} // 
         onConfirm={confirmarAccion}
       />
     </div>

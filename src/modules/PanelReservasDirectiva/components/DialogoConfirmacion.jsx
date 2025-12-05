@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { textoTipoPermiso } from "@/utils/mapeoTiposPermisos";
+import { getIconoTipo } from "@/utils/iconosTiposPermisos";
 
 export function DialogoConfirmacion({
   open,
@@ -22,18 +24,35 @@ export function DialogoConfirmacion({
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  if (!asunto) return null;
+
+  // Tipo dinámico
+  const esAsuntoPropio = asunto.tipo === 13;
+  const textoTipo = esAsuntoPropio ? "asunto propio" : "permiso"; // texto breve
+  const textoTipoLargo = textoTipoPermiso(asunto.tipo); // texto largo del mapeo
+
+  // Nombre del profesor (si existe)
+  const nombreProfesor = asunto.nombreProfesor || "";
+  const apellidosProfesor = asunto.apellidosProfesor || "";
+  const profesorCompleto = `${nombreProfesor} ${apellidosProfesor}`.trim();
+
+  // Formato de fecha
+  const fechaLocal = new Date(asunto.fecha).toLocaleDateString("es-ES");
+
+  // icono en funcion del tipo de permiso
+  const Icono = getIconoTipo(asunto.tipo);
+
   const mutation = useMutation({
     mutationFn: async () => {
       const nuevoEstado = esAceptar ? 1 : 2;
-      const res = await fetch(
-        `${API_URL}/db/permisos/estado/${asunto.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ estado: nuevoEstado }),
-        }
-      );
+
+      const res = await fetch(`${API_URL}/db/permisos/estado/${asunto.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ estado: nuevoEstado }),
+      });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error actualizando estado");
       return data;
@@ -41,35 +60,35 @@ export function DialogoConfirmacion({
     onSuccess: () => {
       toast.success(
         esAceptar
-          ? "Petición de asunto propio de " + asunto.uid + " ACEPTADA"
-          : "Asunto rechazado correctamente"
+          ? `Petición de ${textoTipo} de ${profesorCompleto} ACEPTADA`
+          : `${textoTipo} rechazado correctamente`
       );
 
-      // Actualizar panel del usuario
-      //queryClient.invalidateQueries(["asuntosMes", user.username]);
       queryClient.invalidateQueries(["asuntosPropios", "todos"]);
       queryClient.invalidateQueries(["asuntosPropios", user.uid]);
 
-      // Actualizar calendario (usePermisosMes)
       const fechaObj = new Date(asunto.fecha);
       const month = fechaObj.getMonth();
       const year = fechaObj.getFullYear();
+
       const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-      const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
-      queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
+      const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(
+        year,
+        month + 1,
+        0
+      ).getDate()}`;
+
+      queryClient.invalidateQueries({
+        queryKey: ["asuntosMes", start, end],
+      });
 
       setOpen(false);
       onSuccess?.();
     },
     onError: (err) => {
-      console.error(err);
       toast.error(err.message || "No se pudo actualizar el estado");
     },
   });
-
-  const handleConfirm = () => mutation.mutate();
-
-  if (!asunto) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen} modal>
@@ -85,15 +104,44 @@ export function DialogoConfirmacion({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="text-sm text-gray-700 space-y-4 px-6 pt-5 pb-2">
-          {esAceptar
-            ? "¿Desea aceptar este asunto propio?"
-            : "¿Desea rechazar este asunto propio?"}
+        {/* --- CUERPO DEL DIÁLOGO --- */}
+        <div className="text-sm text-gray-700 px-6 pt-5 pb-4 space-y-4">
+          {/* Pregunta dinámica */}
+          <p className="font-medium">
+            {esAceptar
+              ? `¿Desea aceptar este ${textoTipo}?`
+              : `¿Desea rechazar este ${textoTipo}?`}
+          </p>
+
+          {/* Información del permiso/asunto */}
+          <div className="border rounded-md bg-gray-50 p-3 space-y-1">
+            {profesorCompleto && (
+              <p>
+                <strong>Profesor:</strong> {profesorCompleto}
+              </p>
+            )}
+
+            <p>
+              <strong>Fecha:</strong> {fechaLocal}
+            </p>
+
+            <p className="flex items-center gap-2">
+              <strong>Tipo:</strong>
+              <Icono className="w-4 h-4 text-gray-600" />
+              <span>{textoTipoLargo}</span>
+            </p>
+
+            {asunto.descripcion && (
+              <p>
+                <strong>Descripción:</strong> {asunto.descripcion}
+              </p>
+            )}
+          </div>
         </div>
 
-        <DialogFooter className="px-6 py-4 bg-gray-50 flex gap-2">
+        <DialogFooter className="px-6 py-3 bg-gray-50 flex gap-2">
           <Button
-            onClick={handleConfirm}
+            onClick={() => mutation.mutate()}
             className={
               esAceptar
                 ? "bg-blue-500 hover:bg-blue-600"
@@ -109,6 +157,7 @@ export function DialogoConfirmacion({
                 ? "Aceptar"
                 : "Rechazar"}
           </Button>
+
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancelar
           </Button>
