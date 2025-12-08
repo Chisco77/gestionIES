@@ -99,6 +99,7 @@ import {
   ChevronsLeft,
   Check,
   X,
+  Eraser,
 } from "lucide-react";
 
 export function TablaPrestamos({
@@ -157,6 +158,15 @@ export function TablaPrestamos({
     new Set(data.map((p) => p.curso).filter(Boolean))
   ).sort();
 
+  // ...
+
+  const limpiarTodosLosFiltros = () => {
+    table.resetColumnFilters();
+    table.resetGlobalFilter();
+    table.resetSorting();
+    table.resetPagination();
+  };
+
   return (
     <div>
       {/* Filtros */}
@@ -191,6 +201,16 @@ export function TablaPrestamos({
             }
           />
         </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-3 text-xs flex items-center gap-2"
+          onClick={limpiarTodosLosFiltros}
+        >
+          <Eraser className="w-4 h-4" />
+          Limpiar filtros
+        </Button>
 
         {informes && <div className="ml-auto">{informes}</div>}
       </div>

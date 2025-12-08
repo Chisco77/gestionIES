@@ -28,6 +28,7 @@ import {
   Check,
   X,
   Pencil,
+  Eraser,
 } from "lucide-react";
 
 import { es } from "date-fns/locale";
@@ -279,6 +280,18 @@ export function TablaExtraescolares({ user, fecha }) {
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
 
+  const limpiarTodosLosFiltros = () => {
+    // Limpia estados locales
+    setFechaDesde("");
+    setFechaHasta("");
+
+    // Limpia filtros de la tabla
+    table.resetColumnFilters();
+    table.resetGlobalFilter();
+    table.resetSorting(); // Si quieres que también quite la ordenación
+    table.resetPagination(); // Opcional, si quieres volver a la página 1
+  };
+
   return (
     <div className="space-y-2">
       {/* FILTROS */}
@@ -351,14 +364,13 @@ export function TablaExtraescolares({ user, fecha }) {
               </Popover>
 
               <Button
+                variant="outline"
                 size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setFechaDesde("");
-                  setFechaHasta("");
-                }}
+                className="h-8 px-3 text-xs flex items-center gap-2"
+                onClick={limpiarTodosLosFiltros}
               >
-                Limpiar
+                <Eraser className="w-4 h-4" />
+                Limpiar filtros
               </Button>
             </div>
           </div>

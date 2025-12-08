@@ -61,6 +61,8 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MultiSelect } from "@/components/ui/multiselect";
+import { Eraser } from "lucide-react";
+
 
 export function TablaUsuarios({
   columns,
@@ -111,6 +113,14 @@ export function TablaUsuarios({
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
 
+  const limpiarTodosLosFiltros = () => {
+    // Limpia todos los filtros de columnas
+    table.resetColumnFilters();
+    table.resetGlobalFilter();
+    table.resetSorting();
+    table.resetPagination(); // opcional pero recomendable
+  };
+
   return (
     <div className="space-y-4">
       {/* Filtros + informes */}
@@ -158,6 +168,16 @@ export function TablaUsuarios({
               className="w-[180px] h-8 text-sm"
             />
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-3 text-xs flex items-center gap-2"
+            onClick={limpiarTodosLosFiltros}
+          >
+            <Eraser className="w-4 h-4" />
+            Limpiar filtros
+          </Button>
 
           {informes && <div className="ml-auto">{informes}</div>}
         </div>

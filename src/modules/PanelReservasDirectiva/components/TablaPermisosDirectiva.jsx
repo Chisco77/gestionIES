@@ -27,6 +27,7 @@ import {
   CalendarIcon,
   Check,
   X,
+  Eraser,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -203,6 +204,27 @@ export function TablaPermisosDirectiva({ fecha }) {
 
   const formatLocalDate = (d) => d.toLocaleDateString("sv-SE");
 
+  const limpiarTodosLosFiltros = () => {
+    // Reset filtros de columnas
+    table.getAllColumns().forEach((col) => {
+      if (col.getCanFilter()) col.setFilterValue("");
+    });
+
+    // Reset rango de fechas
+    setFechaDesde("");
+    setFechaHasta("");
+
+    // Reset switch "Solo pendientes"
+    table.getColumn("estado")?.setFilterValue(null);
+
+    // Reset estado interno de tanstack
+    setColumnFilters([]);
+    table.resetColumnFilters();
+    table.resetGlobalFilter();
+    table.resetSorting(); // Si quieres que también quite la ordenación
+    table.resetPagination(); // Opcional, si quieres volver a la página 1
+  };
+
   return (
     <div className="space-y-2">
       {/* FILTROS */}
@@ -299,16 +321,13 @@ export function TablaPermisosDirectiva({ fecha }) {
               </Popover>
 
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="h-8 px-2 text-xs text-red-600"
-                onClick={() => {
-                  setFechaDesde("");
-                  setFechaHasta("");
-                }}
-                disabled={!fechaDesde && !fechaHasta}
+                className="h-8 px-3 text-xs flex items-center gap-2"
+                onClick={limpiarTodosLosFiltros}
               >
-                Limpiar
+                <Eraser className="w-4 h-4" />
+                Limpiar filtros
               </Button>
             </div>
           </div>
@@ -450,7 +469,7 @@ export function TablaPermisosDirectiva({ fecha }) {
             ? "¿Desea aceptar este asunto propio?"
             : "¿Desea rechazar este asunto propio?"
         }
-        accion={accion} // 
+        accion={accion} //
         onConfirm={confirmarAccion}
       />
     </div>

@@ -40,8 +40,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
-  ChevronsUpDown,
   Check,
+  Eraser,
 } from "lucide-react";
 import { cn } from "@/lib/utils"; // opcional, si usas cn; si no, elimina
 
@@ -105,9 +105,9 @@ export function TablaPrestamosLlaves({
 
   // Aplicar filtro por estancia (campo nombreEstancia)
   useEffect(() => {
-    table.getColumn("nombreEstancia")?.setFilterValue(
-      filtroEstancia || undefined
-    );
+    table
+      .getColumn("nombreEstancia")
+      ?.setFilterValue(filtroEstancia || undefined);
   }, [filtroEstancia]);
 
   // Comunicar filas filtradas al padre
@@ -117,22 +117,28 @@ export function TablaPrestamosLlaves({
   }, [columnFilters, data]);
 
   // Valores únicos para selects
-  const plantas = Array.from(new Set(data.map((p) => p.planta).filter(Boolean))).sort();
+  const plantas = Array.from(
+    new Set(data.map((p) => p.planta).filter(Boolean))
+  ).sort();
   const estanciasUnicas = Array.from(
     new Set(data.map((p) => p.nombreEstancia).filter(Boolean))
   ).sort();
 
   // Sugerencias (filtrado por query, case-insensitive, contains)
-  const filteredEstancias = (queryEstancia || "").trim() === ""
-    ? estanciasUnicas
-    : estanciasUnicas.filter((e) =>
-        e.toLowerCase().includes(queryEstancia.trim().toLowerCase())
-      );
+  const filteredEstancias =
+    (queryEstancia || "").trim() === ""
+      ? estanciasUnicas
+      : estanciasUnicas.filter((e) =>
+          e.toLowerCase().includes(queryEstancia.trim().toLowerCase())
+        );
 
   // Cerrar sugerencias al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (ev) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(ev.target)) {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(ev.target)
+      ) {
         setOpenSuggestions(false);
       }
     };
@@ -145,6 +151,21 @@ export function TablaPrestamosLlaves({
 
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
+
+  const limpiarTodosLosFiltros = () => {
+    // Limpia estados locales
+    setTextoFiltro("");
+    setFiltroPlanta("");
+    setFiltroDevuelta("");
+    setFiltroEstancia("");
+    setQueryEstancia("");
+    setOpenSuggestions(false);
+
+    // Limpia los filtros internos de TanStack Table
+    table.resetColumnFilters();
+    table.resetSorting();
+    table.resetPagination();
+  };
 
   return (
     <div>
@@ -198,7 +219,11 @@ export function TablaPrestamosLlaves({
                   }
                 }
               }}
-              title={filtroEstancia ? "Limpiar filtro" : "Seleccionar la primera opción"}
+              title={
+                filtroEstancia
+                  ? "Limpiar filtro"
+                  : "Seleccionar la primera opción"
+              }
             >
               {filtroEstancia ? "Limpiar" : "OK"}
             </button>
@@ -220,7 +245,12 @@ export function TablaPrestamosLlaves({
                     setOpenSuggestions(false);
                   }}
                 >
-                  <Check className={cn("mr-2 h-4 w-4", filtroEstancia === e ? "opacity-100" : "opacity-0")} />
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      filtroEstancia === e ? "opacity-100" : "opacity-0"
+                    )}
+                  />
                   <span>{e}</span>
                 </li>
               ))}
@@ -259,6 +289,16 @@ export function TablaPrestamosLlaves({
           </select>
         </div>
 
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-3 text-xs flex items-center gap-2"
+          onClick={limpiarTodosLosFiltros}
+        >
+          <Eraser className="w-4 h-4" />
+          Limpiar filtros
+        </Button>
+
         {informes && <div className="ml-auto">{informes}</div>}
       </div>
 
@@ -272,7 +312,10 @@ export function TablaPrestamosLlaves({
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -294,7 +337,10 @@ export function TablaPrestamosLlaves({
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -302,7 +348,10 @@ export function TablaPrestamosLlaves({
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No hay resultados.
                 </TableCell>
               </TableRow>
