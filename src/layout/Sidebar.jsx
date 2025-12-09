@@ -125,6 +125,20 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
           },
         ],
       },
+
+      {
+        title: "Utilidades",
+        url: "#",
+        icon: Wrench,
+        items: [
+          {
+            title: "Etiquetas genéricas",
+            url: "#",
+            onClick: () => onOpenEtiquetas(),
+            icon: Tag,
+          },
+        ],
+      },
       {
         title: "Administrador",
         url: "#",
@@ -143,12 +157,6 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
             url: "#",
             onClick: () => onOpenRestricciones(),
             icon: Wrench,
-          },
-          {
-            title: "Etiquetas genéricas",
-            url: "#",
-            onClick: () => onOpenEtiquetas(),
-            icon: Tag,
           },
         ],
       },
@@ -292,6 +300,19 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         ],
       },
       {
+        title: "Utilidades",
+        url: "#",
+        icon: Wrench,
+        items: [
+          {
+            title: "Etiquetas genéricas",
+            url: "#",
+            onClick: () => onOpenEtiquetas(),
+            icon: Tag,
+          },
+        ],
+      },
+      {
         title: "Administrador",
         url: "#",
         icon: ShieldCheck,
@@ -309,12 +330,6 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
             url: "#",
             onClick: () => onOpenRestricciones(),
             icon: Wrench,
-          },
-          {
-            title: "Etiquetas genéricas",
-            url: "#",
-            onClick: () => onOpenEtiquetas(),
-            icon: Tag,
           },
         ],
       },
