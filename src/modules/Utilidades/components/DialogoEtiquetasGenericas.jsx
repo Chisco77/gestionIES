@@ -1,6 +1,5 @@
 // components/DialogoEtiquetasGenericas.jsx
 import { useState } from "react";
-import jsPDF from "jspdf";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { generateEtiquetasGenericasPdf } from "@/utils/Informes";
 
 export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
   const [prefijo, setPrefijo] = useState("");
@@ -28,87 +28,6 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
   const [totalEtiquetas, setTotalEtiquetas] = useState(40);
   const [posicionInicial, setPosicionInicial] = useState(1); // posición en la hoja
   const [numeroInicial, setNumeroInicial] = useState(1); // número inicial de etiqueta (sufijo)
-
-  const generatePdfLabels = async () => {
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
-
-    const layout = {
-      40: {
-        cols: 4,
-        rows: 10,
-        width: 52.5,
-        height: 29.7,
-        marginX: 0,
-        marginY: 0,
-        spacingX: 0,
-        spacingY: 0,
-      },
-      24: {
-        cols: 3,
-        rows: 8,
-        width: 70,
-        height: 33.8,
-        marginX: 7,
-        marginY: 12.7,
-        spacingX: 2.5,
-        spacingY: 0,
-      },
-    }[cantidad];
-
-    const labelsPerPage = layout.cols * layout.rows;
-
-    // Array de etiquetas con sufijo comenzando desde numeroInicial
-    const etiquetas = Array.from(
-      { length: totalEtiquetas },
-      (_, i) => `${prefijo}${i + numeroInicial}`
-    );
-
-    for (let i = 0; i < etiquetas.length; i++) {
-      const globalIndex = i + (posicionInicial - 1); // posición en la hoja
-      if (i > 0 && globalIndex % labelsPerPage === 0) doc.addPage();
-
-      const indexInPage = globalIndex % labelsPerPage;
-      const col = indexInPage % layout.cols;
-      const row = Math.floor(indexInPage / layout.cols);
-
-      const x = layout.marginX + col * (layout.width + layout.spacingX);
-      const y = layout.marginY + row * (layout.height + layout.spacingY);
-
-      const centerX = x + layout.width / 2;
-      const centerY = y + layout.height / 2;
-
-      const numero = i + numeroInicial; // número de la etiqueta según sufijo
-
-      // Medimos los textos
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "normal");
-      const prefijoWidth = doc.getTextWidth(prefijo);
-
-      doc.setFontSize(30);
-      doc.setFont("helvetica", "bold");
-      const numeroWidth = doc.getTextWidth(`${numero}`);
-
-      const totalWidth = prefijoWidth + numeroWidth;
-      const startX = centerX - totalWidth / 2;
-
-      // Dibujar prefijo (normal, tamaño 14)
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "normal");
-      doc.text(prefijo, startX, centerY, { baseline: "middle" });
-
-      // Dibujar número (negrita, tamaño 30)
-      doc.setFontSize(30);
-      doc.setFont("helvetica", "bold");
-      doc.text(`${numero}`, startX + prefijoWidth, centerY - 1.2, {
-        baseline: "middle",
-      });
-
-      if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
-      setProgress(Math.round(((i + 1) / etiquetas.length) * 100));
-    }
-
-    doc.save(nombrePdf.endsWith(".pdf") ? nombrePdf : `${nombrePdf}.pdf`);
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
@@ -230,7 +149,16 @@ export function DialogoEtiquetasGenericas({ open, onOpenChange }) {
               setLoading(true);
               setProgress(0);
               try {
-                await generatePdfLabels();
+                await generateEtiquetasGenericasPdf({
+                  prefijo,
+                  cantidad: Number(cantidad),
+                  totalEtiquetas,
+                  posicionInicial,
+                  numeroInicial,
+                  nombrePdf,
+                  onProgress: (p) => setProgress(p),
+                });
+
                 setShowSuccessToast(true);
                 onOpenChange(false);
               } finally {

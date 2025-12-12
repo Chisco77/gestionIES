@@ -254,7 +254,8 @@ router.put("/libros/:id", updateLibro);
 router.delete("/libros/:id", deleteLibro);
 
 // Libros disponibles (para préstamos)
-router.get("/libros/disponibles", getLibrosDisponibles);
+//router.get("/libros/disponibles", getLibrosDisponibles);
+router.get("/libros/disponibles/:curso/:uid", getLibrosDisponibles);
 
 // ================================================================
 const {

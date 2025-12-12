@@ -52,8 +52,16 @@ export function generatePermisosPdf({ empleado, permiso }) {
     y + row2Height
   );
 
-  doc.text("DNI:", tableX + col1Width + col2Width + textPad, y + row2Height - 3);
-  doc.text(employeeNumber, tableX + col1Width + col2Width + 15, y + row2Height - 3);
+  doc.text(
+    "DNI:",
+    tableX + col1Width + col2Width + textPad,
+    y + row2Height - 3
+  );
+  doc.text(
+    employeeNumber,
+    tableX + col1Width + col2Width + 15,
+    y + row2Height - 3
+  );
 
   y += row2Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -80,14 +88,22 @@ export function generatePermisosPdf({ empleado, permiso }) {
     tableX + col4_1Width + col4_2Width,
     y + row4Height
   );
-  doc.text("Subgrupo:", tableX + col4_1Width + col4_2Width + textPad, y + row4Height - 3);
+  doc.text(
+    "Subgrupo:",
+    tableX + col4_1Width + col4_2Width + textPad,
+    y + row4Height - 3
+  );
   y += row4Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
   // Fila 5: Relación jurídica
   const row5Height = 24;
   doc.setFontSize(11);
-  doc.text("(Marcar con una x el recuadro correspondiente)", tableX + 45, y + 6);
+  doc.text(
+    "(Marcar con una x el recuadro correspondiente)",
+    tableX + 45,
+    y + 6
+  );
   doc.setFont("helvetica", "bold");
   doc.text("Relación jurídica:", tableX + textPad, y + 6);
   doc.setFont("helvetica", "normal");
@@ -134,7 +150,11 @@ export function generatePermisosPdf({ empleado, permiso }) {
   });
   doc.text(fechaStr, tableX + 30, y + row6Height - 3);
   doc.line(tableX + col6_1Width, y, tableX + col6_1Width, y + row6Height * 2);
-  doc.text("Centro de destino:    IES FRANCISCO DE ORELLANA", tableX + col6_1Width + textPad, y + row6Height - 3);
+  doc.text(
+    "Centro de destino:    IES FRANCISCO DE ORELLANA",
+    tableX + col6_1Width + textPad,
+    y + row6Height - 3
+  );
   y += row6Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
@@ -148,7 +168,8 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.rect(parcialX, yJornada, 3.5, 3.5);
   doc.text("Parcial", parcialX + 5, y + row6Height - 3);
   if (empleado.jornada === 0) doc.text("X", completaX + 0.3, yJornada + 2.8);
-  else if (empleado.jornada === 1) doc.text("X", parcialX + 0.3, yJornada + 2.8);
+  else if (empleado.jornada === 1)
+    doc.text("X", parcialX + 0.3, yJornada + 2.8);
 
   y += row6Height;
   doc.rect(tableX, startY, tableWidth, y - startY);
@@ -204,14 +225,16 @@ export function generatePermisosPdf({ empleado, permiso }) {
 
   permisosLeft.forEach((texto, index) => {
     doc.rect(leftColTextX - 4, yLeft - 3, 3.5, 3.5);
-    if (texto === tipoPermisoMap[permiso.tipo]) doc.text("X", leftColTextX - 3.3, yLeft);
+    if (texto === tipoPermisoMap[permiso.tipo])
+      doc.text("X", leftColTextX - 3.3, yLeft);
     doc.text(doc.splitTextToSize(texto, textWidth), leftColTextX, yLeft);
     yLeft += 15;
   });
 
   permisosRight.forEach((texto) => {
     doc.rect(rightColTextX - 4, yRight - 3, 3.5, 3.5);
-    if (texto === tipoPermisoMap[permiso.tipo]) doc.text("X", rightColTextX - 3.3, yRight);
+    if (texto === tipoPermisoMap[permiso.tipo])
+      doc.text("X", rightColTextX - 3.3, yRight);
     doc.text(doc.splitTextToSize(texto, textWidth), rightColTextX, yRight);
     yRight += 15;
   });
@@ -227,7 +250,11 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.setFontSize(12);
   startY = y;
   const row3_1Height = 8;
-  doc.text("3. DOCUMENTACIÓN QUE SE APORTA", tableX + textPad, y + row3_1Height - 2);
+  doc.text(
+    "3. DOCUMENTACIÓN QUE SE APORTA",
+    tableX + textPad,
+    y + row3_1Height - 2
+  );
   y += row3_1Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
@@ -263,10 +290,114 @@ export function generatePermisosPdf({ empleado, permiso }) {
 
   // --- Firma ---
   y += 15;
-  doc.text("Trujillo, _____ de _________________________ de 20_______", marginLeft, y);
+  doc.text(
+    "Trujillo, _____ de _________________________ de 20_______",
+    marginLeft,
+    y
+  );
   y += 10;
   doc.setFont("helvetica", "bold");
   doc.text("DIRECTOR/A DEL CENTRO", pageWidth / 2, y, { align: "center" });
 
   doc.save("anexo_v_concesion_permisos.pdf");
+}
+
+/**
+ * Genera un PDF de etiquetas genéricas
+ *
+ * @param {Object} params
+ * @param {string} params.prefijo
+ * @param {number} params.cantidad
+ * @param {number} params.totalEtiquetas
+ * @param {number} params.posicionInicial
+ * @param {number} params.numeroInicial
+ * @param {string} params.nombrePdf
+ * @param {function} [params.onProgress]
+ */
+export async function generateEtiquetasGenericasPdf({
+  prefijo,
+  cantidad,
+  totalEtiquetas,
+  posicionInicial,
+  numeroInicial,
+  nombrePdf,
+  onProgress = () => {},
+}) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+  const layout = {
+    40: {
+      cols: 4,
+      rows: 10,
+      width: 52.5,
+      height: 29.7,
+      marginX: 0,
+      marginY: 0,
+      spacingX: 0,
+      spacingY: 0,
+    },
+    24: {
+      cols: 3,
+      rows: 8,
+      width: 70,
+      height: 33.8,
+      marginX: 7,
+      marginY: 12.7,
+      spacingX: 2.5,
+      spacingY: 0,
+    },
+  }[cantidad];
+
+  const labelsPerPage = layout.cols * layout.rows;
+
+  const etiquetas = Array.from(
+    { length: totalEtiquetas },
+    (_, i) => `${prefijo}${i + numeroInicial}`
+  );
+
+  for (let i = 0; i < etiquetas.length; i++) {
+    const globalIndex = i + (posicionInicial - 1);
+    if (i > 0 && globalIndex % labelsPerPage === 0) doc.addPage();
+
+    const indexInPage = globalIndex % labelsPerPage;
+    const col = indexInPage % layout.cols;
+    const row = Math.floor(indexInPage / layout.cols);
+
+    const x = layout.marginX + col * (layout.width + layout.spacingX);
+    const y = layout.marginY + row * (layout.height + layout.spacingY);
+
+    const centerX = x + layout.width / 2;
+    const centerY = y + layout.height / 2;
+
+    const numero = i + numeroInicial;
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "normal");
+    const prefijoWidth = doc.getTextWidth(prefijo);
+
+    doc.setFontSize(30);
+    doc.setFont("helvetica", "bold");
+    const numeroWidth = doc.getTextWidth(`${numero}`);
+
+    const totalWidth = prefijoWidth + numeroWidth;
+    const startX = centerX - totalWidth / 2;
+
+    // Prefijo
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "normal");
+    doc.text(prefijo, startX, centerY, { baseline: "middle" });
+
+    // Número
+    doc.setFontSize(30);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${numero}`, startX + prefijoWidth, centerY - 1.2, {
+      baseline: "middle",
+    });
+
+    if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
+
+    onProgress(Math.round(((i + 1) / etiquetas.length) * 100));
+  }
+
+  doc.save(nombrePdf.endsWith(".pdf") ? nombrePdf : `${nombrePdf}.pdf`);
 }

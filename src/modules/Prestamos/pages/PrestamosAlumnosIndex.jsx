@@ -75,6 +75,13 @@ import {
 
 import { usePrestamos } from "@/hooks/usePrestamos";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 export function PrestamosAlumnosIndex() {
   const [prestamosFiltrados, setPrestamosFiltrados] = useState([]);
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);
@@ -147,103 +154,166 @@ export function PrestamosAlumnosIndex() {
           <>
             <div className="flex items-center space-x-2 mt-2">
               {/* Grupo 1: acciones individuales del alumno */}
-              <Button
-                onClick={() => setAbrirDialogoPrestar(true)}
-                title="Asignar libros"
-                variant="outline"
-                size="icon"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => setAbrirDialogoPrestar(true)}
+                      variant="outline"
+                      size="icon"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-blue-500 text-white">
+                    <p>Asignar libros</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-              <Button
-                onClick={() => handleEditar(alumno)}
-                title="Editar registro"
-                variant="outline"
-                size="icon"
-                disabled={!alumno}
-              >
-                <Pencil className="w-4 h-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => handleEditar(alumno)}
+                      variant="outline"
+                      size="icon"
+                      disabled={!alumno}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-blue-500 text-white">
+                    <p>Editar registro</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-              <Button
-                onClick={() => handleEliminar(alumno)}
-                title="Eliminar registro"
-                variant="outline"
-                size="icon"
-                disabled={!alumno}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => handleEliminar(alumno)}
+                      variant="outline"
+                      size="icon"
+                      disabled={!alumno}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-blue-500 text-white">
+                    <p>Eliminar registro</p>
+                  </TooltipContent>
+                </Tooltip>
 
-              {/* Separador vertical */}
-              <div className="w-px h-6 bg-gray-300 mx-2" />
+                {/* Separador vertical */}
+                <div className="w-px h-6 bg-gray-300 mx-2" />
 
-              {/* Grupo 2: acciones masivas */}
-              <Button
-                onClick={() => setAbrirInsertarMasivo(true)}
-                title="Asignación masiva"
-                variant="outline"
-                size="icon"
-              >
-                <LibraryBig className="w-4 h-4" />
-              </Button>
+                {/* Grupo 2: acciones masivas */}
 
-              <Button
-                onClick={() =>
-                  setAbrirDialogoAccionMasiva({
-                    open: true,
-                    tipo: "entregarDoc",
-                  })
-                }
-                title="Entrega de documento de compromiso"
-                variant="outline"
-                size="icon"
-              >
-                <FileCheck className="w-4 h-4" />
-              </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => setAbrirInsertarMasivo(true)}
+                      variant="outline"
+                      size="icon"
+                    >
+                      <LibraryBig className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-blue-500 text-white">
+                    <p>Asignación masiva</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-              <Button
-                onClick={() =>
-                  setAbrirDialogoAccionMasiva({
-                    open: true,
-                    tipo: "recibirDoc",
-                  })
-                }
-                title="Recepción de documento de compromiso"
-                variant="outline"
-                size="icon"
-              >
-                <FileText className="w-4 h-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() =>
+                        setAbrirDialogoAccionMasiva({
+                          open: true,
+                          tipo: "entregarDoc",
+                        })
+                      }
+                      variant="outline"
+                      size="icon"
+                    >
+                      <FileCheck className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-blue-500 text-white">
+                    <p>Entrega masiva de documento de compromiso</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-              <Button
-                onClick={() =>
-                  setAbrirDialogoAccionMasiva({
-                    open: true,
-                    tipo: "entregarLibros",
-                  })
-                }
-                title="Entrega física de libros"
-                variant="outline"
-                size="icon"
-              >
-                <BookOpen className="w-4 h-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() =>
+                        setAbrirDialogoAccionMasiva({
+                          open: true,
+                          tipo: "recibirDoc",
+                        })
+                      }
+                      variant="outline"
+                      size="icon"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-blue-500 text-white">
+                    <p>Recepción masiva de documento de compromiso</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-              <Button
-                onClick={() =>
-                  setAbrirDialogoAccionMasiva({
-                    open: true,
-                    tipo: "devolverLibros",
-                  })
-                }
-                title="Devolución de libros"
-                variant="outline"
-                size="icon"
-              >
-                <Book className="w-4 h-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() =>
+                        setAbrirDialogoAccionMasiva({
+                          open: true,
+                          tipo: "entregarLibros",
+                        })
+                      }
+                      variant="outline"
+                      size="icon"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-blue-500 text-white">
+                    <p>Entrega física de libros</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() =>
+                        setAbrirDialogoAccionMasiva({
+                          open: true,
+                          tipo: "devolverLibros",
+                        })
+                      }
+                      variant="outline"
+                      size="icon"
+                    >
+                      <Book className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-blue-500 text-white">
+                    <p>Devolución masiva de libros</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </>
         )}
