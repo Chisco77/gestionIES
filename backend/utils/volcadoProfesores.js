@@ -93,7 +93,7 @@ async function procesarProfesor(client, uid) {
             uid,
             tipo_usuario: 0,
             dni: employeeNumber,
-            permisos: 4,
+            asuntos_propios: 4,
             tipo_empleado: "funcionario de carrera",
             jornada: 0,
           });
