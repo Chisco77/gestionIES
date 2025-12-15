@@ -30,6 +30,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { PLANOS } from "@/config/planos";
+
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
@@ -65,12 +67,16 @@ async function apiListarPrestamosLlaves() {
 
 // ------------------- Componente -------------------
 export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
-  const svgUrl =
+  /*const svgUrl =
     planta === "primera"
       ? `${import.meta.env.BASE_URL}PLANTA_PRIMERA.svg`
       : planta === "segunda"
         ? `${import.meta.env.BASE_URL}PLANTA_SEGUNDA.svg`
-        : `${import.meta.env.BASE_URL}PLANTA_BAJA.svg`;
+        : `${import.meta.env.BASE_URL}PLANTA_BAJA.svg`;*/
+
+  const plano = PLANOS[planta] ?? PLANOS.baja;
+
+  const svgUrl = `${import.meta.env.BASE_URL}${plano.svg}`;
 
   const [estancias, setEstancias] = useState([]);
   const [prestamos, setPrestamos] = useState([]);

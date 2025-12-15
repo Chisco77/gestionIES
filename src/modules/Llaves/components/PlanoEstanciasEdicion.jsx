@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { PLANOS } from "@/config/planos";
+
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
@@ -132,12 +134,9 @@ export default function PlanoEstanciasEdicion() {
     };
   }, [plantaActual]);
 
-  const svgUrl =
-    plantaActual === "primera"
-      ? `${import.meta.env.BASE_URL}PLANTA_PRIMERA.svg`
-      : plantaActual === "segunda"
-        ? `${import.meta.env.BASE_URL}PLANTA_SEGUNDA.svg`
-        : `${import.meta.env.BASE_URL}PLANTA_BAJA.svg`;
+  const plano = PLANOS[plantaActual] ?? PLANOS.baja;
+
+  const svgUrl = `${import.meta.env.BASE_URL}${plano.svg}`;
 
   // ------------------- Cálculo de estado de estancias -------------------
   const prestamosPorEstancia = useMemo(() => {
