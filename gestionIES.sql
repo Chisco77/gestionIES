@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict aTEMmtWQax3oZCm24v9vjEWT1x6KcgI1Rcyuadecog0mhCVmls8vb7IH3PxrkzX
+\restrict TUwH1oydBSssLitI2Pr1K4GIIz130gHehSz9PA9PKn5ecbPR4LMvAIY0bUBsY2b
 
 -- Dumped from database version 15.14
 -- Dumped by pg_dump version 15.14
@@ -592,9 +592,23 @@ ALTER TABLE ONLY public.prestamos_llaves
     ADD CONSTRAINT prestamos_llaves_idestancia_fkey FOREIGN KEY (idestancia) REFERENCES public.estancias(id) ON DELETE CASCADE;
 
 
+-- ------------------------------------------------------------
+-- Registro inicial: perfil administrador
+-- ------------------------------------------------------------
+
+INSERT INTO public.perfiles_usuario (uid, perfil)
+SELECT 'admin', 'administrador'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM public.perfiles_usuario
+    WHERE uid = 'admin'
+);
+
+
+
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict aTEMmtWQax3oZCm24v9vjEWT1x6KcgI1Rcyuadecog0mhCVmls8vb7IH3PxrkzX
+\unrestrict TUwH1oydBSssLitI2Pr1K4GIIz130gHehSz9PA9PKn5ecbPR4LMvAIY0bUBsY2b
 
