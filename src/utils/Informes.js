@@ -151,7 +151,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(fechaStr, tableX + 30, y + row6Height - 3);
   doc.line(tableX + col6_1Width, y, tableX + col6_1Width, y + row6Height * 2);
   doc.text(
-    "Centro de destino:    IES FRANCISCO DE ORELLANA",
+    `Centro de destino:    ${import.meta.env.VITE_IES_NAME}`,
     tableX + col6_1Width + textPad,
     y + row6Height - 3
   );

@@ -140,7 +140,7 @@ export function LoginForm({ className, ...props }) {
       <Card>
         <CardHeader className="flex flex-col items-center justify-center text-center">
           <CardTitle className="text-2xl">miIES</CardTitle>
-          <CardDescription>IES Francisco de Orellana</CardDescription>
+          <CardDescription>{import.meta.env.VITE_IES_NAME}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
