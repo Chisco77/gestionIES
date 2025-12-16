@@ -2,7 +2,8 @@
  * DialogoInsertarAviso.jsx - Diálogo para insertar un nuevo aviso
  */
 
-import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -11,11 +12,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
-
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 const API_BASE = import.meta.env.VITE_API_URL
@@ -86,11 +90,16 @@ export function DialogoInsertarAviso({ open, onClose }) {
         <div className="flex flex-col space-y-4 p-6">
           <div>
             <label className="block text-sm font-medium">Módulo</label>
-            <Input
-              value={modulo}
-              onChange={(e) => setModulo(e.target.value)}
-              placeholder="Ej: extraescolares"
-            />
+            <Select value={modulo} onValueChange={setModulo}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un módulo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="asuntos-propios">Asuntos Propios</SelectItem>
+                <SelectItem value="extraescolares">Extraescolares</SelectItem>
+                <SelectItem value="permisos">Permisos</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
