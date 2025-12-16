@@ -13,7 +13,7 @@ En esta carpeta encontrarás las guías de instalación y despliegue:
 
 - [Guía de despliegue en desarrollo](doc/DespliegueDesarrollo.pdf)
 - [Guía de despliegue con Docker](doc/Instalacion.pdf)
-- [Manual de usuario](doc/Usuario.html)
+- [Manual de usuario](doc/Usuario.pdf)
 
 ## 📂 Estructura del proyecto
 
