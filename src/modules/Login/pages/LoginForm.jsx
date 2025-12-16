@@ -121,7 +121,7 @@ export function LoginForm({ className, ...props }) {
       });
 
       // Redirigir al dashboard o ruta especial
-      if (data.username === "ordenanza") {
+      if (data.perfil === "ordenanza") {
         navigate("/llavesPlantaBaja"); // ruta especial
       } else {
         navigate("/"); // ruta normal (dashboard)
