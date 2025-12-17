@@ -40,6 +40,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function DialogoEditarEstancia({
   open,
@@ -58,6 +59,39 @@ export function DialogoEditarEstancia({
 
   const API_URL = import.meta.env.VITE_API_URL;
 
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (datos) => {
+      const res = await fetch(
+        `${API_URL}/db/estancias/${estanciaSeleccionada.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(datos),
+        }
+      );
+
+      if (!res.ok) throw new Error("Error al modificar estancia");
+
+      return res.json();
+    },
+    onSuccess: () => {
+      // 🔥 CLAVE: invalidamos el hook
+      queryClient.invalidateQueries(["estancias"]);
+
+      toast.success("Estancia modificada correctamente");
+
+      onSuccess?.();
+      onClose();
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error("Error al modificar estancia");
+    },
+  });
+
   useEffect(() => {
     if (estanciaSeleccionada) {
       setDescripcion(estanciaSeleccionada.descripcion || "");
@@ -69,35 +103,17 @@ export function DialogoEditarEstancia({
       setNumeroOrdenadores(estanciaSeleccionada.numero_ordenadores || "");
     }
   }, [estanciaSeleccionada]);
-  const handleEditar = async () => {
-    try {
-      const res = await fetch(
-        `${API_URL}/db/estancias/${estanciaSeleccionada.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            descripcion,
-            totalllaves,
-            armario,
-            codigollave,
-            reservable,
-            tipoestancia,
-            numero_ordenadores,
-          }),
-        }
-      );
 
-      if (!res.ok) throw new Error("Error al modificar estancia");
-
-      toast.success("Estancia modificada correctamente");
-      await onSuccess?.();
-      onClose();
-    } catch (err) {
-      toast.error("Error al modificar estancia");
-      console.error(err);
-    }
+  const handleEditar = () => {
+    mutation.mutate({
+      descripcion,
+      totalllaves,
+      armario,
+      codigollave,
+      reservable,
+      tipoestancia,
+      numero_ordenadores,
+    });
   };
 
   return (
@@ -189,8 +205,12 @@ export function DialogoEditarEstancia({
         </div>
 
         <DialogFooter className="px-6 py-4 bg-gray-50">
-          <Button variant="outline" onClick={handleEditar}>
-            Guardar cambios
+          <Button
+            variant="outline"
+            onClick={handleEditar}
+            disabled={mutation.isLoading}
+          >
+            {mutation.isLoading ? "Guardando..." : "Guardar cambios"}
           </Button>
         </DialogFooter>
       </DialogContent>

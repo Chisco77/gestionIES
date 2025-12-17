@@ -140,23 +140,24 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         ],
       },
       {
-        title: "Administrador",
+        title: "Configuración",
         url: "#",
         icon: ShieldCheck,
         items: [
-          { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
-          { title: "Avisos", url: "/avisos", icon: Info },
-          { title: "Estancias", url: "/estancias", icon: Building2 },
-          {
-            title: "Periodos Horarios",
-            url: "/periodos-horarios",
-            icon: ListChecks,
-          },
           {
             title: "Asuntos Propios",
             url: "#",
             onClick: () => onOpenRestricciones(),
             icon: Wrench,
+          },
+          { title: "Avisos", url: "/avisos", icon: Info },
+          { title: "Estancias", url: "/estancias", icon: Building2 },
+          { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
+
+          {
+            title: "Periodos Horarios",
+            url: "/periodos-horarios",
+            icon: ListChecks,
           },
         ],
       },
@@ -317,19 +318,21 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         url: "#",
         icon: ShieldCheck,
         items: [
-          { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
-          { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
-          { title: "Avisos", url: "/avisos", icon: Info },
-          {
-            title: "Periodos Horarios",
-            url: "/periodos-horarios",
-            icon: ListChecks,
-          },
           {
             title: "Asuntos Propios",
             url: "#",
             onClick: () => onOpenRestricciones(),
             icon: Wrench,
+          },
+          { title: "Avisos", url: "/avisos", icon: Info },
+          { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
+          { title: "Estancias", url: "/estancias", icon: Building2 },
+
+          { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
+          {
+            title: "Periodos Horarios",
+            url: "/periodos-horarios",
+            icon: ListChecks,
           },
         ],
       },

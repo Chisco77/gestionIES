@@ -12,7 +12,7 @@ import { TablaEstancias } from "../components/TablaEstancias";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { DialogoEditarEstancia } from "../components/DialogoEditarEstancia";
-// import { DialogoEliminarEstancia } from "../components/DialogoEliminarEstancia";
+import { DialogoEliminarEstancia } from "../components/DialogoEliminarEstancia";
 
 export function EstanciasIndex() {
   const [estanciasFiltradas, setEstanciasFiltradas] = useState([]);
@@ -106,6 +106,12 @@ export function EstanciasIndex() {
       <DialogoEditarEstancia
         open={abrirEditar}
         onClose={() => setAbrirEditar(false)}
+        estanciaSeleccionada={estanciaSeleccionada}
+        onSuccess={onSuccess}
+      />
+      <DialogoEliminarEstancia
+        open={abrirEliminar}
+        onClose={() => setAbrirEliminar(false)}
         estanciaSeleccionada={estanciaSeleccionada}
         onSuccess={onSuccess}
       />

@@ -281,23 +281,60 @@ async function updateEstancia(req, res) {
   }
 }
 
-// DELETE /db/planos/estancias/:planta/:codigo
+// DELETE /db/planos/estancias/:planta/:id
 async function deleteEstancia(req, res) {
   const planta = (req.params.planta || "baja").toLowerCase();
-  const id = req.params.id; // param :id representa 'codigo'
+  const { id } = req.params;
+
   try {
-    const { rowCount } = await db.query(
-      `DELETE FROM estancias WHERE planta = $1 AND id = $2`,
-      [planta, id]
+    // 1. Comprobar reservas asociadas
+    const reservas = await db.query(
+      "SELECT COUNT(*) FROM reservas_estancias WHERE idestancia = $1",
+      [id]
     );
-    if (rowCount === 0)
-      return res
-        .status(404)
-        .json({ ok: false, error: "Estancia no encontrada" });
+
+    if (parseInt(reservas.rows[0].count, 10) > 0) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          "No se puede eliminar la estancia porque tiene reservas asociadas",
+      });
+    }
+
+    // 2. Comprobar préstamos de llaves asociados
+    const prestamos = await db.query(
+      "SELECT COUNT(*) FROM prestamos_llaves WHERE idestancia = $1",
+      [id]
+    );
+
+    if (parseInt(prestamos.rows[0].count, 10) > 0) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          "No se puede eliminar la estancia porque tiene préstamos de llaves asociados",
+      });
+    }
+
+    // 3. Eliminar la estancia si no hay dependencias
+    const result = await db.query(
+      "DELETE FROM estancias WHERE id = $1 AND planta = $2",
+      [id, planta]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: "Estancia no encontrada",
+      });
+    }
+
     res.json({ ok: true });
   } catch (err) {
     console.error("[deleteEstancia] Error:", err);
-    res.status(500).json({ ok: false, error: "Error eliminando estancia" });
+    res.status(500).json({
+      ok: false,
+      error: "Error eliminando la estancia",
+    });
   }
 }
 

@@ -32,10 +32,10 @@ export function DialogoEliminarPermiso({ open, onOpenChange, permiso, onDeleteSu
     onSuccess: () => {
       toast.success("Permiso eliminado correctamente");
 
-      // 1️⃣ Actualizar PanelReservas
+      // Actualizar PanelReservas
       queryClient.invalidateQueries(["panel", "permisos", user.uid]);
 
-      // 2️⃣ Actualizar calendario (usePermisosMes)
+      // Actualizar calendario (usePermisosMes)
       const fechaObj = new Date(permiso.fecha);
       const month = fechaObj.getMonth();
       const year = fechaObj.getFullYear();

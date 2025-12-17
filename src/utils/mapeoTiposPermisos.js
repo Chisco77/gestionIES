@@ -11,6 +11,6 @@ export const MAPEO_TIPOS_PERMISOS = {
   0: "Otros",
 };
 
-// Helper útil en todo el frontend:
+// exportamos
 export const textoTipoPermiso = (tipo) =>
   MAPEO_TIPOS_PERMISOS[tipo] || "Tipo desconocido";

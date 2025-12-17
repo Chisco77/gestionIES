@@ -22,6 +22,10 @@ import {
 } from "@/components/ui/select";
 
 import { PLANOS } from "@/config/planos";
+import { Switch } from "@/components/ui/switch";
+
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -75,14 +79,20 @@ export default function PlanoEstanciasEdicion() {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [draw, setDraw] = useState({ activo: false, coordenadas: [] });
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Objeto para almacenar la nueva estancia.
   const [nuevo, setNuevo] = useState({
     codigo: "",
     descripcion: "",
+    tipoestancia: "",
     totalllaves: 1,
     armario: "",
     codigollave: "",
     numero_ordenadores: 0,
+    reservable: false,
   });
+
   const [modalLlaves, setModalLlaves] = useState({
     open: false,
     estancia: null,
@@ -172,19 +182,31 @@ export default function PlanoEstanciasEdicion() {
 
   const finishPolygon = async () => {
     if (!modoEdicion || !draw.activo || draw.coordenadas.length < 3) return;
+    if (!esFormularioValido) {
+      toast.error("Código, descripción y tipo de estancia son obligatorios");
+      return;
+    }
+
+    // finalizado el polígono que define la estancia, enviamos los datos introducidos en los inputs al objeto
     const estNueva = {
       codigo: nuevo.codigo,
       descripcion: nuevo.descripcion,
+      tipoestancia: nuevo.tipoestancia,
+      reservable: nuevo.reservable,
       totalllaves: Math.max(1, Number(nuevo.totalllaves) || 1),
       coordenadas: draw.coordenadas,
       armario: nuevo.armario,
       codigollave: nuevo.codigollave,
       numero_ordenadores: nuevo.numero_ordenadores,
     };
+
     try {
       setCargando(true);
       setError("");
       const guardada = await apiGuardarEstancia(plantaActual, estNueva);
+      toast.success(`Estancia "${nuevo.codigo}" creada correctamente`);
+      queryClient.invalidateQueries({ queryKey: ["estancias"] });
+
       const norma = {
         id: guardada.id,
         codigo: guardada.codigo,
@@ -206,9 +228,20 @@ export default function PlanoEstanciasEdicion() {
         return copia;
       });
       setDraw({ activo: false, coordenadas: [] });
-      setNuevo({ codigo: "", descripcion: "", totalllaves: 1 });
+      setNuevo({
+        codigo: "",
+        descripcion: "",
+        tipoestancia: "",
+        totalllaves: 1,
+        armario: "",
+        codigollave: "",
+        numero_ordenadores: 0,
+        reservable: false,
+      });
     } catch (e) {
-      setError(e?.message || "Error guardando la estancia");
+      const msg = e?.message || "Error guardando la estancia";
+      setError(msg);
+      toast.error(msg);
       console.error(e);
     } finally {
       setCargando(false);
@@ -223,6 +256,14 @@ export default function PlanoEstanciasEdicion() {
       .map((p, i) => (i ? `L ${p[0]} ${p[1]}` : `M ${p[0]} ${p[1]}`))
       .join(" ") + " Z";
   const scalePoints = (pts) => pts.map(([x, y]) => [x * size.w, y * size.h]);
+
+  const esFormularioValido = useMemo(() => {
+    return (
+      nuevo.codigo.trim() !== "" &&
+      nuevo.descripcion.trim() !== "" &&
+      nuevo.tipoestancia.trim() !== ""
+    );
+  }, [nuevo]);
 
   // ------------------- Render -------------------
   return (
@@ -367,7 +408,6 @@ export default function PlanoEstanciasEdicion() {
         </div>
 
         {/* Panel lateral */}
-        {/* Panel lateral (estilo Panel Llaves) */}
         <div className="w-80">
           {(user?.perfil === "administrador" ||
             user?.perfil === "directiva") && (
@@ -404,6 +444,52 @@ export default function PlanoEstanciasEdicion() {
                       value={nuevo.descripcion}
                       onChange={(e) =>
                         setNuevo((n) => ({ ...n, descripcion: e.target.value }))
+                      }
+                    />
+                  </div>
+
+                  {/* Tipo de estancia */}
+                  <div className="space-y-1">
+                    <Label className="text-sm">Tipo de estancia</Label>
+                    <Select
+                      value={nuevo.tipoestancia || "sin-tipo"}
+                      onValueChange={(v) =>
+                        setNuevo((n) => ({
+                          ...n,
+                          tipoestancia: v === "sin-tipo" ? "" : v,
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sin-tipo">
+                          Seleccionar tipo
+                        </SelectItem>
+                        <SelectItem value="Almacen">Almacén</SelectItem>
+                        <SelectItem value="Aula">Aula</SelectItem>
+                        <SelectItem value="Departamento">
+                          Departamento
+                        </SelectItem>
+                        <SelectItem value="Despacho">Despacho</SelectItem>
+                        <SelectItem value="Infolab">Infolab</SelectItem>
+                        <SelectItem value="Laboratorio">Laboratorio</SelectItem>
+                        <SelectItem value="Otras">Otras</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Reservable */}
+                  <div className="flex items-center justify-between border rounded-md p-3 mt-2">
+                    <Label className="text-sm font-medium">Reservable</Label>
+                    <Switch
+                      checked={nuevo.reservable}
+                      onCheckedChange={(v) =>
+                        setNuevo((n) => ({
+                          ...n,
+                          reservable: v,
+                        }))
                       }
                     />
                   </div>
@@ -476,11 +562,14 @@ export default function PlanoEstanciasEdicion() {
                   <div className="flex gap-2 pt-2">
                     <Button
                       className="w-full"
-                      disabled={draw.coordenadas.length < 3}
+                      disabled={
+                        draw.coordenadas.length < 3 || !esFormularioValido
+                      }
                       onClick={finishPolygon}
                     >
                       Guardar polígono
                     </Button>
+
                     <Button
                       variant="secondary"
                       className="w-full"

@@ -20,7 +20,7 @@ exports.insertEmpleado = async ({
   console.log ("Consulta: ", query, "parámetros: ", params);
   try {
     const result = await db.query(query, params);
-    return result.rows[0];
+    return result.rows[0]; 
   } catch (err) {
     console.error("❌ Error insertando empleado:", err);
     throw err;

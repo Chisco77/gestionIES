@@ -36,8 +36,7 @@
  * - @/components/ui/button
  * - sonner (toast)
  *
-  */
-
+ */
 
 import {
   Dialog,
@@ -54,18 +53,16 @@ export function DialogoEliminarCurso({
   onClose,
   cursoSeleccionado,
   onSuccess,
-}) {
+}) { 
+  if (!cursoSeleccionado) return null;
   const API_URL = import.meta.env.VITE_API_URL;
 
   const handleEliminar = async () => {
     try {
-      const res = await fetch(
-        `${API_URL}/db/cursos/${cursoSeleccionado.id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/db/cursos/${cursoSeleccionado.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
 
       if (!res.ok) {
         // Intentar leer mensaje del backend
@@ -73,8 +70,7 @@ export function DialogoEliminarCurso({
         try {
           const data = await res.json();
           if (data?.message) errorMsg = data.message;
-        } catch {
-        }
+        } catch {}
         throw new Error(errorMsg);
       }
 
@@ -88,14 +84,28 @@ export function DialogoEliminarCurso({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose} modal={false}>
-      <DialogContent onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle>¿Eliminar curso?</DialogTitle>
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="p-0 overflow-hidden rounded-lg"
+      >
+        <DialogHeader className="bg-red-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+          <DialogTitle className="text-lg font-semibold text-center leading-snug">
+            Eliminar Curso
+          </DialogTitle>
         </DialogHeader>
-        <p className="text-sm">Esta acción no se puede deshacer.</p>
-        <DialogFooter>
-          <Button variant="destructive" onClick={handleEliminar}>
+        <div className="text-sm text-gray-700 mb-4 space-y-2 px-6 pt-4">
+          <div>
+            <span className="font-medium">Curso:</span>{" "}
+            {cursoSeleccionado.curso}
+          </div>
+
+          <div className="text-red-600 font-semibold mt-2">
+            Esta acción no se puede deshacer.
+          </div>
+        </div>
+         <DialogFooter className="px-6 py-4 bg-gray-50">
+          <Button variant="destructive" className="bg-red-600 hover:bg-red-700" onClick={handleEliminar}>
             Eliminar
           </Button>
           <Button onClick={onClose} variant="outline">
