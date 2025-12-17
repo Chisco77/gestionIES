@@ -1,6 +1,6 @@
 /**
  * Componente: DialogoDocumentoPrestamo
-  * 
+ *
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
  * Email: adminies.franciscodeorellana@educarex.es
@@ -8,11 +8,11 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Este componente muestra un diálogo para generar un PDF de documentos de préstamo
  * de libros para varios alumnos. Cada alumno genera una página con su información,
  * lista de préstamos y normativa de uso de libros.
- * 
+ *
  * Props:
  *   - open: boolean → indica si el diálogo está abierto.
  *   - onOpenChange: function → callback que se ejecuta al abrir/cerrar el diálogo.
@@ -22,13 +22,13 @@
  *       - prestamos: array → lista de libros prestados con:
  *           - libro: string → nombre del libro.
  *           - devuelto: boolean → indica si el libro fue devuelto.
- * 
+ *
  * Estados internos:
  *   - nombrePdf: string → nombre del archivo PDF a generar.
  *   - loading: boolean → indica si se está generando el PDF.
  *   - progress: number → porcentaje de progreso de generación.
  *   - showSuccessToast: boolean → controla la visualización del toast de éxito.
- * 
+ *
  * Funciones principales:
  *   - toBase64(url): Promise → convierte una imagen desde URL a base64 para usar en jsPDF.
  *   - generarPdfPorAlumnos(): genera un PDF usando jsPDF:
@@ -39,15 +39,14 @@
  *       5. Maneja múltiples páginas si el contenido excede una página.
  *       6. Actualiza progreso mientras recorre los alumnos.
  *       7. Guarda el archivo con el nombre indicado en `nombrePdf`.
- * 
+ *
  * Librerías/componentes usados:
  *   - React: useState, useEffect
  *   - jsPDF: generación de documentos PDF
  *   - Dialog/DialogContent/DialogHeader/DialogTitle/DialogFooter
  *   - Input, Button: componentes UI
- * 
+ *
  */
-
 
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
@@ -83,6 +82,13 @@ export function DialogoDocumentoPrestamo({ open, onOpenChange, alumnos = [] }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const lineasCabecera = [
+    import.meta.env.VITE_DIRECCION_LINEA_1,
+    import.meta.env.VITE_DIRECCION_LINEA_2,
+    import.meta.env.VITE_DIRECCION_LINEA_3,
+    import.meta.env.VITE_DIRECCION_LINEA_4,
+    import.meta.env.VITE_DIRECCION_LINEA_5,
+  ].filter(Boolean);
 
   const generarPdfPorAlumnos = async () => {
     const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -128,14 +134,6 @@ export function DialogoDocumentoPrestamo({ open, onOpenChange, alumnos = [] }) {
       // Inserta texto junto al logo izquierdo
       doc.setFontSize(7);
       doc.setFont("helvetica", "normal");
-
-      const lineasCabecera = [
-        "Secretaría General de Educación y F.P.",
-        "Avda. Reina Mª Cristina, s/n. 10200 TRUJILLO (Cáceres)",
-        "Apdo. De Correos n.º 17",
-        "Teléfono: 927027790   Fax: 927027789",
-        "email: ies.franciscodeorellana@edu.juntaex.es",
-      ];
 
       lineasCabecera.forEach((linea, index) => {
         doc.text(linea, textX, marginTop + 4 + index * 2.5);
