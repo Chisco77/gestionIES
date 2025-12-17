@@ -67,7 +67,7 @@ export function NavMain({ items }) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>IES Francisco de Orellana</SidebarGroupLabel>
+      <SidebarGroupLabel>{import.meta.env.VITE_IES_NAME}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
           const isItemActive =
