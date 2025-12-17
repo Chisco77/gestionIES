@@ -5,7 +5,7 @@ exports.insertEmpleado = async ({
   uid,
   tipo_usuario,
   dni,
-  permisos,
+  asuntos_propios,
   tipo_empleado,
   jornada,
 }) => {
