@@ -363,7 +363,14 @@ export async function generateEtiquetasGenericasPdf({
     const col = indexInPage % layout.cols;
     const row = Math.floor(indexInPage / layout.cols);
 
-    const x = layout.marginX + col * (layout.width + layout.spacingX);
+    let x = layout.marginX + col * (layout.width + layout.spacingX);
+
+    // Corrección de columnas para 24 etiquetas
+    if (cantidad === 24) {
+      if (col === 1) x -= 1.5;
+      if (col === 2) x -= 3;
+    }
+
     const y = layout.marginY + row * (layout.height + layout.spacingY);
 
     const centerX = x + layout.width / 2;
@@ -371,17 +378,26 @@ export async function generateEtiquetasGenericasPdf({
 
     const numero = i + numeroInicial;
 
+    // ---- CÁLCULO DE ANCHOS ----
     doc.setFontSize(14);
     doc.setFont("helvetica", "normal");
     const prefijoWidth = doc.getTextWidth(prefijo);
 
     doc.setFontSize(30);
     doc.setFont("helvetica", "bold");
-    const numeroWidth = doc.getTextWidth(`${numero}`);
+    const numeroText = `${numero}`;
+    const numeroWidth = doc.getTextWidth(numeroText);
 
+    // ---- CENTRADO HORIZONTAL REAL ----
     const totalWidth = prefijoWidth + numeroWidth;
-    const startX = centerX - totalWidth / 2;
+    let startX = centerX - totalWidth / 2;
 
+    // Ajuste óptico SOLO para 24 etiquetas
+    if (cantidad === 24) {
+      startX -= 1.2;
+    }
+
+    // ---- DIBUJO DEL TEXTO ----
     // Prefijo
     doc.setFontSize(14);
     doc.setFont("helvetica", "normal");
@@ -390,7 +406,7 @@ export async function generateEtiquetasGenericasPdf({
     // Número
     doc.setFontSize(30);
     doc.setFont("helvetica", "bold");
-    doc.text(`${numero}`, startX + prefijoWidth, centerY - 1.2, {
+    doc.text(numeroText, startX + prefijoWidth, centerY, {
       baseline: "middle",
     });
 
