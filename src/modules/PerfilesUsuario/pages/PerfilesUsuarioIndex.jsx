@@ -1,13 +1,19 @@
 // PerfilesUsuarioIndex.jsx - Página de gestión de perfiles de usuario
 
 import { useEffect, useState } from "react";
-import { TablaPerfilesUsuario } from "../components/TablaPerfilesUsuario"; 
+import { TablaPerfilesUsuario } from "../components/TablaPerfilesUsuario";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { DialogoInsertarPerfil } from "../components/DialogoInsertarPerfil";
 import { DialogoEditarPerfil } from "../components/DialogoEditarPerfil";
 import { DialogoEliminarPerfil } from "../components/DialogoEliminarPerfil";
 import { columns } from "../components/columns"; // columnas definidas para perfiles
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function PerfilesUsuarioIndex() {
   const [perfiles, setPerfiles] = useState([]);
@@ -22,7 +28,9 @@ export function PerfilesUsuarioIndex() {
   // Obtener todos los perfiles
   const fetchPerfiles = async () => {
     try {
-      const res = await fetch(`${API_URL}/db/perfiles`, { credentials: "include" });
+      const res = await fetch(`${API_URL}/db/perfiles`, {
+        credentials: "include",
+      });
       const data = await res.json();
       setPerfiles(data);
     } catch (error) {
@@ -68,31 +76,60 @@ export function PerfilesUsuarioIndex() {
         data={perfiles}
         onFilteredChange={(filtrados) => setPerfilesFiltrados(filtrados)}
         acciones={(seleccionado) => (
-          <>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setAbrirInsertar(true)}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleEditar(seleccionado)}
-              disabled={!seleccionado}
-            >
-              <Pencil className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleEliminar(seleccionado)}
-              disabled={!seleccionado}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </>
+          <div className="flex items-center space-x-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setAbrirInsertar(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Nuevo perfil</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEditar(seleccionado)}
+                    disabled={!seleccionado}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Editar perfil</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEliminar(seleccionado)}
+                    disabled={!seleccionado}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Eliminar perfil</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         )}
       />
 

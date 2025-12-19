@@ -6,6 +6,12 @@ import { DialogoInsertarPeriodo } from "../components/DialogoInsertarPeriodo";
 import { DialogoEditarPeriodo } from "../components/DialogoEditarPeriodo";
 import { DialogoEliminarPeriodo } from "../components/DialogoEliminarPeriodo";
 import { columnsPeriodos } from "../components/columnsPeriodos"; // columnas para periodos
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function PeriodosHorariosIndex() {
   const [periodos, setPeriodos] = useState([]);
@@ -73,34 +79,60 @@ export function PeriodosHorariosIndex() {
         data={periodos}
         onFilteredChange={(filtrados) => setPeriodosFiltrados(filtrados)}
         acciones={(seleccionado) => (
-          <>
-            <Button
-              variant="outline"
-              size="icon"
-              title="Añadir nuevo periodo"
-              onClick={() => setAbrirInsertar(true)}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              title="Editar periodo seleccionado"
-              onClick={() => handleEditar(seleccionado)}
-              disabled={!seleccionado}
-            >
-              <Pencil className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              title="Eliminar periodo seleccionado"
-              onClick={() => handleEliminar(seleccionado)}
-              disabled={!seleccionado}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </>
+          <div className="flex items-center space-x-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setAbrirInsertar(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Añadir nuevo periodo</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEditar(seleccionado)}
+                    disabled={!seleccionado}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Editar periodo seleccionado</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEliminar(seleccionado)}
+                    disabled={!seleccionado}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Eliminar periodo seleccionado</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         )}
       />
 

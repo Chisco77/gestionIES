@@ -108,7 +108,7 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         icon: Library,
         items: [
           { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
-          { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
+          //{ title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
           { title: "Libros", url: "/libros", icon: BookMarked },
           { title: "Cursos", url: "/cursos", icon: BookOpen },
         ],
@@ -272,7 +272,7 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         icon: Library,
         items: [
           { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
-          { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
+          //{ title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
           { title: "Libros", url: "/libros", icon: BookMarked },
           { title: "Cursos", url: "/cursos", icon: BookOpen },
         ],
@@ -379,7 +379,7 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         icon: Library,
         items: [
           { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
-          { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
+         // { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
           { title: "Libros", url: "/libros", icon: BookMarked },
           { title: "Cursos", url: "/cursos", icon: BookOpen },
         ],
