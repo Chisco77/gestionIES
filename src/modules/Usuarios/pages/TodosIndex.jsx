@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Componente principal para visualizar todos los usuarios (alumnos y profesores) desde LDAP.
  *
  * Funcionalidades:
@@ -36,7 +36,6 @@ import { Loader, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTodosLdap } from "@/hooks/useTodosLdap";
 
-
 const handleInsertar = () => {
   alert("Inserción de profesor: No implementado");
 };
@@ -61,7 +60,7 @@ export function TodosIndex() {
   const [data, setData] = useState([]);
   const [usuariosFiltrados, setUsuariosFiltrados] = useState([]);
   const { data: todos, isLoading, error } = useTodosLdap();
-  
+
   const API_URL = import.meta.env.VITE_API_URL;
 
   /*useEffect(() => {
@@ -77,7 +76,6 @@ export function TodosIndex() {
         console.error("❌ Error al cargar usuarios:", error);
       });
   }, []);*/
-
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
@@ -96,7 +94,7 @@ export function TodosIndex() {
           onFilteredChange={(rows) => setUsuariosFiltrados(rows)}
           acciones={(seleccionado) => (
             <>
-              <Button variant="outline" size="icon" onClick={handleInsertar}>
+              <Button variant="outline" size="icon" disabled={true}>
                 <Plus className="w-4 h-4" />
               </Button>
               <Button
@@ -111,7 +109,7 @@ export function TodosIndex() {
                 variant="outline"
                 size="icon"
                 onClick={() => handleEliminar(seleccionado)}
-                disabled={!seleccionado}
+                disabled={true}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -122,4 +120,3 @@ export function TodosIndex() {
     </div>
   );
 }
-

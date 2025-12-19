@@ -48,7 +48,6 @@
  * - Los diálogos se abren de forma controlada mediante el estado correspondiente.
  */
 
-
 import { useEffect, useState } from "react";
 import { columns } from "../components/columns";
 import { TablaCursos } from "../components/TablaCursos";
@@ -57,6 +56,12 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { DialogoInsertarCurso } from "../components/DialogoInsertarCurso";
 import { DialogoEditarCurso } from "../components/DialogoEditarCurso";
 import { DialogoEliminarCurso } from "../components/DialogoEliminarCurso";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function CursosIndex() {
   const [data, setData] = useState([]);
@@ -132,31 +137,60 @@ export function CursosIndex() {
         data={data}
         onFilteredChange={(rows) => setCursosFiltrados(rows)}
         acciones={(seleccionado) => (
-          <>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setAbrirDialogoInsertar(true)}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleEditar(seleccionado)}
-              disabled={!seleccionado}
-            >
-              <Pencil className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleEliminar(seleccionado)}
-              disabled={!seleccionado}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </>
+          <div className="flex items-center space-x-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setAbrirDialogoInsertar(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Nuevo curso</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEditar(seleccionado)}
+                    disabled={!seleccionado}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Editar curso</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEliminar(seleccionado)}
+                    disabled={!seleccionado}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Eliminar curso</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         )}
       />
       <DialogoEditarCurso

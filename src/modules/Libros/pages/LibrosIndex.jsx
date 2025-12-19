@@ -57,7 +57,6 @@
  * - Los diálogos se abren de forma controlada mediante el estado correspondiente.
  */
 
-
 import { useEffect, useState } from "react";
 import { columns } from "../components/columns";
 import { TablaLibros } from "../components/TablaLibros";
@@ -73,6 +72,13 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 export function LibrosIndex() {
   const [librosFiltrados, setLibrosFiltrados] = useState([]);
   const [libros, setLibros] = useState([]);
@@ -82,7 +88,7 @@ export function LibrosIndex() {
   const [abrirEditar, setAbrirEditar] = useState(false);
   const [abrirEliminar, setAbrirEliminar] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
-  
+
   const fetchLibros = async () => {
     try {
       const res = await fetch(`${API_URL}/db/libros`, {
@@ -169,31 +175,60 @@ export function LibrosIndex() {
         cursos={cursos} //
         onFilteredChange={(filtrados) => setLibrosFiltrados(filtrados)}
         acciones={(seleccionado) => (
-          <>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setAbrirInsertar(true)}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleEditar(seleccionado)}
-              disabled={!seleccionado}
-            >
-              <Pencil className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleEliminar(seleccionado)}
-              disabled={!seleccionado}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </>
+          <div className="flex items-center space-x-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setAbrirInsertar(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Nuevo Libro</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEditar(seleccionado)}
+                    disabled={!seleccionado}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Editar Libro</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEliminar(seleccionado)}
+                    disabled={!seleccionado}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-blue-500 text-white">
+                  <p>Eliminar Libro</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         )}
         informes={
           <DropdownMenu>

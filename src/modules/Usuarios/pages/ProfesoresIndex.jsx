@@ -184,7 +184,7 @@ export function ProfesoresIndex() {
           onFilteredChange={(rows) => setProfesoresFiltrados(rows)}
           acciones={(seleccionado) => (
             <>
-              <Button variant="outline" size="icon" onClick={handleInsertar}>
+              <Button variant="outline" size="icon" disabled={true}>
                 <Plus className="w-4 h-4" />
               </Button>
               <Button
@@ -199,7 +199,7 @@ export function ProfesoresIndex() {
                 variant="outline"
                 size="icon"
                 onClick={() => handleEliminar(seleccionado)}
-                disabled={!seleccionado}
+                disabled={true}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
