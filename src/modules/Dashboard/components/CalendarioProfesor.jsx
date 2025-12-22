@@ -51,12 +51,22 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
   });
 
   // --- Asuntos propios por día ---
-  const asuntosPorDia = {};
+  /*const asuntosPorDia = {};
   (asuntos || []).forEach((a) => {
     const fechaObj = new Date(a.fecha);
     const fecha = formatDateKey(fechaObj);
     asuntosPorDia[fecha] = (asuntosPorDia[fecha] || 0) + 1;
-  });
+  });*/
+
+  // Solo asuntos propios -> tipo = 13
+  const asuntosPorDia = {};
+  (asuntos || [])
+    .filter((a) => a.tipo === 13)
+    .forEach((a) => {
+      const fechaObj = new Date(a.fecha);
+      const fecha = formatDateKey(fechaObj);
+      asuntosPorDia[fecha] = (asuntosPorDia[fecha] || 0) + 1;
+    });
 
   // --- Navegación ---
   const handlePrevMonth = () => {

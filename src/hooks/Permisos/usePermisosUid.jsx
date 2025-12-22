@@ -1,4 +1,4 @@
-// hooks/usePermisosPropios.js
+// hooks/usePermisosUid.js
 import { useQuery } from "@tanstack/react-query";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -16,7 +16,7 @@ export function usePermisosUid(uid) {
       if (!res.ok) {
         // si el servidor responde 204 o similar, tratamos como array vacío
         if (res.status === 204) return [];
-        throw new Error("Error cargando asuntos propios");
+        throw new Error("Error cargando perisos");
       }
 
       const text = await res.text();
@@ -27,7 +27,7 @@ export function usePermisosUid(uid) {
         // PanelReservas usa data.asuntos
         return Array.isArray(data?.asuntos) ? data.asuntos : [];
       } catch (err) {
-        console.error("usePermisosPropios: error parseando JSON:", err, "texto:", text);
+        console.error("usePermisos: error parseando JSON:", err, "texto:", text);
         // fallback: intentar usar res.json (por si acaso)
         try {
           const fallback = await (await fetch(`${API_BASE}/permisos?uid=${uid}`, { credentials: "include" })).json();

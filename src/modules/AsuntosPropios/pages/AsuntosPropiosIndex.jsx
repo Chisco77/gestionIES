@@ -46,6 +46,11 @@ export function AsuntosPropiosIndex() {
   const { data: estancias } = useEstancias();
   const { data: periodos } = usePeriodosHorarios();
 
+  // filtrar solo asuntos propios
+  const asuntosPropiosFiltrados = (asuntosPropios || []).filter(
+    (a) => Number(a.tipo) === 13
+  );
+
   // ===================== Restricciones desde el hook =====================
   const { data: restricciones = [] } = useRestriccionesAsuntos();
 
@@ -94,14 +99,17 @@ export function AsuntosPropiosIndex() {
   }
 
   // --- Derivados ---
+  // --- Derivados (solo asuntos propios: tipo 13) ---
   const asuntosPorDia = {};
   const asuntosPropiosUsuario = {};
-  asuntosPropiosMes.forEach((a) => {
-    const fechaObj = new Date(a.fecha);
-    const fecha = formatDateKey(fechaObj);
-    asuntosPorDia[fecha] = (asuntosPorDia[fecha] || 0) + 1;
-    if (a.uid === uid) asuntosPropiosUsuario[fecha] = a;
-  });
+
+  (asuntosPropiosMes || [])
+    .filter((a) => Number(a.tipo) === 13)
+    .forEach((a) => {
+      const fecha = formatDateKey(new Date(a.fecha));
+      asuntosPorDia[fecha] = (asuntosPorDia[fecha] || 0) + 1;
+      if (a.uid === uid) asuntosPropiosUsuario[fecha] = a;
+    });
 
   // --- Handlers calendario ---
   const handlePrevMonth = () => {
@@ -161,7 +169,7 @@ export function AsuntosPropiosIndex() {
           <PanelReservas
             uid={uid}
             reservasEstancias={reservasEstancias || []}
-            asuntosPropios={asuntosPropios || []}
+            asuntosPropios={asuntosPropiosFiltrados || []}
             extraescolares={extraescolares || []}
             estancias={estancias || []}
             periodos={periodos || []}
