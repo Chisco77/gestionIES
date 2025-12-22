@@ -143,7 +143,7 @@ async function getPermisosEnriquecidos(req, res) {
 /**
  * Insertar un asunto propio con comprobaciones de restricciones
  */
-async function insertAsuntoPropio(req, res) {
+/*async function insertAsuntoPropio(req, res) {
   const { uid, fecha, descripcion, tipo } = req.body || {};
   if (!uid || !fecha || !descripcion || !tipo)
     return res.status(400).json({
@@ -295,6 +295,211 @@ async function insertAsuntoPropio(req, res) {
     res.status(500).json({ ok: false, error: "Error guardando asunto propio" });
   }
 }
+*/
+/**
+ * Insertar un asunto propio con comprobaciones de restricciones
+ */
+async function insertAsuntoPropio(req, res) {
+  const { uid, fecha, descripcion, tipo } = req.body || {};
+
+  if (!uid || !fecha || !descripcion || tipo === undefined)
+    return res.status(400).json({
+      ok: false,
+      error: "UID, fecha, descripción y tipo son obligatorios",
+    });
+
+  try {
+    const restricciones = await getRestriccionesAsuntos();
+
+    // ❌ No hay restricciones definidas
+    if (!restricciones || !restricciones.length) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          "No hay restricciones definidas para asuntos propios. Deben configurarse antes de realizar solicitudes.",
+      });
+    }
+
+    // Mapeamos restricciones
+    const restriccionesMap = restricciones.reduce((acc, r) => {
+      acc[r.descripcion] = r;
+      return acc;
+    }, {});
+
+    // Restricciones obligatorias (excepto ofuscar)
+    const requeridas = [
+      "concurrentes",
+      "antelacion_min",
+      "antelacion_max",
+      "consecutivos",
+      "dias",
+    ];
+
+    const faltan = requeridas.filter((r) => !restriccionesMap[r]);
+
+    if (faltan.length) {
+      return res.status(400).json({
+        ok: false,
+        error: `Faltan restricciones obligatorias: ${faltan.join(
+          ", "
+        )}. Deben definirse antes de solicitar asuntos propios.`,
+      });
+    }
+
+    // Extraemos valores con seguridad
+    const concurrentes = restriccionesMap.concurrentes.valor_num;
+    const antelacion_min = restriccionesMap.antelacion_min.valor_num;
+    const antelacion_max = restriccionesMap.antelacion_max.valor_num;
+    const consecutivos = restriccionesMap.consecutivos.valor_num;
+    const dias = restriccionesMap.dias.valor_num;
+    const ofuscar = restriccionesMap.ofuscar?.valor_bool ?? false;
+
+    const fechaSolicitada = new Date(fecha);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const diffDias = Math.ceil(
+      (fechaSolicitada - hoy) / (1000 * 60 * 60 * 24)
+    );
+
+    // Antelación mínima
+    if (diffDias < antelacion_min)
+      return res.status(400).json({
+        ok: false,
+        error: `Debes solicitar el asunto propio con al menos ${antelacion_min} días de antelación.`,
+      });
+
+    // Antelación máxima
+    if (diffDias > antelacion_max)
+      return res.status(400).json({
+        ok: false,
+        error: `No puedes solicitar el asunto propio con más de ${antelacion_max} días de antelación.`,
+      });
+
+    const empleado = await obtenerEmpleado(uid);
+    if (!empleado)
+      return res
+        .status(404)
+        .json({ ok: false, error: "Empleado no encontrado" });
+
+    // Días máximos asignados
+    let maxDias = empleado.asuntos_propios;
+    if (!maxDias || maxDias === 0) maxDias = dias;
+
+    const { rows: totalCurso } = await db.query(
+      `SELECT COUNT(*)::int AS total FROM permisos WHERE uid = $1 AND tipo = 13`,
+      [uid]
+    );
+
+    if (totalCurso[0].total >= maxDias)
+      return res.status(400).json({
+        ok: false,
+        error: `Ya has solicitado el máximo de ${maxDias} días de asuntos propios este curso.`,
+      });
+
+    const { rows: concurrencia } = await db.query(
+      `SELECT COUNT(*)::int AS total FROM permisos WHERE fecha = $1 AND tipo = 13`,
+      [fecha]
+    );
+
+    if (concurrencia[0].total >= concurrentes)
+      return res.status(400).json({
+        ok: false,
+        error: `Ya hay ${concurrentes} profesores con asuntos propios ese día.`,
+      });
+
+    const { rows: diasCercanos } = await db.query(
+      `SELECT fecha FROM permisos
+       WHERE uid = $1
+       AND fecha BETWEEN ($2::date - INTERVAL '10 days')
+                     AND ($2::date + INTERVAL '10 days')
+       ORDER BY fecha`,
+      [uid, fecha]
+    );
+
+    const fechas = diasCercanos.map((r) => new Date(r.fecha).getTime());
+    fechas.push(fechaSolicitada.getTime());
+    fechas.sort((a, b) => a - b);
+
+    let maxConsecutivos = 1;
+    let consecutivosActual = 1;
+
+    for (let i = 1; i < fechas.length; i++) {
+      const diff = Math.round(
+        (fechas[i] - fechas[i - 1]) / (1000 * 60 * 60 * 24)
+      );
+      consecutivosActual = diff === 1 ? consecutivosActual + 1 : 1;
+      if (consecutivosActual > maxConsecutivos)
+        maxConsecutivos = consecutivosActual;
+    }
+
+    if (maxConsecutivos > consecutivos)
+      return res.status(400).json({
+        ok: false,
+        error: `No puedes solicitar más de ${consecutivos} días consecutivos de asuntos propios.`,
+      });
+
+    const { rows } = await db.query(
+      `INSERT INTO permisos (uid, fecha, descripcion, tipo)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, uid, fecha, descripcion, tipo`,
+      [uid, fecha, descripcion, tipo]
+    );
+
+    // Responder antes de enviar email
+    res.status(201).json({ ok: true, asunto: rows[0], ofuscar });
+
+    // Envío de email asíncrono
+    setImmediate(async () => {
+      try {
+        const { rows: avisos } = await db.query(
+          `SELECT emails FROM avisos WHERE modulo = 'asuntos-propios' LIMIT 1`
+        );
+
+        const emails = (avisos[0]?.emails || [])
+          .map((e) => e.trim())
+          .filter(Boolean);
+
+        if (!emails.length) return;
+
+        const ldapSession = req.session?.ldap;
+        const datosUsuario = await new Promise((resolve) => {
+          buscarPorUid(ldapSession, uid, (err, datos) =>
+            resolve(
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
+            )
+          );
+        });
+
+        const nombreProfesor =
+          `${datosUsuario.givenName || ""} ${datosUsuario.sn || ""}`.trim();
+
+        const fechaFmt = new Date(rows[0].fecha).toLocaleDateString("es-ES");
+
+        await mailer.sendMail({
+          from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
+          to: emails.join(", "),
+          subject: `[ASUNTOS PROPIOS - Solicitud] Solicitud asunto propio (${fechaFmt})`,
+          html: `<p>Profesor: ${nombreProfesor}</p>
+                 <p>Fecha: ${fechaFmt}</p>
+                 <p>Descripción: ${descripcion}</p>`,
+        });
+
+        console.log(
+          `[insertAsuntoPropio] Email enviado a: ${emails.join(", ")}`
+        );
+      } catch (errMail) {
+        console.error("[insertAsuntoPropio] Error enviando email:", errMail);
+      }
+    });
+  } catch (err) {
+    console.error("[insertAsuntoPropio] Error:", err);
+    res
+      .status(500)
+      .json({ ok: false, error: "Error guardando asunto propio" });
+  }
+}
+
 
 /**
  *
@@ -390,13 +595,22 @@ async function insertPermiso(req, res) {
  */
 async function updatePermiso(req, res) {
   const id = req.params.id;
-  const { fecha, descripcion } = req.body || {};
+  const { fecha, descripcion, tipo } = req.body || {};
 
   const sets = [];
   const vals = [];
   let i = 0;
   if (fecha) sets.push(`fecha = $${++i}`) && vals.push(fecha);
   if (descripcion) sets.push(`descripcion = $${++i}`) && vals.push(descripcion);
+  if (tipo !== undefined) {
+    sets.push(`tipo = $${++i}`);
+    vals.push(tipo);
+  }
+
+  console.log("fecha", fecha);
+  console.log("descripcion", descripcion);
+  console.log("tipo", tipo);
+  console.log("Sets: ", sets);
   if (!sets.length)
     return res.status(400).json({ ok: false, error: "Nada que actualizar" });
 
@@ -407,14 +621,12 @@ async function updatePermiso(req, res) {
     if (!rows[0])
       return res
         .status(404)
-        .json({ ok: false, error: "Asunto propio no encontrado" });
+        .json({ ok: false, error: "Permiso no encontrado" });
 
     res.json({ ok: true, asunto: rows[0] });
   } catch (err) {
-    console.error("[updateAsuntoPropio] Error:", err);
-    res
-      .status(500)
-      .json({ ok: false, error: "Error actualizando asunto propio" });
+    console.error("[updatePermiso] Error:", err);
+    res.status(500).json({ ok: false, error: "Error actualizando permiso" });
   }
 }
 
