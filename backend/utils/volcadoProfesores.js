@@ -67,7 +67,7 @@ async function volcarProfesoresALaBD(adminPassword) {
   });
 }
 
-// Procesar un solo profesor y volcar a la BD
+// Procesar un solo profesor y volcar a la BD 
 async function procesarProfesor(client, uid) {
   return new Promise((resolve) => {
     console.log(`→ Procesando ${uid}`);
@@ -85,14 +85,15 @@ async function procesarProfesor(client, uid) {
       }
 
       res.on("searchEntry", async (entry) => {
+        // Si employeeNumber no existe, se asigna cadena vacía
         const employeeNumber =
-          entry.attributes.find((a) => a.type === "employeeNumber")?.values[0] || null;
+          entry.attributes.find((a) => a.type === "employeeNumber")?.values[0] || "";
 
         try {
           await empleadosController.insertEmpleado({
             uid,
             tipo_usuario: 0,
-            dni: employeeNumber,
+            dni: employeeNumber, // ahora nunca será null
             asuntos_propios: 4,
             tipo_empleado: "funcionario de carrera",
             jornada: 0,
@@ -107,5 +108,6 @@ async function procesarProfesor(client, uid) {
     });
   });
 }
+
 
 module.exports = volcarProfesoresALaBD;
