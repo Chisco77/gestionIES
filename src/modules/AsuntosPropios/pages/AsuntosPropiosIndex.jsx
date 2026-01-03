@@ -98,13 +98,16 @@ export function AsuntosPropiosIndex() {
     weeks.push(week);
   }
 
-  // --- Derivados ---
   // --- Derivados (solo asuntos propios: tipo 13) ---
   const asuntosPorDia = {};
   const asuntosPropiosUsuario = {};
 
   (asuntosPropiosMes || [])
-    .filter((a) => Number(a.tipo) === 13)
+     .filter(
+    (a) =>
+      Number(a.tipo) === 13 &&
+      Number(a.estado) !== 2 // EXCLUIR RECHAZADOS, no ocupan slot en maximo de peticiones por dia
+  )
     .forEach((a) => {
       const fecha = formatDateKey(new Date(a.fecha));
       asuntosPorDia[fecha] = (asuntosPorDia[fecha] || 0) + 1;
