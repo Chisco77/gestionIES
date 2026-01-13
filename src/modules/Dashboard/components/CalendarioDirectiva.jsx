@@ -42,10 +42,26 @@ export function CalendarioDirectiva({ onSelectDate, disableInsert = false }) {
   // --- Extraescolares por día ---
   const extraescolaresPorDia = {};
   (extraescolares || []).forEach((a) => {
+    const fechaInicio = new Date(a.fecha_inicio);
+    const fechaFin = new Date(a.fecha_fin);
+
+    // Iterar todos los días entre fechaInicio y fechaFin
+    for (
+      let d = new Date(fechaInicio);
+      d <= fechaFin;
+      d.setDate(d.getDate() + 1)
+    ) {
+      const fecha = formatDateKey(d);
+      extraescolaresPorDia[fecha] = (extraescolaresPorDia[fecha] || 0) + 1;
+    }
+  });
+
+  /*const extraescolaresPorDia = {};
+  (extraescolares || []).forEach((a) => {
     const fechaObj = new Date(a.fecha_inicio);
     const fecha = formatDateKey(fechaObj);
     extraescolaresPorDia[fecha] = (extraescolaresPorDia[fecha] || 0) + 1;
-  });
+  });*/
 
   // --- Asuntos propios por día ---
   const asuntosPorDia = {};

@@ -120,13 +120,10 @@ export function GridReservasEstancias({
               className="border p-1 rounded w-full text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
               <option value="">Todos</option>
-              <option value="Almacen">Almacén</option>
-              <option value="Aula">Aula</option>
-              <option value="Departamento">Departamento</option>
-              <option value="Despacho">Despacho</option>
+              <option value="Aula Polivalente">Aula Polivalente</option>
               <option value="Infolab">Infolab</option>
               <option value="Laboratorio">Laboratorio</option>
-              <option value="Otras">Otras</option>
+              <option value="Optativa">Optativa</option>
             </select>
           </div>
         </CardTitle>

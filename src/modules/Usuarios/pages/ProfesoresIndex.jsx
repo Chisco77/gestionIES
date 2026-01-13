@@ -29,101 +29,24 @@
  *
  */
 /*
-import { useState } from "react";
-import { columns } from "../components/colums";
-import { TablaUsuarios } from "../components/TablaUsuarios";
-import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
-import { Loader, Plus, Pencil, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DialogoEditarUsuario } from "../components/DialogoEditarUsuario";
-
-export function ProfesoresIndex() {
-  const [profesoresFiltrados, setProfesoresFiltrados] = useState([]);
-  const { data: profesores, isLoading, error } = useProfesoresLdap();
-  const [profesorSeleccionado, setProfesorSeleccionado] = useState(null);
-
-  const [abrirEditar, setAbrirEditar] = useState(false);
-
-  const handleInsertar = () => {
-    alert("Inserción de profesor: No implementado");
-  };
-
-  const handleEditar = (seleccionado) => {
-    if (!seleccionado) {
-      alert("Selecciona un alumno para editar.");
-      return;
-    }
-    setProfesorSeleccionado(seleccionado);
-    setAbrirEditar(true);
-  };
-
-  const handleEliminar = (profesor) => {
-    if (!profesor) {
-      alert("Selecciona un profesor para eliminar.");
-      return;
-    }
-    alert(`Eliminación de profesor ${profesor.uid}: No implementado`);
-  };
-
-  return (
-    <div className="container mx-auto py-10 p-12 space-y-6">
-      {isLoading ? (
-        <div className="flex justify-center py-24">
-          <Loader className="h-10 w-10 animate-spin text-primary" />
-        </div>
-      ) : error ? (
-        <div className="text-red-500 text-center">
-          ❌ Error al cargar profesores: {error.message}
-        </div>
-      ) : (
-        <TablaUsuarios
-          columns={columns}
-          data={profesores}
-          onFilteredChange={(rows) => setProfesoresFiltrados(rows)}
-          acciones={(seleccionado) => (
-            <>
-              <Button variant="outline" size="icon" onClick={handleInsertar}>
-                <Plus className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleEditar(seleccionado)}
-                disabled={!seleccionado}
-              >
-                <Pencil className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleEliminar(seleccionado)}
-                disabled={!seleccionado}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </>
-          )}
-        />
-      )}
-      <DialogoEditarUsuario
-        open={abrirEditar}
-        onClose={() => setAbrirEditar(false)}
-        usuarioSeleccionado={profesorSeleccionado}
-        esAlumno={false} // muestra foto en la cabecera
-      />
-    </div>
-  );
-}
-*/
+ */
 
 import { useState, useEffect } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 import { useEmpleados } from "@/hooks/useEmpleados";
-import { Loader, Plus, Pencil, Trash2 } from "lucide-react";
+import { Loader, Plus, Pencil, Trash2, Users, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DialogoEditarUsuario } from "../components/DialogoEditarUsuario";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+
+import { generateListadoAPs } from "../../../utils/Informes";
 
 export function ProfesoresIndex() {
   const [profesoresFiltrados, setProfesoresFiltrados] = useState([]);
@@ -136,6 +59,7 @@ export function ProfesoresIndex() {
     isLoading: loadingProfesores,
     error: errorProfesores,
   } = useProfesoresLdap();
+
   const { data: empleados = [], isLoading: loadingEmpleados } = useEmpleados();
 
   const handleInsertar = () => {
@@ -165,6 +89,21 @@ export function ProfesoresIndex() {
     alert(`Eliminación de profesor ${profesor.uid}: No implementado`);
   };
 
+  const handleGenerarPdf = () => {
+    // Combinamos profesoresFiltrados con datos de empleados
+    const listadoCombinado = profesoresFiltrados.map((profesor) => {
+      const empleadoExtra = empleados.find((e) => e.uid === profesor.uid) || {};
+      return {
+        ...profesor,
+        dni: empleadoExtra.dni || "",
+        asuntos_propios: empleadoExtra.asuntos_propios || 0,
+        tipo_empleado: empleadoExtra.tipo_empleado || "",
+      };
+    });
+
+    generateListadoAPs(listadoCombinado);
+  };
+
   const isLoading = loadingProfesores || loadingEmpleados;
 
   return (
@@ -182,6 +121,21 @@ export function ProfesoresIndex() {
           columns={columns}
           data={profesores}
           onFilteredChange={(rows) => setProfesoresFiltrados(rows)}
+          informes={
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Printer className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleGenerarPdf}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Listado profesores
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          }
           acciones={(seleccionado) => (
             <>
               <Button variant="outline" size="icon" disabled={true}>

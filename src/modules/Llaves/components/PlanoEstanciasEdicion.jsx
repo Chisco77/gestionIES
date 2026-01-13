@@ -469,12 +469,12 @@ export default function PlanoEstanciasEdicion() {
                         </SelectItem>
                         <SelectItem value="Almacen">Almacén</SelectItem>
                         <SelectItem value="Aula">Aula</SelectItem>
-                        <SelectItem value="Departamento">
-                          Departamento
-                        </SelectItem>
+                        <SelectItem value="Aula Polivalente">Aula Polivalente</SelectItem>
+                        <SelectItem value="Departamento">Departamento</SelectItem>
                         <SelectItem value="Despacho">Despacho</SelectItem>
                         <SelectItem value="Infolab">Infolab</SelectItem>
                         <SelectItem value="Laboratorio">Laboratorio</SelectItem>
+                        <SelectItem value="Optativa">Optativa</SelectItem>
                         <SelectItem value="Otras">Otras</SelectItem>
                       </SelectContent>
                     </Select>

@@ -1,40 +1,53 @@
 import { z } from "zod";
 
-export const schemaExtraescolar = z.object({
-  titulo: z.string().min(3, "El título es obligatorio"),
-  descripcion: z
-    .string()
-    .min(25, "La descripción debe tener al menos 25 caracteres"),
-  gidnumber: z.number().min(1, "Debe seleccionar un departamento"),
+export const schemaExtraescolar = z
+  .object({
+    titulo: z
+      .string()
+      .trim()
+      .min(3, "El título debe tener al menos 3 caracteres"),
 
-  fecha_inicio: z.string().nonempty("Debe indicar la fecha de inicio"),
-  fecha_fin: z.string().nonempty("Debe indicar la fecha de fin"),
+    descripcion: z
+      .string()
+      .trim()
+      .nonempty("La descripción es obligatoria")
+      .min(25, "La descripción debe tener al menos 25 caracteres"),
 
-  cursos_gids: z.array(z.string()).min(1, "Debe seleccionar al menos un curso"),
-  responsables_uids: z
-    .array(z.string())
-    .min(1, "Debe seleccionar al menos un profesor"),
+    gidnumber: z.coerce.number().min(1, "Debe seleccionar un departamento"),
 
-  ubicacion: z.string().nonempty("La ubicación es obligatoria"),
-  tipo: z.enum(["complementaria", "extraescolar"]),
+    tipo: z.enum(["complementaria", "extraescolar"]),
 
-  idperiodo_inicio: z.number().optional(),
-  idperiodo_fin: z.number().optional(),
+    fecha_inicio: z.string().nonempty("Debe indicar la fecha de inicio"),
 
-  coords: z.object({
-    lat: z.number(),
-    lng: z.number(),
-  }),
-}).refine(
-  (data) => {
-    // Solo validar fecha_fin > fecha_inicio si es extraescolar
-    if (data.tipo === "extraescolar") {
-      return new Date(data.fecha_fin) >= new Date(data.fecha_inicio);
+    fecha_fin: z.string().nonempty("Debe indicar la fecha de fin"),
+
+    cursos_gids: z
+      .array(z.coerce.number())
+      .min(1, "Debe seleccionar al menos un curso"),
+
+    responsables_uids: z
+      .array(z.string())
+      .min(1, "Debe seleccionar al menos un profesor"),
+
+    ubicacion: z.string().trim().nonempty("La ubicación es obligatoria"),
+
+    idperiodo_inicio: z.number().optional(),
+    idperiodo_fin: z.number().optional(),
+
+    coords: z.object({
+      lat: z.number(),
+      lng: z.number(),
+    }),
+  })
+  .refine(
+    (data) => {
+      if (data.tipo === "extraescolar") {
+        return new Date(data.fecha_fin) > new Date(data.fecha_inicio);
+      }
+      return true;
+    },
+    {
+      message: "La fecha y hora de fin debe ser posterior a la de inicio",
+      path: ["fecha_fin"],
     }
-    return true;
-  },
-  {
-    message: "La fecha y hora de fin debe ser posterior a la de inicio",
-    path: ["fecha_fin"],
-  }
-);
+  );

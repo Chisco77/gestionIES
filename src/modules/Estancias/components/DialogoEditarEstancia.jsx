@@ -149,10 +149,12 @@ export function DialogoEditarEstancia({
               <option value="">Seleccionar tipo</option>
               <option value="Almacen">Almacén</option>
               <option value="Aula">Aula</option>
+              <option value="Aula Polivalente">Aula Polivalente</option>
               <option value="Departamento">Departamento</option>
               <option value="Despacho">Despacho</option>
               <option value="Infolab">Infolab</option>
               <option value="Laboratorio">Laboratorio</option>
+              <option value="Optativa">Optativa</option>
               <option value="Otras">Otras</option>
             </select>
           </div>

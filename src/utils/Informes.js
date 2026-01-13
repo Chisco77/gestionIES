@@ -417,3 +417,70 @@ export async function generateEtiquetasGenericasPdf({
 
   doc.save(nombrePdf.endsWith(".pdf") ? nombrePdf : `${nombrePdf}.pdf`);
 }
+
+/**
+ * Genera un PDF con el listado de profesores
+ *
+ * @param {Array} profesores - Array de objetos profesor con propiedades `sn` y `givenName`
+ */
+export function generateListadoAPs(profesores = []) {
+  if (!profesores || profesores.length === 0) {
+    alert("No hay profesores para generar el listado.");
+    return;
+  }
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageWidth = 210;
+  const marginLeft = 15;
+  const marginTop = 20;
+  let y = marginTop;
+
+  // --- Cabecera ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Listado de Profesores", pageWidth / 2, y, { align: "center" });
+  y += 10;
+
+  doc.setFontSize(12);
+  doc.text(`Total profesores: ${profesores.length}`, marginLeft, y);
+  y += 10;
+
+  // --- Encabezado de columnas ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  const col1X = marginLeft; // Apellidos
+  const col2X = marginLeft + 50; // Nombre
+  const col3X = marginLeft + 100; // DNI
+  const col4X = marginLeft + 140; // Asuntos propios
+
+  doc.text("Apellidos", col1X, y);
+  doc.text("Nombre", col2X, y);
+  doc.text("DNI", col3X, y);
+  doc.text("Asuntos Propios", col4X, y);
+  y += 4;
+  doc.setLineWidth(0.5);
+  doc.line(marginLeft, y, pageWidth - marginLeft, y);
+  y += 6;
+
+  // --- Datos ---
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  const lineHeight = 7;
+
+  profesores.forEach((profesor) => {
+    if (y > 285) {
+      // salto de página
+      doc.addPage();
+      y = marginTop;
+    }
+
+    doc.text(profesor.sn || "", col1X, y);
+    doc.text(profesor.givenName || "", col2X, y);
+    doc.text(profesor.dni || "", col3X, y);
+    doc.text(String(profesor.asuntos_propios || 0), col4X, y);
+
+    y += lineHeight;
+  });
+
+  doc.save("Listado_Profesores.pdf");
+}

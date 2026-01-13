@@ -49,6 +49,9 @@ import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
 import { useCursosLdap } from "@/hooks/useCursosLdap";
 import { format } from "date-fns";
 import { schemaExtraescolar } from "@/zod/extraescolares";
+import { Checkbox } from "@/components/ui/checkbox";
+
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const provider = new OpenStreetMapProvider();
 
@@ -124,6 +127,18 @@ export function DialogoInsertarExtraescolar({
   const { data: cursos = [] } = useCursosLdap();
 
   const [errores, setErrores] = useState({});
+
+  // Para permitir seleccionar todos lso cursos a la vez
+  const todosLosCursosSeleccionados =
+    cursos.length > 0 && cursosSeleccionados.length === cursos.length;
+
+  const handleToggleTodosCursos = (checked) => {
+    if (checked) {
+      setCursosSeleccionados(cursos.map((c) => c.gid));
+    } else {
+      setCursosSeleccionados([]);
+    }
+  };
 
   // Inicializar fechas si viene una seleccionada
   useEffect(() => {
@@ -241,7 +256,7 @@ export function DialogoInsertarExtraescolar({
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg max-w-5xl w-full"
+        className="p-0 overflow-visible rounded-lg max-w-5xl w-full"
       >
         <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
@@ -249,184 +264,137 @@ export function DialogoInsertarExtraescolar({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 py-5">
-          {/* === PARTE IZQUIERDA === */}
-          <div className="space-y-4">
-            {/* Título */}
-            <div className="space-y-1">
-              <Label>Título</Label>
-              <Input
-                value={titulo}
-                onChange={(e) => setTitulo(e.target.value)}
-                className={errores.titulo && "border-red-500"}
-              />
-              {errores.titulo && <CampoError>{errores.titulo}</CampoError>}
-            </div>
+        <div className="px-6 py-5">
+          <Tabs defaultValue="general" className="w-full">
+            <TabsList className="grid grid-cols-3 w-full mb-4">
+              <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="detalles">Detalles</TabsTrigger>
+              <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
+            </TabsList>
 
-            {/* Descripción */}
-            <div className="space-y-1">
-              <Label>Descripción</Label>
-              <Textarea
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                className={errores.descripcion && "border-red-500"}
-              />
-              {errores.descripcion && (
-                <CampoError>{errores.descripcion}</CampoError>
-              )}
-            </div>
-
-            {/* Departamento */}
-            <div className="space-y-1">
-              <Label>Departamento organizador</Label>
-              <Select value={departamento} onValueChange={setDepartamento}>
-                <SelectTrigger
-                  className={errores.gidnumber && "border-red-500"}
-                >
-                  <SelectValue placeholder="Seleccionar departamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departamentos.map((d) => (
-                    <SelectItem key={d.gidNumber} value={d.gidNumber}>
-                      {d.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errores.gidnumber && (
-                <CampoError>{errores.gidnumber}</CampoError>
-              )}
-            </div>
-
-            {/* Profesores */}
-            <div className="space-y-1">
-              <MultiSelectProfesores
-                value={profesoresSeleccionados}
-                onChange={setProfesoresSeleccionados}
-              />
-            </div>
-
-            {/* Cursos */}
-            <div className="space-y-1">
-              <Label>Cursos participantes</Label>
-              <MultiSelect
-                values={cursosSeleccionados}
-                onChange={setCursosSeleccionados}
-                options={cursos.map((c) => ({ value: c.gid, label: c.nombre }))}
-                placeholder="Seleccionar cursos"
-              />
-            </div>
-
-            {/* Tipo */}
-            <div className="space-y-1">
-              <Label>Tipo de actividad</Label>
-              <Select value={tipo} onValueChange={setTipo}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="complementaria">
-                    Actividad complementaria
-                  </SelectItem>
-                  <SelectItem value="extraescolar">
-                    Actividad extraescolar
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* === FECHA INICIO + HORA (solo si es extraescolar) === */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* FECHA INICIO — SIEMPRE */}
+            {/* ====== GENERAL ====== */}
+            <TabsContent value="general" className="space-y-4">
+              {/* Título */}
               <div className="space-y-1">
-                <Label>Fecha inicio</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        errores.fecha_inicio && "border-red-500"
-                      )}
-                    >
-                      {fechaInicio
-                        ? format(fechaInicio, "dd/MM/yyyy")
-                        : "Seleccionar fecha"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="p-0">
-                    <Calendar
-                      mode="single"
-                      selected={fechaInicio}
-                      onSelect={setFechaInicio}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Label>Título</Label>
+                <Input
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                  className={errores.titulo && "border-red-500"}
+                />
+                {errores.titulo && <CampoError>{errores.titulo}</CampoError>}
               </div>
 
-              {/* HORA INICIO — SOLO EXTRAESCOLAR */}
-              {tipo === "extraescolar" && (
-                <div className="space-y-1">
-                  <Label>Hora inicio</Label>
-                  <TimePicker value={horaInicio} onChange={setHoraInicio} />
-                </div>
-              )}
-            </div>
-
-            {/* === FECHA FIN + HORA (solo si es extraescolar) === */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* FECHA FIN — SIEMPRE */}
+              {/* Departamento */}
               <div className="space-y-1">
-                <Label>Fecha fin</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        errores.fecha_fin && "border-red-500"
-                      )}
-                    >
-                      {fechaFin
-                        ? format(fechaFin, "dd/MM/yyyy")
-                        : "Seleccionar fecha"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="p-0">
-                    <Calendar
-                      mode="single"
-                      selected={fechaFin}
-                      onSelect={setFechaFin}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                {errores.fecha_fin && (
-                  <CampoError>{errores.fecha_fin}</CampoError>
+                <Label>Departamento organizador</Label>
+                <Select value={departamento} onValueChange={setDepartamento}>
+                  <SelectTrigger
+                    className={errores.gidnumber && "border-red-500"}
+                  >
+                    <SelectValue placeholder="Seleccionar departamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departamentos.map((d) => (
+                      <SelectItem key={d.gidNumber} value={d.gidNumber}>
+                        {d.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errores.gidnumber && (
+                  <CampoError>{errores.gidnumber}</CampoError>
                 )}
               </div>
 
-              {/* HORA FIN — SOLO EXTRAESCOLAR */}
-              {tipo === "extraescolar" && (
-                <div className="space-y-1">
-                  <Label>Hora fin</Label>
-                  <TimePicker value={horaFin} onChange={setHoraFin} />
-                </div>
-              )}
-            </div>
+              {/* Tipo */}
+              <div className="space-y-1">
+                <Label>Tipo de actividad</Label>
+                <Select value={tipo} onValueChange={setTipo}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="complementaria">
+                      Actividad complementaria
+                    </SelectItem>
+                    <SelectItem value="extraescolar">
+                      Actividad extraescolar
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Periodos */}
-            {tipo === "complementaria" && (
+              {/* Fechas */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label>Periodo inicio</Label>
+                  <Label>Fecha inicio</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
+                      >
+                        {format(fechaInicio, "dd/MM/yyyy")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0">
+                      <Calendar
+                        mode="single"
+                        selected={fechaInicio}
+                        onSelect={setFechaInicio}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {tipo === "extraescolar" && (
+                  <div className="space-y-1">
+                    <Label>Hora inicio</Label>
+                    <TimePicker value={horaInicio} onChange={setHoraInicio} />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label>Fecha fin</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
+                      >
+                        {format(fechaFin, "dd/MM/yyyy")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0">
+                      <Calendar
+                        mode="single"
+                        selected={fechaFin}
+                        onSelect={setFechaFin}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {tipo === "extraescolar" && (
+                  <div className="space-y-1">
+                    <Label>Hora fin</Label>
+                    <TimePicker value={horaFin} onChange={setHoraFin} />
+                  </div>
+                )}
+              </div>
+
+              {/* Periodos */}
+              {tipo === "complementaria" && (
+                <div className="grid grid-cols-2 gap-4">
                   <Select
                     value={periodoInicio}
                     onValueChange={setPeriodoInicio}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Periodo inicio" />
                     </SelectTrigger>
                     <SelectContent>
                       {periodos.map((p) => (
@@ -436,13 +404,10 @@ export function DialogoInsertarExtraescolar({
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
 
-                <div className="space-y-1">
-                  <Label>Periodo fin</Label>
                   <Select value={periodoFin} onValueChange={setPeriodoFin}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Periodo fin" />
                     </SelectTrigger>
                     <SelectContent>
                       {periodos.map((p) => (
@@ -453,45 +418,119 @@ export function DialogoInsertarExtraescolar({
                     </SelectContent>
                   </Select>
                 </div>
+              )}
+            </TabsContent>
+
+            {/* ====== DETALLES ====== */}
+            <TabsContent value="detalles" className="space-y-4">
+              <div className="space-y-1">
+                <Label>Descripción</Label>
+                <Textarea
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  className={errores.descripcion && "border-red-500"}
+                />
+                {errores.descripcion && (
+                  <CampoError>{errores.descripcion}</CampoError>
+                )}
               </div>
-            )}
-          </div>
 
-          {/* === PARTE DERECHA: MAPA === */}
-          <div className="flex flex-col justify-center space-y-3">
-            <div className="space-y-1">
-              <Label>Ubicación / Lugar</Label>
-              <Autocomplete
-                value={ubicacion}
-                placeholder="Nombre de la localidad o lugar..."
-                buscar={buscarLugar}
-                onChange={setUbicacion}
-                onSelect={(lugar) => {
-                  setUbicacion(lugar.label);
-                  setCoords({ lat: lugar.lat, lng: lugar.lng });
-                }}
-              />
-            </div>
+              <div className="space-y-1">
+                <MultiSelectProfesores
+                  value={profesoresSeleccionados}
+                  onChange={setProfesoresSeleccionados}
+                  className={errores.responsables_uids && "border-red-500"}
+                />
 
-            <MapContainer
-              center={coords}
-              zoom={13}
-              style={{ height: "300px", width: "100%", marginTop: "8px" }}
-              scrollWheelZoom={true}
-            >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Marker
-                position={coords}
-                draggable={true}
-                eventHandlers={{ dragend: handleMarkerDrag }}
+                {errores.responsables_uids && (
+                  <CampoError>{errores.responsables_uids}</CampoError>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cursos participantes</Label>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={todosLosCursosSeleccionados}
+                    onCheckedChange={handleToggleTodosCursos}
+                  />
+                  <span className="text-sm">Todos los cursos</span>
+                </div>
+
+                <MultiSelect
+                  values={cursosSeleccionados}
+                  onChange={(values) => {
+                    setCursosSeleccionados(values);
+
+                    if (values.length > 0) {
+                      setErrores((prev) => {
+                        const { cursos_gids, ...rest } = prev;
+                        return rest;
+                      });
+                    }
+                  }}
+                  options={cursos.map((c) => ({
+                    value: c.gid,
+                    label: c.nombre,
+                  }))}
+                  className={errores.cursos_gids && "border-red-500"}
+                />
+
+                {errores.cursos_gids && (
+                  <CampoError>{errores.cursos_gids}</CampoError>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* ====== UBICACIÓN ====== */}
+            <TabsContent value="ubicacion" className="space-y-4">
+              <div className="space-y-1">
+                <Autocomplete
+                  value={ubicacion}
+                  placeholder="Nombre de la localidad o lugar..."
+                  buscar={buscarLugar}
+                  onChange={(val) => {
+                    setUbicacion(val);
+
+                    if (val?.trim()) {
+                      setErrores((prev) => {
+                        const { ubicacion, ...rest } = prev;
+                        return rest;
+                      });
+                    }
+                  }}
+                  onSelect={(lugar) => {
+                    setUbicacion(lugar.label);
+                    setCoords({ lat: lugar.lat, lng: lugar.lng });
+                  }}
+                  className={errores.ubicacion && "border-red-500"}
+                />
+
+                {errores.ubicacion && (
+                  <CampoError>{errores.ubicacion}</CampoError>
+                )}
+              </div>
+
+              <MapContainer
+                center={coords}
+                zoom={13}
+                style={{ height: "350px", width: "100%" }}
               >
-                <Popup>Arrastra para ajustar la ubicación</Popup>
-              </Marker>
-
-              <ClickHandler setCoords={setCoords} setUbicacion={setUbicacion} />
-              <SetViewOnChange coords={coords} />
-            </MapContainer>
-          </div>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <Marker
+                  position={coords}
+                  draggable
+                  eventHandlers={{ dragend: handleMarkerDrag }}
+                />
+                <ClickHandler
+                  setCoords={setCoords}
+                  setUbicacion={setUbicacion}
+                />
+                <SetViewOnChange coords={coords} />
+              </MapContainer>
+            </TabsContent>
+          </Tabs>
         </div>
 
         <DialogFooter className="px-6 py-4 bg-gray-50">
