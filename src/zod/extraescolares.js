@@ -11,7 +11,7 @@ export const schemaExtraescolar = z
       .string()
       .trim()
       .nonempty("La descripción es obligatoria")
-      .min(25, "La descripción debe tener al menos 25 caracteres"),
+      .min(15, "La descripción debe tener al menos 15 caracteres"),
 
     gidnumber: z.coerce.number().min(1, "Debe seleccionar un departamento"),
 

@@ -761,7 +761,7 @@ export function DialogoEditarExtraescolar({
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal>
-      <DialogContent className="p-0 overflow-hidden rounded-lg max-w-5xl w-full">
+      <DialogContent className="p-0 overflow-visible rounded-lg max-w-5xl w-full">
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex flex-col items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Editar Actividad
@@ -861,6 +861,7 @@ export function DialogoEditarExtraescolar({
                       <Button
                         variant="outline"
                         className="w-full justify-start"
+                        disabled={!editableCamposGenerales}
                       >
                         {format(fechaInicio, "dd/MM/yyyy")}
                       </Button>
@@ -890,11 +891,12 @@ export function DialogoEditarExtraescolar({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label>Fecha fin</Label>
-                  <Popover>
+                  <Popover disabled={!editableCamposGenerales}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         className="w-full justify-start"
+                        disabled={!editableCamposGenerales}
                       >
                         {format(fechaFin, "dd/MM/yyyy")}
                       </Button>

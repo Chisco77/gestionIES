@@ -141,6 +141,14 @@ const {
   updateEstadoPermiso,
 } = require("../controllers/db/permisosController");
 
+// --- Controlador de asuntos permitidos (desbloqueos de peticiones de APs - sin restricciones) ---
+const {
+  getAsuntosPermitidos,
+  insertAsuntoPermitido,
+  deleteAsuntoPermitido,
+} = require("../controllers/db/asuntosPermitidosController");
+
+
 // ================================================================
 //   Rutas de Estancias
 // ================================================================
@@ -295,5 +303,14 @@ const {
 router.get("/empleados/:uid", getEmpleado);
 router.put("/empleados/:uid", updateEmpleado);
 router.get("/empleados", listEmpleados);
+
+
+// ================================================================
+//   Rutas de Asuntos Propios - Permisos especiales (desbloqueos)
+// ================================================================
+router.get("/asuntos-permitidos", getAsuntosPermitidos); 
+router.post("/asuntos-permitidos", insertAsuntoPermitido);
+router.delete("/asuntos-permitidos/:id", deleteAsuntoPermitido);
+
 
 module.exports = router;
