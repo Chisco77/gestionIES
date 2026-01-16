@@ -1,5 +1,20 @@
 import { jsPDF } from "jspdf";
 
+const MAPA_TIPOS_PERMISO = {
+  2: "(Art. 2) Fallecimiento, accidente o enfermedad grave, hospitalización o intervención quirúrgica",
+  3: "(Art. 3) Enfermedad propia",
+  4: "(Art. 4) Traslado de domicilio",
+  7: "(Art. 7) Exámenes prenatales y técnicas de preparación al parto de un familiar",
+  11: "(Art. 11) Cumplimiento de un deber inexcusable de carácter público o personal",
+  13: "(Art. 13) Asuntos particulares",
+  14: "(Art. 14) Realización de funciones sindicales o de representación del personal",
+  15: "(Art. 15) Exámenes finales o pruebas selectivas en el empleo público",
+  32: "(Art. 32) Reducción de jornada para mayores de 55 años",
+  0: "Otros",
+};
+
+const getDescripcionTipoPermiso = (tipo) => MAPA_TIPOS_PERMISO[tipo] ?? "Otros";
+
 export function generatePermisosPdf({ empleado, permiso }) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = 210;
@@ -483,4 +498,150 @@ export function generateListadoAPs(profesores = []) {
   });
 
   doc.save("Listado_Profesores.pdf");
+}
+/**
+ * Genera un PDF con los asuntos propios agrupados por profesor
+ *
+ * @param {Array} permisos - Array de asuntos propios (filtrados)
+ */
+export function generateListadoPermisosProfesores(permisos = []) {
+  if (!permisos || permisos.length === 0) {
+    alert("No hay asuntos propios para generar el informe.");
+    return;
+  }
+
+  // --- Mapas auxiliares ---
+  const estadosMap = {
+    0: "Pendiente",
+    1: "Aceptado",
+    2: "Rechazado",
+  };
+
+  // --- Agrupar por profesor ---
+  const permisosPorProfesor = permisos.reduce((acc, permiso) => {
+    const nombre = permiso.nombreProfesor || "Sin nombre";
+    if (!acc[nombre]) acc[nombre] = [];
+    acc[nombre].push(permiso);
+    return acc;
+  }, {});
+
+  // --- Ordenar permisos de cada profesor por fecha ---
+  Object.values(permisosPorProfesor).forEach((lista) =>
+    lista.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+  );
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageWidth = 210;
+  const marginLeft = 15;
+  const marginTop = 20;
+  const marginBottom = 20;
+  let y = marginTop;
+
+  // --- Cabecera ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Listado de Permisos por Profesor", pageWidth / 2, y, {
+    align: "center",
+  });
+  y += 12;
+
+  // --- Total profesores ---
+  const nombresProfesores = Object.keys(permisosPorProfesor).sort(); // <-- orden alfabético
+  doc.setFontSize(11);
+  doc.text(`Total profesores: ${nombresProfesores.length}`, marginLeft, y);
+  y += 10;
+
+  // --- Medidas de columnas ---
+  const colFechaX = marginLeft;
+  const colTipoX = marginLeft + 28;
+  const colEstadoX = marginLeft + 115;
+  const colDescX = marginLeft + 145;
+
+  const colTipoWidth = 80;
+  const colEstadoWidth = 25;
+  const colDescWidth = 50;
+
+  const lineHeight = 5;
+
+  // --- Contenido ---
+  nombresProfesores.forEach((nombreProfesor) => {
+    const listaPermisos = permisosPorProfesor[nombreProfesor];
+
+    if (y > 260) {
+      doc.addPage();
+      y = marginTop;
+    }
+
+    // --- Nombre profesor ---
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(nombreProfesor, marginLeft, y);
+    y += 4;
+
+    doc.setLineWidth(0.5);
+    doc.line(marginLeft, y, pageWidth - marginLeft, y);
+    y += 6;
+
+    // --- Encabezado de tabla ---
+    doc.setFontSize(10);
+    doc.text("Fecha", colFechaX, y);
+    doc.text("Tipo de permiso", colTipoX, y);
+    doc.text("Estado", colEstadoX, y);
+    doc.text("Descripción", colDescX, y);
+    y += 4;
+
+    doc.setLineWidth(0.3);
+    doc.line(marginLeft, y, pageWidth - marginLeft, y);
+    y += 4;
+
+    // --- Filas ---
+    doc.setFont("helvetica", "normal");
+
+    listaPermisos.forEach((permiso) => {
+      const fechaTxt = new Date(permiso.fecha).toLocaleDateString();
+      const tipoTxt = getDescripcionTipoPermiso(permiso.tipo);
+      const estadoTxt = estadosMap[permiso.estado] ?? "—";
+      const descTxt = permiso.descripcion || "";
+
+      const tipoLines = doc.splitTextToSize(tipoTxt, colTipoWidth);
+      const estadoLines = doc.splitTextToSize(estadoTxt, colEstadoWidth);
+      const descLines = doc.splitTextToSize(descTxt, colDescWidth);
+
+      const rowLines = Math.max(tipoLines.length, estadoLines.length, descLines.length, 1);
+      const rowHeight = rowLines * lineHeight;
+
+      if (y + rowHeight > 297 - marginBottom) {
+        doc.addPage();
+        y = marginTop;
+      }
+
+      doc.text(fechaTxt, colFechaX, y);
+      doc.text(tipoLines, colTipoX, y);
+      doc.text(estadoLines, colEstadoX, y);
+      doc.text(descLines, colDescX, y);
+
+      y += rowHeight + 2;
+    });
+
+    y += 4;
+
+    // --- Resumen al pie del profesor ---
+    const solicitados = listaPermisos.filter((p) => p.tipo === 13).length;
+    const disfrutados = listaPermisos.filter((p) => p.tipo === 13 && p.estado === 1).length;
+    const disponibles = (listaPermisos[0]?.asuntos_propios ?? 0) - disfrutados;
+
+    const resumenTxt = `Asuntos Propios  solicitados ${solicitados}   disfrutados ${disfrutados}   disponibles ${disponibles}`;
+
+    if (y + lineHeight > 297 - marginBottom) {
+      doc.addPage();
+      y = marginTop;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(resumenTxt, pageWidth - marginLeft, y, { align: "right" });
+    y += 10;
+  });
+
+  doc.save("Listado_Asuntos_Propios_Profesores.pdf");
 }

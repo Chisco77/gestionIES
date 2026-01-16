@@ -85,7 +85,7 @@ async function getPermisos(req, res) {
 /**
  * Obtener asuntos propios enriquecidos con nombre del profesor
  */
-async function getPermisosEnriquecidos(req, res) {
+/*async function getPermisosEnriquecidos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession)
@@ -138,7 +138,91 @@ async function getPermisosEnriquecidos(req, res) {
       error: "Error obteniendo permisos enriquecidos",
     });
   }
+}*/
+
+/**
+ * Obtener asuntos propios enriquecidos con nombre del profesor y asuntos_propios
+ * ⚠ Evita recursion excesiva llamando LDAP en batch y enriqueciendo localmente
+ */
+async function getPermisosEnriquecidos(req, res) {
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession)
+      return res
+        .status(401)
+        .json({ ok: false, error: "No autenticado en LDAP" });
+
+    const { uid, fecha, descripcion, estado, tipo } = req.query;
+    const filtros = [];
+    const vals = [];
+    let i = 0;
+
+    if (uid) filtros.push(`ap.uid = $${++i}`) && vals.push(uid);
+    if (fecha) filtros.push(`ap.fecha = $${++i}`) && vals.push(fecha);
+    if (descripcion)
+      filtros.push(`ap.descripcion ILIKE $${++i}`) &&
+        vals.push(`%${descripcion}%`);
+    if (typeof estado !== "undefined")
+      filtros.push(`ap.estado = $${++i}`) && vals.push(Number(estado));
+    if (typeof tipo !== "undefined")
+      filtros.push(`ap.tipo = $${++i}`) && vals.push(Number(tipo));
+
+    const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
+
+    // 1️⃣ Obtener permisos
+    const { rows: permisos } = await db.query(
+      `SELECT ap.id, ap.uid, TO_CHAR(ap.fecha, 'YYYY-MM-DD') AS fecha, ap.descripcion, ap.estado, ap.tipo
+       FROM permisos ap
+       ${where}
+       ORDER BY ap.fecha ASC`,
+      vals
+    );
+
+    // 2️⃣ Obtener asuntos_propios de empleados
+    const uids = [...new Set(permisos.map((p) => p.uid))];
+    let empleadosMap = {};
+    if (uids.length > 0) {
+      const { rows: empleados } = await db.query(
+        `SELECT uid, asuntos_propios FROM empleados WHERE uid = ANY($1)`,
+        [uids]
+      );
+      empleadosMap = empleados.reduce((acc, emp) => {
+        acc[emp.uid] = emp;
+        return acc;
+      }, {});
+    }
+
+    // 3️⃣ Obtener nombres de profesores del LDAP EN BATCH (evita Promise.all masivo)
+    const nombreMap = {};
+    for (const p of permisos) {
+      if (!nombreMap[p.uid]) {
+        nombreMap[p.uid] = await new Promise((resolve) => {
+          buscarPorUid(ldapSession, p.uid, (err, datos) => {
+            if (!err && datos)
+              resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
+            else resolve("Profesor desconocido");
+          });
+        });
+      }
+    }
+
+    // 4️⃣ Enriquecer los permisos
+    const asuntosEnriquecidos = permisos.map((permiso) => ({
+      ...permiso,
+      nombreProfesor: nombreMap[permiso.uid],
+      asuntos_propios: empleadosMap[permiso.uid]?.asuntos_propios ?? 0,
+    }));
+
+    res.json({ ok: true, asuntos: asuntosEnriquecidos });
+  } catch (err) {
+    console.error("[getPermisosEnriquecidos] Error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Error obteniendo permisos enriquecidos",
+    });
+  }
 }
+
 
 /**
  * Insertar un asunto propio con comprobaciones de restricciones
@@ -202,23 +286,12 @@ async function insertAsuntoPropio(req, res) {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
-    const diffDias = Math.ceil(
-      (fechaSolicitada - hoy) / (1000 * 60 * 60 * 24)
+    // === Comprobar si hay autorización especial ===
+    const { rows: autorizaciones } = await db.query(
+      `SELECT id FROM asuntos_permitidos WHERE uid = $1 AND fecha = $2`,
+      [uid, fecha]
     );
-
-    // Antelación mínima
-    if (diffDias < antelacion_min)
-      return res.status(400).json({
-        ok: false,
-        error: `Debes solicitar el asunto propio con al menos ${antelacion_min} días de antelación.`,
-      });
-
-    // Antelación máxima
-    if (diffDias > antelacion_max)
-      return res.status(400).json({
-        ok: false,
-        error: `No puedes solicitar el asunto propio con más de ${antelacion_max} días de antelación.`,
-      });
+    const tieneAutorizacion = autorizaciones.length > 0;
 
     const empleado = await obtenerEmpleado(uid);
     if (!empleado)
@@ -230,59 +303,83 @@ async function insertAsuntoPropio(req, res) {
     let maxDias = empleado.asuntos_propios;
     if (!maxDias || maxDias === 0) maxDias = dias;
 
+    // Comprobar máximo de días del usuario. Solo cuento aquellos APs cuyo estado es aceptado (1)
     const { rows: totalCurso } = await db.query(
-      `SELECT COUNT(*)::int AS total FROM permisos WHERE uid = $1 AND tipo = 13`,
+      `SELECT COUNT(*)::int AS total FROM permisos WHERE uid = $1 AND tipo = 13 AND estado = 1`,
       [uid]
     );
-
     if (totalCurso[0].total >= maxDias)
       return res.status(400).json({
         ok: false,
         error: `Ya has solicitado el máximo de ${maxDias} días de asuntos propios este curso.`,
       });
 
-    const { rows: concurrencia } = await db.query(
-      `SELECT COUNT(*)::int AS total FROM permisos WHERE fecha = $1 AND tipo = 13`,
-      [fecha]
-    );
-
-    if (concurrencia[0].total >= concurrentes)
-      return res.status(400).json({
-        ok: false,
-        error: `Ya hay ${concurrentes} profesores con asuntos propios ese día.`,
-      });
-
-    const { rows: diasCercanos } = await db.query(
-      `SELECT fecha FROM permisos
-       WHERE uid = $1
-       AND fecha BETWEEN ($2::date - INTERVAL '10 days')
-                     AND ($2::date + INTERVAL '10 days')
-       ORDER BY fecha`,
-      [uid, fecha]
-    );
-
-    const fechas = diasCercanos.map((r) => new Date(r.fecha).getTime());
-    fechas.push(fechaSolicitada.getTime());
-    fechas.sort((a, b) => a - b);
-
-    let maxConsecutivos = 1;
-    let consecutivosActual = 1;
-
-    for (let i = 1; i < fechas.length; i++) {
-      const diff = Math.round(
-        (fechas[i] - fechas[i - 1]) / (1000 * 60 * 60 * 24)
+    // --- Si NO tiene autorización, aplicamos todas las restricciones normales ---
+    if (!tieneAutorizacion) {
+      const diffDias = Math.ceil(
+        (fechaSolicitada - hoy) / (1000 * 60 * 60 * 24)
       );
-      consecutivosActual = diff === 1 ? consecutivosActual + 1 : 1;
-      if (consecutivosActual > maxConsecutivos)
-        maxConsecutivos = consecutivosActual;
+
+      // Antelación mínima
+      if (diffDias < antelacion_min)
+        return res.status(400).json({
+          ok: false,
+          error: `Debes solicitar el asunto propio con al menos ${antelacion_min} días de antelación.`,
+        });
+
+      // Antelación máxima
+      if (diffDias > antelacion_max)
+        return res.status(400).json({
+          ok: false,
+          error: `No puedes solicitar el asunto propio con más de ${antelacion_max} días de antelación.`,
+        });
+
+      // Concurrencia
+      const { rows: concurrencia } = await db.query(
+        `SELECT COUNT(*)::int AS total FROM permisos WHERE fecha = $1 AND tipo = 13`,
+        [fecha]
+      );
+
+      if (concurrencia[0].total >= concurrentes)
+        return res.status(400).json({
+          ok: false,
+          error: `Ya hay ${concurrentes} profesores con asuntos propios ese día.`,
+        });
+
+      // Consecutivos
+      const { rows: diasCercanos } = await db.query(
+        `SELECT fecha FROM permisos
+         WHERE uid = $1
+         AND fecha BETWEEN ($2::date - INTERVAL '10 days')
+                       AND ($2::date + INTERVAL '10 days')
+         ORDER BY fecha`,
+        [uid, fecha]
+      );
+
+      const fechas = diasCercanos.map((r) => new Date(r.fecha).getTime());
+      fechas.push(fechaSolicitada.getTime());
+      fechas.sort((a, b) => a - b);
+
+      let maxConsecutivos = 1;
+      let consecutivosActual = 1;
+
+      for (let i = 1; i < fechas.length; i++) {
+        const diff = Math.round(
+          (fechas[i] - fechas[i - 1]) / (1000 * 60 * 60 * 24)
+        );
+        consecutivosActual = diff === 1 ? consecutivosActual + 1 : 1;
+        if (consecutivosActual > maxConsecutivos)
+          maxConsecutivos = consecutivosActual;
+      }
+
+      if (maxConsecutivos > consecutivos)
+        return res.status(400).json({
+          ok: false,
+          error: `No puedes solicitar más de ${consecutivos} días consecutivos de asuntos propios.`,
+        });
     }
 
-    if (maxConsecutivos > consecutivos)
-      return res.status(400).json({
-        ok: false,
-        error: `No puedes solicitar más de ${consecutivos} días consecutivos de asuntos propios.`,
-      });
-
+    // --- Insertar asunto propio ---
     const { rows } = await db.query(
       `INSERT INTO permisos (uid, fecha, descripcion, tipo)
        VALUES ($1, $2, $3, $4)

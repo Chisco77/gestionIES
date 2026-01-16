@@ -54,6 +54,38 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { Printer, FileText } from "lucide-react";
+
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+
+import { generateListadoPermisosProfesores } from "../../../utils/Informes";
+
+const TIPOS_PERMISO = {
+  2: "(Art. 2) Fallecimiento / enfermedad grave",
+  3: "(Art. 3) Enfermedad propia",
+  4: "(Art. 4) Traslado de domicilio",
+  7: "(Art. 7) Exámenes prenatales",
+  11: "(Art. 11) Deber inexcusable",
+  13: "(Art. 13) Asuntos particulares",
+  14: "(Art. 14) Funciones sindicales",
+  15: "(Art. 15) Exámenes empleo público",
+  32: "(Art. 32) Reducción jornada >55",
+  0: "Otros",
+};
+
 export function TablaPermisosDirectiva({ fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -73,6 +105,17 @@ export function TablaPermisosDirectiva({ fecha }) {
     setAsuntoSeleccionado(asunto);
     setAccion(tipo);
     setDialogOpen(true);
+  };
+
+  const handleGenerarPdf = () => {
+    const filasFiltradas = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
+
+    // aquí llamas a tu util de informes
+    generateListadoPermisosProfesores(filasFiltradas);
+
+    console.log("Generar PDF con:", filasFiltradas);
   };
 
   // Tabla
@@ -267,14 +310,31 @@ export function TablaPermisosDirectiva({ fecha }) {
             <label className="text-xs font-medium text-muted-foreground">
               Tipo
             </label>
-            <Input
-              className="h-8 w-[220px] text-sm"
-              placeholder="Buscar tipo..."
-              value={table.getColumn("tipo")?.getFilterValue() ?? ""}
-              onChange={(e) =>
-                table.getColumn("tipo")?.setFilterValue(e.target.value)
+
+            <Select
+              value={
+                table.getColumn("tipo")?.getFilterValue()?.toString() ?? "ALL"
               }
-            />
+              onValueChange={(value) =>
+                table
+                  .getColumn("tipo")
+                  ?.setFilterValue(value === "ALL" ? "" : Number(value))
+              }
+            >
+              <SelectTrigger className="h-8 w-[260px] text-sm">
+                <SelectValue placeholder="Todos los tipos" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="ALL">Todos</SelectItem>
+
+                {Object.entries(TIPOS_PERMISO).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Filtro rango de fechas */}
@@ -333,16 +393,38 @@ export function TablaPermisosDirectiva({ fecha }) {
           </div>
 
           {/* Switch estado */}
-          <div className="flex items-center gap-2 ml-auto">
-            <Switch
-              checked={table.getColumn("estado")?.getFilterValue() === true}
-              onCheckedChange={(checked) =>
-                table.getColumn("estado")?.setFilterValue(checked ? true : null)
-              }
-            />
-            <span className="text-sm text-muted-foreground">
-              Solo pendientes
-            </span>
+          {/* Acciones derecha: switch + informes */}
+          <div className="flex items-center gap-3 ml-auto">
+            {/* Switch estado */}
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={table.getColumn("estado")?.getFilterValue() === true}
+                onCheckedChange={(checked) =>
+                  table
+                    .getColumn("estado")
+                    ?.setFilterValue(checked ? true : null)
+                }
+              />
+              <span className="text-sm text-muted-foreground">
+                Solo pendientes
+              </span>
+            </div>
+
+            {/* Menú informes */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-8 w-8">
+                  <Printer className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleGenerarPdf}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Listado asuntos propios
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

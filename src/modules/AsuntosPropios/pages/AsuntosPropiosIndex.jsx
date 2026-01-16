@@ -13,6 +13,7 @@ import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUi
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { usePermisosMes } from "@/hooks/Permisos/usePermisosMes";
 import { useRestriccionesAsuntos } from "@/hooks/useRestricciones";
+import { useAsuntosPermitidosUid } from "@/hooks/useAsuntosPermitidosUid";
 
 import { CalendarioAsuntos } from "../components/CalendarioAsuntos";
 
@@ -45,6 +46,7 @@ export function AsuntosPropiosIndex() {
   const { data: extraescolares } = useExtraescolaresUid(uid);
   const { data: estancias } = useEstancias();
   const { data: periodos } = usePeriodosHorarios();
+  const { data: permisosEspeciales = [] } = useAsuntosPermitidosUid(uid);
 
   // filtrar solo asuntos propios
   const asuntosPropiosFiltrados = (asuntosPropios || []).filter(
@@ -100,19 +102,38 @@ export function AsuntosPropiosIndex() {
 
   // --- Derivados (solo asuntos propios: tipo 13) ---
   const asuntosPorDia = {};
+
   const asuntosPropiosUsuario = {};
 
   (asuntosPropiosMes || [])
-     .filter(
-    (a) =>
-      Number(a.tipo) === 13 &&
-      Number(a.estado) !== 2 // EXCLUIR RECHAZADOS, no ocupan slot en maximo de peticiones por dia
-  )
+    .filter(
+      (a) => Number(a.tipo) === 13 && Number(a.estado) !== 2 // EXCLUIR RECHAZADOS, no ocupan slot en maximo de peticiones por dia
+    )
     .forEach((a) => {
       const fecha = formatDateKey(new Date(a.fecha));
       asuntosPorDia[fecha] = (asuntosPorDia[fecha] || 0) + 1;
       if (a.uid === uid) asuntosPropiosUsuario[fecha] = a;
     });
+
+  // Permisos especiales (autorizaciones)
+  const autorizacionesUsuario = {};
+  permisosEspeciales.forEach((p) => {
+    // Convertimos la fecha a local sin desfase de zona horaria
+    const fechaObj = new Date(p.fecha);
+    const yyyy = fechaObj.getFullYear();
+    const mm = String(fechaObj.getMonth() + 1).padStart(2, "0");
+    const dd = String(fechaObj.getDate()).padStart(2, "0");
+    const fecha = `${yyyy}-${mm}-${dd}`;
+
+    // Guardamos la autorización en el objeto
+    autorizacionesUsuario[fecha] = p;
+  });
+
+  // Log para depuración
+  console.log(
+    "Autorizaciones del usuario (fechas corregidas):",
+    autorizacionesUsuario
+  );
 
   // --- Handlers calendario ---
   const handlePrevMonth = () => {
@@ -127,19 +148,23 @@ export function AsuntosPropiosIndex() {
       setCurrentYear((y) => y + 1);
     } else setCurrentMonth((m) => m + 1);
   };
-
   const handleDiaClick = (dateKey) => {
-    const bloqueado = (asuntosPorDia[dateKey] || 0) >= maxConcurrentes;
+    const tieneAutorizacion = !!autorizacionesUsuario[dateKey]; // true si el usuario está autorizado
+    const asuntoExistente = asuntosPropiosUsuario[dateKey]; // ya hay un asunto propio ese día
+
+    // Bloqueado si no tiene autorización y se supera concurrencia
+    const bloqueado =
+      !tieneAutorizacion && (asuntosPorDia[dateKey] || 0) >= maxConcurrentes;
+
     if (bloqueado) return;
 
-    const asuntoExistente = asuntosPropiosUsuario[dateKey];
     setSelectedDate(dateKey);
 
     if (asuntoExistente) {
       setAsuntoSeleccionado(asuntoExistente);
       setAbrirDialogoEdicion(true);
     } else {
-      setAbrirDialogo(true);
+      setAbrirDialogo(true); // abre diálogo para nueva petición
     }
   };
 
@@ -158,6 +183,7 @@ export function AsuntosPropiosIndex() {
           selectedDate={selectedDate}
           asuntosPorDia={asuntosPorDia}
           asuntosPropiosUsuario={asuntosPropiosUsuario}
+          autorizacionesUsuario={autorizacionesUsuario}
           rangosBloqueados={rangosBloqueados}
           maxConcurrentes={maxConcurrentes}
           onDiaClick={handleDiaClick}

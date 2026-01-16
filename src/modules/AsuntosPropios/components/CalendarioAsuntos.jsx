@@ -1,6 +1,11 @@
 // src/modules/Asuntos/CalendarioAsuntos.jsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function CalendarioAsuntos({
@@ -10,6 +15,7 @@ export function CalendarioAsuntos({
   selectedDate,
   asuntosPorDia,
   asuntosPropiosUsuario,
+  autorizacionesUsuario = {},
   rangosBloqueados,
   maxConcurrentes,
   onDiaClick,
@@ -76,7 +82,9 @@ export function CalendarioAsuntos({
             <thead>
               <tr>
                 {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
-                  <th key={d} className="p-1 font-medium">{d}</th>
+                  <th key={d} className="p-1 font-medium">
+                    {d}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -90,14 +98,42 @@ export function CalendarioAsuntos({
                     const dateKey = formatDateKey(dateObj);
                     const isToday = dateKey === todayStr;
                     const numAsuntos = asuntosPorDia[dateKey] || 0;
-                    const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+                    const isWeekend =
+                      dateObj.getDay() === 0 || dateObj.getDay() === 6;
                     const rangoDelDia = rangosBloqueados.find(
                       (r) => dateKey >= r.inicio && dateKey <= r.fin
                     );
                     const motivoRango = rangoDelDia?.motivo || "";
                     const rangoBloqueado = !!rangoDelDia;
-                    const bloqueado = numAsuntos >= maxConcurrentes || rangoBloqueado || isWeekend;
-                    const isMine = !!asuntosPropiosUsuario[dateKey];
+                    const isMine = !!asuntosPropiosUsuario[dateKey]; // solo asuntos propios confirmados
+
+                    /*let bloqueado;
+
+                    if (isMine) {
+                      // Día autorizado: bloqueamos solo si se ha llegado al máximo de pticiones diarias.
+                      bloqueado = numAsuntos > maxConcurrentes;
+                    } else {
+                      // Día normal: bloqueado si se supera concurrencia, rango bloqueado o fin de semana
+                      bloqueado =
+                        numAsuntos >= maxConcurrentes ||
+                        rangoBloqueado ||
+                        isWeekend;
+                    }*/
+
+                    const isAutorizado = !!autorizacionesUsuario[dateKey]; // el usuario tiene autorización para este día
+
+                    let bloqueado;
+
+                    if (isAutorizado) {
+                      // Día autorizado: siempre clicable, ignoramos restricciones de rango, fin de semana o concurrencia
+                      bloqueado = false;
+                    } else {
+                      // Día normal: bloqueado si se supera concurrencia, rango bloqueado o fin de semana
+                      bloqueado =
+                        numAsuntos >= maxConcurrentes ||
+                        rangoBloqueado ||
+                        isWeekend;
+                    }
 
                     return (
                       <TooltipProvider key={j}>

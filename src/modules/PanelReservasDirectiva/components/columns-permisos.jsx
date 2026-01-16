@@ -48,8 +48,6 @@ export const columnsPermisos = (onAceptar, onRechazar) => [
       };
 
       const texto = tiposMap[tipo] ?? "Otros";
-
-      // truncado a 30 caracteres
       const truncado = texto.length > 30 ? texto.substring(0, 30) + "…" : texto;
 
       return (
@@ -59,24 +57,10 @@ export const columnsPermisos = (onAceptar, onRechazar) => [
       );
     },
 
-    // Filtro por texto (opcional)
+    // ✅ filtro NUMÉRICO correcto
     filterFn: (row, col, value) => {
-      if (!value) return true;
-      const tipo = row.original.tipo;
-      const tiposMap = {
-        2: "(Art. 2) Fallecimiento, accidente o enfermedad grave, hospitalización o intervención quirúrgica",
-        3: "(Art. 3) Enfermedad propia",
-        4: "(Art. 4) Traslado de domicilio",
-        7: "(Art. 7) Exámenes prenatales y técnicas de preparación al parto de un familiar",
-        11: "(Art. 11) Cumplimiento de un deber inexcusable de carácter público o personal",
-        13: "(Art. 13) Asuntos particulares",
-        14: "(Art. 14) Realización de funciones sindicales o de representación del personal",
-        15: "(Art. 15) Exámenes finales o pruebas selectivas en el empleo público",
-        32: "(Art. 32) Reducción de jornada para mayores de 55 años",
-        0: "Otros",
-      };
-
-      return tiposMap[tipo]?.toLowerCase().includes(value.toLowerCase());
+      if (value === "" || value === null || value === undefined) return true;
+      return row.original.tipo === value;
     },
   },
 

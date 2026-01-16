@@ -36,6 +36,16 @@ import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+
 export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
   const API_URL = import.meta.env.VITE_API_URL;
   const queryClient = useQueryClient();
@@ -48,6 +58,14 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     ofuscar: false,
   });
 
+  const { data: profesores = [], isLoading, error } = useProfesoresLdap();
+  const [filtroProfesor, setFiltroProfesor] = useState("");
+  const profesoresFiltrados = profesores.filter((p) =>
+    `${p.givenName} ${p.sn}`
+      .toLowerCase()
+      .includes(filtroProfesor.toLowerCase())
+  );
+
   const [rangos, setRangos] = useState([]);
   const [nuevoRango, setNuevoRango] = useState({
     inicio: "",
@@ -56,11 +74,19 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
   });
   const [cargandoRangos, setCargandoRangos] = useState(false);
 
+  // para levantar restrccion en una fecha a un profe determinado
+  const [asuntosPermitidos, setAsuntosPermitidos] = useState([]);
+  const [nuevoPermitido, setNuevoPermitido] = useState({
+    uid: "",
+    fecha: "",
+  });
+
   // Cargar datos al abrir
   useEffect(() => {
     if (open) {
       fetchRestricciones();
       fetchRangos();
+      fetchAsuntosPermitidos();
     }
   }, [open]);
 
@@ -112,6 +138,21 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
       toast.error("No se pudieron cargar los rangos bloqueados");
     } finally {
       setCargandoRangos(false);
+    }
+  };
+
+  // obtener fechas permitidas
+  const fetchAsuntosPermitidos = async () => {
+    try {
+      const res = await fetch(`${API_URL}/db/asuntos-permitidos`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Error al obtener permisos especiales");
+      const data = await res.json();
+      setAsuntosPermitidos(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("No se pudieron cargar los permisos especiales");
     }
   };
 
@@ -178,6 +219,46 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     onError: (err) => toast.error(err.message),
   });
 
+  const addAsuntoPermitidoMutation = useMutation({
+    mutationFn: async (payload) => {
+      const res = await fetch(`${API_URL}/db/asuntos-permitidos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Error al añadir permiso");
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Permiso especial añadido");
+      setNuevoPermitido({ uid: "", fecha: "" });
+      fetchAsuntosPermitidos();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const deleteAsuntoPermitidoMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await fetch(`${API_URL}/db/asuntos-permitidos/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Error al eliminar permiso");
+    },
+    onSuccess: () => {
+      toast.success("Permiso eliminado");
+      fetchAsuntosPermitidos();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   // --- Handlers ---
   const handleChange = (field, value) =>
     setRestricciones((prev) => ({ ...prev, [field]: value }));
@@ -195,9 +276,17 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     deleteRangoMutation.mutate({ inicio, fin });
   };
 
+  const handleAddPermitido = () => {
+    if (!nuevoPermitido.uid || !nuevoPermitido.fecha) {
+      toast.error("Debes indicar usuario y fecha");
+      return;
+    }
+    addAsuntoPermitidoMutation.mutate(nuevoPermitido);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
-      <DialogContent className="p-0 rounded-lg h-[600px] flex flex-col">
+      <DialogContent className="p-0 rounded-lg h-[700px] w-[900px] flex flex-col">
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Restricciones de Asuntos Propios
@@ -213,6 +302,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
               <TabsList className="justify-start">
                 <TabsTrigger value="restricciones">Restricciones</TabsTrigger>
                 <TabsTrigger value="rangos">Rangos bloqueados</TabsTrigger>
+                <TabsTrigger value="permitidos">Autorizar fechas</TabsTrigger>
               </TabsList>
 
               {/* --- Tab: Restricciones --- */}
@@ -409,6 +499,144 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                   <Button variant="secondary" onClick={handleAddRango}>
                     Añadir rango
                   </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent
+                value="permitidos"
+                className="flex-1 overflow-auto space-y-4"
+              >
+                {/* --- Formulario para añadir permiso --- */}
+                <div className="space-y-4">
+                  {/* Input + Lista de profesores */}
+                  <div className="space-y-2">
+                    <Label>Profesor</Label>
+
+                    <div className="flex flex-col gap-1">
+                      {/* Input de búsqueda */}
+                      <Input
+                        placeholder="Buscar profesor..."
+                        value={filtroProfesor}
+                        onChange={(e) => setFiltroProfesor(e.target.value)}
+                        autoFocus
+                      />
+
+                      {/* Lista filtrada */}
+                      <div className="border rounded-md max-h-[10rem] overflow-auto">
+                        {filtroProfesor === "" ? (
+                          <p className="px-2 py-1 text-sm text-muted-foreground text-center">
+                            Empieza a escribir para buscar...
+                          </p>
+                        ) : profesores.filter((p) =>
+                            `${p.givenName} ${p.sn}`
+                              .toLowerCase()
+                              .includes(filtroProfesor.toLowerCase())
+                          ).length === 0 ? (
+                          <p className="px-2 py-1 text-sm text-muted-foreground text-center">
+                            Sin resultados
+                          </p>
+                        ) : (
+                          <ul className="divide-y divide-gray-200">
+                            {profesores
+                              .filter((p) =>
+                                `${p.givenName} ${p.sn}`
+                                  .toLowerCase()
+                                  .includes(filtroProfesor.toLowerCase())
+                              )
+                              .map((p) => (
+                                <li
+                                  key={p.uid}
+                                  className={`px-2 py-2 cursor-pointer hover:bg-blue-50 transition-colors ${
+                                    nuevoPermitido.uid === p.uid
+                                      ? "bg-blue-100 font-medium"
+                                      : ""
+                                  }`}
+                                  onClick={() =>
+                                    setNuevoPermitido((prev) => ({
+                                      ...prev,
+                                      uid: p.uid,
+                                    }))
+                                  }
+                                >
+                                  {p.givenName} {p.sn}
+                                </li>
+                              ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {error && (
+                        <p className="text-sm text-red-500">
+                          Error al cargar profesores LDAP
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Fecha + botón */}
+                  <div className="flex flex-col sm:flex-row gap-2 items-end">
+                    <div className="flex-1">
+                      <Label>Fecha</Label>
+                      <Input
+                        type="date"
+                        value={nuevoPermitido.fecha}
+                        onChange={(e) =>
+                          setNuevoPermitido((p) => ({
+                            ...p,
+                            fecha: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <Button className="sm:mt-6" onClick={handleAddPermitido}>
+                      Añadir permiso
+                    </Button>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* --- Listado de permisos existentes --- */}
+                <div className="space-y-2">
+                  {asuntosPermitidos.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No hay permisos especiales definidos.
+                    </p>
+                  ) : (
+                    asuntosPermitidos.map((p) => {
+                      const profesor = profesores.find(
+                        (prof) => prof.uid === p.uid
+                      );
+                      const nombreCompleto = profesor
+                        ? `${profesor.givenName} ${profesor.sn}`
+                        : p.uid;
+
+                      return (
+                        <Card
+                          key={p.id}
+                          className="p-2 flex items-center justify-between"
+                        >
+                          <div className="text-sm">
+                            <strong>{nombreCompleto}</strong> —{" "}
+                            {new Date(p.fecha).toLocaleDateString("es-ES")}
+                          </div>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500"
+                            onClick={() => {
+                              if (!confirm("¿Eliminar este permiso especial?"))
+                                return;
+                              deleteAsuntoPermitidoMutation.mutate(p.id);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </Card>
+                      );
+                    })
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
