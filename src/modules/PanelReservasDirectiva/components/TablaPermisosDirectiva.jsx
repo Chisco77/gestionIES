@@ -73,18 +73,10 @@ import {
 
 import { generateListadoPermisosProfesores } from "../../../utils/Informes";
 
-const TIPOS_PERMISO = {
-  2: "(Art. 2) Fallecimiento / enfermedad grave",
-  3: "(Art. 3) Enfermedad propia",
-  4: "(Art. 4) Traslado de domicilio",
-  7: "(Art. 7) Exámenes prenatales",
-  11: "(Art. 11) Deber inexcusable",
-  13: "(Art. 13) Asuntos particulares",
-  14: "(Art. 14) Funciones sindicales",
-  15: "(Art. 15) Exámenes empleo público",
-  32: "(Art. 32) Reducción jornada >55",
-  0: "Otros",
-};
+import {
+  MAPEO_TIPOS_PERMISOS,
+  textoTipoPermiso,
+} from "@/utils/mapeoTiposPermisos";
 
 export function TablaPermisosDirectiva({ fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha", desc: false }]);
@@ -115,7 +107,7 @@ export function TablaPermisosDirectiva({ fecha }) {
     // aquí llamas a tu util de informes
     generateListadoPermisosProfesores(filasFiltradas);
 
-    console.log("Generar PDF con:", filasFiltradas);
+    //console.log("Generar PDF con:", filasFiltradas);
   };
 
   // Tabla
@@ -328,7 +320,7 @@ export function TablaPermisosDirectiva({ fecha }) {
               <SelectContent>
                 <SelectItem value="ALL">Todos</SelectItem>
 
-                {Object.entries(TIPOS_PERMISO).map(([value, label]) => (
+                {Object.entries(MAPEO_TIPOS_PERMISOS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}
                   </SelectItem>
@@ -421,7 +413,7 @@ export function TablaPermisosDirectiva({ fecha }) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleGenerarPdf}>
                   <FileText className="mr-2 h-4 w-4" />
-                  Listado asuntos propios
+                  Listado permisos por profesor
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

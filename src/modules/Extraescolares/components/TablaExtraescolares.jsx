@@ -60,6 +60,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { Printer, FileText } from "lucide-react";
+
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+
+import { generateListadoExtraescolaresPorProfesor } from "@/utils/Informes";
+import { generateListadoExtraescolaresPorFecha } from "@/utils/Informes";
+
 export function TablaExtraescolares({ user, fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -114,6 +126,28 @@ export function TablaExtraescolares({ user, fecha }) {
       console.error(e);
       toast.error("Error de conexión");
     }
+  };
+
+  const handleGenerarExtraescolaresProfesor = () => {
+    const filasFiltradas = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
+
+    // informe
+    generateListadoExtraescolaresPorProfesor(filasFiltradas);
+
+    //console.log("Generar PDF con:", filasFiltradas);
+  };
+
+  const handleGenerarExtraescolaresFecha = () => {
+    const filasFiltradas = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
+
+    // informe
+    generateListadoExtraescolaresPorFecha(filasFiltradas);
+
+    //console.log("Generar PDF con:", filasFiltradas);
   };
 
   // Tabla
@@ -375,14 +409,41 @@ export function TablaExtraescolares({ user, fecha }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
-            <Switch
-              checked={table.getColumn("estado")?.getFilterValue() === true}
-              onCheckedChange={(ch) =>
-                table.getColumn("estado")?.setFilterValue(ch ? true : null)
-              }
-            />
-            <span className="text-sm">Solo pendientes</span>
+          <div className="flex items-center gap-3 ml-auto">
+            {/* Switch estado */}
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={table.getColumn("estado")?.getFilterValue() === true}
+                onCheckedChange={(checked) =>
+                  table
+                    .getColumn("estado")
+                    ?.setFilterValue(checked ? true : null)
+                }
+              />
+              <span className="text-sm text-muted-foreground">
+                Solo pendientes
+              </span>
+            </div>
+
+            {/* Menú informes */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-8 w-8">
+                  <Printer className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleGenerarExtraescolaresFecha}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Listado extraescolares por fecha
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleGenerarExtraescolaresProfesor}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Listado extraescolares por profesor
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

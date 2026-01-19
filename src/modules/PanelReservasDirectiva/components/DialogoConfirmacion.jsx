@@ -97,7 +97,7 @@ export function DialogoConfirmacion({
         className="p-0 overflow-hidden rounded-lg"
       >
         <DialogHeader
-          className={`${esAceptar ? "bg-blue-500" : "bg-red-600"} text-white rounded-t-lg flex items-center justify-center py-3 px-6`}
+          className={`${esAceptar ? "bg-green-500" : "bg-red-600"} text-white rounded-t-lg flex items-center justify-center py-3 px-6`}
         >
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             {esAceptar ? "Confirmar aceptación" : "Confirmar rechazo"}
@@ -144,7 +144,7 @@ export function DialogoConfirmacion({
             onClick={() => mutation.mutate()}
             className={
               esAceptar
-                ? "bg-blue-500 hover:bg-blue-600"
+                ? "bg-green-500 hover:bg-green-600"
                 : "bg-red-600 hover:bg-red-700"
             }
             disabled={mutation.isLoading}

@@ -15,6 +15,8 @@ import { generatePermisosPdf } from "@/utils/Informes";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
+import { MAPEO_TIPOS_PERMISOS } from "@/utils/mapeoTiposPermisos";
+
 export function DialogoInsertarPermiso({ open, onClose, fecha }) {
   const [descripcion, setDescripcion] = useState("");
   const [tipo, setTipo] = useState(null);
@@ -161,31 +163,23 @@ export function DialogoInsertarPermiso({ open, onClose, fecha }) {
                   onValueChange={setTipo}
                   className="space-y-3"
                 >
-                  {Object.entries({
-                    2: "(Art. 2) Fallecimiento, accidente o enfermedad grave, hospitalización o intervención quirúrgica",
-                    3: "(Art. 3) Enfermedad propia",
-                    4: "(Art. 4) Traslado de domicilio",
-                    7: "(Art. 7) Exámenes prenatales y técnicas de preparación al parto",
-                    11: "(Art. 11) Deber inexcusable de carácter público o personal",
-                    14: "(Art. 14) Funciones sindicales / representación del personal",
-                    15: "(Art. 15) Exámenes finales o pruebas selectivas",
-                    32: "(Art. 32) Reducción de jornada para mayores de 55 años",
-                    0: "Otros",
-                  }).map(([key, label]) => (
-                    <div key={key} className="flex items-start space-x-2">
-                      <RadioGroupItem
-                        value={key}
-                        id={`tipo-${key}`}
-                        className="mt-1"
-                      />
-                      <Label
-                        htmlFor={`tipo-${key}`}
-                        className="text-sm cursor-pointer leading-tight"
-                      >
-                        {label}
-                      </Label>
-                    </div>
-                  ))}
+                  {Object.entries(MAPEO_TIPOS_PERMISOS)
+                    .sort(([a], [b]) => Number(a) - Number(b))
+                    .map(([key, label]) => (
+                      <div key={key} className="flex items-start space-x-2">
+                        <RadioGroupItem
+                          value={key}
+                          id={`tipo-${key}`}
+                          className="mt-1"
+                        />
+                        <Label
+                          htmlFor={`tipo-${key}`}
+                          className="text-sm cursor-pointer leading-tight"
+                        >
+                          {label}
+                        </Label>
+                      </div>
+                    ))}
                 </RadioGroup>
               </div>
             </div>

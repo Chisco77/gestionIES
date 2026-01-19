@@ -1,19 +1,9 @@
 import { jsPDF } from "jspdf";
 
-const MAPA_TIPOS_PERMISO = {
-  2: "(Art. 2) Fallecimiento, accidente o enfermedad grave, hospitalización o intervención quirúrgica",
-  3: "(Art. 3) Enfermedad propia",
-  4: "(Art. 4) Traslado de domicilio",
-  7: "(Art. 7) Exámenes prenatales y técnicas de preparación al parto de un familiar",
-  11: "(Art. 11) Cumplimiento de un deber inexcusable de carácter público o personal",
-  13: "(Art. 13) Asuntos particulares",
-  14: "(Art. 14) Realización de funciones sindicales o de representación del personal",
-  15: "(Art. 15) Exámenes finales o pruebas selectivas en el empleo público",
-  32: "(Art. 32) Reducción de jornada para mayores de 55 años",
-  0: "Otros",
-};
+import { MAPEO_TIPOS_PERMISOS } from "./mapeoTiposPermisos";
 
-const getDescripcionTipoPermiso = (tipo) => MAPA_TIPOS_PERMISO[tipo] ?? "Otros";
+const getDescripcionTipoPermiso = (tipo) =>
+  MAPEO_TIPOS_PERMISOS[tipo] ?? "Otros";
 
 export function generatePermisosPdf({ empleado, permiso }) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -202,35 +192,45 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.setFontSize(10);
   doc.text("PERMISOS:", tableX + textPad, y + 6);
 
-  const permisos = [
-    "Por fallecimiento, accidente o enfermedad grave, hospitalización o intervención quirúrgica de un familiar (art. 2).",
-    "Por enfermedad propia (art. 3).",
-    "Por traslado de domicilio (art. 4).",
-    "Realización de exámenes prenatales y técnicas de preparación al parto (art. 7).",
-    "Para el cumplimiento de un deber inexcusable de carácter público o personal (art. 11).",
-    "Por asuntos particulares (art. 13).",
-    "Para realización de funciones sindicales o de representación del personal (art. 14).",
-    "Para concurrir a exámenes finales o pruebas selectivas en el empleo público (art. 15).",
-    "Por reducción de jornada para mayores de 55 años (art. 32).",
-    "Otras situaciones.",
+  const PERMISOS_CHECKLIST = [
+    {
+      tipo: 2,
+      texto:
+        "Por fallecimiento, accidente o enfermedad grave, hospitalización o intervención quirúrgica de un familiar (art. 2).",
+    },
+    { tipo: 3, texto: "Por enfermedad propia (art. 3)." },
+    { tipo: 4, texto: "Por traslado de domicilio (art. 4)." },
+    {
+      tipo: 7,
+      texto:
+        "Realización de exámenes prenatales y técnicas de preparación al parto (art. 7).",
+    },
+    {
+      tipo: 11,
+      texto:
+        "Para el cumplimiento de un deber inexcusable de carácter público o personal (art. 11).",
+    },
+    { tipo: 13, texto: "Por asuntos particulares (art. 13)." },
+    {
+      tipo: 14,
+      texto:
+        "Para realización de funciones sindicales o de representación del personal (art. 14).",
+    },
+    {
+      tipo: 15,
+      texto:
+        "Para concurrir a exámenes finales o pruebas selectivas en el empleo público (art. 15).",
+    },
+    {
+      tipo: 32,
+      texto: "Por reducción de jornada para mayores de 55 años (art. 32).",
+    },
+    { tipo: 0, texto: "Otras situaciones." },
   ];
 
-  // --- Mapeo numérico de tipo de permiso ---
-  const tipoPermisoMap = {
-    2: permisos[0],
-    3: permisos[1],
-    4: permisos[2],
-    7: permisos[3],
-    11: permisos[4],
-    13: permisos[5],
-    14: permisos[6],
-    15: permisos[7],
-    32: permisos[8],
-    99: permisos[9],
-  };
+  const permisosLeft = PERMISOS_CHECKLIST.slice(0, 6);
+  const permisosRight = PERMISOS_CHECKLIST.slice(6);
 
-  const permisosLeft = permisos.slice(0, 6);
-  const permisosRight = permisos.slice(6);
   let yLeft = y + 12;
   let yRight = y + 12;
   const colSplitX = tableX + 85;
@@ -238,18 +238,20 @@ export function generatePermisosPdf({ empleado, permiso }) {
   const leftColTextX = tableX + 6;
   const textWidth = 75;
 
-  permisosLeft.forEach((texto, index) => {
+  permisosLeft.forEach(({ tipo, texto }) => {
     doc.rect(leftColTextX - 4, yLeft - 3, 3.5, 3.5);
-    if (texto === tipoPermisoMap[permiso.tipo])
+    if (permiso.tipo === tipo) {
       doc.text("X", leftColTextX - 3.3, yLeft);
+    }
     doc.text(doc.splitTextToSize(texto, textWidth), leftColTextX, yLeft);
     yLeft += 15;
   });
 
-  permisosRight.forEach((texto) => {
+  permisosRight.forEach(({ tipo, texto }) => {
     doc.rect(rightColTextX - 4, yRight - 3, 3.5, 3.5);
-    if (texto === tipoPermisoMap[permiso.tipo])
+    if (permiso.tipo === tipo) {
       doc.text("X", rightColTextX - 3.3, yRight);
+    }
     doc.text(doc.splitTextToSize(texto, textWidth), rightColTextX, yRight);
     yRight += 15;
   });
@@ -607,7 +609,12 @@ export function generateListadoPermisosProfesores(permisos = []) {
       const estadoLines = doc.splitTextToSize(estadoTxt, colEstadoWidth);
       const descLines = doc.splitTextToSize(descTxt, colDescWidth);
 
-      const rowLines = Math.max(tipoLines.length, estadoLines.length, descLines.length, 1);
+      const rowLines = Math.max(
+        tipoLines.length,
+        estadoLines.length,
+        descLines.length,
+        1
+      );
       const rowHeight = rowLines * lineHeight;
 
       if (y + rowHeight > 297 - marginBottom) {
@@ -627,7 +634,9 @@ export function generateListadoPermisosProfesores(permisos = []) {
 
     // --- Resumen al pie del profesor ---
     const solicitados = listaPermisos.filter((p) => p.tipo === 13).length;
-    const disfrutados = listaPermisos.filter((p) => p.tipo === 13 && p.estado === 1).length;
+    const disfrutados = listaPermisos.filter(
+      (p) => p.tipo === 13 && p.estado === 1
+    ).length;
     const disponibles = (listaPermisos[0]?.asuntos_propios ?? 0) - disfrutados;
 
     const resumenTxt = `Asuntos Propios  solicitados ${solicitados}   disfrutados ${disfrutados}   disponibles ${disponibles}`;
@@ -644,4 +653,276 @@ export function generateListadoPermisosProfesores(permisos = []) {
   });
 
   doc.save("Listado_Asuntos_Propios_Profesores.pdf");
+}
+
+
+/*
+Listado de actividades extraescolares, agrupadas por fecha.
+*/
+export function generateListadoExtraescolaresPorProfesor(actividades = []) {
+  if (!actividades.length) {
+    alert("No hay actividades para generar el listado.");
+    return;
+  }
+
+  // --- Mapas auxiliares ---
+  const estadosMap = {
+    0: "Pendiente",
+    1: "Aceptada",
+    2: "Rechazada",
+  };
+
+  // --- Ordenar por fecha de celebración ---
+  const actividadesOrdenadas = [...actividades].sort(
+    (a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio)
+  );
+
+  // --- Agrupar por profesor ---
+  const actividadesPorProfesor = actividadesOrdenadas.reduce((acc, act) => {
+    const nombre = act.nombreProfesor || "Sin profesor";
+    if (!acc[nombre]) acc[nombre] = [];
+    acc[nombre].push(act);
+    return acc;
+  }, {});
+
+  const profesores = Object.keys(actividadesPorProfesor).sort();
+
+  // --- PDF base ---
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageWidth = 210;
+  const marginLeft = 15;
+  const marginTop = 20;
+  const marginBottom = 20;
+  let y = marginTop;
+
+  // --- Cabecera ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(
+    "Listado de Actividades Extraescolares por Profesor",
+    pageWidth / 2,
+    y,
+    { align: "center" }
+  );
+  y += 12;
+
+  doc.setFontSize(11);
+  doc.text(`Total profesores: ${profesores.length}`, marginLeft, y);
+  y += 10;
+
+  // --- Columnas ---
+  const colFechaX = marginLeft;
+  const colTituloX = marginLeft + 28;
+  const colEstadoX = marginLeft + 140;
+
+  const colTituloWidth = 75;
+  const colEstadoWidth = 25;
+
+  const lineHeight = 5;
+
+  // --- Contenido ---
+  profesores.forEach((profesor) => {
+    const lista = actividadesPorProfesor[profesor];
+
+    if (y > 260) {
+      doc.addPage();
+      y = marginTop;
+    }
+
+    // --- Nombre profesor ---
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(profesor, marginLeft, y);
+    y += 4;
+
+    doc.setLineWidth(0.5);
+    doc.line(marginLeft, y, pageWidth - marginLeft, y);
+    y += 6;
+
+    // --- Encabezado tabla ---
+    doc.setFontSize(10);
+    doc.text("Fecha", colFechaX, y);
+    doc.text("Actividad", colTituloX, y);
+    doc.text("Estado", colEstadoX, y);
+    y += 4;
+
+    doc.setLineWidth(0.3);
+    doc.line(marginLeft, y, pageWidth - marginLeft, y);
+    y += 4;
+
+    doc.setFont("helvetica", "normal");
+
+    // --- Filas ---
+    lista.forEach((act) => {
+      const fechaTxt = new Date(act.fecha_inicio).toLocaleDateString("es-ES");
+      const tituloLines = doc.splitTextToSize(
+        act.titulo || "",
+        colTituloWidth
+      );
+
+      const estadoTxt = estadosMap[act.estado] ?? "—";
+
+      const rowLines = Math.max(
+        tituloLines.length,
+        1
+      );
+      const rowHeight = rowLines * lineHeight;
+
+      if (y + rowHeight > 297 - marginBottom) {
+        doc.addPage();
+        y = marginTop;
+      }
+
+      doc.text(fechaTxt, colFechaX, y);
+      doc.text(tituloLines, colTituloX, y);
+      doc.text(estadoTxt, colEstadoX, y);
+
+      y += rowHeight + 2;
+    });
+
+    y += 8;
+  });
+
+  doc.save("Listado_Extraescolares_por_Profesor.pdf");
+}
+
+
+/*
+Genera listado extraescolares agrupadas por fecha inicio
+*/
+export function generateListadoExtraescolaresPorFecha(actividades = []) {
+  if (!actividades.length) {
+    alert("No hay actividades para generar el listado.");
+    return;
+  }
+
+  // --- Mapas auxiliares ---
+  const estadosMap = {
+    0: "Pendiente",
+    1: "Aceptada",
+    2: "Rechazada",
+  };
+
+  // --- Ordenar por fecha_inicio ---
+  const ordenadas = [...actividades].sort(
+    (a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio)
+  );
+
+  // --- Agrupar por fecha_inicio (YYYY-MM-DD) ---
+  const actividadesPorFecha = ordenadas.reduce((acc, act) => {
+    const fechaKey = new Date(act.fecha_inicio)
+      .toISOString()
+      .slice(0, 10); // YYYY-MM-DD
+
+    if (!acc[fechaKey]) acc[fechaKey] = [];
+    acc[fechaKey].push(act);
+    return acc;
+  }, {});
+
+  const fechas = Object.keys(actividadesPorFecha).sort();
+
+  // --- PDF base ---
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageWidth = 210;
+  const marginLeft = 15;
+  const marginTop = 20;
+  const marginBottom = 20;
+  let y = marginTop;
+
+  // --- Cabecera ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Listado de Actividades Extraescolares por Fecha", pageWidth / 2, y, {
+    align: "center",
+  });
+  y += 12;
+
+  doc.setFontSize(11);
+  doc.text(`Total actividades: ${ordenadas.length}`, marginLeft, y);
+  y += 10;
+
+  // --- Columnas ---
+  const colTituloX = marginLeft;
+  const colProfesorX = marginLeft + 85;
+  const colEstadoX = marginLeft + 165;
+
+  const colTituloWidth = 80;
+  const colProfesorWidth = 45;
+
+  const lineHeight = 5;
+
+  // --- Contenido ---
+  fechas.forEach((fechaKey) => {
+    const lista = actividadesPorFecha[fechaKey];
+    const fechaLegible = new Date(fechaKey).toLocaleDateString("es-ES", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
+    if (y > 260) {
+      doc.addPage();
+      y = marginTop;
+    }
+
+    // --- Cabecera fecha ---
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(fechaLegible, marginLeft, y);
+    y += 4;
+
+    doc.setLineWidth(0.5);
+    doc.line(marginLeft, y, pageWidth - marginLeft, y);
+    y += 6;
+
+    // --- Encabezado tabla ---
+    doc.setFontSize(10);
+    doc.text("Actividad", colTituloX, y);
+    doc.text("Profesor", colProfesorX, y);
+    doc.text("Estado", colEstadoX, y);
+    y += 4;
+
+    doc.setLineWidth(0.3);
+    doc.line(marginLeft, y, pageWidth - marginLeft, y);
+    y += 4;
+
+    doc.setFont("helvetica", "normal");
+
+    // --- Filas ---
+    lista.forEach((act) => {
+      const tituloLines = doc.splitTextToSize(
+        act.titulo || "",
+        colTituloWidth
+      );
+      const profesorLines = doc.splitTextToSize(
+        act.nombreProfesor || "",
+        colProfesorWidth
+      );
+
+      const estadoTxt = estadosMap[act.estado] ?? "—";
+
+      const rowLines = Math.max(
+        tituloLines.length,
+        profesorLines.length,
+        1
+      );
+      const rowHeight = rowLines * lineHeight;
+
+      if (y + rowHeight > 297 - marginBottom) {
+        doc.addPage();
+        y = marginTop;
+      }
+
+      doc.text(tituloLines, colTituloX, y);
+      doc.text(profesorLines, colProfesorX, y);
+      doc.text(estadoTxt, colEstadoX, y);
+
+      y += rowHeight + 2;
+    });
+
+    y += 8;
+  });
+
+  doc.save("Listado_Extraescolares_por_Fecha.pdf");
 }

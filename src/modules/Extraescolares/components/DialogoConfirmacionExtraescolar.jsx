@@ -81,7 +81,7 @@ export function DialogoConfirmacionExtraescolar({
       >
         <DialogHeader
           className={`${
-            esAceptar ? "bg-blue-500" : "bg-red-600"
+            esAceptar ? "bg-green-500" : "bg-red-600"
           } text-white rounded-t-lg flex items-center justify-center py-3 px-6`}
         >
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
@@ -142,7 +142,7 @@ export function DialogoConfirmacionExtraescolar({
             onClick={handleConfirm}
             className={
               esAceptar
-                ? "bg-blue-500 hover:bg-blue-600"
+                ? "bg-green-500 hover:bg-green-600"
                 : "bg-red-600 hover:bg-red-700"
             }
             disabled={mutation.isLoading}

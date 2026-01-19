@@ -502,7 +502,7 @@ async function insertPermiso(req, res) {
 
         const fechaFmt = new Date(rows[0].fecha).toLocaleDateString("es-ES");
 
-        // 👉 Aquí se hace el mapeo del tipo
+        // mapeo del tipo
         const tipoTexto = MAPA_TIPOS[tipo] || "Otros";
 
         await mailer.sendMail({

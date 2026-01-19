@@ -46,6 +46,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { DialogoEliminarRango } from "./DialogoEliminarRango";
+import { DialogoEliminarAutorizacion } from "./DialogoEliminarAutorizacion";
+
 export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
   const API_URL = import.meta.env.VITE_API_URL;
   const queryClient = useQueryClient();
@@ -80,6 +83,17 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     uid: "",
     fecha: "",
   });
+
+  // para el rango a eliminar
+  const [dialogoEliminarRangoOpen, setDialogoEliminarRangoOpen] =
+    useState(false);
+  const [rangoSeleccionado, setRangoSeleccionado] = useState(null);
+
+  // autorización a eliminar
+  const [dialogoEliminarAutorizacionOpen, setDialogoEliminarAutorizacionOpen] =
+    useState(false);
+  const [autorizacionSeleccionada, setAutorizacionSeleccionada] =
+    useState(null);
 
   // Cargar datos al abrir
   useEffect(() => {
@@ -200,25 +214,6 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     onError: (err) => toast.error(err.message),
   });
 
-  const deleteRangoMutation = useMutation({
-    mutationFn: async ({ inicio, fin }) => {
-      const res = await fetch(`${API_URL}/db/restricciones/asuntos/rangos`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ inicio, fin }),
-      });
-      if (!res.ok) throw new Error("Error al eliminar rango bloqueado");
-      return res.json();
-    },
-    onSuccess: (data) => {
-      setRangos(data.rangos || []);
-      toast.success("Rango eliminado correctamente");
-      queryClient.invalidateQueries(["restricciones_asuntos"]);
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
   const addAsuntoPermitidoMutation = useMutation({
     mutationFn: async (payload) => {
       const res = await fetch(`${API_URL}/db/asuntos-permitidos`, {
@@ -243,22 +238,6 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     onError: (err) => toast.error(err.message),
   });
 
-  const deleteAsuntoPermitidoMutation = useMutation({
-    mutationFn: async (id) => {
-      const res = await fetch(`${API_URL}/db/asuntos-permitidos/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!res.ok) throw new Error("Error al eliminar permiso");
-    },
-    onSuccess: () => {
-      toast.success("Permiso eliminado");
-      fetchAsuntosPermitidos();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
   // --- Handlers ---
   const handleChange = (field, value) =>
     setRestricciones((prev) => ({ ...prev, [field]: value }));
@@ -271,9 +250,15 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     }
     addRangoMutation.mutate(nuevoRango);
   };
-  const handleDeleteRango = (inicio, fin) => {
-    if (!confirm("¿Eliminar este rango bloqueado?")) return;
-    deleteRangoMutation.mutate({ inicio, fin });
+
+  const handleDeleteRango = (rango) => {
+    setRangoSeleccionado(rango);
+    setDialogoEliminarRangoOpen(true);
+  };
+
+  const handleEliminarAutorizacion = (autorizacion) => {
+    setAutorizacionSeleccionada(autorizacion);
+    setDialogoEliminarAutorizacionOpen(true);
   };
 
   const handleAddPermitido = () => {
@@ -460,7 +445,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                               className="text-red-500 hover:text-red-700 flex-shrink-0"
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDeleteRango(r.inicio, r.fin)}
+                              onClick={() => handleDeleteRango(r)}
                             >
                               <Trash2 className="w-5 h-5" />
                             </Button>
@@ -625,11 +610,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                             variant="ghost"
                             size="sm"
                             className="text-red-500"
-                            onClick={() => {
-                              if (!confirm("¿Eliminar este permiso especial?"))
-                                return;
-                              deleteAsuntoPermitidoMutation.mutate(p.id);
-                            }}
+                            onClick={() => handleEliminarAutorizacion(p)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -660,6 +641,36 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
           </CardContent>
         </Card>
       </DialogContent>
+      <DialogoEliminarRango
+        open={dialogoEliminarRangoOpen}
+        onOpenChange={setDialogoEliminarRangoOpen}
+        rango={rangoSeleccionado}
+        onDeleteSuccess={() => {
+          fetchRangos(); // refresca lista
+          setRangoSeleccionado(null);
+        }}
+      />
+      <DialogoEliminarAutorizacion
+        open={dialogoEliminarAutorizacionOpen}
+        onOpenChange={setDialogoEliminarAutorizacionOpen}
+        autorizacion={autorizacionSeleccionada}
+        nombreProfesor={
+          autorizacionSeleccionada
+            ? (() => {
+                const prof = profesores.find(
+                  (p) => p.uid === autorizacionSeleccionada.uid
+                );
+                return prof
+                  ? `${prof.givenName} ${prof.sn}`
+                  : autorizacionSeleccionada.uid;
+              })()
+            : ""
+        }
+        onDeleteSuccess={() => {
+          fetchAsuntosPermitidos();
+          setAutorizacionSeleccionada(null);
+        }}
+      />
     </Dialog>
   );
 }

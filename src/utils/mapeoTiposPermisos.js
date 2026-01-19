@@ -4,10 +4,10 @@ export const MAPEO_TIPOS_PERMISOS = {
   4: "(Art. 4) Traslado de domicilio",
   7: "(Art. 7) Exámenes prenatales y técnicas de preparación al parto",
   11: "(Art. 11) Deber inexcusable de carácter público o personal",
+  13: "(Art. 13) Asunto propio",  
   14: "(Art. 14) Funciones sindicales / representación del personal",
   15: "(Art. 15) Exámenes finales o pruebas selectivas",
   32: "(Art. 32) Reducción de jornada para mayores de 55 años",
-  13: "Asunto propio",
   0: "Otros",
 };
 
