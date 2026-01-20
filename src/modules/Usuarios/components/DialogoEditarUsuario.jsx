@@ -149,17 +149,17 @@ export default function DialogoEditarUsuario({
       );
       const json = await res.json();
       if (!res.ok)
-        throw new Error(json.message || "Error al actualizar empleado");
+        throw new Error(json.message || "Error al actualizar usuario");
       return json;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["empleados"]);
-      toast.success("Empleado actualizado correctamente");
+      toast.success("Usuario actualizado correctamente");
       onClose();
     },
     onError: (err) => {
-      console.error("Error actualizando empleado:", err);
-      toast.error(err.message || "Error al guardar empleado");
+      console.error("Error actualizando usuario:", err);
+      toast.error(err.message || "Error al guardar usuario");
     },
   });
 

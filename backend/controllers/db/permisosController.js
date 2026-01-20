@@ -83,64 +83,6 @@ async function getPermisos(req, res) {
 }
 
 /**
- * Obtener asuntos propios enriquecidos con nombre del profesor
- */
-/*async function getPermisosEnriquecidos(req, res) {
-  try {
-    const ldapSession = req.session?.ldap;
-    if (!ldapSession)
-      return res
-        .status(401)
-        .json({ ok: false, error: "No autenticado en LDAP" });
-
-    const { uid, fecha, descripcion, estado, tipo } = req.query;
-    const filtros = [];
-    const vals = [];
-    let i = 0;
-
-    if (uid) filtros.push(`ap.uid = $${++i}`) && vals.push(uid);
-    if (fecha) filtros.push(`ap.fecha = $${++i}`) && vals.push(fecha);
-    if (descripcion)
-      filtros.push(`ap.descripcion ILIKE $${++i}`) &&
-        vals.push(`%${descripcion}%`);
-    if (typeof estado !== "undefined")
-      filtros.push(`ap.estado = $${++i}`) && vals.push(Number(estado));
-    if (typeof tipo !== "undefined")
-      filtros.push(`ap.tipo = $${++i}`) && vals.push(Number(tipo));
-
-    const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
-
-    const { rows: asuntos } = await db.query(
-      `SELECT ap.id, ap.uid, TO_CHAR(ap.fecha, 'YYYY-MM-DD') AS fecha, ap.descripcion, ap.estado, ap.tipo
-       FROM permisos ap
-       ${where}
-       ORDER BY ap.fecha ASC`,
-      vals
-    );
-
-    const asuntosEnriquecidos = [];
-    for (const asunto of asuntos) {
-      const nombreProfesor = await new Promise((resolve) => {
-        buscarPorUid(ldapSession, asunto.uid, (err, datos) => {
-          if (!err && datos)
-            resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
-          else resolve("Profesor desconocido");
-        });
-      });
-      asuntosEnriquecidos.push({ ...asunto, nombreProfesor });
-    }
-
-    res.json({ ok: true, asuntos: asuntosEnriquecidos });
-  } catch (err) {
-    console.error("[getPermisosEnriquecidos] Error:", err);
-    res.status(500).json({
-      ok: false,
-      error: "Error obteniendo permisos enriquecidos",
-    });
-  }
-}*/
-
-/**
  * Obtener asuntos propios enriquecidos con nombre del profesor y asuntos_propios
  * ⚠ Evita recursion excesiva llamando LDAP en batch y enriqueciendo localmente
  */

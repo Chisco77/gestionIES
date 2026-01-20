@@ -111,7 +111,11 @@ CREATE TABLE public.empleados (
     dni character varying NOT NULL,
     asuntos_propios integer NOT NULL,
     tipo_empleado character varying NOT NULL,
-    jornada integer DEFAULT 0 NOT NULL
+    jornada integer DEFAULT 0 NOT NULL,
+    email character varying NOT NULL,
+    telefono character varying NOT NULL
+
+
 );
 
 

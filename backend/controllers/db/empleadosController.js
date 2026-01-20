@@ -24,7 +24,7 @@ exports.insertEmpleado = async ({
     const result = await db.query(query, params);
     return result.rows[0]; 
   } catch (err) {
-    console.error("❌ Error insertando empleado:", err);
+    console.error("❌ Error insertando usuario:", err);
     throw err;
   }
 };
@@ -39,16 +39,16 @@ exports.getEmpleado = async (req, res) => {
        WHERE uid = $1`,
       [uid]
     );
-    if (!result.rows.length) return res.status(404).json({ message: "Empleado no encontrado" });
+    if (!result.rows.length) return res.status(404).json({ message: "Usuario no encontrado" });
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("❌ Error obteniendo empleado:", err);
+    console.error("❌ Error obteniendo usuario:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
 // Actualizar un empleado
-exports.updateEmpleado = async (req, res) => {
+/*exports.updateEmpleado = async (req, res) => {
   try {
     const { uid } = req.params;
     const { dni, asuntos_propios, tipo_empleado, jornada, email, telefono } = req.body;
@@ -69,7 +69,45 @@ exports.updateEmpleado = async (req, res) => {
     console.error("❌ Error actualizando empleado:", err);
     res.status(500).json({ message: err.message });
   }
+};*/
+
+exports.updateEmpleado = async (req, res) => {
+  try {
+    const { uid } = req.params;
+    const campos = [];
+    const valores = [];
+    let i = 1;
+
+    for (const [key, value] of Object.entries(req.body)) {
+      if (value !== undefined) {
+        campos.push(`${key} = $${i}`);
+        valores.push(value);
+        i++;
+      }
+    }
+
+    if (!campos.length) {
+      return res.status(400).json({ message: "No hay campos para actualizar" });
+    }
+
+    const query = `
+      UPDATE empleados
+      SET ${campos.join(", ")}
+      WHERE uid = $${i}
+      RETURNING *
+    `;
+
+    valores.push(uid);
+
+    const result = await db.query(query, valores);
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("❌ Error actualizando usuario:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
+
 
 // empleadosController.js
 exports.listEmpleados = async (req, res) => {
@@ -80,7 +118,7 @@ exports.listEmpleados = async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error obteniendo empleados:", err);
+    console.error("❌ Error obteniendo usuarios:", err);
     res.status(500).json({ message: err.message });
   }
 };
