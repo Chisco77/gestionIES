@@ -8,15 +8,17 @@ exports.insertEmpleado = async ({
   asuntos_propios,
   tipo_empleado,
   jornada,
+  email,
+  telefono,
 }) => {
   const query = `
-    INSERT INTO empleados (uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada)
-    VALUES ($1, $2, $3, $4, $5, $6)
+    INSERT INTO empleados (uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada, email, telefono)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     ON CONFLICT (uid) DO NOTHING
     RETURNING *;
   `;
 
-  const params = [uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada];
+  const params = [uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada, email, telefono];
   console.log ("Consulta: ", query, "parámetros: ", params);
   try {
     const result = await db.query(query, params);
@@ -32,7 +34,7 @@ exports.getEmpleado = async (req, res) => {
   try {
     const { uid } = req.params;
     const result = await db.query(
-      `SELECT uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada
+      `SELECT uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada, email, telefono
        FROM empleados
        WHERE uid = $1`,
       [uid]
@@ -49,16 +51,18 @@ exports.getEmpleado = async (req, res) => {
 exports.updateEmpleado = async (req, res) => {
   try {
     const { uid } = req.params;
-    const { dni, asuntos_propios, tipo_empleado, jornada } = req.body;
+    const { dni, asuntos_propios, tipo_empleado, jornada, email, telefono } = req.body;
     const result = await db.query(
       `UPDATE empleados
        SET dni = $1,
            asuntos_propios = $2,
            tipo_empleado = $3,
-           jornada = $4
-       WHERE uid = $5
+           jornada = $4,
+           email = $5,
+           telefono = $6
+       WHERE uid = $7
        RETURNING *`,
-      [dni, asuntos_propios, tipo_empleado, jornada, uid]
+      [dni, asuntos_propios, tipo_empleado, jornada, email, telefono, uid]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -71,7 +75,7 @@ exports.updateEmpleado = async (req, res) => {
 exports.listEmpleados = async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada
+      `SELECT uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada, email, telefono
        FROM empleados`
     );
     res.json(result.rows);
@@ -85,7 +89,7 @@ exports.listEmpleados = async (req, res) => {
 // --- Helper para obtener datos de un empleado ---
 async function obtenerEmpleado(uid) {
   const result = await db.query(
-    `SELECT uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada
+    `SELECT uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada, email, telefono
      FROM empleados
      WHERE uid = $1`,
     [uid]

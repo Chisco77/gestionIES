@@ -40,7 +40,7 @@ import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
 import { DialogoListadoCurso } from "../components/DialogoListadoCurso";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
-import { DialogoEditarUsuario } from "../components/DialogoEditarUsuario";
+import DialogoEditarUsuario from "../components/DialogoEditarUsuario";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, Printer, Users, Tag } from "lucide-react";
 import {

@@ -50,6 +50,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import DialogoEditarUsuario from "@/modules/Usuarios/components/DialogoEditarUsuario";
+
+
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
@@ -58,6 +61,9 @@ export default function Header() {
   const [periodosDB, setPeriodosDB] = useState([]);
   const { user, setUser } = useAuth();
   const navigate = useNavigate();
+
+  const [abrirPerfil, setAbrirPerfil] = useState(false);
+  const [empleadoPerfil, setEmpleadoPerfil] = useState(null);
 
   const handleClickLogout = () => {
     fetch(`${API_URL}/logout`, {
@@ -68,6 +74,17 @@ export default function Header() {
       navigate("/login");
     });
   };
+
+  useEffect(() => {
+    if (!abrirPerfil || !user?.username) return;
+
+    fetch(`${API_URL}/db/empleados/${user.username}`, {
+      credentials: "include",
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setEmpleadoPerfil(data))
+      .catch(() => setEmpleadoPerfil(null));
+  }, [abrirPerfil, user]);
 
   useEffect(() => {
     const fetchTodosPeriodos = async () => {
@@ -98,17 +115,27 @@ export default function Header() {
         <Separator orientation="vertical" className="h-5 border-white/50" />
         <h1 className="text-lg font-semibold">{tituloActivo}</h1>
       </div>
-
       <div className="absolute left-1/2 transform -translate-x-1/2">
         <RelojPeriodo periodos={periodosDB} />
       </div>
-
       <div className="ml-auto flex items-center gap-4">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">
             {user?.givenName} {user?.sn} ({user?.username})
           </span>
-          <User className="h-5 w-5 text-white" />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <User
+                  className="h-5 w-5 text-white cursor-pointer"
+                  onClick={() => setAbrirPerfil(true)}
+                />
+              </TooltipTrigger>
+              <TooltipContent className="bg-blue-500 text-white">
+                Editar perfil
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* Tooltip en el icono de logout */}
@@ -127,6 +154,21 @@ export default function Header() {
           </Tooltip>
         </TooltipProvider>
       </div>
+      <DialogoEditarUsuario
+        open={abrirPerfil}
+        onClose={() => setAbrirPerfil(false)}
+        usuarioSeleccionado={
+          user
+            ? {
+                ...user,
+                uid: user.username,
+              }
+            : null
+        }
+        empleadoSeleccionado={empleadoPerfil}
+        esAlumno={false}
+        modo="perfil"
+      />
     </header>
   );
 }

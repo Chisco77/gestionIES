@@ -18,6 +18,8 @@ export function generatePermisosPdf({ empleado, permiso }) {
   const apellidoUsuario = empleado?.sn || "";
   const nombreUsuario = empleado?.givenName || "";
   const employeeNumber = empleado?.dni || "";
+  const telefono = empleado?.telefono || "";
+  const email = empleado?.email || "";
 
   // --- Cabecera ---
   doc.setFont("helvetica", "bold");
@@ -75,8 +77,10 @@ export function generatePermisosPdf({ empleado, permiso }) {
   const row3Height = 10;
   const col3_1Width = 85;
   doc.text("Teléfono móvil:", tableX + textPad, y + row3Height - 3);
+  doc.text(telefono, tableX + 35, y + row3Height - 3);
   doc.line(tableX + col3_1Width, y, tableX + col3_1Width, y + row3Height);
   doc.text("E-mail:", tableX + col3_1Width + textPad, y + row3Height - 3);
+  doc.text(email, tableX + col3_1Width + 18, y + row3Height - 3);
   y += row3Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
@@ -84,7 +88,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   const row4Height = 10;
   const col4_1Width = 70;
   const col4_2Width = 50;
-  doc.text("Cuerpo:", tableX + textPad, y + row4Height - 3);
+  doc.text("Cuerpo: Profesores de Secundaria", tableX + textPad, y + row4Height - 3);
   doc.line(tableX + col4_1Width, y, tableX + col4_1Width, y + row4Height);
   doc.text("Grupo:", tableX + col4_1Width + textPad, y + row4Height - 3);
   doc.line(
@@ -655,7 +659,6 @@ export function generateListadoPermisosProfesores(permisos = []) {
   doc.save("Listado_Asuntos_Propios_Profesores.pdf");
 }
 
-
 /*
 Listado de actividades extraescolares, agrupadas por fecha.
 */
@@ -755,17 +758,11 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
     // --- Filas ---
     lista.forEach((act) => {
       const fechaTxt = new Date(act.fecha_inicio).toLocaleDateString("es-ES");
-      const tituloLines = doc.splitTextToSize(
-        act.titulo || "",
-        colTituloWidth
-      );
+      const tituloLines = doc.splitTextToSize(act.titulo || "", colTituloWidth);
 
       const estadoTxt = estadosMap[act.estado] ?? "—";
 
-      const rowLines = Math.max(
-        tituloLines.length,
-        1
-      );
+      const rowLines = Math.max(tituloLines.length, 1);
       const rowHeight = rowLines * lineHeight;
 
       if (y + rowHeight > 297 - marginBottom) {
@@ -785,7 +782,6 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
 
   doc.save("Listado_Extraescolares_por_Profesor.pdf");
 }
-
 
 /*
 Genera listado extraescolares agrupadas por fecha inicio
@@ -810,9 +806,7 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
 
   // --- Agrupar por fecha_inicio (YYYY-MM-DD) ---
   const actividadesPorFecha = ordenadas.reduce((acc, act) => {
-    const fechaKey = new Date(act.fecha_inicio)
-      .toISOString()
-      .slice(0, 10); // YYYY-MM-DD
+    const fechaKey = new Date(act.fecha_inicio).toISOString().slice(0, 10); // YYYY-MM-DD
 
     if (!acc[fechaKey]) acc[fechaKey] = [];
     acc[fechaKey].push(act);
@@ -832,9 +826,14 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
   // --- Cabecera ---
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text("Listado de Actividades Extraescolares por Fecha", pageWidth / 2, y, {
-    align: "center",
-  });
+  doc.text(
+    "Listado de Actividades Extraescolares por Fecha",
+    pageWidth / 2,
+    y,
+    {
+      align: "center",
+    }
+  );
   y += 12;
 
   doc.setFontSize(11);
@@ -891,10 +890,7 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
 
     // --- Filas ---
     lista.forEach((act) => {
-      const tituloLines = doc.splitTextToSize(
-        act.titulo || "",
-        colTituloWidth
-      );
+      const tituloLines = doc.splitTextToSize(act.titulo || "", colTituloWidth);
       const profesorLines = doc.splitTextToSize(
         act.nombreProfesor || "",
         colProfesorWidth
@@ -902,11 +898,7 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
 
       const estadoTxt = estadosMap[act.estado] ?? "—";
 
-      const rowLines = Math.max(
-        tituloLines.length,
-        profesorLines.length,
-        1
-      );
+      const rowLines = Math.max(tituloLines.length, profesorLines.length, 1);
       const rowHeight = rowLines * lineHeight;
 
       if (y + rowHeight > 297 - marginBottom) {

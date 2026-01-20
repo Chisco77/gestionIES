@@ -38,7 +38,7 @@ import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 import { useEmpleados } from "@/hooks/useEmpleados";
 import { Loader, Plus, Pencil, Trash2, Users, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DialogoEditarUsuario } from "../components/DialogoEditarUsuario";
+import DialogoEditarUsuario from "../components/DialogoEditarUsuario";
 import {
   DropdownMenu,
   DropdownMenuTrigger,

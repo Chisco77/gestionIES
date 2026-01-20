@@ -3,30 +3,18 @@
  *
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
- * Email: adminies.franciscodeorellana@educarex.es
- * GitHub: https://github.com/Chisco77
- * Repositorio: https://github.com/Chisco77/gestionIES.git
- * IES Francisco de Orellana - Trujillo
- * ------------------------------------------------------------
- *
  * Descripción:
  * Componente que renderiza un diálogo para editar la información de un usuario.
- * - Campos editables: Nombre, Apellidos, Grupo, uid
- * - Si el usuario es alumno, se muestra su foto en la cabecera.
- * - Por ahora solo muestra toast de “No implementado” al guardar.
+ * Permite editar campos según el perfil del usuario activo.
  *
  * Props:
  * - open: boolean, controla si el diálogo está abierto.
  * - onClose: función para cerrar el diálogo.
  * - usuarioSeleccionado: objeto con los datos del usuario a editar.
- * - esAlumno: boolean, indica si el usuario es alumno (para mostrar foto).
+ * - empleadoSeleccionado: datos del empleado (solo si no es alumno)
+ * - esAlumno: boolean
+ * - modo: "admin" o "perfil" (opcional)
  *
- * Dependencias:
- * - React (useState, useEffect)
- * - @/components/ui/dialog
- * - @/components/ui/input
- * - @/components/ui/button
- * - sonner (toast)
  */
 
 import { useState, useEffect } from "react";
@@ -49,15 +37,29 @@ import {
 } from "@/components/ui/select";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
 
-export function DialogoEditarUsuario({
+export default function DialogoEditarUsuario({
   open,
   onClose,
   usuarioSeleccionado,
-  empleadoSeleccionado, // <-- nuevo
+  empleadoSeleccionado,
   esAlumno,
+  modo = "admin",
 }) {
   const queryClient = useQueryClient();
+  const { user: usuarioActivo } = useAuth(); // perfil del usuario logueado
+
+  // ⚠️ Evitar errores si no hay usuario seleccionado
+  if (!usuarioSeleccionado) return null;
+
+  // Permisos dinámicos
+  const esPropietario = usuarioActivo?.username === usuarioSeleccionado?.uid;
+  const puedeEditarAvanzados = ["admin", "directiva"].includes(
+    usuarioActivo?.perfil
+  );
+  const puedeEditarBasicos = esPropietario || puedeEditarAvanzados;
+
   // LDAP
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
@@ -71,28 +73,15 @@ export function DialogoEditarUsuario({
   const [asuntosPropios, setAsuntosPropios] = useState(0);
   const [tipoEmpleado, setTipoEmpleado] = useState("");
   const [jornada, setJornada] = useState(0);
+  const [email, setEmail] = useState("");
+  const [telefono, setTelefono] = useState("");
 
   const API_URL = import.meta.env.VITE_API_URL;
   const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
-  useEffect(() => {
-    if (!open || !usuarioSeleccionado || gruposDisponibles.length === 0) return;
-
-    // Tomamos el segundo grupo
-    const segundoGrupo = usuarioSeleccionado.groups?.[1];
-
-    if (segundoGrupo) {
-      // Solo lo seleccionamos si existe en gruposDisponibles
-      const existe = gruposDisponibles.some((g) => g.cn === segundoGrupo);
-      if (existe) {
-        setGrupo(segundoGrupo);
-      }
-    }
-  }, [open, usuarioSeleccionado, gruposDisponibles]);
-
   // Sincronizar datos LDAP
   useEffect(() => {
-    if (!usuarioSeleccionado || !open) return;
+    if (!open || !usuarioSeleccionado) return;
 
     setNombre(usuarioSeleccionado.givenName || "");
     setApellidos(usuarioSeleccionado.sn || "");
@@ -127,6 +116,8 @@ export function DialogoEditarUsuario({
     setAsuntosPropios(empleadoSeleccionado.asuntos_propios || 0);
     setTipoEmpleado(empleadoSeleccionado.tipo_empleado || "");
     setJornada(empleadoSeleccionado.jornada ?? 0);
+    setEmail(empleadoSeleccionado.email || "");
+    setTelefono(empleadoSeleccionado.telefono || "");
   }, [empleadoSeleccionado, open]);
 
   // Cargar grupos disponibles según tipo de usuario
@@ -138,13 +129,13 @@ export function DialogoEditarUsuario({
       credentials: "include",
     })
       .then((res) => res.json())
-      .then((data) => {
-        setGruposDisponibles(data.sort((a, b) => a.cn.localeCompare(b.cn)));
-      })
+      .then((data) =>
+        setGruposDisponibles(data.sort((a, b) => a.cn.localeCompare(b.cn)))
+      )
       .catch(() => toast.error("Error al obtener grupos"));
   }, [open, esAlumno, API_URL]);
 
-  // --- Mutation para guardar empleado ---
+  // Mutation para guardar empleado
   const mutation = useMutation({
     mutationFn: async (datos) => {
       const res = await fetch(
@@ -156,15 +147,13 @@ export function DialogoEditarUsuario({
           body: JSON.stringify(datos),
         }
       );
-
       const json = await res.json();
       if (!res.ok)
         throw new Error(json.message || "Error al actualizar empleado");
-
       return json;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["empleados"]); // invalidamos cache de empleados
+      queryClient.invalidateQueries(["empleados"]);
       toast.success("Empleado actualizado correctamente");
       onClose();
     },
@@ -177,18 +166,24 @@ export function DialogoEditarUsuario({
   const handleGuardar = () => {
     if (!usuarioSeleccionado || esAlumno) return;
 
-    const datos = {
-      dni,
-      asuntos_propios: asuntosPropios,
-      tipo_empleado: tipoEmpleado,
-      jornada,
-    };
+    const datos = {};
+
+    if (puedeEditarBasicos) {
+      datos.dni = dni;
+      datos.email = email;
+      datos.telefono = telefono;
+    }
+    if (puedeEditarAvanzados) {
+      datos.asuntos_propios = asuntosPropios;
+      datos.tipo_empleado = tipoEmpleado;
+      datos.jornada = jornada;
+    }
 
     mutation.mutate(datos);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose} modal={true}>
+    <Dialog open={open} onOpenChange={onClose} modal>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
         className="max-w-md"
@@ -206,7 +201,7 @@ export function DialogoEditarUsuario({
             </div>
           ) : null}
           <DialogTitle>
-            {usuarioSeleccionado?.givenName + " " + usuarioSeleccionado?.sn}
+            {usuarioSeleccionado.givenName} {usuarioSeleccionado.sn}
           </DialogTitle>
         </DialogHeader>
 
@@ -214,18 +209,23 @@ export function DialogoEditarUsuario({
           {/* LDAP */}
           <div>
             <label className="block text-sm font-medium">Nombre</label>
-            <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            <Input
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              disabled
+            />
           </div>
           <div>
             <label className="block text-sm font-medium">Apellidos</label>
             <Input
               value={apellidos}
               onChange={(e) => setApellidos(e.target.value)}
+              disabled
             />
           </div>
           <div>
             <label className="block text-sm font-medium">Grupo</label>
-            <Select value={grupo} onValueChange={setGrupo}>
+            <Select value={grupo} onValueChange={setGrupo} disabled>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecciona un grupo" />
               </SelectTrigger>
@@ -243,13 +243,37 @@ export function DialogoEditarUsuario({
             <Input value={uid} disabled />
           </div>
 
-          {/* Empleados (solo profesores) */}
+          {/* Empleados */}
           {!esAlumno && empleadoSeleccionado && (
             <>
               <div>
                 <label className="block text-sm font-medium">DNI</label>
-                <Input value={dni} onChange={(e) => setDni(e.target.value)} />
+                <Input
+                  value={dni}
+                  onChange={(e) => setDni(e.target.value)}
+                  disabled={!puedeEditarBasicos}
+                />
               </div>
+              <div>
+                <label className="block text-sm font-medium">Email</label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={!puedeEditarBasicos}
+                  placeholder="correo@centro.es"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Teléfono</label>
+                <Input
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  disabled={!puedeEditarBasicos}
+                  placeholder="600123456"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium">
                   Máximo Asuntos Propios
@@ -258,13 +282,18 @@ export function DialogoEditarUsuario({
                   type="number"
                   value={asuntosPropios}
                   onChange={(e) => setAsuntosPropios(Number(e.target.value))}
+                  disabled={!puedeEditarAvanzados}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium">
                   Tipo Empleado
                 </label>
-                <Select value={tipoEmpleado} onValueChange={setTipoEmpleado}>
+                <Select
+                  value={tipoEmpleado}
+                  onValueChange={setTipoEmpleado}
+                  disabled={!puedeEditarAvanzados}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecciona tipo" />
                   </SelectTrigger>
@@ -288,6 +317,7 @@ export function DialogoEditarUsuario({
                 <Select
                   value={String(jornada)}
                   onValueChange={(val) => setJornada(Number(val))}
+                  disabled={!puedeEditarAvanzados}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecciona jornada" />
