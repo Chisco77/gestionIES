@@ -60,7 +60,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Printer, FileText } from "lucide-react";
+import { Printer, FileText, Grid } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -71,6 +71,8 @@ import {
 
 import { generateListadoExtraescolaresPorProfesor } from "@/utils/Informes";
 import { generateListadoExtraescolaresPorFecha } from "@/utils/Informes";
+import { generateListadoExtraescolaresPorDepartamento } from "@/utils/Informes";
+import { generateListadoExtraescolaresPorDepartamentoXLS } from "@/utils/Informes";
 
 export function TablaExtraescolares({ user, fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
@@ -94,7 +96,7 @@ export function TablaExtraescolares({ user, fecha }) {
 
   const handleGenerarExcel = async (actividad) => {
     try {
-      const res = await fetch(`${API_URL}/excel-dietas/generar-excel`, {
+      const res = await fetch(`${API_URL}/generar-excel`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -136,7 +138,29 @@ export function TablaExtraescolares({ user, fecha }) {
     // informe
     generateListadoExtraescolaresPorProfesor(filasFiltradas);
 
-    //console.log("Generar PDF con:", filasFiltradas);
+    console.log("Generar PDF con:", filasFiltradas);
+  };
+
+  const handleGenerarExtraescolaresDepartamento = () => {
+    const filasFiltradas = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
+
+    // informe
+    generateListadoExtraescolaresPorDepartamento(filasFiltradas);
+
+    console.log("Generar PDF con:", filasFiltradas);
+  };
+
+  const handleGenerarExtraescolaresDepartamentoXLS = () => {
+    const filasFiltradas = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
+
+    // informe
+    generateListadoExtraescolaresPorDepartamentoXLS(filasFiltradas);
+
+    console.log("Generar PDF con:", filasFiltradas);
   };
 
   const handleGenerarExtraescolaresFecha = () => {
@@ -147,7 +171,7 @@ export function TablaExtraescolares({ user, fecha }) {
     // informe
     generateListadoExtraescolaresPorFecha(filasFiltradas);
 
-    //console.log("Generar PDF con:", filasFiltradas);
+    console.log("Generar PDF con:", filasFiltradas);
   };
 
   // Tabla
@@ -293,7 +317,7 @@ export function TablaExtraescolares({ user, fecha }) {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ estado: nuevoEstado }),
-        }
+        },
       );
       const r = await res.json();
       if (!res.ok) {
@@ -301,7 +325,7 @@ export function TablaExtraescolares({ user, fecha }) {
         return;
       }
       toast.success(
-        nuevoEstado === 1 ? "Actividad aceptada" : "Actividad rechazada"
+        nuevoEstado === 1 ? "Actividad aceptada" : "Actividad rechazada",
       );
       setDialogConfirmOpen(false);
     } catch (e) {
@@ -367,13 +391,13 @@ export function TablaExtraescolares({ user, fecha }) {
                     variant="outline"
                     className={cn(
                       "h-8 w-[240px] justify-start text-left text-sm",
-                      !fechaDesde && !fechaHasta && "text-muted-foreground"
+                      !fechaDesde && !fechaHasta && "text-muted-foreground",
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {fechaDesde && fechaHasta
                       ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(
-                          fechaHasta
+                          fechaHasta,
                         ).toLocaleDateString()}`
                       : "Seleccionar rango"}
                   </Button>
@@ -389,7 +413,7 @@ export function TablaExtraescolares({ user, fecha }) {
                     }}
                     onSelect={(range) => {
                       setFechaDesde(
-                        range?.from ? formatLocalDate(range.from) : ""
+                        range?.from ? formatLocalDate(range.from) : "",
                       );
                       setFechaHasta(range?.to ? formatLocalDate(range.to) : "");
                     }}
@@ -435,12 +459,27 @@ export function TablaExtraescolares({ user, fecha }) {
 
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleGenerarExtraescolaresFecha}>
-                  <FileText className="mr-2 h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4 text-red-500" />
                   Listado extraescolares por fecha
                 </DropdownMenuItem>
+
                 <DropdownMenuItem onClick={handleGenerarExtraescolaresProfesor}>
-                  <FileText className="mr-2 h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4 text-red-500" />
                   Listado extraescolares por profesor
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={handleGenerarExtraescolaresDepartamento}
+                >
+                  <FileText className="mr-2 h-4 w-4 text-red-500" />
+                  Listado extraescolares por departamento
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={handleGenerarExtraescolaresDepartamentoXLS}
+                >
+                  <Grid className="mr-2 h-4 w-4 text-green-500" />
+                  Listado extraescolares por departamento (XLS)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -477,7 +516,7 @@ export function TablaExtraescolares({ user, fecha }) {
                     <TableCell key={cell.id} className="py-0.5">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}

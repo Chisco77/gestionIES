@@ -8,6 +8,8 @@ const db = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
 const mailer = require("../../mailer");
 
+const { obtenerGruposPorTipo } = require("../ldap/gruposController");
+
 /**
  * Obtener actividades extraescolares enriquecidas
  * ================================================================
@@ -21,6 +23,51 @@ async function getExtraescolaresEnriquecidos(req, res) {
         .status(401)
         .json({ ok: false, error: "No autenticado en LDAP" });
 
+    // ========================================
+    // Cache por request (usuarios LDAP)
+    // ========================================
+    const usuariosCache = {};
+
+    const getNombrePorUid = (uid) =>
+      new Promise((resolve) => {
+        if (!uid) return resolve("Usuario desconocido");
+
+        if (usuariosCache[uid]) {
+          return resolve(usuariosCache[uid]);
+        }
+
+        buscarPorUid(ldapSession, uid, (err, datos) => {
+          const nombre =
+            !err && datos
+              ? `${datos.sn || ""}, ${datos.givenName || ""}`.trim()
+              : "Profesor desconocido";
+
+          usuariosCache[uid] = nombre;
+          resolve(nombre);
+        });
+      });
+
+    // ========================================
+    // Cargar departamentos y cursos desde LDAP
+    // ========================================
+    const departamentos = await obtenerGruposPorTipo(
+      ldapSession,
+      "school_department",
+    );
+
+    const cursos = await obtenerGruposPorTipo(ldapSession, "school_class");
+
+    const departamentosMap = Object.fromEntries(
+      departamentos.map((d) => [String(d.gidNumber), d.cn]),
+    );
+
+    const cursosMap = Object.fromEntries(
+      cursos.map((c) => [String(c.gidNumber), c.cn]),
+    );
+
+    // ========================================
+    // Filtros
+    // ========================================
     const { estado, tipo, uid } = req.query;
 
     const filtros = [];
@@ -42,6 +89,9 @@ async function getExtraescolaresEnriquecidos(req, res) {
 
     const where = filtros.length ? "WHERE " + filtros.join(" AND ") : "";
 
+    // ========================================
+    // Consulta a BD
+    // ========================================
     const { rows } = await db.query(
       `SELECT 
         e.id, e.uid, e.gidnumber, e.cursos_gids, e.tipo,
@@ -53,41 +103,52 @@ async function getExtraescolaresEnriquecidos(req, res) {
       FROM extraescolares e
       ${where}
       ORDER BY e.fecha_inicio ASC`,
-      vals
+      vals,
     );
 
     const enriquecidos = [];
 
+    // ========================================
+    // Enriquecimiento
+    // ========================================
     for (const item of rows) {
-      // Nombre del profesor que creó la actividad
-      const nombreProfesor = await new Promise((resolve) => {
-        buscarPorUid(ldapSession, item.uid, (err, datos) => {
-          if (!err && datos) {
-            resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
-          } else {
-            resolve("Profesor desconocido");
+      // Departamento
+      const departamento = item.gidnumber
+        ? {
+            gidNumber: item.gidnumber,
+            nombre:
+              departamentosMap[String(item.gidnumber)] ||
+              "Departamento desconocido",
           }
-        });
-      });
+        : null;
 
-      // Nombres de los responsables
+      // Cursos
+      const cursosActividad = Array.isArray(item.cursos_gids)
+        ? item.cursos_gids.map((gid) => ({
+            gidNumber: gid,
+            nombre: cursosMap[String(gid)] || "Curso desconocido",
+          }))
+        : [];
+
+      // Profesor creador
+      const nombreProfesor = await getNombrePorUid(item.uid);
+
+      // Responsables
       const responsables = [];
       if (Array.isArray(item.responsables_uids)) {
         for (const uidResp of item.responsables_uids) {
-          const nombre = await new Promise((resolve) => {
-            buscarPorUid(ldapSession, uidResp, (err, datos) => {
-              if (!err && datos) {
-                resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
-              } else {
-                resolve("Profesor desconocido");
-              }
-            });
-          });
+          const nombre = await getNombrePorUid(uidResp);
           responsables.push({ uid: uidResp, nombre });
         }
       }
 
-      enriquecidos.push({ ...item, nombreProfesor, responsables });
+      enriquecidos.push({
+        ...item,
+        nombreProfesor,
+        responsables,
+        departamento,
+        cursos: cursosActividad,
+      });
     }
 
     res.json({ ok: true, extraescolares: enriquecidos });
@@ -117,7 +178,7 @@ async function updateEstadoExtraescolar(req, res) {
       WHERE id = $2
       RETURNING *
     `,
-      [estado, id]
+      [estado, id],
     );
 
     if (!rows[0])
@@ -135,7 +196,7 @@ async function updateEstadoExtraescolar(req, res) {
       try {
         // Emails de avisos para este módulo
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
+          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`,
         );
         const emailsRaw = avisos[0]?.emails || [];
         const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
@@ -146,8 +207,8 @@ async function updateEstadoExtraescolar(req, res) {
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, actividad.uid, (err, datos) =>
             resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
-            )
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" },
+            ),
           );
         });
 
@@ -155,7 +216,7 @@ async function updateEstadoExtraescolar(req, res) {
           `${datosUsuario.givenName} ${datosUsuario.sn}`.trim();
 
         const fechaInicioFmt = new Date(
-          actividad.fecha_inicio
+          actividad.fecha_inicio,
         ).toLocaleDateString("es-ES");
         const estadoTxt = estado === 1 ? "Aceptada" : "Rechazada";
         const subjectPrefix =
@@ -175,12 +236,12 @@ async function updateEstadoExtraescolar(req, res) {
         });
 
         console.log(
-          `[updateEstadoExtraescolar] Email enviado a: ${emails.join(", ")}`
+          `[updateEstadoExtraescolar] Email enviado a: ${emails.join(", ")}`,
         );
       } catch (errMail) {
         console.error(
           "[updateEstadoExtraescolar] Error enviando email:",
-          errMail
+          errMail,
         );
       }
     });
@@ -234,7 +295,7 @@ async function insertExtraescolar(req, res) {
         responsables_uids,
         ubicacion,
         coords,
-      ]
+      ],
     );
 
     const actividad = rows[0];
@@ -248,7 +309,7 @@ async function insertExtraescolar(req, res) {
     setImmediate(async () => {
       try {
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
+          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`,
         );
         const emailsRaw = avisos[0]?.emails || [];
         const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
@@ -259,8 +320,8 @@ async function insertExtraescolar(req, res) {
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, uid, (err, datos) =>
             resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
-            )
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" },
+            ),
           );
         });
 
@@ -307,7 +368,7 @@ async function insertExtraescolar(req, res) {
         });
 
         console.log(
-          `[insertExtraescolar] Email enviado a: ${emails.join(", ")}`
+          `[insertExtraescolar] Email enviado a: ${emails.join(", ")}`,
         );
       } catch (errMail) {
         console.error("[insertExtraescolar] Error enviando email:", errMail);
@@ -329,7 +390,7 @@ async function deleteExtraescolar(req, res) {
 
     const { rowCount } = await db.query(
       `DELETE FROM extraescolares WHERE id = $1`,
-      [id]
+      [id],
     );
 
     if (rowCount === 0)
@@ -401,7 +462,7 @@ async function updateExtraescolar(req, res) {
         ubicacion,
         coords,
         id,
-      ]
+      ],
     );
 
     if (!rows[0])

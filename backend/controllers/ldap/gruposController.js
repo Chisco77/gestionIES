@@ -208,3 +208,81 @@ exports.getMiembrosPorGidNumber = (req, res) => {
     });
   });
 };
+
+// ================================================================
+// Helper interno: obtener grupos LDAP por groupType
+// Uso interno desde otros controladores (NO es endpoint)
+// ================================================================
+async function obtenerGruposPorTipo(ldapSession, groupType) {
+  return new Promise((resolve, reject) => {
+    if (!ldapSession) {
+      return reject(new Error("No hay sesión LDAP"));
+    }
+
+    // Login externo o interno
+    const LDAP_URL = ldapSession.external
+      ? `ldap://${ldapSession.ldapHost}`
+      : process.env.LDAP_URL;
+
+    const client = ldap.createClient({ url: LDAP_URL });
+
+    client.bind(ldapSession.dn, ldapSession.password, (err) => {
+      if (err) {
+        console.error("❌ Error en bind LDAP:", err.message);
+        return reject(err);
+      }
+
+      const filter = groupType
+        ? `(&(objectClass=lisAclGroup)(groupType=${groupType}))`
+        : `(objectClass=lisAclGroup)`;
+
+      const options = {
+        scope: "sub",
+        filter,
+        attributes: ["cn", "description", "gidNumber", "groupType"],
+      };
+
+      const grupos = [];
+
+      client.search(GROUP_DN, options, (err, ldapRes) => {
+        if (err) {
+          console.error("❌ Error buscando grupos:", err.message);
+          return reject(err);
+        }
+
+        ldapRes.on("searchEntry", (entry) => {
+          const attrs = {};
+          entry.attributes.forEach((attr) => {
+            attrs[attr.type] = attr.vals;
+          });
+
+          if (
+            attrs.cn &&
+            attrs.gidNumber &&
+            attrs.groupType &&
+            (!groupType || attrs.groupType[0] === groupType)
+          ) {
+            grupos.push({
+              cn: attrs.cn[0],
+              description: attrs.description?.[0] || "",
+              gidNumber: attrs.gidNumber[0],
+              groupType: attrs.groupType[0],
+            });
+          }
+        });
+
+        ldapRes.on("end", () => {
+          client.unbind();
+          resolve(grupos);
+        });
+
+        ldapRes.on("error", (err) => {
+          console.error("❌ Error en stream LDAP:", err.message);
+          reject(err);
+        });
+      });
+    });
+  });
+}
+
+module.exports.obtenerGruposPorTipo = obtenerGruposPorTipo;

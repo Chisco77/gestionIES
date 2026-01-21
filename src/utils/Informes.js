@@ -2,6 +2,8 @@ import { jsPDF } from "jspdf";
 
 import { MAPEO_TIPOS_PERMISOS } from "./mapeoTiposPermisos";
 
+import * as XLSX from "xlsx";
+
 const getDescripcionTipoPermiso = (tipo) =>
   MAPEO_TIPOS_PERMISOS[tipo] ?? "Otros";
 
@@ -56,18 +58,18 @@ export function generatePermisosPdf({ empleado, permiso }) {
     tableX + col1Width + col2Width,
     y,
     tableX + col1Width + col2Width,
-    y + row2Height
+    y + row2Height,
   );
 
   doc.text(
     "DNI:",
     tableX + col1Width + col2Width + textPad,
-    y + row2Height - 3
+    y + row2Height - 3,
   );
   doc.text(
     employeeNumber,
     tableX + col1Width + col2Width + 15,
-    y + row2Height - 3
+    y + row2Height - 3,
   );
 
   y += row2Height;
@@ -88,19 +90,23 @@ export function generatePermisosPdf({ empleado, permiso }) {
   const row4Height = 10;
   const col4_1Width = 70;
   const col4_2Width = 50;
-  doc.text("Cuerpo: Profesores de Secundaria", tableX + textPad, y + row4Height - 3);
+  doc.text(
+    "Cuerpo: Profesores de Secundaria",
+    tableX + textPad,
+    y + row4Height - 3,
+  );
   doc.line(tableX + col4_1Width, y, tableX + col4_1Width, y + row4Height);
   doc.text("Grupo:", tableX + col4_1Width + textPad, y + row4Height - 3);
   doc.line(
     tableX + col4_1Width + col4_2Width,
     y,
     tableX + col4_1Width + col4_2Width,
-    y + row4Height
+    y + row4Height,
   );
   doc.text(
     "Subgrupo:",
     tableX + col4_1Width + col4_2Width + textPad,
-    y + row4Height - 3
+    y + row4Height - 3,
   );
   y += row4Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -111,7 +117,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "(Marcar con una x el recuadro correspondiente)",
     tableX + 45,
-    y + 6
+    y + 6,
   );
   doc.setFont("helvetica", "bold");
   doc.text("Relación jurídica:", tableX + textPad, y + 6);
@@ -162,7 +168,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     `Centro de destino:    ${import.meta.env.VITE_IES_NAME}`,
     tableX + col6_1Width + textPad,
-    y + row6Height - 3
+    y + row6Height - 3,
   );
   y += row6Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -274,7 +280,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "3. DOCUMENTACIÓN QUE SE APORTA",
     tableX + textPad,
-    y + row3_1Height - 2
+    y + row3_1Height - 2,
   );
   y += row3_1Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -314,7 +320,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "Trujillo, _____ de _________________________ de 20_______",
     marginLeft,
-    y
+    y,
   );
   y += 10;
   doc.setFont("helvetica", "bold");
@@ -373,7 +379,7 @@ export async function generateEtiquetasGenericasPdf({
 
   const etiquetas = Array.from(
     { length: totalEtiquetas },
-    (_, i) => `${prefijo}${i + numeroInicial}`
+    (_, i) => `${prefijo}${i + numeroInicial}`,
   );
 
   for (let i = 0; i < etiquetas.length; i++) {
@@ -533,7 +539,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
 
   // --- Ordenar permisos de cada profesor por fecha ---
   Object.values(permisosPorProfesor).forEach((lista) =>
-    lista.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+    lista.sort((a, b) => new Date(a.fecha) - new Date(b.fecha)),
   );
 
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -617,7 +623,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
         tipoLines.length,
         estadoLines.length,
         descLines.length,
-        1
+        1,
       );
       const rowHeight = rowLines * lineHeight;
 
@@ -639,7 +645,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
     // --- Resumen al pie del profesor ---
     const solicitados = listaPermisos.filter((p) => p.tipo === 13).length;
     const disfrutados = listaPermisos.filter(
-      (p) => p.tipo === 13 && p.estado === 1
+      (p) => p.tipo === 13 && p.estado === 1,
     ).length;
     const disponibles = (listaPermisos[0]?.asuntos_propios ?? 0) - disfrutados;
 
@@ -660,7 +666,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
 }
 
 /*
-Listado de actividades extraescolares, agrupadas por fecha.
+Listado de actividades extraescolares, agrupadas por profesor.
 */
 export function generateListadoExtraescolaresPorProfesor(actividades = []) {
   if (!actividades.length) {
@@ -677,7 +683,7 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
 
   // --- Ordenar por fecha de celebración ---
   const actividadesOrdenadas = [...actividades].sort(
-    (a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio)
+    (a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio),
   );
 
   // --- Agrupar por profesor ---
@@ -688,7 +694,9 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
     return acc;
   }, {});
 
-  const profesores = Object.keys(actividadesPorProfesor).sort();
+  const profesores = Object.keys(actividadesPorProfesor).sort((a, b) =>
+    a.localeCompare(b, "es", { sensitivity: "base" }),
+  );
 
   // --- PDF base ---
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -705,7 +713,7 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
     "Listado de Actividades Extraescolares por Profesor",
     pageWidth / 2,
     y,
-    { align: "center" }
+    { align: "center" },
   );
   y += 12;
 
@@ -716,11 +724,11 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
   // --- Columnas ---
   const colFechaX = marginLeft;
   const colTituloX = marginLeft + 28;
-  const colEstadoX = marginLeft + 140;
+  const colCursosX = marginLeft + 110;
+  const colEstadoX = marginLeft + 170;
 
-  const colTituloWidth = 75;
-  const colEstadoWidth = 25;
-
+  const colTituloWidth = 80;
+  const colCursosWidth = 55;
   const lineHeight = 5;
 
   // --- Contenido ---
@@ -746,6 +754,7 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
     doc.setFontSize(10);
     doc.text("Fecha", colFechaX, y);
     doc.text("Actividad", colTituloX, y);
+    doc.text("Cursos", colCursosX, y);
     doc.text("Estado", colEstadoX, y);
     y += 4;
 
@@ -760,9 +769,15 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
       const fechaTxt = new Date(act.fecha_inicio).toLocaleDateString("es-ES");
       const tituloLines = doc.splitTextToSize(act.titulo || "", colTituloWidth);
 
+      const cursosTxt =
+        Array.isArray(act.cursos) && act.cursos.length
+          ? act.cursos.map((c) => c.nombre).join(", ")
+          : "-";
+      const cursosLines = doc.splitTextToSize(cursosTxt, colCursosWidth);
+
       const estadoTxt = estadosMap[act.estado] ?? "—";
 
-      const rowLines = Math.max(tituloLines.length, 1);
+      const rowLines = Math.max(tituloLines.length, cursosLines.length, 1);
       const rowHeight = rowLines * lineHeight;
 
       if (y + rowHeight > 297 - marginBottom) {
@@ -772,6 +787,7 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
 
       doc.text(fechaTxt, colFechaX, y);
       doc.text(tituloLines, colTituloX, y);
+      doc.text(cursosLines, colCursosX, y);
       doc.text(estadoTxt, colEstadoX, y);
 
       y += rowHeight + 2;
@@ -785,6 +801,7 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
 
 /*
 Genera listado extraescolares agrupadas por fecha inicio
+con columnas: Actividad, Profesor, Departamento, Cursos y Estado
 */
 export function generateListadoExtraescolaresPorFecha(actividades = []) {
   if (!actividades.length) {
@@ -801,13 +818,12 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
 
   // --- Ordenar por fecha_inicio ---
   const ordenadas = [...actividades].sort(
-    (a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio)
+    (a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio),
   );
 
   // --- Agrupar por fecha_inicio (YYYY-MM-DD) ---
   const actividadesPorFecha = ordenadas.reduce((acc, act) => {
-    const fechaKey = new Date(act.fecha_inicio).toISOString().slice(0, 10); // YYYY-MM-DD
-
+    const fechaKey = new Date(act.fecha_inicio).toISOString().slice(0, 10);
     if (!acc[fechaKey]) acc[fechaKey] = [];
     acc[fechaKey].push(act);
     return acc;
@@ -830,9 +846,7 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
     "Listado de Actividades Extraescolares por Fecha",
     pageWidth / 2,
     y,
-    {
-      align: "center",
-    }
+    { align: "center" },
   );
   y += 12;
 
@@ -840,13 +854,18 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
   doc.text(`Total actividades: ${ordenadas.length}`, marginLeft, y);
   y += 10;
 
-  // --- Columnas ---
-  const colTituloX = marginLeft;
-  const colProfesorX = marginLeft + 85;
-  const colEstadoX = marginLeft + 165;
+  // --- Columnas (ancho ajustado según petición) ---
+  const colTituloX = marginLeft; // Actividad
+  const colProfesorX = colTituloX + 55; // Profesor
+  const colDepartamentoX = colProfesorX + 47; // Departamento
+  const colCursosX = colDepartamentoX + 30; // Cursos
+  const colEstadoX = colCursosX + 40; // Estado
 
-  const colTituloWidth = 80;
-  const colProfesorWidth = 45;
+  const colTituloWidth = 55;
+  const colProfesorWidth = 47;
+  const colDepartamentoWidth = 30;
+  const colCursosWidth = 40;
+  const colEstadoWidth = 18;
 
   const lineHeight = 5;
 
@@ -879,6 +898,8 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
     doc.setFontSize(10);
     doc.text("Actividad", colTituloX, y);
     doc.text("Profesor", colProfesorX, y);
+    doc.text("Departamento", colDepartamentoX, y);
+    doc.text("Cursos", colCursosX, y);
     doc.text("Estado", colEstadoX, y);
     y += 4;
 
@@ -893,12 +914,30 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
       const tituloLines = doc.splitTextToSize(act.titulo || "", colTituloWidth);
       const profesorLines = doc.splitTextToSize(
         act.nombreProfesor || "",
-        colProfesorWidth
+        colProfesorWidth,
+      );
+      const departamentoLines = doc.splitTextToSize(
+        act.departamento?.nombre || "-",
+        colDepartamentoWidth,
       );
 
-      const estadoTxt = estadosMap[act.estado] ?? "—";
+      const cursosTxt =
+        Array.isArray(act.cursos) && act.cursos.length
+          ? act.cursos.map((c) => c.nombre).join(", ")
+          : "-";
+      const cursosLines = doc.splitTextToSize(cursosTxt, colCursosWidth);
 
-      const rowLines = Math.max(tituloLines.length, profesorLines.length, 1);
+      const estadoTxt = estadosMap[act.estado] ?? "—";
+      const estadoLines = doc.splitTextToSize(estadoTxt, colEstadoWidth);
+
+      const rowLines = Math.max(
+        tituloLines.length,
+        profesorLines.length,
+        departamentoLines.length,
+        cursosLines.length,
+        estadoLines.length,
+        1,
+      );
       const rowHeight = rowLines * lineHeight;
 
       if (y + rowHeight > 297 - marginBottom) {
@@ -908,7 +947,9 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
 
       doc.text(tituloLines, colTituloX, y);
       doc.text(profesorLines, colProfesorX, y);
-      doc.text(estadoTxt, colEstadoX, y);
+      doc.text(departamentoLines, colDepartamentoX, y);
+      doc.text(cursosLines, colCursosX, y);
+      doc.text(estadoLines, colEstadoX, y);
 
       y += rowHeight + 2;
     });
@@ -917,4 +958,262 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
   });
 
   doc.save("Listado_Extraescolares_por_Fecha.pdf");
+}
+
+/*
+Genera listado extraescolares agrupadas por departamento
+*/
+
+export function generateListadoExtraescolaresPorDepartamento(actividades = []) {
+  if (!actividades.length) {
+    alert("No hay actividades para generar el listado.");
+    return;
+  }
+
+  // --- Mapas auxiliares ---
+  const estadosMap = {
+    0: "Pendiente",
+    1: "Aceptada",
+    2: "Rechazada",
+  };
+
+  // --- Agrupar por departamento ---
+  const actividadesPorDepartamento = actividades.reduce((acc, act) => {
+    const depto = act.departamento?.nombre || "Departamento desconocido";
+
+    if (!acc[depto]) acc[depto] = [];
+    acc[depto].push(act);
+    return acc;
+  }, {});
+
+  // --- Ordenar departamentos alfabéticamente ---
+  const departamentos = Object.keys(actividadesPorDepartamento).sort((a, b) =>
+    a.localeCompare(b, "es", { sensitivity: "base" }),
+  );
+
+  // --- PDF base ---
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageWidth = 210;
+  const marginLeft = 15;
+  const marginTop = 20;
+  const marginBottom = 20;
+  let y = marginTop;
+
+  // --- Cabecera ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(
+    "Listado de Actividades Extraescolares por Departamento",
+    pageWidth / 2,
+    y,
+    { align: "center" },
+  );
+  y += 12;
+
+  doc.setFontSize(11);
+  doc.text(`Total actividades: ${actividades.length}`, marginLeft, y);
+  y += 10;
+
+  // --- Columnas
+  const colFechaX = marginLeft;
+  const colProfesorX = marginLeft + 25;
+  const colTituloX = marginLeft + 75;
+  const colCursosX = marginLeft + 125;
+  const colEstadoX = marginLeft + 170;
+
+  const colProfesorWidth = 45;
+  const colTituloWidth = 45;
+  const colCursosWidth = 40;
+
+  const lineHeight = 5;
+
+  // --- Contenido ---
+  departamentos.forEach((depto) => {
+    const lista = [...actividadesPorDepartamento[depto]];
+
+    // --- Orden interno: fecha - profesor ---
+    lista.sort((a, b) => {
+      const fDiff = new Date(a.fecha_inicio) - new Date(b.fecha_inicio);
+      if (fDiff !== 0) return fDiff;
+
+      return (a.nombreProfesor || "").localeCompare(
+        b.nombreProfesor || "",
+        "es",
+        { sensitivity: "base" },
+      );
+    });
+
+    if (y > 260) {
+      doc.addPage();
+      y = marginTop;
+    }
+
+    // --- Cabecera departamento ---
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text(depto, marginLeft, y);
+    y += 4;
+
+    doc.setLineWidth(0.6);
+    doc.line(marginLeft, y, pageWidth - marginLeft, y);
+    y += 6;
+
+    // --- Encabezado tabla ---
+    doc.setFontSize(10);
+    doc.text("Fecha", colFechaX, y);
+    doc.text("Profesor", colProfesorX, y);
+    doc.text("Actividad", colTituloX, y);
+    doc.text("Cursos", colCursosX, y);
+    doc.text("Estado", colEstadoX, y);
+    y += 4;
+
+    doc.setLineWidth(0.3);
+    doc.line(marginLeft, y, pageWidth - marginLeft, y);
+    y += 4;
+
+    doc.setFont("helvetica", "normal");
+
+    // --- Filas ---
+    lista.forEach((act) => {
+      const fechaTxt = act.fecha_inicio
+        ? new Date(act.fecha_inicio).toLocaleDateString("es-ES")
+        : "—";
+
+      const profesorLines = doc.splitTextToSize(
+        act.nombreProfesor || "",
+        colProfesorWidth,
+      );
+
+      const tituloLines = doc.splitTextToSize(act.titulo || "", colTituloWidth);
+
+      const cursosTxt = Array.isArray(act.cursos)
+        ? act.cursos.map((c) => c.nombre).join(", ")
+        : "";
+
+      const cursosLines = doc.splitTextToSize(cursosTxt, colCursosWidth);
+
+      const estadoTxt = estadosMap[act.estado] ?? "—";
+
+      const rowLines = Math.max(
+        profesorLines.length,
+        tituloLines.length,
+        cursosLines.length,
+        1,
+      );
+      const rowHeight = rowLines * lineHeight;
+
+      if (y + rowHeight > 297 - marginBottom) {
+        doc.addPage();
+        y = marginTop;
+      }
+
+      doc.text(fechaTxt, colFechaX, y);
+      doc.text(profesorLines, colProfesorX, y);
+      doc.text(tituloLines, colTituloX, y);
+      doc.text(cursosLines, colCursosX, y);
+      doc.text(estadoTxt, colEstadoX, y);
+
+      y += rowHeight + 2;
+    });
+
+    y += 10;
+  });
+
+  doc.save("Listado_Extraescolares_por_Departamento.pdf");
+}
+
+/*
+Genera listado extraescolares en ODS con columnas:
+Departamento, Fecha, Actividad, Profesor, Cursos, Estado
+*/
+export function generateListadoExtraescolaresPorDepartamentoXLS(
+  actividades = [],
+) {
+  if (!actividades.length) {
+    alert("No hay actividades para generar el listado.");
+    return;
+  }
+
+  const estadosMap = {
+    0: "Pendiente",
+    1: "Aceptada",
+    2: "Rechazada",
+  };
+
+  // Construir datos para la hoja
+  const wsData = [];
+
+  // --- Fila de encabezado ---
+  wsData.push([
+    "Departamento",
+    "Fecha",
+    "Actividad",
+    "Profesor",
+    "Cursos",
+    "Estado",
+  ]);
+
+  // --- Ordenar primero por departamento alfabéticamente, luego por fecha y profesor ---
+  const actividadesOrdenadas = [...actividades].sort((a, b) => {
+    const deptA = a.departamento?.nombre || "";
+    const deptB = b.departamento?.nombre || "";
+    const deptComp = deptA.localeCompare(deptB, "es", { sensitivity: "base" });
+    if (deptComp !== 0) return deptComp;
+
+    const fechaDiff = new Date(a.fecha_inicio) - new Date(b.fecha_inicio);
+    if (fechaDiff !== 0) return fechaDiff;
+
+    return (a.nombreProfesor || "").localeCompare(
+      b.nombreProfesor || "",
+      "es",
+      { sensitivity: "base" },
+    );
+  });
+
+  // --- Rellenar filas ---
+  actividadesOrdenadas.forEach((act) => {
+    const depto = act.departamento?.nombre || "Departamento desconocido";
+    const fechaTxt = act.fecha_inicio
+      ? new Date(act.fecha_inicio).toLocaleDateString("es-ES")
+      : "—";
+    const titulo = act.titulo || "-";
+    const profesor = act.nombreProfesor || "-";
+    const cursosTxt =
+      Array.isArray(act.cursos) && act.cursos.length
+        ? act.cursos.map((c) => c.nombre).join(", ")
+        : "-";
+    const estadoTxt = estadosMap[act.estado] ?? "—";
+
+    wsData.push([depto, fechaTxt, titulo, profesor, cursosTxt, estadoTxt]);
+  });
+
+  // --- Crear workbook y sheet ---
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Anchos de columnas aproximados
+  ws["!cols"] = [
+    { wch: 20 }, // Departamento
+    { wch: 15 }, // Fecha
+    { wch: 35 }, // Actividad
+    { wch: 25 }, // Profesor
+    { wch: 30 }, // Cursos
+    { wch: 12 }, // Estado
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, "Extraescolares");
+
+  // Generar ODS
+  const oidata = XLSX.write(wb, { bookType: "ods", type: "array" });
+  const blob = new Blob([oidata], {
+    type: "application/vnd.oasis.opendocument.spreadsheet",
+  });
+
+  // Descargar
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Listado_Extraescolares.ods";
+  a.click();
+  URL.revokeObjectURL(url);
 }

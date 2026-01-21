@@ -412,7 +412,7 @@ export function TablaPermisosDirectiva({ fecha }) {
 
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleGenerarPdf}>
-                  <FileText className="mr-2 h-4 w-4" />
+                   <FileText className="mr-2 h-4 w-4 text-red-500" />
                   Listado permisos por profesor
                 </DropdownMenuItem>
               </DropdownMenuContent>
