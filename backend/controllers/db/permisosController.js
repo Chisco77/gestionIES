@@ -165,7 +165,6 @@ async function getPermisosEnriquecidos(req, res) {
   }
 }
 
-
 /**
  * Insertar un asunto propio con comprobaciones de restricciones
  */
@@ -228,7 +227,7 @@ async function insertAsuntoPropio(req, res) {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
-    // === Comprobar si hay autorización especial ===
+    // === Comprobar si hay autorización especial para esa fecha y usuario
     const { rows: autorizaciones } = await db.query(
       `SELECT id FROM asuntos_permitidos WHERE uid = $1 AND fecha = $2`,
       [uid, fecha]
@@ -285,7 +284,7 @@ async function insertAsuntoPropio(req, res) {
       if (concurrencia[0].total >= concurrentes)
         return res.status(400).json({
           ok: false,
-          error: `Ya hay ${concurrentes} profesores con asuntos propios ese día.`,
+          error: `Ya hay ${concurrentes} profesores con peticiones de asuntos propios ese día.`,
         });
 
       // Consecutivos
@@ -377,12 +376,9 @@ async function insertAsuntoPropio(req, res) {
     });
   } catch (err) {
     console.error("[insertAsuntoPropio] Error:", err);
-    res
-      .status(500)
-      .json({ ok: false, error: "Error guardando asunto propio" });
+    res.status(500).json({ ok: false, error: "Error guardando asunto propio" });
   }
 }
-
 
 /**
  *
@@ -546,6 +542,59 @@ async function updateEstadoPermiso(req, res) {
     return res.status(400).json({ ok: false, error: "Estado inválido" });
 
   try {
+    // ===============================
+    // VALIDACIÓN DE ASUNTOS PROPIOS
+    // ===============================
+    if (estado === 1) {
+      // Obtener el permiso que se quiere aceptar
+      const { rows: permisoRows } = await db.query(
+        `SELECT uid, tipo, estado FROM permisos WHERE id = $1`,
+        [id]
+      );
+
+      const permiso = permisoRows[0];
+      if (!permiso)
+        return res
+          .status(404)
+          .json({ ok: false, error: "Asunto propio no encontrado" });
+
+      if (estado === 1 && permiso.tipo === 13 && permiso.estado !== 1) {
+        const empleado = await obtenerEmpleado(permiso.uid);
+        if (!empleado)
+          return res
+            .status(404)
+            .json({ ok: false, error: "Empleado no encontrado" });
+
+        let maxDias = empleado.asuntos_propios;
+        if (!maxDias || maxDias === 0) {
+          const restricciones = await getRestriccionesAsuntos();
+          const diasRestriccion = restricciones.find(
+            (r) => r.descripcion === "dias"
+          );
+          maxDias = diasRestriccion?.valor_num ?? 0;
+        }
+
+        if (!maxDias || maxDias <= 0)
+          return res.status(400).json({
+            ok: false,
+            error: "No está configurado el número máximo de asuntos propios",
+          });
+
+        const { rows: concedidos } = await db.query(
+          `SELECT COUNT(*)::int AS total
+     FROM permisos
+     WHERE uid = $1 AND tipo = 13 AND estado = 1`,
+          [permiso.uid]
+        );
+
+        if (concedidos[0].total >= maxDias)
+          return res.status(400).json({
+            ok: false,
+            error: `No se puede aceptar el asunto propio. El empleado ya ha alcanzado el máximo de ${maxDias} días de asuntos propios.`,
+          });
+      }
+    }
+
     const query = `UPDATE permisos SET estado = $1 WHERE id = $2 RETURNING id, uid, fecha, descripcion, estado, tipo`;
     const { rows } = await db.query(query, [estado, id]);
     if (!rows[0])
