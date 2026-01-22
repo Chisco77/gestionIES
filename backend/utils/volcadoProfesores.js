@@ -97,6 +97,8 @@ async function procesarProfesor(client, uid) {
             asuntos_propios: 4,
             tipo_empleado: "funcionario de carrera",
             jornada: 0,
+            email: "",
+            telefono: "",
           });
           console.log(`   ✔ Insertado en empleados: ${uid}`);
         } catch (err) {
