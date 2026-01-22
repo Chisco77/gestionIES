@@ -113,7 +113,7 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
     // fallback logo IES
     const fallbackLogo = await new Promise((resolve) => {
       const img = new Image();
-      img.src = `${import.meta.env.BASE_URL}logo.png`;
+      img.src = `${import.meta.env.BASE_URL}public/logo.png`;
       img.onload = () => resolve(img);
     });
 
