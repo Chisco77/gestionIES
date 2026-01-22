@@ -2,7 +2,7 @@ node_modules/
 backend/uploads
 backend/Alumnos.xml
 subir_codigo.sh
-Dockerfile.frontend
+#Dockerfile.frontend
 backend/Dockerfile
 docker-compose.yml
 deploy_gestionIES.sh
