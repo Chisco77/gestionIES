@@ -48,13 +48,24 @@ async function volcarProfesoresALaBD(adminPassword) {
         searchRes.on("searchEntry", (entry) => {
           const members =
             entry.attributes.find((a) => a.type === "memberUid")?.values || [];
-          listaProfes = members;
+
+          // Filtrar UIDs inválidos
+          listaProfes.push(
+            ...members.filter(
+              (uid) => typeof uid === "string" && uid.trim() !== ""
+            )
+          );
         });
 
         searchRes.on("end", async () => {
-          console.log(`📌 Encontrados ${listaProfes.length} profesores en LDAP`);
+          // Eliminar duplicados por seguridad
+          listaProfes = [...new Set(listaProfes)];
 
-          for (let uid of listaProfes) {
+          console.log(
+            `📌 Encontrados ${listaProfes.length} profesores en LDAP`
+          );
+
+          for (const uid of listaProfes) {
             await procesarProfesor(client, uid);
           }
 
@@ -67,9 +78,15 @@ async function volcarProfesoresALaBD(adminPassword) {
   });
 }
 
-// Procesar un solo profesor y volcar a la BD 
+// Procesar un solo profesor y volcar a la BD
 async function procesarProfesor(client, uid) {
   return new Promise((resolve) => {
+    // Protección extra
+    if (!uid || uid.trim() === "") {
+      console.warn("⚠️ UID inválido, se omite:", uid);
+      return resolve();
+    }
+
     console.log(`→ Procesando ${uid}`);
 
     const options = {
@@ -85,20 +102,20 @@ async function procesarProfesor(client, uid) {
       }
 
       res.on("searchEntry", async (entry) => {
-        // Si employeeNumber no existe, se asigna cadena vacía
         const employeeNumber =
-          entry.attributes.find((a) => a.type === "employeeNumber")?.values[0] || "";
+          entry.attributes.find((a) => a.type === "employeeNumber")
+            ?.values[0] || "";
 
         try {
           await empleadosController.insertEmpleado({
             uid,
             tipo_usuario: 0,
-            dni: employeeNumber, // ahora nunca será null
+            dni: employeeNumber,
             asuntos_propios: 4,
             tipo_empleado: "funcionario de carrera",
             jornada: 0,
             email: "",
-            telefono: "",
+            telefono:"",
           });
           console.log(`   ✔ Insertado en empleados: ${uid}`);
         } catch (err) {
@@ -110,6 +127,5 @@ async function procesarProfesor(client, uid) {
     });
   });
 }
-
 
 module.exports = volcarProfesoresALaBD;
