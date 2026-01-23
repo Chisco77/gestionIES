@@ -79,7 +79,8 @@ export function TablaExtraescolares({ user, fecha }) {
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
-  const API_URL = import.meta.env.VITE_API_URL;
+  //  const API_URL = import.meta.env.VITE_API_URL;
+  const API_URL = `${import.meta.env.VITE_SERVER_URL}${import.meta.env.VITE_API_URL}`;
 
   // Estados de diálogos
   const [editOpen, setEditOpen] = useState(false);
@@ -99,9 +100,7 @@ export function TablaExtraescolares({ user, fecha }) {
       const res = await fetch(`${API_URL}/excel-dietas/generar-excel`, {
         method: "POST",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(actividad),
       });
 
