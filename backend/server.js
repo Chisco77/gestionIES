@@ -1,4 +1,4 @@
-/*require("dotenv").config();
+require("dotenv").config();
 
 const express = require("express");
 const session = require("express-session");
@@ -125,8 +125,8 @@ initServer().then((transporter) => {
   // Si quieres, puedes exportar el transporter globalmente
   app.locals.transporter = transporter;
 });
-*/
-require("dotenv").config();
+
+/*require("dotenv").config();
 
 const express = require("express");
 const session = require("express-session");
@@ -238,3 +238,4 @@ if (!isProduction) {
     console.log(`🚀 Servidor producción en puerto ${PORT}`);
   });
 }
+*/
