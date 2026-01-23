@@ -99,10 +99,10 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
         rows: 11,
         width: 70,
         height: 25.4,
-        marginX: 0, 
-        marginY: 8, 
+        marginX: 0,
+        marginY: 8,
         spacingX: 2.5,
-        spacingY: 0, 
+        spacingY: 0,
       },
     }[formato]; // estado
 
@@ -118,7 +118,7 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
     });
 
     // función para cargar foto del usuario
-    const loadUserImage = async (uid) => {
+    /*const loadUserImage = async (uid) => {
       const SERVER_URL = import.meta.env.VITE_SERVER_URL;
       const extensions = ["jpg", "jpeg", "png"];
       for (const ext of extensions) {
@@ -140,6 +140,23 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
         }
       }
       return null;
+    };*/
+
+    // función para cargar foto del usuario desde Nginx
+    const loadUserImage = async (uid) => {
+      const extensions = ["jpg", "jpeg", "png"];
+      for (const ext of extensions) {
+        // Ruta relativa a Nginx
+        const url = `/gestionIES/uploads/alumnos/${uid}.${ext}`;
+        try {
+          // hacemos HEAD para comprobar si existe
+          const res = await fetch(url, { method: "HEAD" });
+          if (res.ok) return url; // devolvemos URL directamente, jsPDF la puede cargar
+        } catch (e) {
+          console.warn(`No se pudo cargar ${uid}.${ext}`);
+        }
+      }
+      return null; // ninguna encontrada
     };
 
     // construir lista de etiquetas según nº elegido
@@ -167,6 +184,20 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
       const logoY = y + 3;
 
       // cargar imagen del alumno
+      /*const userImage = await loadUserImage(usuario.uid);
+      if (userImage) {
+        doc.addImage(userImage, "JPEG", logoX, logoY, imageWidth, imageHeight);
+      } else {
+        doc.addImage(
+          fallbackLogo,
+          "JPEG",
+          logoX,
+          logoY,
+          imageWidth,
+          imageHeight
+        );
+      }*/
+
       const userImage = await loadUserImage(usuario.uid);
       if (userImage) {
         doc.addImage(userImage, "JPEG", logoX, logoY, imageWidth, imageHeight);

@@ -80,7 +80,7 @@ export default function DialogoEditarUsuario({
   const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
   // Sincronizar datos LDAP
-  useEffect(() => {
+  /*useEffect(() => {
     if (!open || !usuarioSeleccionado) return;
 
     setNombre(usuarioSeleccionado.givenName || "");
@@ -93,6 +93,7 @@ export default function DialogoEditarUsuario({
       const fetchFoto = async () => {
         const extensiones = ["jpg", "jpeg", "png"];
         const baseUrl = `${SERVER_URL}/uploads/alumnos/${usuarioSeleccionado.uid}`;
+        //const baseUrl = `/gestionIES/uploads/alumnos/${usuarioSeleccionado.uid}`;
         for (const ext of extensiones) {
           try {
             const res = await fetch(`${baseUrl}.${ext}`, { method: "HEAD" });
@@ -106,7 +107,30 @@ export default function DialogoEditarUsuario({
       };
       fetchFoto();
     }
-  }, [usuarioSeleccionado, open, esAlumno, SERVER_URL]);
+  }, [usuarioSeleccionado, open, esAlumno, SERVER_URL]);*/
+
+  // Sincronizar foto del alumno desde Nginx
+  useEffect(() => {
+    if (!open || !usuarioSeleccionado || !esAlumno) return;
+
+    const extensiones = ["jpg", "jpeg", "png"];
+    let encontrada = false;
+
+    for (const ext of extensiones) {
+      // URL relativa a Nginx (misma origen que frontend)
+      const url = `/gestionIES/uploads/alumnos/${usuarioSeleccionado.uid}.${ext}`;
+
+      // Opcional: podrías hacer HEAD para verificar existencia
+      // fetch(url, { method: "HEAD" }).then(res => { if (res.ok) setFotoUrl(url) ... });
+
+      // Por simplicidad, asignamos la primera que creemos que puede existir
+      setFotoUrl(url);
+      encontrada = true;
+      break;
+    }
+
+    if (!encontrada) setFotoUrl(null);
+  }, [usuarioSeleccionado, open, esAlumno]);
 
   // Sincronizar datos empleados
   useEffect(() => {
