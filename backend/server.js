@@ -51,13 +51,15 @@ async function initServer() {
 
     // Middleware
     app.set("trust proxy", 1);
-    app.use(cors({
-      origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) callback(null, true);
-        else callback(new Error("Not allowed by CORS"));
-      },
-      credentials: true,
-    }));
+    app.use(
+      cors({
+        origin: (origin, callback) => {
+          if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+          else callback(new Error("Not allowed by CORS"));
+        },
+        credentials: true,
+      })
+    );
     app.use(express.json());
 
     app.use(
@@ -84,7 +86,14 @@ async function initServer() {
     app.use("/api/ldap", ldapRoutes);
     app.use("/api/db", dbRoutes);
     app.use("/api/excel-dietas", excelDietasRoutes);
-    app.use('/uploads/alumnos', express.static(path.join(__dirname, 'uploads/alumnos')));
+    //app.use('/uploads/alumnos', express.static(path.join(__dirname, 'uploads/alumnos')));
+    app.use(
+      "/uploads/alumnos",
+      cors({
+        origin: allowedOrigins,
+      }),
+      express.static(path.join(__dirname, "uploads/alumnos"))
+    );
 
     // Inicia el servidor HTTPS o HTTP
     if (!isProduction) {
@@ -93,7 +102,9 @@ async function initServer() {
         cert: fs.readFileSync("./ssl-dev/cert.pem"),
       };
       https.createServer(sslOptions, app).listen(PORT, () => {
-        console.log(`🚀 Servidor en https://localhost:${PORT} (desarrollo HTTPS)`);
+        console.log(
+          `🚀 Servidor en https://localhost:${PORT} (desarrollo HTTPS)`
+        );
       });
     } else {
       app.listen(PORT, "0.0.0.0", () => {
@@ -103,7 +114,6 @@ async function initServer() {
 
     // Devuelve el transporter para usar en tus rutas
     return transporter;
-
   } catch (error) {
     console.error("❌ Error iniciando el servidor:", error);
     process.exit(1);
@@ -111,7 +121,7 @@ async function initServer() {
 }
 
 // Inicializa el servidor
-initServer().then(transporter => {
+initServer().then((transporter) => {
   // Si quieres, puedes exportar el transporter globalmente
   app.locals.transporter = transporter;
 });
