@@ -1,4 +1,4 @@
-require("dotenv").config();
+/*require("dotenv").config();
 
 const express = require("express");
 const session = require("express-session");
@@ -125,3 +125,116 @@ initServer().then((transporter) => {
   // Si quieres, puedes exportar el transporter globalmente
   app.locals.transporter = transporter;
 });
+*/
+require("dotenv").config();
+
+const express = require("express");
+const session = require("express-session");
+const pgSession = require("connect-pg-simple")(session);
+const { Pool } = require("pg");
+const cors = require("cors");
+const fs = require("fs");
+const https = require("https");
+const path = require("path");
+
+// Rutas
+const authRoutes = require("./routes/authRoutes");
+const ldapRoutes = require("./routes/ldapRoutes");
+const dbRoutes = require("./routes/dbRoutes");
+const excelDietasRoutes = require("./routes/excelDietasRoutes");
+
+// Configuración del pool de PostgreSQL
+const pgPool = new Pool({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+});
+
+const app = express();
+const isProduction = process.env.NODE_ENV === "production";
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(express.json());
+
+// ⚡ CORS dinámico para desarrollo HTTPS
+if (!isProduction) {
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin === "https://localhost:5173") {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.setHeader(
+        "Access-Control-Allow-Methods",
+        "GET,POST,PUT,DELETE,OPTIONS"
+      );
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type,Authorization"
+      );
+    }
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+    next();
+  });
+} else {
+  app.use(
+    cors({
+      origin: allowedOrigins,
+      credentials: true,
+    })
+  );
+}
+
+// Sesiones
+app.use(
+  session({
+    store: new pgSession({
+      pool: pgPool,
+      tableName: "session",
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: true, // HTTPS
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 24,
+    },
+  })
+);
+
+// Rutas API
+app.use("/api", authRoutes);
+app.use("/api/ldap", ldapRoutes);
+app.use("/api/db", dbRoutes);
+app.use("/api/excel-dietas", excelDietasRoutes);
+
+// Servir imágenes alumnos con CORS
+app.use(
+  "/uploads/alumnos",
+  cors({
+    origin: !isProduction ? "https://localhost:5173" : allowedOrigins,
+    credentials: true,
+  }),
+  express.static(path.join(__dirname, "uploads/alumnos"))
+);
+
+// HTTPS desarrollo
+if (!isProduction) {
+  const sslOptions = {
+    key: fs.readFileSync("./ssl-dev/key.pem"),
+    cert: fs.readFileSync("./ssl-dev/cert.pem"),
+  };
+  https.createServer(sslOptions, app).listen(PORT, () => {
+    console.log(`🚀 Servidor desarrollo en https://localhost:${PORT}`);
+  });
+} else {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Servidor producción en puerto ${PORT}`);
+  });
+}

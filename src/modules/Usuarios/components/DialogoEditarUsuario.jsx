@@ -111,25 +111,32 @@ export default function DialogoEditarUsuario({
 
   // Sincronizar foto del alumno desde Nginx
   useEffect(() => {
-    if (!open || !usuarioSeleccionado || !esAlumno) return;
+    if (!open || !usuarioSeleccionado) return;
+    setNombre(usuarioSeleccionado.givenName || "");
+    setApellidos(usuarioSeleccionado.sn || "");
+    setUid(usuarioSeleccionado.uid || "");
+    setGrupo(usuarioSeleccionado.gidNumber || "");
+    setFotoUrl(null);
 
-    const extensiones = ["jpg", "jpeg", "png"];
-    let encontrada = false;
+    if (esAlumno) {
+      const extensiones = ["jpg", "jpeg", "png"];
+      let encontrada = false;
 
-    for (const ext of extensiones) {
-      // URL relativa a Nginx (misma origen que frontend)
-      const url = `/gestionIES/uploads/alumnos/${usuarioSeleccionado.uid}.${ext}`;
+      for (const ext of extensiones) {
+        // URL relativa a Nginx (misma origen que frontend)
+        const url = `/gestionIES/uploads/alumnos/${usuarioSeleccionado.uid}.${ext}`;
 
-      // Opcional: podrías hacer HEAD para verificar existencia
-      // fetch(url, { method: "HEAD" }).then(res => { if (res.ok) setFotoUrl(url) ... });
+        // Opcional: podrías hacer HEAD para verificar existencia
+        // fetch(url, { method: "HEAD" }).then(res => { if (res.ok) setFotoUrl(url) ... });
 
-      // Por simplicidad, asignamos la primera que creemos que puede existir
-      setFotoUrl(url);
-      encontrada = true;
-      break;
+        // Por simplicidad, asignamos la primera que creemos que puede existir
+        setFotoUrl(url);
+        encontrada = true;
+        break;
+      }
+
+      if (!encontrada) setFotoUrl(null);
     }
-
-    if (!encontrada) setFotoUrl(null);
   }, [usuarioSeleccionado, open, esAlumno]);
 
   // Sincronizar datos empleados
