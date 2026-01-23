@@ -96,7 +96,7 @@ export function TablaExtraescolares({ user, fecha }) {
 
   const handleGenerarExcel = async (actividad) => {
     try {
-      const res = await fetch(`${API_URL}/generar-excel`, {
+      const res = await fetch(`${API_URL}/excel-dietas/generar-excel`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -317,7 +317,7 @@ export function TablaExtraescolares({ user, fecha }) {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ estado: nuevoEstado }),
-        },
+        }
       );
       const r = await res.json();
       if (!res.ok) {
@@ -325,7 +325,7 @@ export function TablaExtraescolares({ user, fecha }) {
         return;
       }
       toast.success(
-        nuevoEstado === 1 ? "Actividad aceptada" : "Actividad rechazada",
+        nuevoEstado === 1 ? "Actividad aceptada" : "Actividad rechazada"
       );
       setDialogConfirmOpen(false);
     } catch (e) {
@@ -391,13 +391,13 @@ export function TablaExtraescolares({ user, fecha }) {
                     variant="outline"
                     className={cn(
                       "h-8 w-[240px] justify-start text-left text-sm",
-                      !fechaDesde && !fechaHasta && "text-muted-foreground",
+                      !fechaDesde && !fechaHasta && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {fechaDesde && fechaHasta
                       ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(
-                          fechaHasta,
+                          fechaHasta
                         ).toLocaleDateString()}`
                       : "Seleccionar rango"}
                   </Button>
@@ -413,7 +413,7 @@ export function TablaExtraescolares({ user, fecha }) {
                     }}
                     onSelect={(range) => {
                       setFechaDesde(
-                        range?.from ? formatLocalDate(range.from) : "",
+                        range?.from ? formatLocalDate(range.from) : ""
                       );
                       setFechaHasta(range?.to ? formatLocalDate(range.to) : "");
                     }}
@@ -516,7 +516,7 @@ export function TablaExtraescolares({ user, fecha }) {
                     <TableCell key={cell.id} className="py-0.5">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext(),
+                        cell.getContext()
                       )}
                     </TableCell>
                   ))}
