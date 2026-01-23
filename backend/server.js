@@ -26,63 +26,9 @@ const pgPool = new Pool({
 
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(o => o.trim()) || [];
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
+const INTERNAL_RANGE = "172.16.218.0/23";
 const PORT = process.env.PORT || 5000;
-
-// Middleware CORS seguro
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Permite peticiones sin origin (Postman, curl, backend)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      console.warn("CORS bloqueado:", origin);
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
-
-app.use(express.json());
-
-// Sesión
-app.use(
-  session({
-    store: new pgSession({
-      pool: pgPool,
-      tableName: "session",
-      createTableIfMissing: true,
-    }),
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: isProduction,
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 24, // 1 día
-    },
-  })
-);
-
-// Rutas
-app.use("/api", authRoutes);
-app.use("/api/ldap", ldapRoutes);
-app.use("/api/db", dbRoutes);
-app.use("/api/excel-dietas", excelDietasRoutes);
-
-// Static files con CORS
-app.use(
-  "/uploads/alumnos",
-  cors({
-    origin: allowedOrigins,
-  }),
-  express.static(path.join(__dirname, "uploads/alumnos"))
-);
 
 // Función para inicializar el servidor
 async function initServer() {
@@ -91,26 +37,75 @@ async function initServer() {
     await pgPool.connect();
     console.log("✅ Conexión a la base de datos establecida");
 
-    // Inicialización del envío de correos SMTP
+    // Inicialización del envío de correos SMTP aquí
     const nodemailer = require("nodemailer");
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_SECURE === "true",
+      secure: process.env.SMTP_SECURE === "true", // true para 465, false para otros puertos
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
     });
 
-    // Inicia servidor HTTPS o HTTP según entorno
+    // Middleware
+    app.set("trust proxy", 1);
+    app.use(
+      cors({
+        origin: (origin, callback) => {
+          if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+          else callback(new Error("Not allowed by CORS"));
+        },
+        credentials: true,
+      })
+    );
+    app.use(express.json());
+
+    app.use(
+      session({
+        store: new pgSession({
+          pool: pgPool,
+          tableName: "session",
+          createTableIfMissing: true,
+        }),
+        secret: process.env.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+          secure: isProduction,
+          httpOnly: true,
+          sameSite: "lax",
+          maxAge: 1000 * 60 * 60 * 24,
+        },
+      })
+    );
+
+    // Rutas
+    app.use("/api", authRoutes);
+    app.use("/api/ldap", ldapRoutes);
+    app.use("/api/db", dbRoutes);
+    app.use("/api/excel-dietas", excelDietasRoutes);
+
+    //app.use('/uploads/alumnos', express.static(path.join(__dirname, 'uploads/alumnos')));
+    app.use(
+      "/uploads/alumnos",
+      cors({
+        origin: allowedOrigins,
+      }),
+      express.static(path.join(__dirname, "uploads/alumnos"))
+    );
+
+    // Inicia el servidor HTTPS o HTTP
     if (!isProduction) {
       const sslOptions = {
         key: fs.readFileSync("./ssl-dev/key.pem"),
         cert: fs.readFileSync("./ssl-dev/cert.pem"),
       };
       https.createServer(sslOptions, app).listen(PORT, () => {
-        console.log(`🚀 Servidor en https://localhost:${PORT} (desarrollo HTTPS)`);
+        console.log(
+          `🚀 Servidor en https://localhost:${PORT} (desarrollo HTTPS)`
+        );
       });
     } else {
       app.listen(PORT, "0.0.0.0", () => {
@@ -118,16 +113,19 @@ async function initServer() {
       });
     }
 
-    // Exporta transporter si se necesita
-    app.locals.transporter = transporter;
+    // Devuelve el transporter para usar en tus rutas
+    return transporter;
   } catch (error) {
     console.error("❌ Error iniciando el servidor:", error);
     process.exit(1);
   }
 }
 
-initServer();
-
+// Inicializa el servidor
+initServer().then((transporter) => {
+  // Si quieres, puedes exportar el transporter globalmente
+  app.locals.transporter = transporter;
+});
 
 /*require("dotenv").config();
 
