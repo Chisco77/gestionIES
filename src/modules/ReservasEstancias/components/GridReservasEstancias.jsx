@@ -119,7 +119,7 @@ export function GridReservasEstancias({
               onChange={(e) => setTipoEstancia(e.target.value)}
               className="border p-1 rounded w-full text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
-              <option value="">Todos</option>
+              <option value="">Seleccionar tipo de estancia</option>
               <option value="Aula Polivalente">Aula Polivalente</option>
               <option value="Infolab">Infolab</option>
               <option value="Laboratorio">Laboratorio</option>
