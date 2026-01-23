@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { generatePermisosPdf } from "@/utils/Informes";
+import { ResumenAsuntosDia } from "./ResumenAsuntosDia";
+
 
 export function DialogoInsertarAsunto({ open, onClose, fecha }) {
   const [descripcion, setDescripcion] = useState("");
@@ -129,6 +131,8 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
           </DialogHeader>
 
           <div className="flex flex-col space-y-4 p-6">
+            {/* Resumen de asuntos del día */}
+            <ResumenAsuntosDia fecha={fecha} />
             <div>
               <label className="block text-sm font-medium mb-1">
                 Descripción

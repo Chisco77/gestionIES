@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ResumenAsuntosDia } from "./ResumenAsuntosDia";
 
 export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
   const [descripcion, setDescripcion] = useState("");
@@ -84,14 +85,19 @@ export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
         {/* ENCABEZADO */}
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
-            Editar Asunto Propio ({new Date(asunto?.fecha).toLocaleDateString("es-ES")})
+            Editar Asunto Propio (
+            {new Date(asunto?.fecha).toLocaleDateString("es-ES")})
           </DialogTitle>
         </DialogHeader>
 
         {/* CUERPO */}
         <div className="flex flex-col space-y-4 p-6">
+          {/* Resumen de asuntos del día */}
+          <ResumenAsuntosDia fecha={asunto?.fecha} />
           <div>
-            <label className="block text-sm font-medium mb-1">Descripción</label>
+            <label className="block text-sm font-medium mb-1">
+              Descripción
+            </label>
             <Input
               placeholder="Descripción del asunto propio"
               value={descripcion}

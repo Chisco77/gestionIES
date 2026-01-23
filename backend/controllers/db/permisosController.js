@@ -72,7 +72,7 @@ async function getPermisos(req, res) {
        FROM permisos
        ${where}
        ORDER BY fecha ASC`,
-      vals
+      vals,
     );
 
     res.json({ ok: true, asuntos: rows });
@@ -86,7 +86,7 @@ async function getPermisos(req, res) {
  * Obtener asuntos propios enriquecidos con nombre del profesor y asuntos_propios
  * ⚠ Evita recursion excesiva llamando LDAP en batch y enriqueciendo localmente
  */
-async function getPermisosEnriquecidos(req, res) {
+/*async function getPermisosEnriquecidos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession)
@@ -163,6 +163,130 @@ async function getPermisosEnriquecidos(req, res) {
       error: "Error obteniendo permisos enriquecidos",
     });
   }
+}*/
+
+async function getPermisosEnriquecidos(req, res) {
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession)
+      return res
+        .status(401)
+        .json({ ok: false, error: "No autenticado en LDAP" });
+
+    const { uid, fecha, descripcion, estado, tipo } = req.query;
+    const filtros = [];
+    const vals = [];
+    let i = 0;
+
+    if (uid) filtros.push(`ap.uid = $${++i}`) && vals.push(uid);
+    if (fecha) filtros.push(`ap.fecha = $${++i}`) && vals.push(fecha);
+    if (descripcion)
+      filtros.push(`ap.descripcion ILIKE $${++i}`) &&
+        vals.push(`%${descripcion}%`);
+    if (typeof estado !== "undefined")
+      filtros.push(`ap.estado = $${++i}`) && vals.push(Number(estado));
+    if (typeof tipo !== "undefined")
+      filtros.push(`ap.tipo = $${++i}`) && vals.push(Number(tipo));
+
+    const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
+
+    // 1️⃣ Obtener permisos filtrados con created_at
+    const { rows: permisos } = await db.query(
+      `SELECT 
+         ap.id, 
+         ap.uid, 
+         TO_CHAR(ap.fecha, 'YYYY-MM-DD') AS fecha, 
+         ap.descripcion, 
+         ap.estado, 
+         ap.tipo,
+         ap.created_at
+       FROM permisos ap
+       ${where}`,
+      vals,
+    );
+
+    const uids = [...new Set(permisos.map((p) => p.uid))];
+
+    // 2️⃣ Obtener asuntos_propios de empleados
+    let empleadosMap = {};
+    if (uids.length > 0) {
+      const { rows: empleados } = await db.query(
+        `SELECT uid, asuntos_propios FROM empleados WHERE uid = ANY($1)`,
+        [uids],
+      );
+      empleadosMap = empleados.reduce((acc, emp) => {
+        acc[emp.uid] = emp;
+        return acc;
+      }, {});
+    }
+
+    // 3️⃣ Obtener nombres de profesores del LDAP en batch
+    const nombreMap = {};
+    for (const p of permisos) {
+      if (!nombreMap[p.uid]) {
+        nombreMap[p.uid] = await new Promise((resolve) => {
+          buscarPorUid(ldapSession, p.uid, (err, datos) => {
+            if (!err && datos)
+              resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
+            else resolve("Profesor desconocido");
+          });
+        });
+      }
+    }
+
+    // 4️⃣ Calcular fechas de curso escolar
+    const fechaPermiso = fecha ? new Date(fecha) : new Date();
+    let yearInicioCurso = fechaPermiso.getFullYear();
+    if (fechaPermiso.getMonth() < 8) yearInicioCurso -= 1; // antes de septiembre
+    const fechaInicioCurso = `${yearInicioCurso}-09-01`;
+    const fechaFinCurso = `${yearInicioCurso + 1}-06-30`;
+
+    // 5️⃣ Contar días disfrutados por uid
+    let diasMap = {};
+    if (uids.length > 0) {
+      const { rows: diasDisfrutados } = await db.query(
+        `SELECT uid, COUNT(*) AS dias_disfrutados
+         FROM permisos
+         WHERE uid = ANY($1)
+           AND tipo = 13
+           AND estado = 1
+           AND fecha >= $2
+           AND fecha <= $3
+         GROUP BY uid`,
+        [uids, fechaInicioCurso, fechaFinCurso],
+      );
+      diasMap = diasDisfrutados.reduce((acc, row) => {
+        acc[row.uid] = Number(row.dias_disfrutados);
+        return acc;
+      }, {});
+    }
+
+    // Enriquecer permisos
+    let asuntosEnriquecidos = permisos.map((permiso) => {
+      const empleado = empleadosMap[permiso.uid]; // <-- CORRECTO
+      return {
+        ...permiso,
+        nombreProfesor: nombreMap[permiso.uid],
+        dias_disfrutados: diasMap[permiso.uid] ?? 0,
+        ap_total: empleado?.asuntos_propios ?? 0, // ahora sí
+      };
+    });
+
+    // 7️⃣ Ordenar: primero por dias_disfrutados, luego por created_at
+    asuntosEnriquecidos.sort((a, b) => {
+      if ((a.dias_disfrutados ?? 0) !== (b.dias_disfrutados ?? 0)) {
+        return (a.dias_disfrutados ?? 0) - (b.dias_disfrutados ?? 0);
+      }
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
+
+    res.json({ ok: true, asuntos: asuntosEnriquecidos });
+  } catch (err) {
+    console.error("[getPermisosEnriquecidos] Error:", err);
+    res
+      .status(500)
+      .json({ ok: false, error: "Error obteniendo permisos enriquecidos" });
+  }
 }
 
 /**
@@ -210,7 +334,7 @@ async function insertAsuntoPropio(req, res) {
       return res.status(400).json({
         ok: false,
         error: `Faltan restricciones obligatorias: ${faltan.join(
-          ", "
+          ", ",
         )}. Deben definirse antes de solicitar asuntos propios.`,
       });
     }
@@ -230,7 +354,7 @@ async function insertAsuntoPropio(req, res) {
     // === Comprobar si hay autorización especial para esa fecha y usuario
     const { rows: autorizaciones } = await db.query(
       `SELECT id FROM asuntos_permitidos WHERE uid = $1 AND fecha = $2`,
-      [uid, fecha]
+      [uid, fecha],
     );
     const tieneAutorizacion = autorizaciones.length > 0;
 
@@ -247,7 +371,7 @@ async function insertAsuntoPropio(req, res) {
     // Comprobar máximo de días del usuario. Solo cuento aquellos APs cuyo estado es aceptado (1)
     const { rows: totalCurso } = await db.query(
       `SELECT COUNT(*)::int AS total FROM permisos WHERE uid = $1 AND tipo = 13 AND estado = 1`,
-      [uid]
+      [uid],
     );
     if (totalCurso[0].total >= maxDias)
       return res.status(400).json({
@@ -258,7 +382,7 @@ async function insertAsuntoPropio(req, res) {
     // --- Si NO tiene autorización, aplicamos todas las restricciones normales ---
     if (!tieneAutorizacion) {
       const diffDias = Math.ceil(
-        (fechaSolicitada - hoy) / (1000 * 60 * 60 * 24)
+        (fechaSolicitada - hoy) / (1000 * 60 * 60 * 24),
       );
 
       // Antelación mínima
@@ -278,7 +402,7 @@ async function insertAsuntoPropio(req, res) {
       // Concurrencia
       const { rows: concurrencia } = await db.query(
         `SELECT COUNT(*)::int AS total FROM permisos WHERE fecha = $1 AND tipo = 13`,
-        [fecha]
+        [fecha],
       );
 
       if (concurrencia[0].total >= concurrentes)
@@ -294,7 +418,7 @@ async function insertAsuntoPropio(req, res) {
          AND fecha BETWEEN ($2::date - INTERVAL '10 days')
                        AND ($2::date + INTERVAL '10 days')
          ORDER BY fecha`,
-        [uid, fecha]
+        [uid, fecha],
       );
 
       const fechas = diasCercanos.map((r) => new Date(r.fecha).getTime());
@@ -306,7 +430,7 @@ async function insertAsuntoPropio(req, res) {
 
       for (let i = 1; i < fechas.length; i++) {
         const diff = Math.round(
-          (fechas[i] - fechas[i - 1]) / (1000 * 60 * 60 * 24)
+          (fechas[i] - fechas[i - 1]) / (1000 * 60 * 60 * 24),
         );
         consecutivosActual = diff === 1 ? consecutivosActual + 1 : 1;
         if (consecutivosActual > maxConsecutivos)
@@ -325,7 +449,7 @@ async function insertAsuntoPropio(req, res) {
       `INSERT INTO permisos (uid, fecha, descripcion, tipo)
        VALUES ($1, $2, $3, $4)
        RETURNING id, uid, fecha, descripcion, tipo`,
-      [uid, fecha, descripcion, tipo]
+      [uid, fecha, descripcion, tipo],
     );
 
     // Responder antes de enviar email
@@ -335,7 +459,7 @@ async function insertAsuntoPropio(req, res) {
     setImmediate(async () => {
       try {
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'asuntos-propios' LIMIT 1`
+          `SELECT emails FROM avisos WHERE modulo = 'asuntos-propios' LIMIT 1`,
         );
 
         const emails = (avisos[0]?.emails || [])
@@ -348,8 +472,8 @@ async function insertAsuntoPropio(req, res) {
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, uid, (err, datos) =>
             resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
-            )
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" },
+            ),
           );
         });
 
@@ -368,7 +492,7 @@ async function insertAsuntoPropio(req, res) {
         });
 
         console.log(
-          `[insertAsuntoPropio] Email enviado a: ${emails.join(", ")}`
+          `[insertAsuntoPropio] Email enviado a: ${emails.join(", ")}`,
         );
       } catch (errMail) {
         console.error("[insertAsuntoPropio] Error enviando email:", errMail);
@@ -409,7 +533,7 @@ async function insertPermiso(req, res) {
       `INSERT INTO permisos (uid, fecha, descripcion, tipo)
        VALUES ($1, $2, $3, $4)
        RETURNING id, uid, fecha, descripcion, tipo`,
-      [uid, fecha, descripcion, tipo]
+      [uid, fecha, descripcion, tipo],
     );
 
     // Respuesta inmediata
@@ -421,7 +545,7 @@ async function insertPermiso(req, res) {
     setImmediate(async () => {
       try {
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'permisos' LIMIT 1`
+          `SELECT emails FROM avisos WHERE modulo = 'permisos' LIMIT 1`,
         );
 
         const emailsRaw = avisos[0]?.emails || [];
@@ -431,7 +555,7 @@ async function insertPermiso(req, res) {
         const ldapSession = req.session?.ldap;
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, uid, (err, datos) =>
-            resolve(datos || { givenName: "Desconocido", sn: "" })
+            resolve(datos || { givenName: "Desconocido", sn: "" }),
           );
         });
 
@@ -549,7 +673,7 @@ async function updateEstadoPermiso(req, res) {
       // Obtener el permiso que se quiere aceptar
       const { rows: permisoRows } = await db.query(
         `SELECT uid, tipo, estado FROM permisos WHERE id = $1`,
-        [id]
+        [id],
       );
 
       const permiso = permisoRows[0];
@@ -569,7 +693,7 @@ async function updateEstadoPermiso(req, res) {
         if (!maxDias || maxDias === 0) {
           const restricciones = await getRestriccionesAsuntos();
           const diasRestriccion = restricciones.find(
-            (r) => r.descripcion === "dias"
+            (r) => r.descripcion === "dias",
           );
           maxDias = diasRestriccion?.valor_num ?? 0;
         }
@@ -584,7 +708,7 @@ async function updateEstadoPermiso(req, res) {
           `SELECT COUNT(*)::int AS total
      FROM permisos
      WHERE uid = $1 AND tipo = 13 AND estado = 1`,
-          [permiso.uid]
+          [permiso.uid],
         );
 
         if (concedidos[0].total >= maxDias)
@@ -611,7 +735,7 @@ async function updateEstadoPermiso(req, res) {
     setImmediate(async () => {
       try {
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'asuntos-propios' LIMIT 1`
+          `SELECT emails FROM avisos WHERE modulo = 'asuntos-propios' LIMIT 1`,
         );
         const emailsRaw = avisos[0]?.emails || [];
         const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
@@ -621,8 +745,8 @@ async function updateEstadoPermiso(req, res) {
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, asunto.uid, (err, datos) =>
             resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
-            )
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" },
+            ),
           );
         });
 
@@ -643,7 +767,7 @@ async function updateEstadoPermiso(req, res) {
         });
 
         console.log(
-          `[updateEstadoPermiso] Email enviado a: ${emails.join(", ")}`
+          `[updateEstadoPermiso] Email enviado a: ${emails.join(", ")}`,
         );
       } catch (errMail) {
         console.error("[updateEstadoPermiso] Error enviando email:", errMail);

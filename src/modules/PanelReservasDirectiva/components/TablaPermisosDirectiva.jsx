@@ -53,7 +53,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
 import { Printer, FileText } from "lucide-react";
 
 import {
@@ -71,12 +70,8 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-import { generateListadoPermisosProfesores } from "../../../utils/Informes";
-
-import {
-  MAPEO_TIPOS_PERMISOS,
-  textoTipoPermiso,
-} from "@/utils/mapeoTiposPermisos";
+import { generateListadoPermisosProfesores } from "@/utils/Informes";
+import { MAPEO_TIPOS_PERMISOS } from "@/utils/mapeoTiposPermisos";
 
 export function TablaPermisosDirectiva({ fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha", desc: false }]);
@@ -103,16 +98,12 @@ export function TablaPermisosDirectiva({ fecha }) {
     const filasFiltradas = table
       .getFilteredRowModel()
       .rows.map((row) => row.original);
-
-    // aquí llamas a tu util de informes
     generateListadoPermisosProfesores(filasFiltradas);
-
-    //console.log("Generar PDF con:", filasFiltradas);
   };
 
   // Tabla
   const table = useReactTable({
-    data: asuntosPropiosTodos || [], // <- aquí
+    data: asuntosPropiosTodos,
     columns: [
       ...columnsPermisos(),
       {
@@ -173,7 +164,7 @@ export function TablaPermisosDirectiva({ fecha }) {
     },
   });
 
-  // ----- Actualizamos el filtro de rango cuando cambia la prop fecha -----
+  // Actualizamos el filtro de rango cuando cambia la prop fecha
   useEffect(() => {
     if (fecha) {
       setFechaDesde(fecha);
@@ -201,7 +192,7 @@ export function TablaPermisosDirectiva({ fecha }) {
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ estado: nuevoEstado }),
-        }
+        },
       );
 
       const result = await res.json();
@@ -212,13 +203,15 @@ export function TablaPermisosDirectiva({ fecha }) {
       }
 
       // Actualizar tabla localmente
-      const index = data.findIndex((a) => a.id === asuntoSeleccionado.id);
-      if (index !== -1) data[index].estado = nuevoEstado;
+      const index = asuntosPropiosTodos.findIndex(
+        (a) => a.id === asuntoSeleccionado.id,
+      );
+      if (index !== -1) asuntosPropiosTodos[index].estado = nuevoEstado;
 
       toast.success(
         accion === "aceptar"
           ? "Asunto aceptado correctamente"
-          : "Asunto rechazado correctamente"
+          : "Asunto rechazado correctamente",
       );
 
       setDialogOpen(false);
@@ -240,24 +233,19 @@ export function TablaPermisosDirectiva({ fecha }) {
   const formatLocalDate = (d) => d.toLocaleDateString("sv-SE");
 
   const limpiarTodosLosFiltros = () => {
-    // Reset filtros de columnas
     table.getAllColumns().forEach((col) => {
       if (col.getCanFilter()) col.setFilterValue("");
     });
 
-    // Reset rango de fechas
     setFechaDesde("");
     setFechaHasta("");
-
-    // Reset switch "Solo pendientes"
     table.getColumn("estado")?.setFilterValue(null);
 
-    // Reset estado interno de tanstack
     setColumnFilters([]);
     table.resetColumnFilters();
     table.resetGlobalFilter();
-    table.resetSorting(); // Si quieres que también quite la ordenación
-    table.resetPagination(); // Opcional, si quieres volver a la página 1
+    table.resetSorting();
+    table.resetPagination();
   };
 
   return (
@@ -302,7 +290,6 @@ export function TablaPermisosDirectiva({ fecha }) {
             <label className="text-xs font-medium text-muted-foreground">
               Tipo
             </label>
-
             <Select
               value={
                 table.getColumn("tipo")?.getFilterValue()?.toString() ?? "ALL"
@@ -316,10 +303,8 @@ export function TablaPermisosDirectiva({ fecha }) {
               <SelectTrigger className="h-8 w-[260px] text-sm">
                 <SelectValue placeholder="Todos los tipos" />
               </SelectTrigger>
-
               <SelectContent>
                 <SelectItem value="ALL">Todos</SelectItem>
-
                 {Object.entries(MAPEO_TIPOS_PERMISOS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}
@@ -341,18 +326,15 @@ export function TablaPermisosDirectiva({ fecha }) {
                     variant="outline"
                     className={cn(
                       "w-[260px] justify-start text-left font-normal h-8 text-sm",
-                      !fechaDesde && !fechaHasta && "text-muted-foreground"
+                      !fechaDesde && !fechaHasta && "text-muted-foreground",
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {fechaDesde && fechaHasta
-                      ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(
-                          fechaHasta
-                        ).toLocaleDateString()}`
+                      ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(fechaHasta).toLocaleDateString()}`
                       : "Seleccionar rango"}
                   </Button>
                 </PopoverTrigger>
-
                 <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="range"
@@ -364,7 +346,7 @@ export function TablaPermisosDirectiva({ fecha }) {
                     }}
                     onSelect={(range) => {
                       setFechaDesde(
-                        range?.from ? formatLocalDate(range.from) : ""
+                        range?.from ? formatLocalDate(range.from) : "",
                       );
                       setFechaHasta(range?.to ? formatLocalDate(range.to) : "");
                     }}
@@ -384,10 +366,8 @@ export function TablaPermisosDirectiva({ fecha }) {
             </div>
           </div>
 
-          {/* Switch estado */}
-          {/* Acciones derecha: switch + informes */}
+          {/* Switch estado y menú informes */}
           <div className="flex items-center gap-3 ml-auto">
-            {/* Switch estado */}
             <div className="flex items-center gap-2">
               <Switch
                 checked={table.getColumn("estado")?.getFilterValue() === true}
@@ -402,17 +382,15 @@ export function TablaPermisosDirectiva({ fecha }) {
               </span>
             </div>
 
-            {/* Menú informes */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="h-8 w-8">
                   <Printer className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleGenerarPdf}>
-                   <FileText className="mr-2 h-4 w-4 text-red-500" />
+                  <FileText className="mr-2 h-4 w-4 text-red-500" />
                   Listado permisos por profesor
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -439,7 +417,7 @@ export function TablaPermisosDirectiva({ fecha }) {
                       >
                         {flexRender(
                           header.column.columnDef.header,
-                          header.getContext()
+                          header.getContext(),
                         )}
                         {{
                           asc: "↑",
@@ -461,7 +439,7 @@ export function TablaPermisosDirectiva({ fecha }) {
                     <TableCell key={cell.id} className="py-0.5">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}
@@ -483,10 +461,8 @@ export function TablaPermisosDirectiva({ fecha }) {
 
       {/* PAGINACIÓN */}
       <div className="flex flex-col sm:flex-row items-center py-1 space-y-4 sm:space-y-0 text-xs">
-        {/* Izquierda vacío para empujar el centro */}
         <div className="flex-1"></div>
         <div className="flex items-center justify-center space-x-1 flex-1">
-          {" "}
           <Button
             variant="outline"
             size="icon"
@@ -527,9 +503,7 @@ export function TablaPermisosDirectiva({ fecha }) {
             <ChevronsRight className="w-3 h-3" />
           </Button>
         </div>
-
         <div className="flex-1 text-right text-xs text-muted-foreground">
-          {" "}
           Total de registros: {table.getFilteredRowModel().rows.length}
         </div>
       </div>
@@ -537,13 +511,13 @@ export function TablaPermisosDirectiva({ fecha }) {
       <DialogoConfirmacion
         open={dialogOpen}
         setOpen={setDialogOpen}
-        asunto={asuntoSeleccionado} // <-- esto faltaba
+        asunto={asuntoSeleccionado}
         mensaje={
           accion === "aceptar"
             ? "¿Desea aceptar este asunto propio?"
             : "¿Desea rechazar este asunto propio?"
         }
-        accion={accion} //
+        accion={accion}
         onConfirm={confirmarAccion}
       />
     </div>
