@@ -511,6 +511,7 @@ export function generateListadoAPs(profesores = []) {
 
   doc.save("Listado_Profesores.pdf");
 }
+
 /**
  * Genera un PDF con los asuntos propios agrupados por profesor
  *
@@ -522,14 +523,8 @@ export function generateListadoPermisosProfesores(permisos = []) {
     return;
   }
 
-  // --- Mapas auxiliares ---
-  const estadosMap = {
-    0: "Pendiente",
-    1: "Aceptado",
-    2: "Rechazado",
-  };
+  const estadosMap = { 0: "Pendiente", 1: "Aceptado", 2: "Rechazado" };
 
-  // --- Agrupar por profesor ---
   const permisosPorProfesor = permisos.reduce((acc, permiso) => {
     const nombre = permiso.nombreProfesor || "Sin nombre";
     if (!acc[nombre]) acc[nombre] = [];
@@ -537,19 +532,23 @@ export function generateListadoPermisosProfesores(permisos = []) {
     return acc;
   }, {});
 
-  // --- Ordenar permisos de cada profesor por fecha ---
   Object.values(permisosPorProfesor).forEach((lista) =>
     lista.sort((a, b) => new Date(a.fecha) - new Date(b.fecha)),
   );
 
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = 210;
+  const pageHeight = 297;
   const marginLeft = 15;
   const marginTop = 20;
   const marginBottom = 20;
   let y = marginTop;
 
-  // --- Cabecera ---
+  const espacioEntreProfesores = 8;
+  const lineHeight = 5;
+  const resumenHeight = 14 + 3 + 6;
+
+  // --- Cabecera general ---
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.text("Listado de Permisos por Profesor", pageWidth / 2, y, {
@@ -557,29 +556,45 @@ export function generateListadoPermisosProfesores(permisos = []) {
   });
   y += 12;
 
-  // --- Total profesores ---
-  const nombresProfesores = Object.keys(permisosPorProfesor).sort(); // <-- orden alfabético
+  const nombresProfesores = Object.keys(permisosPorProfesor).sort();
   doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
   doc.text(`Total profesores: ${nombresProfesores.length}`, marginLeft, y);
   y += 10;
 
-  // --- Medidas de columnas ---
   const colFechaX = marginLeft;
   const colTipoX = marginLeft + 28;
   const colEstadoX = marginLeft + 115;
   const colDescX = marginLeft + 145;
 
-  const colTipoWidth = 80;
-  const colEstadoWidth = 25;
-  const colDescWidth = 50;
-
-  const lineHeight = 5;
-
   // --- Contenido ---
   nombresProfesores.forEach((nombreProfesor) => {
     const listaPermisos = permisosPorProfesor[nombreProfesor];
 
-    if (y > 260) {
+    // --- Calcular altura mínima para evitar huérfanos ---
+    const firstRow = listaPermisos[0];
+    const tipoLinesFirst = doc.splitTextToSize(
+      getDescripcionTipoPermiso(firstRow.tipo),
+      80,
+    ).length;
+    const estadoLinesFirst = doc.splitTextToSize(
+      estadosMap[firstRow.estado] ?? "—",
+      25,
+    ).length;
+    const descLinesFirst = doc.splitTextToSize(
+      firstRow.descripcion || "",
+      50,
+    ).length;
+    const firstRowHeight =
+      Math.max(tipoLinesFirst, estadoLinesFirst, descLinesFirst, 1) *
+      lineHeight;
+
+    const headerHeight = 8; // encabezado tabla
+    const nombreHeight = 10; // nombre + línea
+    const minSpaceNeeded =
+      nombreHeight + headerHeight + firstRowHeight + resumenHeight;
+
+    if (y + minSpaceNeeded > pageHeight - marginBottom) {
       doc.addPage();
       y = marginTop;
     }
@@ -589,49 +604,57 @@ export function generateListadoPermisosProfesores(permisos = []) {
     doc.setFontSize(12);
     doc.text(nombreProfesor, marginLeft, y);
     y += 4;
-
     doc.setLineWidth(0.5);
     doc.line(marginLeft, y, pageWidth - marginLeft, y);
     y += 6;
 
-    // --- Encabezado de tabla ---
-    doc.setFontSize(10);
-    doc.text("Fecha", colFechaX, y);
-    doc.text("Tipo de permiso", colTipoX, y);
-    doc.text("Estado", colEstadoX, y);
-    doc.text("Descripción", colDescX, y);
-    y += 4;
+    // --- Encabezado tabla ---
+    function printTableHeader() {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("Fecha", colFechaX, y);
+      doc.text("Tipo de permiso", colTipoX, y);
+      doc.text("Estado", colEstadoX, y);
+      doc.text("Descripción", colDescX, y);
+      y += 4;
+      doc.setLineWidth(0.3);
+      doc.line(marginLeft, y, pageWidth - marginLeft, y);
+      y += 4;
+    }
 
-    doc.setLineWidth(0.3);
-    doc.line(marginLeft, y, pageWidth - marginLeft, y);
-    y += 4;
+    printTableHeader();
 
     // --- Filas ---
-    doc.setFont("helvetica", "normal");
-
     listaPermisos.forEach((permiso) => {
       const fechaTxt = new Date(permiso.fecha).toLocaleDateString();
       const tipoTxt = getDescripcionTipoPermiso(permiso.tipo);
       const estadoTxt = estadosMap[permiso.estado] ?? "—";
       const descTxt = permiso.descripcion || "";
 
-      const tipoLines = doc.splitTextToSize(tipoTxt, colTipoWidth);
-      const estadoLines = doc.splitTextToSize(estadoTxt, colEstadoWidth);
-      const descLines = doc.splitTextToSize(descTxt, colDescWidth);
+      const tipoLines = doc.splitTextToSize(tipoTxt, 80).join("\n");
+      const estadoLines = doc.splitTextToSize(estadoTxt, 25).join("\n");
+      const descLines = doc.splitTextToSize(descTxt, 50).join("\n");
 
       const rowLines = Math.max(
-        tipoLines.length,
-        estadoLines.length,
-        descLines.length,
+        tipoLines.split("\n").length,
+        estadoLines.split("\n").length,
+        descLines.split("\n").length,
         1,
       );
       const rowHeight = rowLines * lineHeight;
 
-      if (y + rowHeight > 297 - marginBottom) {
+      if (y + rowHeight + resumenHeight > pageHeight - marginBottom) {
         doc.addPage();
         y = marginTop;
+        printTableHeader();
       }
 
+      // Color según estado
+      if (permiso.estado === 1) doc.setTextColor(0, 120, 0);
+      else if (permiso.estado === 2) doc.setTextColor(180, 0, 0);
+      else doc.setTextColor(0, 0, 0);
+
+      doc.setFont("helvetica", "normal");
       doc.text(fechaTxt, colFechaX, y);
       doc.text(tipoLines, colTipoX, y);
       doc.text(estadoLines, colEstadoX, y);
@@ -642,25 +665,99 @@ export function generateListadoPermisosProfesores(permisos = []) {
 
     y += 4;
 
-    // --- Resumen al pie del profesor ---
-    const solicitados = listaPermisos.filter((p) => p.tipo === 13).length;
-    const disfrutados = listaPermisos.filter(
-      (p) => p.tipo === 13 && p.estado === 1,
-    ).length;
-    const disponibles = (listaPermisos[0]?.asuntos_propios ?? 0) - disfrutados;
+    // --- Resumen ---
+    const permisosAP = listaPermisos.filter((p) => p.tipo === 13);
+    const solicitados = permisosAP.length;
+    const aceptados = permisosAP.filter((p) => p.estado === 1).length;
+    const rechazados = permisosAP.filter((p) => p.estado === 2).length;
+    const apTotal = listaPermisos[0]?.ap_total ?? 0;
+    const disponibles = apTotal - aceptados;
 
-    const resumenTxt = `Asuntos Propios  solicitados ${solicitados}   disfrutados ${disfrutados}   disponibles ${disponibles}`;
+    const boxWidth = 120;
+    const boxHeight = 14;
+    const labelHeight = 3;
+    const totalHeightNeeded = boxHeight + labelHeight + 6;
 
-    if (y + lineHeight > 297 - marginBottom) {
+    if (y + totalHeightNeeded > pageHeight - marginBottom) {
       doc.addPage();
       y = marginTop;
     }
 
+    const boxX = pageWidth - marginLeft - boxWidth;
+    const boxY = y + labelHeight;
+
     doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Resumen Asuntos Propios", boxX + boxWidth, y + 1, {
+      align: "right",
+    });
+
+    doc.setLineWidth(0.4);
+    doc.rect(boxX, boxY, boxWidth, boxHeight);
+
+    const colWidth = boxWidth / 4;
+    const headerY = boxY + 5;
+    const valueY = boxY + 10;
+
+    doc.setFontSize(9);
+    doc.text("Solicitados", boxX + colWidth * 0.5, headerY, {
+      align: "center",
+    });
+    doc.text("Aceptados", boxX + colWidth * 1.5, headerY, { align: "center" });
+    doc.text("Rechazados", boxX + colWidth * 2.5, headerY, { align: "center" });
+    doc.text("Disponibles", boxX + colWidth * 3.5, headerY, {
+      align: "center",
+    });
+
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(resumenTxt, pageWidth - marginLeft, y, { align: "right" });
-    y += 10;
+    doc.setTextColor(0, 0, 0);
+    doc.text(String(solicitados), boxX + colWidth * 0.5, valueY, {
+      align: "center",
+    });
+    doc.text(String(aceptados), boxX + colWidth * 1.5, valueY, {
+      align: "center",
+    });
+    if (rechazados > 0) doc.setTextColor(180, 0, 0);
+    doc.text(String(rechazados), boxX + colWidth * 2.5, valueY, {
+      align: "center",
+    });
+    doc.setTextColor(disponibles > 0 ? 0 : 0, disponibles > 0 ? 120 : 0, 0);
+    doc.text(String(disponibles), boxX + colWidth * 3.5, valueY, {
+      align: "center",
+    });
+
+    doc.setTextColor(0, 0, 0);
+    y += totalHeightNeeded + espacioEntreProfesores;
   });
+
+  // --- Pie de página ---
+  const totalPages = doc.getNumberOfPages();
+  const now = new Date();
+  const fecha = now.toLocaleDateString();
+  const hora = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    const yPie = pageHeight - 10;
+
+    // Línea horizontal sobre el pie
+    doc.setLineWidth(0.3);
+    doc.line(marginLeft, yPie - 3, pageWidth - marginLeft, yPie - 3);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+
+    // Fecha y hora a la izquierda
+    doc.text(`Informe generado el ${fecha} a las ${hora}`, marginLeft, yPie);
+
+    // Número de página a la derecha
+    doc.text(`Página ${i} de ${totalPages}`, pageWidth - marginLeft, yPie, {
+      align: "right",
+    });
+  }
 
   doc.save("Listado_Asuntos_Propios_Profesores.pdf");
 }

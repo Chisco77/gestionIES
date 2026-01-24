@@ -151,7 +151,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
               onClick={handleGuardar}
               disabled={mutation.isLoading}
             >
-              {mutation.isLoading ? "Guardando..." : "Guardar"}
+              {mutation.isLoading ? "Guardando..." : "Solicitar Asunto Propio"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -162,7 +162,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
         <DialogContent className="max-w-sm rounded-lg">
           <DialogHeader>
             <DialogTitle className="text-center">
-              Asunto insertado correctamente
+              Petición de Asunto Propio registrada correctamente
             </DialogTitle>
           </DialogHeader>
           <p className="text-center text-sm text-gray-600">

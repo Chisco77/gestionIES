@@ -26,7 +26,7 @@ export function ResumenAsuntosDia({ fecha }) {
 
   if (isLoading) return <p>Cargando asuntos propios...</p>;
   if (error) return <p className="text-red-500">Error cargando datos</p>;
-  if (!asuntos.length) return <p>No hay asuntos propios para este día.</p>;
+  //if (!asuntos.length) return <p>No hay asuntos propios para este día.</p>;
 
   // Ordenar: días disfrutados asc, luego created_at asc
   const asuntosOrdenados = [...asuntos].sort((a, b) => {

@@ -101,7 +101,7 @@ import { textoTipoPermiso } from "@/utils/mapeoTiposPermisos";
 export const columnsPermisos = (onAceptar, onRechazar) => [
   {
     accessorKey: "fecha",
-    header: "FechaPeticion", // renombrada
+    header: "Día Solicitado", // renombrada
     cell: ({ row }) => {
       const fecha = new Date(row.original.fecha);
       return fecha.toLocaleDateString();
