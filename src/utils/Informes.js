@@ -519,7 +519,7 @@ export function generateListadoAPs(profesores = []) {
  */
 export function generateListadoPermisosProfesores(permisos = []) {
   if (!permisos || permisos.length === 0) {
-    alert("No hay asuntos propios para generar el informe.");
+    alert("No hay permisos para generar el informe.");
     return;
   }
 

@@ -28,6 +28,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 export function PanelReservas({ uid, loading = false }) {
   // ===== Selección y diálogos =====
   const [reservaSeleccionada, setReservaSeleccionada] = useState(null);
@@ -75,7 +78,7 @@ export function PanelReservas({ uid, loading = false }) {
   const handleEliminarAsunto = (asunto) => {
     if (asunto.estado === 1) {
       toast.warning(
-        "No se puede eliminar un asunto propio que ha sido aceptado."
+        "No se puede eliminar un asunto propio que ha sido aceptado.",
       );
       return; // no abrir el diálogo
     }
@@ -91,7 +94,7 @@ export function PanelReservas({ uid, loading = false }) {
   const handleEliminarExtraescolar = (actividad) => {
     if (actividad.estado == 1) {
       toast.warning(
-        "No se puede eliminar una actividad extraescolar que ha sido aceptada."
+        "No se puede eliminar una actividad extraescolar que ha sido aceptada.",
       );
       return; // no abrir el diálogo
     }
@@ -159,13 +162,13 @@ export function PanelReservas({ uid, loading = false }) {
 
     return reservas.map((r, i) => {
       const estancia = estancias.find(
-        (e) => parseInt(e.id) === parseInt(r.idestancia)
+        (e) => parseInt(e.id) === parseInt(r.idestancia),
       );
       const periodoInicio = periodos.find(
-        (p) => parseInt(p.id) === parseInt(r.idperiodo_inicio)
+        (p) => parseInt(p.id) === parseInt(r.idperiodo_inicio),
       );
       const periodoFin = periodos.find(
-        (p) => parseInt(p.id) === parseInt(r.idperiodo_fin)
+        (p) => parseInt(p.id) === parseInt(r.idperiodo_fin),
       );
       const fechaStr = new Date(r.fecha).toLocaleDateString("es-ES", {
         day: "numeric",
@@ -490,10 +493,98 @@ export function PanelReservas({ uid, loading = false }) {
           className="flex-1 flex flex-col overflow-hidden"
         >
           <TabsList className="grid grid-cols-4 mb-2 mt-2">
-            <TabsTrigger value="estancias">Mis Reservas</TabsTrigger>
-            <TabsTrigger value="actividades">Mis extraescolares</TabsTrigger>
-            <TabsTrigger value="asuntos">Mis asuntos propios</TabsTrigger>
-            <TabsTrigger value="permisos">Mis permisos</TabsTrigger>
+            <TabsTrigger value="estancias" className="relative">
+              Mis Reservas
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation(); // evita cambiar la pestaña
+                        console.log("Generar PDF de Reservas");
+                        // aquí llamas a la función PDF de reservas
+                      }}
+                    >
+                      <Printer className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Generar informe de Reservas</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </TabsTrigger>
+
+            <TabsTrigger value="actividades" className="relative">
+              Mis extraescolares
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("Generar PDF de Extraescolares");
+                      }}
+                    >
+                      <Printer className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Generar informe de Extraescolares
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </TabsTrigger>
+
+            <TabsTrigger value="asuntos" className="relative">
+              Mis asuntos propios
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("Generar PDF de Asuntos Propios");
+                      }}
+                    >
+                      <Printer className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Generar informe de Asuntos Propios
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </TabsTrigger>
+
+            <TabsTrigger value="permisos" className="relative">
+              Mis permisos
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("Generar PDF de Permisos");
+                      }}
+                    >
+                      <Printer className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Generar informe de Permisos</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-y-auto pr-2 mt-0">
@@ -537,7 +628,8 @@ export function PanelReservas({ uid, loading = false }) {
           periodos={periodos}
           descripcionEstancia={
             estancias.find(
-              (e) => parseInt(e.id) === parseInt(reservaSeleccionada.idestancia)
+              (e) =>
+                parseInt(e.id) === parseInt(reservaSeleccionada.idestancia),
             )?.descripcion || ""
           }
         />

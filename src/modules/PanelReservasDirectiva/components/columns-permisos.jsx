@@ -169,7 +169,7 @@ export const columnsPermisos = (onAceptar, onRechazar) => [
 
   {
     accessorKey: "dias_disfrutados",
-    header: "APs Concedidos",
+    header: "APs Aceptados",
     cell: ({ row }) => row.original.dias_disfrutados ?? 0,
     filterFn: (row, col, value) => {
       if (!value) return true;
