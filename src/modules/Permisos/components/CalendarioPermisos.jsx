@@ -93,13 +93,10 @@ export function CalendarioPermisos({
                     const isToday = dateKey === todayStr;
                     const hasPermiso = !!permisosUsuario[dateKey];
 
-                    const isPast = dateObj < new Date(todayStr + "T00:00:00");
-
-                    const baseClass = isPast
-                      ? "bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed"
-                      : hasPermiso
-                        ? "bg-yellow-100 cursor-pointer hover:bg-yellow-200"
-                        : "cursor-pointer hover:bg-gray-100";
+                    // Todos los días son clicables, y si hay permiso, fondo amarillo
+                    const baseClass = hasPermiso
+                      ? "bg-yellow-100 cursor-pointer hover:bg-yellow-200"
+                      : "cursor-pointer hover:bg-gray-100";
 
                     return (
                       <TooltipProvider key={j}>
@@ -109,9 +106,7 @@ export function CalendarioPermisos({
                               className={`relative p-2 rounded-lg transition-all align-top
                                 ${baseClass}
                                 ${isToday ? "border border-yellow-400" : ""}`}
-                              onClick={() => {
-                                if (!isPast) onDiaClick(dateKey);
-                              }}
+                              onClick={() => onDiaClick(dateKey)}
                             >
                               <div className="flex items-center justify-center">
                                 {d}
@@ -119,7 +114,7 @@ export function CalendarioPermisos({
                             </td>
                           </TooltipTrigger>
 
-                          {hasPermiso && !isPast && (
+                          {hasPermiso && (
                             <TooltipContent className="bg-yellow-100 text-black p-2 rounded-md">
                               Permiso solicitado
                             </TooltipContent>
