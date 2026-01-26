@@ -7,6 +7,6 @@ backend/Dockerfile
 docker-compose.yml
 deploy_gestionIES.sh
 .env
-backend/.env
+!backend/.env
 backend/uploads/
 backend/tmp
