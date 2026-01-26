@@ -14,6 +14,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { generatePermisosPdf } from "@/utils/Informes";
 import { ResumenAsuntosDia } from "./ResumenAsuntosDia";
 
+import { useRestriccionesAsuntos } from "@/hooks/useRestricciones";
 
 export function DialogoInsertarAsunto({ open, onClose, fecha }) {
   const [descripcion, setDescripcion] = useState("");
@@ -22,6 +23,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [asuntoCreado, setAsuntoCreado] = useState(null);
+  const { data: restricciones, isLoading } = useRestriccionesAsuntos();
 
   useEffect(() => {
     if (open) {
@@ -115,6 +117,11 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
     mutation.mutate({ uid: user.username, fecha, descripcion, tipo: 13 });
   };
 
+  // Solo si ya cargaron las restricciones
+  const mostrarPeticionesDia =
+    restricciones?.find((r) => r.descripcion === "mostrar_peticiones_dia")
+      ?.valor_bool ?? false;
+
   return (
     <>
       {/* Diálogo principal */}
@@ -131,8 +138,10 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
           </DialogHeader>
 
           <div className="flex flex-col space-y-4 p-6">
-            {/* Resumen de asuntos del día */}
-            <ResumenAsuntosDia fecha={fecha} />
+            {/* Mostrar ResumenAsuntosDia solo si la restricción está activada */}
+            {mostrarPeticionesDia && <ResumenAsuntosDia fecha={fecha} />}
+
+            {/* Descripción siempre visible */}
             <div>
               <label className="block text-sm font-medium mb-1">
                 Descripción

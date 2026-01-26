@@ -81,9 +81,10 @@ async function insertRestriccionesAsuntos(req, res) {
     asuntosDisponibles = 0,
     maxPorDia = 0,
     antelacionMinima = 0,
-    antelacionMaxima=0,
+    antelacionMaxima = 0,
     maxConsecutivos = 0,
     ofuscar = false,
+    mostrarPeticionesDia = false,
   } = req.body;
 
   const tipo = "asuntos";
@@ -130,6 +131,13 @@ async function insertRestriccionesAsuntos(req, res) {
       descripcion: "ofuscar",
       valor_num: 0,
       valor_bool: ofuscar,
+    },
+    {
+      tipo,
+      restriccion: "asuntos",
+      descripcion: "mostrar_peticiones_dia",
+      valor_num: 0,
+      valor_bool: mostrarPeticionesDia,
     },
   ];
 

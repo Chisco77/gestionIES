@@ -49,6 +49,7 @@ import {
 import { DialogoEliminarRango } from "./DialogoEliminarRango";
 import { DialogoEliminarAutorizacion } from "./DialogoEliminarAutorizacion";
 
+
 export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
   const API_URL = import.meta.env.VITE_API_URL;
   const queryClient = useQueryClient();
@@ -57,8 +58,10 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     asuntosDisponibles: 0,
     maxPorDia: 0,
     antelacionMinima: 0,
+    antelacionMaxima: 0,
     maxConsecutivos: 0,
     ofuscar: false,
+    mostrarPeticionesDia: false, // ✅ nueva
   });
 
   const { data: profesores = [], isLoading, error } = useProfesoresLdap();
@@ -121,13 +124,17 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
         antelacion_max: "antelacionMaxima",
         consecutivos: "maxConsecutivos",
         ofuscar: "ofuscar",
+        mostrar_peticiones_dia: "mostrarPeticionesDia", // ✅
       };
 
       const newState = { ...restricciones };
       data.forEach((r) => {
         if (r.restriccion === "asuntos" && map[r.descripcion]) {
           newState[map[r.descripcion]] =
-            r.descripcion === "ofuscar" ? r.valor_bool : r.valor_num;
+            r.descripcion === "ofuscar" ||
+            r.descripcion === "mostrar_peticiones_dia"
+              ? r.valor_bool
+              : r.valor_num;
         }
       });
       setRestricciones(newState);
@@ -380,6 +387,23 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                       handleChange("maxConsecutivos", Number(e.target.value))
                     }
                     className="w-28 text-right"
+                  />
+                </div>
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="mostrarPeticionesDia"
+                    className="text-sm font-medium"
+                  >
+                    Mostrar número de peticiones por día
+                  </Label>
+                  <Switch
+                    id="mostrarPeticionesDia"
+                    checked={restricciones.mostrarPeticionesDia}
+                    onCheckedChange={(checked) =>
+                      handleChange("mostrarPeticionesDia", checked)
+                    }
                   />
                 </div>
 
