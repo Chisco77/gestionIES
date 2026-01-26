@@ -396,7 +396,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                     htmlFor="mostrarPeticionesDia"
                     className="text-sm font-medium"
                   >
-                    Mostrar número de peticiones por día
+                    Mostrar información de todas las peticiones de APs en un día
                   </Label>
                   <Switch
                     id="mostrarPeticionesDia"
