@@ -243,7 +243,7 @@ export function TablaExtraescolares({ user, fecha }) {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="bg-[#1DA1F2] text-white">
-                  <p>Ver/Editar actividad</p>
+                  <p>Editar/Ver actividad</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
