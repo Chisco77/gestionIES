@@ -85,14 +85,22 @@ export function GridReservasEstancias({
       toast.error("No puedes modificar reservas ya finalizadas.");
       return;
     }
-    setReservaSeleccionada(reserva);
+    const estancia = estancias.find(
+      (e) => e.id === parseInt(reserva.idestancia)
+    );
+    setReservaSeleccionada({
+      ...reserva,
+      descripcionEstancia: estancia?.descripcion || "",
+    });
     setAbrirDialogoEditar(true);
   };
 
   const handleDiaClick = (estanciaId, periodoId) => {
     const periodo = periodosDB.find((p) => p.id === periodoId);
+    const estancia = estancias.find((e) => e.id === parseInt(estanciaId));
     setCeldaSeleccionada({
       estanciaId,
+      descripcionEstancia: estancia?.descripcion || "",
       periodoId,
       inicioId: periodo?.id,
       finId: periodo?.id,
@@ -247,6 +255,7 @@ export function GridReservasEstancias({
         }}
         fecha={selectedDate}
         idestancia={celdaSeleccionada?.estanciaId}
+        descripcionEstancia={celdaSeleccionada?.descripcionEstancia}
         periodos={periodosDB}
         inicioSeleccionado={celdaSeleccionada?.inicioId}
         finSeleccionado={celdaSeleccionada?.finId}
@@ -261,6 +270,7 @@ export function GridReservasEstancias({
       {reservaSeleccionada && (
         <DialogoEditarReserva
           reserva={reservaSeleccionada}
+          descripcionEstancia={reservaSeleccionada.descripcionEstancia}
           open={abrirDialogoEditar}
           onClose={() => {
             setAbrirDialogoEditar(false);

@@ -129,12 +129,7 @@ export function AsuntosPropiosIndex() {
     autorizacionesUsuario[fecha] = p;
   });
 
-  // Log para depuración
-  console.log(
-    "Autorizaciones del usuario (fechas corregidas):",
-    autorizacionesUsuario
-  );
-
+  
   // --- Handlers calendario ---
   const handlePrevMonth = () => {
     if (currentMonth === 0) {

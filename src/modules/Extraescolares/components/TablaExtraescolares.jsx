@@ -137,7 +137,6 @@ export function TablaExtraescolares({ user, fecha }) {
     // informe
     generateListadoExtraescolaresPorProfesor(filasFiltradas);
 
-    console.log("Generar PDF con:", filasFiltradas);
   };
 
   const handleGenerarExtraescolaresDepartamento = () => {
@@ -148,7 +147,6 @@ export function TablaExtraescolares({ user, fecha }) {
     // informe
     generateListadoExtraescolaresPorDepartamento(filasFiltradas);
 
-    console.log("Generar PDF con:", filasFiltradas);
   };
 
   const handleGenerarExtraescolaresDepartamentoXLS = () => {
@@ -159,7 +157,6 @@ export function TablaExtraescolares({ user, fecha }) {
     // informe
     generateListadoExtraescolaresPorDepartamentoXLS(filasFiltradas);
 
-    console.log("Generar PDF con:", filasFiltradas);
   };
 
   const handleGenerarExtraescolaresFecha = () => {
@@ -170,7 +167,6 @@ export function TablaExtraescolares({ user, fecha }) {
     // informe
     generateListadoExtraescolaresPorFecha(filasFiltradas);
 
-    console.log("Generar PDF con:", filasFiltradas);
   };
 
   // Tabla

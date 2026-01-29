@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2, Trash2, File } from "lucide-react";
@@ -15,11 +15,12 @@ import { usePermisosUid } from "@/hooks/Permisos/usePermisosUid";
 import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
-import { toast } from "sonner"; // asegúrate de tenerlo importado
+import { toast } from "sonner"; 
 import { generatePermisosPdf } from "@/utils/Informes";
 import { useAuth } from "@/context/AuthContext";
 import { DialogoEliminarPermiso } from "../Permisos/components/DialogoEliminarPermiso";
 import { DialogoEditarPermiso } from "../Permisos/components/DialogoEditarPermiso";
+import { useMemo } from "react";
 
 import {
   Tooltip,
@@ -28,12 +29,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Printer } from "lucide-react";
-import { Button } from "@/components/ui/button";
+// virtualizar reservas de aulas, ya que diretiva puede tener miles
+import { useVirtualizer } from "@tanstack/react-virtual"; 
+import { useRef } from "react";
 
 export function PanelReservas({ uid, loading = false }) {
   // ===== Selección y diálogos =====
   const [reservaSeleccionada, setReservaSeleccionada] = useState(null);
+  // virtualización: contenedor reservas con scroll
+  const parentRef = useRef();
+  // estado para que se recarge bien la pestaña de reservas
+  const [tabActual, setTabActual] = useState("estancias");
+
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false);
   const [reservaAEliminar, setReservaAEliminar] = useState(null);
   const [dialogoEliminarAbierto, setDialogoEliminarAbierto] = useState(false);
@@ -78,7 +85,7 @@ export function PanelReservas({ uid, loading = false }) {
   const handleEliminarAsunto = (asunto) => {
     if (asunto.estado === 1) {
       toast.warning(
-        "No se puede eliminar un asunto propio que ha sido aceptado.",
+        "No se puede eliminar un asunto propio que ha sido aceptado."
       );
       return; // no abrir el diálogo
     }
@@ -94,7 +101,7 @@ export function PanelReservas({ uid, loading = false }) {
   const handleEliminarExtraescolar = (actividad) => {
     if (actividad.estado == 1) {
       toast.warning(
-        "No se puede eliminar una actividad extraescolar que ha sido aceptada.",
+        "No se puede eliminar una actividad extraescolar que ha sido aceptada."
       );
       return; // no abrir el diálogo
     }
@@ -127,6 +134,28 @@ export function PanelReservas({ uid, loading = false }) {
 
   const { user } = useAuth();
 
+  // Virtualización de reservas para optimización frontend.
+  const columnCount = 2; // queremos dos columnas
+  const rowVirtualizer = useVirtualizer({
+    count: Math.ceil(reservas.length / columnCount), // filas virtuales
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 105, // altura aproximada de cada fila
+    overscan: 5,
+  });
+
+  // Memos para estancias y periodos
+  const estanciasMap = useMemo(() => {
+    const map = new Map();
+    estancias.forEach((e) => map.set(e.id.toString(), e));
+    return map;
+  }, [estancias]);
+
+  const periodosMap = useMemo(() => {
+    const map = new Map();
+    periodos.forEach((p) => map.set(p.id.toString(), p));
+    return map;
+  }, [periodos]);
+
   const handleGenerarPdfAsunto = async (asunto) => {
     try {
       // 1. Obtener empleado desde backend
@@ -156,69 +185,15 @@ export function PanelReservas({ uid, loading = false }) {
   };
 
   // ===== Renderizados =====
-  const renderReservas = () => {
-    if (!reservas.length)
-      return <p className="text-gray-500 text-center">No hay elementos</p>;
+  
 
-    return reservas.map((r, i) => {
-      const estancia = estancias.find(
-        (e) => parseInt(e.id) === parseInt(r.idestancia),
-      );
-      const periodoInicio = periodos.find(
-        (p) => parseInt(p.id) === parseInt(r.idperiodo_inicio),
-      );
-      const periodoFin = periodos.find(
-        (p) => parseInt(p.id) === parseInt(r.idperiodo_fin),
-      );
-      const fechaStr = new Date(r.fecha).toLocaleDateString("es-ES", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+  useEffect(() => {
+    if (tabActual === "estancias") {
+      rowVirtualizer.measure();
+    }
+  }, [tabActual, rowVirtualizer]);
 
-      return (
-        <Card
-          key={i}
-          className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative"
-          onClick={() => handleClickReserva(r)}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <p
-              className="font-semibold text-blue-600 truncate max-w-[80%]"
-              title={estancia?.descripcion || r.titulo || "Sin descripción"}
-            >
-              {estancia?.descripcion || r.titulo || "Sin descripción"}
-            </p>
-            <button
-              type="button"
-              className="text-red-500 hover:text-red-700 flex-shrink-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEliminarReserva(r);
-              }}
-            >
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Trash2 className="w-5 h-5" />
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
-                    <p>Eliminar reserva</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </button>
-          </div>
-          <p>
-            {periodoInicio?.nombre || r.idperiodo_inicio} a{" "}
-            {periodoFin?.nombre || r.idperiodo_fin}
-          </p>
-          <p className="text-gray-500">{fechaStr}</p>
-        </Card>
-      );
-    });
-  };
-
+  
   const renderAsuntosPropios = () => {
     const asuntosPropios = asuntos.filter((a) => a.tipo === 13);
 
@@ -489,132 +464,160 @@ export function PanelReservas({ uid, loading = false }) {
     <Card className="shadow-lg rounded-2xl h-[350px] flex flex-col">
       <CardContent className="flex-1 flex flex-col overflow-hidden">
         <Tabs
-          defaultValue="estancias"
+          value={tabActual}
+          onValueChange={setTabActual}
           className="flex-1 flex flex-col overflow-hidden"
         >
           <TabsList className="grid grid-cols-4 mb-2 mt-2">
             <TabsTrigger value="estancias" className="relative">
               Mis Reservas
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation(); // evita cambiar la pestaña
-                        console.log("Generar PDF de Reservas");
-                        // aquí llamas a la función PDF de reservas
-                      }}
-                    >
-                      <Printer className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Generar informe de Reservas</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </TabsTrigger>
 
             <TabsTrigger value="actividades" className="relative">
               Mis extraescolares
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        console.log("Generar PDF de Extraescolares");
-                      }}
-                    >
-                      <Printer className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Generar informe de Extraescolares
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </TabsTrigger>
 
             <TabsTrigger value="asuntos" className="relative">
               Mis asuntos propios
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        console.log("Generar PDF de Asuntos Propios");
-                      }}
-                    >
-                      <Printer className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Generar informe de Asuntos Propios
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </TabsTrigger>
 
             <TabsTrigger value="permisos" className="relative">
               Mis permisos
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        console.log("Generar PDF de Permisos");
-                      }}
-                    >
-                      <Printer className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Generar informe de Permisos</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 overflow-y-auto pr-2 mt-0">
+          <div className="flex-1 mt-0 min-h-0">
+            {" "}
+            {/* TAB ESTANCIAS (Virtualizada) */}
             <TabsContent
               value="estancias"
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              className="m-0 border-none outline-none focus-visible:ring-0"
             >
-              {renderReservas()}
-            </TabsContent>
+              <div
+                ref={parentRef}
+                className="h-[280px] w-full overflow-y-auto pr-2"
+              >
+                <div
+                  style={{
+                    height: `${rowVirtualizer.totalSize}px`,
+                    width: "100%",
+                    position: "relative",
+                  }}
+                >
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const startIndex = virtualRow.index * columnCount;
+                    const items = reservas.slice(
+                      startIndex,
+                      startIndex + columnCount
+                    );
 
-            <TabsContent
-              value="asuntos"
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            >
-              {renderAsuntosPropios()}
-            </TabsContent>
+                    return (
+                      <div
+                        key={virtualRow.index}
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          transform: `translateY(${virtualRow.start}px)`,
+                          display: "flex",
+                          gap: "0.5rem", // espacio entre columnas
+                          paddingBottom: "4px", // espacio inferior entre filas
+                        }}
+                      >
+                        {items.map((r) => {
+                          const estancia = estanciasMap.get(
+                            r.idestancia.toString()
+                          );
+                          const periodoInicio = periodosMap.get(
+                            r.idperiodo_inicio.toString()
+                          );
+                          const periodoFin = periodosMap.get(
+                            r.idperiodo_fin.toString()
+                          );
+                          const fechaStr = new Date(r.fecha).toLocaleDateString(
+                            "es-ES",
+                            {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            }
+                          );
 
-            <TabsContent
-              value="permisos"
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            >
-              {renderPermisos()}
+                          return (
+                            <Card
+                              key={r.id}
+                              className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative flex-1"
+                              onClick={() => handleClickReserva(r)}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p
+                                  className="font-semibold text-blue-600 truncate max-w-[80%]"
+                                  title={
+                                    estancia?.descripcion ||
+                                    r.titulo ||
+                                    "Sin descripción"
+                                  }
+                                >
+                                  {estancia?.descripcion ||
+                                    r.titulo ||
+                                    "Sin descripción"}
+                                </p>
+                                <button
+                                  type="button"
+                                  className="text-red-500 hover:text-red-700 flex-shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEliminarReserva(r);
+                                  }}
+                                >
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Trash2 className="w-5 h-5" />
+                                      </TooltipTrigger>
+                                      <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
+                                        <p>Eliminar reserva</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </button>
+                              </div>
+                              {/* Estructura de textos inferior igual al resto de tabs */}
+                              <div className="mt-1">
+                                <p className="text-gray-700">
+                                  {periodoInicio?.nombre || r.idperiodo_inicio}{" "}
+                                  a {periodoFin?.nombre || r.idperiodo_fin}
+                                </p>
+                                <p className="text-gray-500">
+                                  {fechaStr}
+                                </p>
+                              </div>
+                            </Card>
+                          );
+                        })}
+                        {/* Si solo hay 1 elemento en una fila de 2, metemos un div vacío para mantener el tamaño */}
+                        {items.length === 1 && <div className="flex-1" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </TabsContent>
-
-            <TabsContent
-              value="actividades"
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            >
-              {renderActividadesExtraescolares()}
-            </TabsContent>
+            {/* RESTO DE TABS (No virtualizadas) */}
+            {["actividades", "asuntos", "permisos"].map((tab) => (
+              <TabsContent
+                key={tab}
+                value={tab}
+                className="m-0 border-none outline-none"
+              >
+                <div className="h-[280px] overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 gap-3 content-start">
+                  {tab === "actividades" && renderActividadesExtraescolares()}
+                  {tab === "asuntos" && renderAsuntosPropios()}
+                  {tab === "permisos" && renderPermisos()}
+                </div>
+              </TabsContent>
+            ))}
           </div>
         </Tabs>
       </CardContent>
@@ -628,8 +631,7 @@ export function PanelReservas({ uid, loading = false }) {
           periodos={periodos}
           descripcionEstancia={
             estancias.find(
-              (e) =>
-                parseInt(e.id) === parseInt(reservaSeleccionada.idestancia),
+              (e) => parseInt(e.id) === parseInt(reservaSeleccionada.idestancia)
             )?.descripcion || ""
           }
         />

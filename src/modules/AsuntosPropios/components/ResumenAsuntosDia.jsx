@@ -7,14 +7,12 @@ export function ResumenAsuntosDia({ fecha }) {
   const { user } = useAuth();
   const API_URL = import.meta.env.VITE_API_URL;
 
-  console.log("DEBUG USER:", user);
-
   const { data, isLoading, error } = useQuery({
     queryKey: ["asuntosDia", fecha],
     queryFn: async () => {
       const res = await fetch(
         `${API_URL}/db/permisos-enriquecidos?tipo=13&fecha=${fecha}`,
-        { credentials: "include" },
+        { credentials: "include" }
       );
       if (!res.ok) throw new Error("Error obteniendo asuntos propios");
       return res.json();
@@ -60,13 +58,6 @@ export function ResumenAsuntosDia({ fecha }) {
           } else {
             nombre = `Profesor${contadorProfesor++}`;
           }
-
-          console.log("DEBUG ASUNTO:", {
-            nombreProfesor: a.nombreProfesor,
-            uidAsunto: a.uid,
-            userUsername: user.username,
-            esYo,
-          });
 
           return (
             <Card
