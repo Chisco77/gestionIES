@@ -1,15 +1,9 @@
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DialogoInsertarReserva } from "../components/DialogoInsertarReserva";
-import { DialogoEditarReserva } from "../components/DialogoEditarReserva";
+import {  useState } from "react";
+
 import { useAuth } from "@/context/AuthContext";
 import { PanelReservas } from "../../Comunes/PanelReservas";
 import { toast } from "sonner";
-import { DialogoPlanoEstancia } from "../components/DialogoPlanoEstancia";
-import { MapPin } from "lucide-react";
 
-import { usePermisosUid } from "@/hooks/Permisos/usePermisosUid";
-import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
 
 import { CalendarioReservas } from "../components/CalendarioReservas";
 import { GridReservasEstancias } from "../components/GridReservasEstancias";
@@ -83,18 +77,6 @@ export function ReservasEstanciasIndex() {
     weeks.push(week);
   }
 
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
-    } else setCurrentMonth((m) => m - 1);
-  };
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
-    } else setCurrentMonth((m) => m + 1);
-  };
 
   const handleDiaClick = (dateKey, estanciaId, periodoId) => {
     setSelectedDate(dateKey);
@@ -108,10 +90,6 @@ export function ReservasEstanciasIndex() {
       });
       setAbrirDialogo(true);
     }
-  };
-
-  const onInsertarSuccess = () => {
-    setReloadPanel((v) => v + 1);
   };
 
   return (

@@ -57,6 +57,7 @@ const {
   getReservasEstanciasPorDia,
   getReservasFiltradas,
   updateReservaEstancia,
+  insertReservaEstanciaPeriodica,
 } = require("../controllers/db/reservasEstanciasController");
 
 // --- Controlador de cursos ---
@@ -245,6 +246,7 @@ router.post("/reservas-estancias", insertReservaEstancia);
 router.delete("/reservas-estancias/:id", deleteReservaEstancia);
 router.get("/reservas-estancias/dia", getReservasEstanciasPorDia);
 router.put("/reservas-estancias/:id", updateReservaEstancia);
+router.post("/reservas-estancias/periodicas", insertReservaEstanciaPeriodica);
 
 // Rutas de cursos
 router.get("/cursos", getCursos);

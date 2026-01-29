@@ -1,6 +1,22 @@
+/**
+ * GridReservasEstancias.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Permite realizar reservas de aulas. Para directiva, aparece botón junto al nombre del aula para permitir
+ *     reservas periódicas (suponemos que la directiva, a inicio de curso, organiza ocupación de aulas)
+ * 
+ */
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
+import { MapPin, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
@@ -10,12 +26,17 @@ import { useReservasDelDia } from "@/hooks/Reservas/useReservasDelDia";
 import { DialogoInsertarReserva } from "../components/DialogoInsertarReserva";
 import { DialogoEditarReserva } from "../components/DialogoEditarReserva";
 import { DialogoPlanoEstancia } from "../components/DialogoPlanoEstancia";
+import { DialogoInsertarReservaPeriodica } from "./DialogoInsertarReservaPeriodica";
+
+import { useAuth } from "@/context/AuthContext";
 
 export function GridReservasEstancias({
   uid,
   esReservaFutura,
   fechaSeleccionada,
 }) {
+  const { user } = useAuth();
+  const esDirectiva = user?.perfil === "directiva";
   const { data: periodosDB = [] } = usePeriodosHorarios();
   const { data: estancias = [] } = useEstancias();
 
@@ -31,11 +52,14 @@ export function GridReservasEstancias({
   const [estanciaSeleccionadaPlano, setEstanciaSeleccionadaPlano] =
     useState(null);
 
+  const [abrirDialogoPeriodico, setAbrirDialogoPeriodico] = useState(false);
+  const [estanciaParaProgramar, setEstanciaParaProgramar] = useState(null);
+
   const selectedDate = fechaSeleccionada;
 
   const { data: reservasDelDia } = useReservasDelDia(
     selectedDate,
-    tipoEstancia
+    tipoEstancia,
   );
 
   // Filtrar estancias según tipo seleccionado
@@ -45,7 +69,7 @@ export function GridReservasEstancias({
       return;
     }
     const filtradas = reservasDelDia.estancias.filter(
-      (e) => !tipoEstancia || e.tipo === tipoEstancia
+      (e) => !tipoEstancia || e.tipo === tipoEstancia,
     );
     setEstanciasDelGrid(filtradas);
   }, [reservasDelDia, tipoEstancia]);
@@ -62,7 +86,7 @@ export function GridReservasEstancias({
           (r) =>
             parseInt(r.idestancia) === e.id &&
             parseInt(r.idperiodo_inicio) <= p.id &&
-            parseInt(r.idperiodo_fin) >= p.id
+            parseInt(r.idperiodo_fin) >= p.id,
         );
         row[e.id] = reserva || null;
       });
@@ -78,7 +102,7 @@ export function GridReservasEstancias({
       return;
     }
     const periodoFin = periodosDB.find(
-      (p) => parseInt(p.id) === parseInt(reserva.idperiodo_fin)
+      (p) => parseInt(p.id) === parseInt(reserva.idperiodo_fin),
     );
     const horaFin = periodoFin?.fin;
     if (!horaFin || !esReservaFutura(reserva.fecha, horaFin)) {
@@ -86,7 +110,7 @@ export function GridReservasEstancias({
       return;
     }
     const estancia = estancias.find(
-      (e) => e.id === parseInt(reserva.idestancia)
+      (e) => e.id === parseInt(reserva.idestancia),
     );
     setReservaSeleccionada({
       ...reserva,
@@ -160,14 +184,33 @@ export function GridReservasEstancias({
                       }}
                       title={`Ver plano de ${e.descripcion}`}
                     >
-                      <div className="flex items-center justify-center gap-2">
-                        <span>
-                          {e.descripcion + " (" + e.numero_ordenadores + ")"}
-                        </span>
-                        <MapPin
-                          size={18}
-                          className="text-gray-500 hover:text-blue-600 transition-colors"
-                        />
+                      <div className="relative flex items-center justify-center">
+                        {/* CONTENIDO CENTRADO */}
+                        <div className="flex items-center gap-2">
+                          <span>
+                            {e.descripcion} ({e.numero_ordenadores})
+                          </span>
+
+                          <MapPin
+                            size={18}
+                            className="text-gray-500 hover:text-blue-600 transition-colors"
+                          />
+                        </div>
+
+                        {/* BOTÓN DERECHA (solo directiva) */}
+                        {esDirectiva && (
+                          <button
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              setEstanciaParaProgramar(e);
+                              setAbrirDialogoPeriodico(true);
+                            }}
+                            title="Programar reservas periódicas"
+                            className="absolute right-2 p-1 rounded-md text-gray-500 hover:text-blue-600 hover:bg-gray-100 transition"
+                          >
+                            <Settings size={18} />
+                          </button>
+                        )}
                       </div>
                     </th>
                   ))}
@@ -187,7 +230,7 @@ export function GridReservasEstancias({
                     {estanciasDelGrid.map((e) => {
                       const reserva = rowData.row[e.id];
                       const periodoActual = periodosDB.find(
-                        (p) => p.id === rowData.periodoId
+                        (p) => p.id === rowData.periodoId,
                       );
                       const horaFin = periodoActual?.fin;
                       const esFutura = esReservaFutura(selectedDate, horaFin);
@@ -227,7 +270,7 @@ export function GridReservasEstancias({
                           onClick={() => {
                             if (!esFutura) {
                               toast.error(
-                                "No puedes crear reservas en periodos pasados."
+                                "No puedes crear reservas en periodos pasados.",
                               );
                               return;
                             }
@@ -276,6 +319,20 @@ export function GridReservasEstancias({
             setAbrirDialogoEditar(false);
             setReservaSeleccionada(null);
           }}
+          periodos={periodosDB}
+        />
+      )}
+
+      {estanciaParaProgramar && (
+        <DialogoInsertarReservaPeriodica
+          open={abrirDialogoPeriodico}
+          onClose={() => {
+            setAbrirDialogoPeriodico(false);
+            setEstanciaParaProgramar(null);
+          }}
+          fecha={selectedDate}
+          idestancia={estanciaParaProgramar.id}
+          descripcionEstancia={estanciaParaProgramar.descripcion}
           periodos={periodosDB}
         />
       )}

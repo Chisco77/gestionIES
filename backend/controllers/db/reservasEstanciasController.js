@@ -106,7 +106,7 @@ async function getReservasEstancias(req, res) {
        FROM reservas_estancias
        ${where}
        ORDER BY fecha ASC, idperiodo_inicio ASC`,
-      vals
+      vals,
     );
 
     res.json({ ok: true, reservas: rows });
@@ -145,7 +145,7 @@ async function insertReservaEstancia(req, res) {
    FROM reservas_estancias
    WHERE idestancia = $1 AND fecha = $2
    AND NOT (idperiodo_fin < $3 OR idperiodo_inicio > $4)`,
-      [idestancia, fecha, idperiodo_inicio, idperiodo_fin]
+      [idestancia, fecha, idperiodo_inicio, idperiodo_fin],
     );
     if (existentes.length > 0) {
       return res.status(409).json({
@@ -162,7 +162,7 @@ async function insertReservaEstancia(req, res) {
    (idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion)
    VALUES ($1, $2, $3, $4, $5, $6)
    RETURNING *`,
-      [idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion]
+      [idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion],
     );
 
     res.status(201).json({ ok: true, reserva: rows[0] });
@@ -178,7 +178,7 @@ async function deleteReservaEstancia(req, res) {
   try {
     const { rowCount } = await pool.query(
       `DELETE FROM reservas_estancias WHERE id = $1`,
-      [id]
+      [id],
     );
     if (rowCount === 0)
       return res
@@ -209,7 +209,7 @@ async function getReservasEstanciasPorDia(req, res) {
     const { rows: periodos } = await pool.query(
       `SELECT id, nombre, inicio, fin
        FROM periodos_horarios
-       ORDER BY id`
+       ORDER BY id`,
     );
 
     // 2️⃣ Obtener estancias filtradas (solo reservables)
@@ -238,7 +238,7 @@ async function getReservasEstanciasPorDia(req, res) {
        WHERE TO_CHAR(fecha, 'YYYY-MM-DD') = $1
        AND idestancia = ANY($2::int[])
        ORDER BY idperiodo_inicio`,
-      [fecha, idsEstancias]
+      [fecha, idsEstancias],
     );
 
     // 4️⃣ Añadir nombres LDAP a las reservas
@@ -339,7 +339,7 @@ async function getReservasFiltradas(req, res) {
        FROM reservas_estancias
        ${where}
        ORDER BY fecha ASC, idperiodo_inicio ASC`,
-      vals
+      vals,
     );
 
     // 4️⃣ Añadir nombres LDAP
@@ -362,7 +362,7 @@ async function getReservasFiltradas(req, res) {
     const { rows: periodos } = await pool.query(
       `SELECT id, nombre, inicio, fin
        FROM periodos_horarios
-       ORDER BY id`
+       ORDER BY id`,
     );
 
     res.json({ ok: true, periodos, estancias, reservas });
@@ -389,7 +389,7 @@ async function updateReservaEstancia(req, res) {
       `SELECT id, idestancia, fecha, uid
        FROM reservas_estancias
        WHERE id = $1`,
-      [id]
+      [id],
     );
 
     if (existentes.length === 0) {
@@ -407,7 +407,7 @@ async function updateReservaEstancia(req, res) {
        AND id <> $3
        AND NOT (idperiodo_fin < $4 OR idperiodo_inicio > $5)
        LIMIT 1`,
-      [idestancia, fecha, id, idperiodo_inicio, idperiodo_fin]
+      [idestancia, fecha, id, idperiodo_inicio, idperiodo_fin],
     );
 
     if (solapes.length > 0) {
@@ -425,13 +425,195 @@ async function updateReservaEstancia(req, res) {
            descripcion = $3
        WHERE id = $4
        RETURNING *`,
-      [idperiodo_inicio, idperiodo_fin, descripcion, id]
+      [idperiodo_inicio, idperiodo_fin, descripcion, id],
     );
 
     res.json({ ok: true, reserva: rows[0] });
   } catch (err) {
     console.error("[updateReservaEstancia] Error:", err);
     res.status(500).json({ ok: false, error: "Error actualizando reserva" });
+  }
+}
+
+// reservasEstanciasController.jsx
+/*async function insertReservaEstanciaPeriodica(req, res) {
+  const {
+    idestancia,
+    idperiodo_inicio,
+    idperiodo_fin,
+    uid,
+    fecha,           // fecha de inicio
+    descripcion = "",
+    repeticion = "diaria", // diaria / semanal
+    diasSemana = [],        // solo si semanal
+    fechaLimite,           // hasta cuándo repetir
+  } = req.body || {};
+
+  if (!uid) return res.status(401).json({ ok: false, error: "Usuario no autenticado" });
+  if (!idestancia || !idperiodo_inicio || !idperiodo_fin || !fecha) {
+    return res.status(400).json({ ok: false, error: "Datos obligatorios faltan" });
+  }
+
+  try {
+    const fechasAInsertar = [];
+    let currentDate = new Date(fecha);
+    const limite = new Date(fechaLimite);
+
+    while (currentDate <= limite) {
+      if (repeticion === "diaria") {
+        fechasAInsertar.push(currentDate.toISOString().split("T")[0]);
+      } else if (repeticion === "semanal") {
+        const diasMap = { Lun: 1, Mar: 2, Mié: 3, Jue: 4, Vie: 5 };
+        const day = currentDate.getDay(); // 0-domingo, 1-lunes...
+        if (diasSemana.some(d => diasMap[d] === day)) {
+          fechasAInsertar.push(currentDate.toISOString().split("T")[0]);
+        }
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    const reservasInsertadas = [];
+
+    for (const f of fechasAInsertar) {
+      // 1️⃣ Verificar solape
+      const { rows: existentes } = await pool.query(
+        `SELECT id FROM reservas_estancias
+         WHERE idestancia = $1 AND fecha = $2
+         AND NOT (idperiodo_fin < $3 OR idperiodo_inicio > $4)`,
+        [idestancia, f, idperiodo_inicio, idperiodo_fin]
+      );
+
+      if (existentes.length > 0) {
+        // saltamos esta fecha, opcionalmente podemos acumular conflictos
+        continue;
+      }
+
+      // 2️⃣ Insertar reserva
+      const { rows } = await pool.query(
+        `INSERT INTO reservas_estancias
+         (idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion)
+         VALUES ($1,$2,$3,$4,$5,$6)
+         RETURNING *`,
+        [idestancia, idperiodo_inicio, idperiodo_fin, uid, f, descripcion]
+      );
+
+      reservasInsertadas.push(rows[0]);
+    }
+
+    res.status(201).json({
+      ok: true,
+      reservas: reservasInsertadas,
+      message: `Se insertaron ${reservasInsertadas.length} reservas`,
+    });
+
+  } catch (err) {
+    console.error("[insertReservaEstanciaPeriodica] Error:", err);
+    res.status(500).json({ ok: false, error: "Error insertando reservas periódicas" });
+  }
+}*/
+
+// reservasEstanciasController.jsx
+async function insertReservaEstanciaPeriodica(req, res) {
+  const {
+    idestancia,
+    idperiodo_inicio,
+    idperiodo_fin,
+    uid,
+    fecha, // fecha de inicio en formato 'YYYY-MM-DD'
+    descripcion = "",
+    repeticion = "diaria", // 'diaria' o 'semanal'
+    diasSemana = [], // solo si semanal, ['Lun','Mar',...]
+    fechaLimite, // fecha límite 'YYYY-MM-DD'
+  } = req.body || {};
+
+  if (!uid)
+    return res.status(401).json({ ok: false, error: "Usuario no autenticado" });
+  if (!idestancia || !idperiodo_inicio || !idperiodo_fin || !fecha) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "Datos obligatorios faltan" });
+  }
+
+  try {
+    console.log("[DEBUG] Datos recibidos:", req.body);
+
+    // --- Mapeo días para repetición semanal ---
+    const diasMap = { Lun: 1, Mar: 2, Mié: 3, Jue: 4, Vie: 5 };
+
+    // --- Función para avanzar un día ---
+    const nextDay = (str) => {
+      const [y, m, d] = str.split("-").map(Number);
+      const next = new Date(y, m - 1, d + 1);
+      return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
+    };
+
+    let currentDateStr = fecha;
+    const fechasAInsertar = [];
+
+    // --- Generar fechas ---
+    while (currentDateStr <= fechaLimite) {
+      if (repeticion === "diaria") {
+        fechasAInsertar.push(currentDateStr);
+        console.log("[DEBUG] Añadida fecha diaria:", currentDateStr);
+      } else if (repeticion === "semanal") {
+        const [y, m, d] = currentDateStr.split("-").map(Number);
+        const day = new Date(y, m - 1, d).getDay(); // 0-domingo, 1-lunes...
+        if (diasSemana.some((dia) => diasMap[dia] === day)) {
+          fechasAInsertar.push(currentDateStr);
+          console.log(
+            "[DEBUG] Añadida fecha semanal:",
+            currentDateStr,
+            "día:",
+            day,
+          );
+        }
+      }
+      currentDateStr = nextDay(currentDateStr);
+    }
+
+    console.log("[DEBUG] Fechas a insertar:", fechasAInsertar);
+
+    const reservasInsertadas = [];
+
+    for (const f of fechasAInsertar) {
+      // --- Verificar solape ---
+      const { rows: existentes } = await pool.query(
+        `SELECT id FROM reservas_estancias
+         WHERE idestancia = $1
+           AND fecha = $2
+           AND idperiodo_inicio <= $4
+           AND idperiodo_fin >= $3`,
+        [idestancia, f, idperiodo_inicio, idperiodo_fin],
+      );
+
+      if (existentes.length > 0) {
+        console.log("[DEBUG] Conflicto, saltando fecha:", f);
+        continue;
+      }
+
+      // --- Insertar reserva ---
+      const { rows } = await pool.query(
+        `INSERT INTO reservas_estancias
+         (idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion)
+         VALUES ($1,$2,$3,$4,$5,$6)
+         RETURNING *`,
+        [idestancia, idperiodo_inicio, idperiodo_fin, uid, f, descripcion],
+      );
+
+      reservasInsertadas.push(rows[0]);
+      console.log("[DEBUG] Reserva insertada:", f);
+    }
+
+    res.status(201).json({
+      ok: true,
+      reservas: reservasInsertadas,
+      message: `Se insertaron ${reservasInsertadas.length} reservas`,
+    });
+  } catch (err) {
+    console.error("[insertReservaEstanciaPeriodica] Error:", err);
+    res
+      .status(500)
+      .json({ ok: false, error: "Error insertando reservas periódicas" });
   }
 }
 
@@ -442,4 +624,5 @@ module.exports = {
   getReservasEstanciasPorDia,
   getReservasFiltradas,
   updateReservaEstancia,
+  insertReservaEstanciaPeriodica,
 };
