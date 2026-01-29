@@ -1,14 +1,20 @@
-import { useEffect, useState } from "react";
+/**
+ * DashboardAdmin.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Componente pensado para pagina inicio del admin, actualmente es igual que DashboardDirectiva
+ *
+ */
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
+
 import { PanelReservasDirectiva } from "@/modules/PanelReservasDirectiva/pages/PanelReservasDirectiva";
 import { PanelReservas } from "@/modules/Comunes/PanelReservas";
 import { useAuth } from "@/context/AuthContext";
@@ -28,10 +34,8 @@ const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
 export function DashboardAdmin() {
   const [fechaHora, setFechaHora] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(formatDateKey(new Date()));
   const [currentMonth, setCurrentMonth] = useState(fechaHora.getMonth());
   const [currentYear, setCurrentYear] = useState(fechaHora.getFullYear());
-  const [mostrarTodas, setMostrarTodas] = useState(false);
 
   // Estado para modal de denegación
   const [denegarAbierto, setDenegarAbierto] = useState(false);
@@ -42,27 +46,6 @@ export function DashboardAdmin() {
   const uid = user?.username;
 
   const todayStr = formatDateKey(new Date());
-
-  // Datos de ejemplo
-  const reservas = {
-    [formatDateKey(new Date(2025, 9, 1))]: {
-      aulas: ["Aula 101", "Aula 205"],
-      armarios: ["Armario 3"],
-      asuntos: false,
-    },
-    [formatDateKey(new Date(2025, 9, 2))]: {
-      aulas: [],
-      armarios: ["Armario 5"],
-      asuntos: true,
-    },
-    [formatDateKey(new Date(2025, 9, 5))]: {
-      aulas: ["Aula 110"],
-      armarios: [],
-      asuntos: false,
-    },
-  };
-
-  const getDateKey = (y, m, d) => formatDateKey(new Date(y, m, d));
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay(); // 0=domingo
@@ -84,35 +67,11 @@ export function DashboardAdmin() {
     weeks.push(week);
   }
 
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
-    } else {
-      setCurrentMonth((m) => m - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
-    } else {
-      setCurrentMonth((m) => m + 1);
-    }
-  };
-
-  const handleDenegar = (solicitud) => {
-    setSolicitudActual(solicitud);
-    setMotivoDenegacion("");
-    setDenegarAbierto(true);
-  };
-
   const confirmarDenegacion = () => {
     setDenegarAbierto(false);
   };
   const [fechaSeleccionada, setFechaSeleccionada] = useState(
-    formatDateKey(new Date())
+    formatDateKey(new Date()),
   );
 
   return (
@@ -135,29 +94,6 @@ export function DashboardAdmin() {
         {/* */}
         <PanelReservasDirectiva user={user} fecha={fechaSeleccionada} />
       </div>
-
-      {/* Modal de denegación */}
-      <Dialog open={denegarAbierto} onOpenChange={setDenegarAbierto}>
-        <DialogContent onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>Motivo de la denegación</DialogTitle>
-          </DialogHeader>
-          <Input
-            placeholder="Escribe aquí el motivo..."
-            value={motivoDenegacion}
-            onChange={(e) => setMotivoDenegacion(e.target.value)}
-          />
-          <DialogFooter className="mt-4">
-            <Button
-              variant="secondary"
-              onClick={() => setDenegarAbierto(false)}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={confirmarDenegacion}>Confirmar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

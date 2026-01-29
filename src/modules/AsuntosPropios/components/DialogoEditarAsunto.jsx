@@ -1,3 +1,21 @@
+/**
+ * DialogoEditarAsunto.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Componente que muestra un cuadro de diálogo para editar un asunto propio
+ *
+ */
+
 import {
   Dialog,
   DialogContent,

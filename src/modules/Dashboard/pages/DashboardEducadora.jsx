@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PanelReservas } from "../../Comunes/PanelReservas";
-import { CalendarioExtraescolares } from "@/modules/Extraescolares/components/CalendarioExtraescolares";
 import { useAuth } from "@/context/AuthContext";
 import { TablaExtraescolares } from "@/modules/Extraescolares/components/TablaExtraescolares";
 

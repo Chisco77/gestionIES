@@ -1,6 +1,22 @@
-import { useEffect, useState } from "react";
+/**
+ * DashboardProfesor.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente que renderiza dashboard de inicio para usuarios con perfil profesor.
+ *       Muestra calendario a la izquierda, panel de reservas del usuario a la derecha y
+ *       tabla con detalles de actividades extraescolares en la parte inferior.
+ * 
+ */
+
+import { useState } from "react";
 import { PanelReservas } from "../../Comunes/PanelReservas";
-import { CalendarioExtraescolares } from "@/modules/Extraescolares/components/CalendarioExtraescolares";
 import { useAuth } from "@/context/AuthContext";
 import { TablaExtraescolares } from "@/modules/Extraescolares/components/TablaExtraescolares";
 

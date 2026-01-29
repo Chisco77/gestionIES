@@ -1,3 +1,23 @@
+/**
+ * ResumenAsuntosDia.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Fecha de creación: 2025
+ *
+ * Descripción:
+ * Componente que renderiza info sobre los asuntos propios pedidos por los usuarios en un día determinado.
+ *        Muestra los usuarios ordenados ascendentemente por número de días de APs que han disfrutado a lo
+ *        largo del curso escolar. Ofusca los nombres, salvo para la directiva.
+ *
+ */
+
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";

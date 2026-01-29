@@ -1,3 +1,22 @@
+/**
+ * PanelReservasDirectiva.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente que muestra tabla de permisos y actividades extraescolares
+ *     para la directiva.
+ * 
+ *
+ * Funcionalidades:  Permite aceptar o rechazar permisos y actividades extraescolares.
+
+ */
+
 import { TablaPermisosDirectiva } from "../components/TablaPermisosDirectiva";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
