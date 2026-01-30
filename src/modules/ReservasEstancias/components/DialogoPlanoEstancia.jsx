@@ -20,7 +20,7 @@ export function DialogoPlanoEstancia({ open, onClose, estancia }) {
         <DialogHeader>
           <DialogTitle>
             Plano de la planta ({estancia.planta || "baja"}) —{" "}
-            {estancia.descripcion}
+            {estancia.descripcion} {"("}{estancia.numero_ordenadores} {"ordenadores)"}
           </DialogTitle>
         </DialogHeader>
 

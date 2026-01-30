@@ -248,7 +248,7 @@ async function getReservasEstanciasPorDia(req, res) {
         const nombre = await new Promise((resolve) => {
           buscarPorUid(ldapSession, r.uid, (err, datos) => {
             if (!err && datos)
-              resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
+              resolve(`${datos.givenName || ""} ${datos.sn || ""}`.trim());
             else resolve("Profesor desconocido");
           });
         });
@@ -338,7 +338,7 @@ async function getReservasFiltradas(req, res) {
       `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion
        FROM reservas_estancias
        ${where}
-       ORDER BY fecha ASC, idperiodo_inicio ASC`,
+       ORDER BY fecha ASC, idperiodo_inicio ASC idestancia`,
       vals,
     );
 
@@ -349,7 +349,7 @@ async function getReservasFiltradas(req, res) {
         const nombre = await new Promise((resolve) => {
           buscarPorUid(ldapSession, r.uid, (err, datos) => {
             if (!err && datos)
-              resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
+              resolve(`${datos.givenName || ""} ${datos.sn || ""}`.trim());
             else resolve("Profesor desconocido");
           });
         });

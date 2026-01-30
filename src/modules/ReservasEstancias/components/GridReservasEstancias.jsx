@@ -8,15 +8,15 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Permite realizar reservas de aulas. Para directiva, aparece botón junto al nombre del aula para permitir
  *     reservas periódicas (suponemos que la directiva, a inicio de curso, organiza ocupación de aulas)
- * 
+ *
  */
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Settings } from "lucide-react";
+import { MapPin, Repeat2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
@@ -59,7 +59,7 @@ export function GridReservasEstancias({
 
   const { data: reservasDelDia } = useReservasDelDia(
     selectedDate,
-    tipoEstancia,
+    tipoEstancia
   );
 
   // Filtrar estancias según tipo seleccionado
@@ -69,7 +69,7 @@ export function GridReservasEstancias({
       return;
     }
     const filtradas = reservasDelDia.estancias.filter(
-      (e) => !tipoEstancia || e.tipo === tipoEstancia,
+      (e) => !tipoEstancia || e.tipo === tipoEstancia
     );
     setEstanciasDelGrid(filtradas);
   }, [reservasDelDia, tipoEstancia]);
@@ -86,7 +86,7 @@ export function GridReservasEstancias({
           (r) =>
             parseInt(r.idestancia) === e.id &&
             parseInt(r.idperiodo_inicio) <= p.id &&
-            parseInt(r.idperiodo_fin) >= p.id,
+            parseInt(r.idperiodo_fin) >= p.id
         );
         row[e.id] = reserva || null;
       });
@@ -102,7 +102,7 @@ export function GridReservasEstancias({
       return;
     }
     const periodoFin = periodosDB.find(
-      (p) => parseInt(p.id) === parseInt(reserva.idperiodo_fin),
+      (p) => parseInt(p.id) === parseInt(reserva.idperiodo_fin)
     );
     const horaFin = periodoFin?.fin;
     if (!horaFin || !esReservaFutura(reserva.fecha, horaFin)) {
@@ -110,7 +110,7 @@ export function GridReservasEstancias({
       return;
     }
     const estancia = estancias.find(
-      (e) => e.id === parseInt(reserva.idestancia),
+      (e) => e.id === parseInt(reserva.idestancia)
     );
     setReservaSeleccionada({
       ...reserva,
@@ -182,22 +182,21 @@ export function GridReservasEstancias({
                         setEstanciaSeleccionadaPlano(e);
                         setAbrirPlano(true);
                       }}
-                      title={`Ver plano de ${e.descripcion}`}
+                      title={`Ver plano de ${e.descripcion} - ${e.numero_ordenadores} ordenadores`}
                     >
-                      <div className="relative flex items-center justify-center">
-                        {/* CONTENIDO CENTRADO */}
-                        <div className="flex items-center gap-2">
-                          <span>
-                            {e.descripcion} ({e.numero_ordenadores})
-                          </span>
-
+                      <div className="relative w-full">
+                        {/* CONTENIDO TEXTO */}
+                        <div className="flex items-center justify-center gap-2 pr-8 overflow-hidden">
                           <MapPin
                             size={18}
-                            className="text-gray-500 hover:text-blue-600 transition-colors"
+                            className="shrink-0 text-gray-500 hover:text-blue-600 transition-colors"
                           />
+                          <span className="truncate whitespace-nowrap">
+                            {e.descripcion} ({e.numero_ordenadores})
+                          </span>
                         </div>
 
-                        {/* BOTÓN DERECHA (solo directiva) */}
+                        {/* BOTÓN DERECHA */}
                         {esDirectiva && (
                           <button
                             onClick={(ev) => {
@@ -206,9 +205,9 @@ export function GridReservasEstancias({
                               setAbrirDialogoPeriodico(true);
                             }}
                             title="Programar reservas periódicas"
-                            className="absolute right-2 p-1 rounded-md text-gray-500 hover:text-blue-600 hover:bg-gray-100 transition"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-gray-500 hover:text-blue-600 hover:bg-gray-100 transition"
                           >
-                            <Settings size={18} />
+                            <Repeat2 size={18} />
                           </button>
                         )}
                       </div>
@@ -230,7 +229,7 @@ export function GridReservasEstancias({
                     {estanciasDelGrid.map((e) => {
                       const reserva = rowData.row[e.id];
                       const periodoActual = periodosDB.find(
-                        (p) => p.id === rowData.periodoId,
+                        (p) => p.id === rowData.periodoId
                       );
                       const horaFin = periodoActual?.fin;
                       const esFutura = esReservaFutura(selectedDate, horaFin);
@@ -270,7 +269,7 @@ export function GridReservasEstancias({
                           onClick={() => {
                             if (!esFutura) {
                               toast.error(
-                                "No puedes crear reservas en periodos pasados.",
+                                "No puedes crear reservas en periodos pasados."
                               );
                               return;
                             }
