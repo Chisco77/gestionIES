@@ -96,10 +96,15 @@ export const columns = [
       const b = mapDocCompromiso(rowB.getValue(columnId));
       return a.localeCompare(b);
     },
+    filterFn: (row, columnId, value) => {
+      if (!value) return true; // Todos
+      return String(row.getValue(columnId)) === String(value);
+    },
     size: 70,
     minSize: 70,
     maxSize: 70,
   },
+
   {
     accessorKey: "curso",
     header: ({ column }) => (

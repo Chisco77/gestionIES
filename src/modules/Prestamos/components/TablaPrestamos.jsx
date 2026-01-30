@@ -117,6 +117,10 @@ export function TablaPrestamos({
   const [expandedRows, setExpandedRows] = useState({});
   const [selectedId, setSelectedId] = useState(null);
 
+  const [filtroCurso, setFiltroCurso] = useState("");
+  const [filtroAlumno, setFiltroAlumno] = useState("");
+  const [filtroDocCompromiso, setFiltroDocCompromiso] = useState("");
+
   const table = useReactTable({
     data,
     columns,
@@ -165,6 +169,10 @@ export function TablaPrestamos({
     table.resetGlobalFilter();
     table.resetSorting();
     table.resetPagination();
+
+    setFiltroCurso("");
+    setFiltroAlumno("");
+    setFiltroDocCompromiso("");
   };
 
   return (
@@ -175,11 +183,12 @@ export function TablaPrestamos({
           <label className="block font-medium text-xs">Curso</label>
           <select
             className="border p-2 rounded text-sm"
-            onChange={(e) =>
-              table
-                .getColumn("curso")
-                ?.setFilterValue(e.target.value || undefined)
-            }
+            value={filtroCurso}
+            onChange={(e) => {
+              const value = e.target.value;
+              setFiltroCurso(value);
+              table.getColumn("curso")?.setFilterValue(value || undefined);
+            }}
           >
             <option value="">Todos</option>
             {cursosUnicos.map((curso) => (
@@ -196,10 +205,33 @@ export function TablaPrestamos({
             type="text"
             className="border p-2 rounded text-sm"
             placeholder="Buscar por nombre"
-            onChange={(e) =>
-              table.getColumn("nombreUsuario")?.setFilterValue(e.target.value)
-            }
+            value={filtroAlumno}
+            onChange={(e) => {
+              const value = e.target.value;
+              setFiltroAlumno(value);
+              table.getColumn("nombreUsuario")?.setFilterValue(value);
+            }}
           />
+        </div>
+
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Doc Compromiso</label>
+          <select
+            className="border p-2 rounded text-sm"
+            value={filtroDocCompromiso}
+            onChange={(e) => {
+              const value = e.target.value;
+              setFiltroDocCompromiso(value);
+              table
+                .getColumn("doc_compromiso")
+                ?.setFilterValue(value || undefined);
+            }}
+          >
+            <option value="">Todos</option>
+            <option value="0">Pendiente</option>
+            <option value="1">Entregado</option>
+            <option value="2">Recibido</option>
+          </select>
         </div>
 
         <Button
