@@ -62,6 +62,7 @@ export function GridReservasEstancias({
     tipoEstancia
   );
 
+  
   // Filtrar estancias según tipo seleccionado
   useEffect(() => {
     if (!reservasDelDia?.estancias) {
@@ -77,6 +78,7 @@ export function GridReservasEstancias({
   // Generar gridData
   useEffect(() => {
     if (!reservasDelDia) return;
+    console.log ("Reservas del día: ", reservasDelDia);
     const newGridData = (
       reservasDelDia.periodos.length ? reservasDelDia.periodos : periodosDB
     ).map((p) => {
@@ -249,9 +251,21 @@ export function GridReservasEstancias({
                             className={`p-2 border cursor-pointer transition ${reserva.uid === uid ? "bg-green-200 hover:bg-green-300" : "bg-yellow-200 hover:bg-yellow-300"}`}
                             onClick={() => handleEditarReserva(reserva)}
                           >
-                            {reserva.uid === uid
-                              ? "Mi reserva"
-                              : (reserva.nombre || "Ocupado").slice(0, 23)}
+                            <div className="flex items-center justify-between">
+                              <span>
+                                {reserva.uid === uid
+                                  ? "Mi reserva"
+                                  : (reserva.nombre || "Ocupado").slice(0, 23)}
+                              </span>
+
+                              {reserva.idrepeticion && (
+                                <Repeat2
+                                  size={16}
+                                  className="text-gray-500 ml-2"
+                                  title="Reserva periódica"
+                                />
+                              )}
+                            </div>
                           </td>
                         );
                       }

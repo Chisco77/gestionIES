@@ -352,14 +352,15 @@ export function PrestamosAlumnosIndex() {
               >
                 <Tag className="mr-2 h-4 w-4" /> Documento compromiso préstamo
               </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => setAbrirDialogoEtiquetas(true)}>
+                <Tag className="mr-2 h-4 w-4" /> Etiquetas libros
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleGenerarListadoPrestamosLibrosAlumnosPdf}
               >
                 <FileText className="mr-2 h-4 w-4 text-red-500" />
                 Litado de préstamos
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setAbrirDialogoEtiquetas(true)}>
-                <Tag className="mr-2 h-4 w-4" /> Etiquetas libros
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

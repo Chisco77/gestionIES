@@ -102,11 +102,11 @@ async function getReservasEstancias(req, res) {
     const { rows } = await pool.query(
       `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid,
               TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha,
-              descripcion
+              descripcion, idrepeticion
        FROM reservas_estancias
        ${where}
        ORDER BY fecha ASC, idperiodo_inicio ASC`,
-      vals,
+      vals
     );
 
     res.json({ ok: true, reservas: rows });
@@ -126,6 +126,7 @@ async function insertReservaEstancia(req, res) {
     uid,
     fecha,
     descripcion = "",
+    idrepeticion = null, // 🔹 Nuevo campo opcional
   } = req.body || {};
 
   if (!uid) {
@@ -142,10 +143,10 @@ async function insertReservaEstancia(req, res) {
     // 1️⃣ Verificar solape
     const { rows: existentes } = await pool.query(
       `SELECT id, idperiodo_inicio, idperiodo_fin
-   FROM reservas_estancias
-   WHERE idestancia = $1 AND fecha = $2
-   AND NOT (idperiodo_fin < $3 OR idperiodo_inicio > $4)`,
-      [idestancia, fecha, idperiodo_inicio, idperiodo_fin],
+       FROM reservas_estancias
+       WHERE idestancia = $1 AND fecha = $2
+       AND NOT (idperiodo_fin < $3 OR idperiodo_inicio > $4)`,
+      [idestancia, fecha, idperiodo_inicio, idperiodo_fin]
     );
     if (existentes.length > 0) {
       return res.status(409).json({
@@ -159,10 +160,18 @@ async function insertReservaEstancia(req, res) {
     // 2️⃣ Insertar reserva
     const { rows } = await pool.query(
       `INSERT INTO reservas_estancias
-   (idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion)
-   VALUES ($1, $2, $3, $4, $5, $6)
-   RETURNING *`,
-      [idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion],
+       (idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion, idrepeticion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [
+        idestancia,
+        idperiodo_inicio,
+        idperiodo_fin,
+        uid,
+        fecha,
+        descripcion,
+        idrepeticion,
+      ]
     );
 
     res.status(201).json({ ok: true, reserva: rows[0] });
@@ -178,7 +187,7 @@ async function deleteReservaEstancia(req, res) {
   try {
     const { rowCount } = await pool.query(
       `DELETE FROM reservas_estancias WHERE id = $1`,
-      [id],
+      [id]
     );
     if (rowCount === 0)
       return res
@@ -209,7 +218,7 @@ async function getReservasEstanciasPorDia(req, res) {
     const { rows: periodos } = await pool.query(
       `SELECT id, nombre, inicio, fin
        FROM periodos_horarios
-       ORDER BY id`,
+       ORDER BY id`
     );
 
     // 2️⃣ Obtener estancias filtradas (solo reservables)
@@ -238,7 +247,7 @@ async function getReservasEstanciasPorDia(req, res) {
        WHERE TO_CHAR(fecha, 'YYYY-MM-DD') = $1
        AND idestancia = ANY($2::int[])
        ORDER BY idperiodo_inicio`,
-      [fecha, idsEstancias],
+      [fecha, idsEstancias]
     );
 
     // 4️⃣ Añadir nombres LDAP a las reservas
@@ -335,11 +344,11 @@ async function getReservasFiltradas(req, res) {
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
     // 3️⃣ Obtener reservas
     const { rows: reservas } = await pool.query(
-      `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion
+      `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion, idrepeticion
        FROM reservas_estancias
        ${where}
        ORDER BY fecha ASC, idperiodo_inicio ASC, idestancia ASC`,
-      vals,
+      vals
     );
 
     // 4️⃣ Añadir nombres LDAP
@@ -362,7 +371,7 @@ async function getReservasFiltradas(req, res) {
     const { rows: periodos } = await pool.query(
       `SELECT id, nombre, inicio, fin
        FROM periodos_horarios
-       ORDER BY id`,
+       ORDER BY id`
     );
 
     res.json({ ok: true, periodos, estancias, reservas });
@@ -389,7 +398,7 @@ async function updateReservaEstancia(req, res) {
       `SELECT id, idestancia, fecha, uid
        FROM reservas_estancias
        WHERE id = $1`,
-      [id],
+      [id]
     );
 
     if (existentes.length === 0) {
@@ -407,7 +416,7 @@ async function updateReservaEstancia(req, res) {
        AND id <> $3
        AND NOT (idperiodo_fin < $4 OR idperiodo_inicio > $5)
        LIMIT 1`,
-      [idestancia, fecha, id, idperiodo_inicio, idperiodo_fin],
+      [idestancia, fecha, id, idperiodo_inicio, idperiodo_fin]
     );
 
     if (solapes.length > 0) {
@@ -425,7 +434,7 @@ async function updateReservaEstancia(req, res) {
            descripcion = $3
        WHERE id = $4
        RETURNING *`,
-      [idperiodo_inicio, idperiodo_fin, descripcion, id],
+      [idperiodo_inicio, idperiodo_fin, descripcion, id]
     );
 
     res.json({ ok: true, reserva: rows[0] });
@@ -519,11 +528,11 @@ async function insertReservaEstanciaPeriodica(req, res) {
     idperiodo_inicio,
     idperiodo_fin,
     uid,
-    fecha, // fecha de inicio en formato 'YYYY-MM-DD'
+    fecha, // fecha de inicio 'YYYY-MM-DD'
     descripcion = "",
     repeticion = "diaria", // 'diaria' o 'semanal'
-    diasSemana = [], // solo si semanal, ['Lun','Mar',...]
-    fechaLimite, // fecha límite 'YYYY-MM-DD'
+    diasSemana = [], // solo si semanal
+    fechaLimite, // 'YYYY-MM-DD'
   } = req.body || {};
 
   if (!uid)
@@ -535,12 +544,29 @@ async function insertReservaEstanciaPeriodica(req, res) {
   }
 
   try {
-    console.log("[DEBUG] Datos recibidos:", req.body);
+    // 🔹 1️⃣ Crear registro en tabla reservas_estancias_repeticion
+    const { rows: repRows } = await pool.query(
+      `INSERT INTO reservas_estancias_repeticion
+       (uid, profesor, idperiodo_inicio, idperiodo_fin, idestancia,
+        fecha_desde, fecha_hasta, descripcion, frecuencia)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       RETURNING id`,
+      [
+        uid,
+        uid, // profesor
+        idperiodo_inicio,
+        idperiodo_fin,
+        idestancia,
+        fecha,
+        fechaLimite,
+        descripcion,
+        repeticion === "diaria" ? "daily" : "weekly",
+      ]
+    );
+    const idRepeticion = repRows[0].id;
 
-    // --- Mapeo días para repetición semanal ---
+    // 🔹 2️⃣ Generar fechas según frecuencia
     const diasMap = { Lun: 1, Mar: 2, Mié: 3, Jue: 4, Vie: 5 };
-
-    // --- Función para avanzar un día ---
     const nextDay = (str) => {
       const [y, m, d] = str.split("-").map(Number);
       const next = new Date(y, m - 1, d + 1);
@@ -550,64 +576,54 @@ async function insertReservaEstanciaPeriodica(req, res) {
     let currentDateStr = fecha;
     const fechasAInsertar = [];
 
-    // --- Generar fechas ---
     while (currentDateStr <= fechaLimite) {
-      if (repeticion === "diaria") {
-        fechasAInsertar.push(currentDateStr);
-        console.log("[DEBUG] Añadida fecha diaria:", currentDateStr);
-      } else if (repeticion === "semanal") {
+      if (repeticion === "diaria") fechasAInsertar.push(currentDateStr);
+      else if (repeticion === "semanal") {
         const [y, m, d] = currentDateStr.split("-").map(Number);
-        const day = new Date(y, m - 1, d).getDay(); // 0-domingo, 1-lunes...
-        if (diasSemana.some((dia) => diasMap[dia] === day)) {
+        const day = new Date(y, m - 1, d).getDay();
+        if (diasSemana.some((dia) => diasMap[dia] === day))
           fechasAInsertar.push(currentDateStr);
-          console.log(
-            "[DEBUG] Añadida fecha semanal:",
-            currentDateStr,
-            "día:",
-            day,
-          );
-        }
       }
       currentDateStr = nextDay(currentDateStr);
     }
 
-    console.log("[DEBUG] Fechas a insertar:", fechasAInsertar);
-
+    // 🔹 3️⃣ Insertar reservas con idrepeticion
     const reservasInsertadas = [];
-
     for (const f of fechasAInsertar) {
-      // --- Verificar solape ---
       const { rows: existentes } = await pool.query(
         `SELECT id FROM reservas_estancias
          WHERE idestancia = $1
            AND fecha = $2
            AND idperiodo_inicio <= $4
            AND idperiodo_fin >= $3`,
-        [idestancia, f, idperiodo_inicio, idperiodo_fin],
+        [idestancia, f, idperiodo_inicio, idperiodo_fin]
       );
 
-      if (existentes.length > 0) {
-        console.log("[DEBUG] Conflicto, saltando fecha:", f);
-        continue;
-      }
+      if (existentes.length > 0) continue;
 
-      // --- Insertar reserva ---
       const { rows } = await pool.query(
         `INSERT INTO reservas_estancias
-         (idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion)
-         VALUES ($1,$2,$3,$4,$5,$6)
+         (idestancia, idperiodo_inicio, idperiodo_fin, uid, fecha, descripcion, idrepeticion)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
          RETURNING *`,
-        [idestancia, idperiodo_inicio, idperiodo_fin, uid, f, descripcion],
+        [
+          idestancia,
+          idperiodo_inicio,
+          idperiodo_fin,
+          uid,
+          f,
+          descripcion,
+          idRepeticion,
+        ]
       );
-
       reservasInsertadas.push(rows[0]);
-      console.log("[DEBUG] Reserva insertada:", f);
     }
 
     res.status(201).json({
       ok: true,
+      idRepeticion,
       reservas: reservasInsertadas,
-      message: `Se insertaron ${reservasInsertadas.length} reservas`,
+      message: `Se insertaron ${reservasInsertadas.length} reservas con idrepeticion ${idRepeticion}`,
     });
   } catch (err) {
     console.error("[insertReservaEstanciaPeriodica] Error:", err);

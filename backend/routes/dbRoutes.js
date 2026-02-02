@@ -315,4 +315,24 @@ router.post("/asuntos-permitidos", insertAsuntoPermitido);
 router.delete("/asuntos-permitidos/:id", deleteAsuntoPermitido);
 
 
+// ================================================================
+//   Controlador de Reservas de Estancias con Repetición
+// ================================================================
+const {
+  getReservasEstanciasRepeticion,
+  insertReservaEstanciaRepeticion,
+  updateReservaEstanciaRepeticion,
+  deleteReservaEstanciaRepeticion,
+} = require("../controllers/db/reservasEstanciasRepeticionController");
+
+// ================================================================
+//   Rutas de Reservas de Estancias con Repetición
+// ================================================================
+router.get("/reservas-estancias/repeticion", getReservasEstanciasRepeticion);
+router.post("/reservas-estancias/repeticion", insertReservaEstanciaRepeticion);
+router.put("/reservas-estancias/repeticion/:id", updateReservaEstanciaRepeticion);
+router.delete("/reservas-estancias/repeticion/:id", deleteReservaEstanciaRepeticion);
+
+
+
 module.exports = router;
