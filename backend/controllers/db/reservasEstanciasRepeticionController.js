@@ -21,6 +21,34 @@
 
 const pool = require("../../db");
 
+function generarFechasDiarias(desde, hasta) {
+  const fechas = [];
+  let actual = new Date(desde);
+  const fin = new Date(hasta);
+
+  while (actual <= fin) {
+    fechas.push(actual.toISOString().split("T")[0]);
+    actual.setDate(actual.getDate() + 1);
+  }
+  return fechas;
+}
+
+function generarFechasSemanales(desde, hasta, diasSemanaInt) {
+  const fechas = [];
+  let actual = new Date(desde);
+  const fin = new Date(hasta);
+
+  while (actual <= fin) {
+    // getDay(): 0 = domingo, 1 = lunes ...
+    const dia = actual.getDay() === 0 ? 6 : actual.getDay() - 1; // 0 = lunes
+    if (diasSemanaInt.includes(dia)) {
+      fechas.push(actual.toISOString().split("T")[0]);
+    }
+    actual.setDate(actual.getDate() + 1);
+  }
+  return fechas;
+}
+
 // Formatea fechas a 'YYYY-MM-DD'
 function formatearFecha(reservas) {
   return reservas.map((r) => ({
@@ -74,40 +102,182 @@ async function getReservasEstanciasRepeticion(req, res) {
   }
 }
 
+async function getReservasEstanciasRepeticionEnriquecidas(req, res) {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        r.id,
+        r.uid,
+        r.profesor,
+        r.idperiodo_inicio,
+        r.idperiodo_fin,
+        r.fecha_desde,
+        r.fecha_hasta,
+        r.descripcion,
+        r.frecuencia,
+        r.dias_semana,
+        r.created_at,
+        COALESCE(
+          json_agg(
+            jsonb_build_object(
+              'id', e.id,
+              'fecha', e.fecha,
+              'idestancia', e.idestancia,
+              'idperiodo_inicio', e.idperiodo_inicio,
+              'idperiodo_fin', e.idperiodo_fin,
+              'descripcion', e.descripcion
+            )
+          ) FILTER (WHERE e.id IS NOT NULL),
+          '[]'
+        ) AS reservas
+      FROM reservas_estancias_repeticion r
+      LEFT JOIN reservas_estancias e
+        ON e.idrepeticion = r.id
+      GROUP BY r.id
+      ORDER BY r.fecha_desde ASC
+    `);
+
+    res.json({
+      ok: true,
+      reservas: formatearFecha(rows).map((r) => ({
+        ...r,
+        reservas: r.reservas,
+      })),
+    });
+  } catch (err) {
+    console.error("[getReservasEstanciasRepeticionEnriquecidas] Error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Error obteniendo reservas repetidas enriquecidas",
+    });
+  }
+}
+
 // -------------------------------------------------------------
 // Insertar una nueva repetición
 async function insertReservaEstanciaRepeticion(req, res) {
   const {
     uid,
     profesor,
+    idestancia,
     idperiodo_inicio,
     idperiodo_fin,
     fecha_desde,
     fecha_hasta,
     descripcion = "",
-    frecuencia = "daily",
+    frecuencia = "diaria",
     dias_semana = [],
   } = req.body || {};
 
   if (!uid)
     return res.status(401).json({ ok: false, error: "Usuario no autenticado" });
-  if (!profesor || !idperiodo_inicio || !idperiodo_fin || !fecha_desde || !fecha_hasta) {
-    return res.status(400).json({ ok: false, error: "Faltan datos obligatorios" });
+
+  if (
+    !profesor ||
+    !idestancia ||
+    !idperiodo_inicio ||
+    !idperiodo_fin ||
+    !fecha_desde ||
+    !fecha_hasta
+  ) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "Faltan datos obligatorios" });
   }
 
+  const client = await pool.connect();
+  const MAPA_DIAS = {
+    Lun: 0,
+    Mar: 1,
+    Mié: 2,
+    Jue: 3,
+    Vie: 4,
+  };
+
   try {
-    const { rows } = await pool.query(
+    await client.query("BEGIN");
+
+    // Convertir días de la semana a números (0 = Lunes)
+    const diasSemanaInt =
+      Array.isArray(dias_semana) && dias_semana.length > 0
+        ? dias_semana
+            .map((d) => MAPA_DIAS[d])
+            .filter((d) => Number.isInteger(d))
+        : [];
+
+    // 1️⃣ Insertar padre
+    const { rows } = await client.query(
       `INSERT INTO reservas_estancias_repeticion
-       (uid, profesor, idperiodo_inicio, idperiodo_fin, fecha_desde, fecha_hasta, descripcion, frecuencia, dias_semana)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       (uid, profesor, idperiodo_inicio, idperiodo_fin,
+        fecha_desde, fecha_hasta, descripcion, frecuencia, dias_semana, idestancia)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        RETURNING *`,
-      [uid, profesor, idperiodo_inicio, idperiodo_fin, fecha_desde, fecha_hasta, descripcion, frecuencia, dias_semana],
+      [
+        uid,
+        profesor,
+        idperiodo_inicio,
+        idperiodo_fin,
+        fecha_desde,
+        fecha_hasta,
+        descripcion,
+        frecuencia,
+        diasSemanaInt,
+        idestancia,
+      ],
     );
 
-    res.status(201).json({ ok: true, reserva: formatearFecha(rows)[0] });
+    const repeticion = rows[0];
+    const idrepeticion = repeticion.id;
+
+    // 2️⃣ Generar fechas
+    let fechas = [];
+
+    if (frecuencia === "diaria") {
+      fechas = generarFechasDiarias(fecha_desde, fecha_hasta);
+    } else if (frecuencia === "semanal") {
+      fechas = generarFechasSemanales(fecha_desde, fecha_hasta, dias_semana);
+    }
+
+    if (fechas.length === 0) {
+      throw new Error("No se generaron fechas para la repetición");
+    }
+
+    // 3️⃣ Insertar hijos
+    for (const fecha of fechas) {
+      await client.query(
+        `INSERT INTO reservas_estancias
+         (idestancia, uid, fecha,
+          idperiodo_inicio, idperiodo_fin,
+          descripcion, idrepeticion)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [
+          idestancia,
+          profesor,
+          fecha,
+          idperiodo_inicio,
+          idperiodo_fin,
+          descripcion,
+          idrepeticion,
+        ],
+      );
+    }
+
+    await client.query("COMMIT");
+
+    res.status(201).json({
+      ok: true,
+      idrepeticion,
+      numReservas: fechas.length,
+    });
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("[insertReservaEstanciaRepeticion] Error:", err);
-    res.status(500).json({ ok: false, error: "Error insertando reserva repetida" });
+    res.status(500).json({
+      ok: false,
+      error: "Error insertando reserva periódica",
+    });
+  } finally {
+    client.release();
   }
 }
 
@@ -121,11 +291,15 @@ async function deleteReservaEstanciaRepeticion(req, res) {
       [id],
     );
     if (rowCount === 0)
-      return res.status(404).json({ ok: false, error: "Reserva no encontrada" });
+      return res
+        .status(404)
+        .json({ ok: false, error: "Reserva no encontrada" });
     res.json({ ok: true });
   } catch (err) {
     console.error("[deleteReservaEstanciaRepeticion] Error:", err);
-    res.status(500).json({ ok: false, error: "Error eliminando reserva repetida" });
+    res
+      .status(500)
+      .json({ ok: false, error: "Error eliminando reserva repetida" });
   }
 }
 
@@ -144,7 +318,9 @@ async function updateReservaEstanciaRepeticion(req, res) {
   } = req.body || {};
 
   if (!idperiodo_inicio || !idperiodo_fin || !fecha_desde || !fecha_hasta) {
-    return res.status(400).json({ ok: false, error: "Faltan datos obligatorios" });
+    return res
+      .status(400)
+      .json({ ok: false, error: "Faltan datos obligatorios" });
   }
 
   try {
@@ -154,7 +330,9 @@ async function updateReservaEstanciaRepeticion(req, res) {
     );
 
     if (existentes.length === 0) {
-      return res.status(404).json({ ok: false, error: "Reserva no encontrada" });
+      return res
+        .status(404)
+        .json({ ok: false, error: "Reserva no encontrada" });
     }
 
     const { rows } = await pool.query(
@@ -168,13 +346,24 @@ async function updateReservaEstanciaRepeticion(req, res) {
            dias_semana = $7
        WHERE id = $8
        RETURNING *`,
-      [idperiodo_inicio, idperiodo_fin, fecha_desde, fecha_hasta, descripcion, frecuencia, dias_semana, id],
+      [
+        idperiodo_inicio,
+        idperiodo_fin,
+        fecha_desde,
+        fecha_hasta,
+        descripcion,
+        frecuencia,
+        dias_semana,
+        id,
+      ],
     );
 
     res.json({ ok: true, reserva: formatearFecha(rows)[0] });
   } catch (err) {
     console.error("[updateReservaEstanciaRepeticion] Error:", err);
-    res.status(500).json({ ok: false, error: "Error actualizando reserva repetida" });
+    res
+      .status(500)
+      .json({ ok: false, error: "Error actualizando reserva repetida" });
   }
 }
 
@@ -183,4 +372,5 @@ module.exports = {
   insertReservaEstanciaRepeticion,
   deleteReservaEstanciaRepeticion,
   updateReservaEstanciaRepeticion,
+  getReservasEstanciasRepeticionEnriquecidas,
 };

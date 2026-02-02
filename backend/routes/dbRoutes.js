@@ -135,7 +135,7 @@ const {
 const {
   getPermisos,
   insertAsuntoPropio,
-  insertPermiso, 
+  insertPermiso,
   updatePermiso,
   deletePermiso,
   getPermisosEnriquecidos,
@@ -148,7 +148,6 @@ const {
   insertAsuntoPermitido,
   deleteAsuntoPermitido,
 } = require("../controllers/db/asuntosPermitidosController");
-
 
 // ================================================================
 //   Rutas de Estancias
@@ -227,8 +226,6 @@ router.delete("/permisos/:id", deletePermiso);
 router.get("/permisos-enriquecidos", getPermisosEnriquecidos);
 router.patch("/permisos/estado/:id", updateEstadoPermiso);
 
-
-
 // ================================================================
 //   Rutas de Periodos Horarios
 // ================================================================
@@ -306,14 +303,12 @@ router.get("/empleados/:uid", getEmpleado);
 router.put("/empleados/:uid", updateEmpleado);
 router.get("/empleados", listEmpleados);
 
-
 // ================================================================
 //   Rutas de Asuntos Propios - Permisos especiales (desbloqueos)
 // ================================================================
-router.get("/asuntos-permitidos", getAsuntosPermitidos); 
+router.get("/asuntos-permitidos", getAsuntosPermitidos);
 router.post("/asuntos-permitidos", insertAsuntoPermitido);
 router.delete("/asuntos-permitidos/:id", deleteAsuntoPermitido);
-
 
 // ================================================================
 //   Controlador de Reservas de Estancias con Repetición
@@ -323,6 +318,7 @@ const {
   insertReservaEstanciaRepeticion,
   updateReservaEstanciaRepeticion,
   deleteReservaEstanciaRepeticion,
+  getReservasEstanciasRepeticionEnriquecidas,
 } = require("../controllers/db/reservasEstanciasRepeticionController");
 
 // ================================================================
@@ -330,9 +326,17 @@ const {
 // ================================================================
 router.get("/reservas-estancias/repeticion", getReservasEstanciasRepeticion);
 router.post("/reservas-estancias/repeticion", insertReservaEstanciaRepeticion);
-router.put("/reservas-estancias/repeticion/:id", updateReservaEstanciaRepeticion);
-router.delete("/reservas-estancias/repeticion/:id", deleteReservaEstanciaRepeticion);
-
-
+router.put(
+  "/reservas-estancias/repeticion/:id",
+  updateReservaEstanciaRepeticion,
+);
+router.delete(
+  "/reservas-estancias/repeticion/:id",
+  deleteReservaEstanciaRepeticion,
+);
+router.get(
+  "/reservas-estancias/repeticiones/enriquecidas",
+  getReservasEstanciasRepeticionEnriquecidas,
+);
 
 module.exports = router;

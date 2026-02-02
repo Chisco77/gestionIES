@@ -8,10 +8,11 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Permite realizar reservas periódicas de aulas. Solo para directiva.
- * 
+ *
  */
+
 
 import { useEffect, useState } from "react";
 import {
@@ -103,7 +104,7 @@ export function DialogoInsertarReservaPeriodica({
     );
   };
 
-  // Mutation para crear reserva periódica
+  // Mutation para crear reserva periódica (REPETICIÓN)
   const mutation = useMutation({
     mutationFn: async () => {
       if (!inicio || !fin)
@@ -112,20 +113,23 @@ export function DialogoInsertarReservaPeriodica({
         throw new Error("El periodo final no puede ser anterior al inicial");
       if (!profesorSeleccionado) throw new Error("Selecciona un profesor");
       if (!user?.username) throw new Error("Usuario no autenticado");
+      if (tipoRepeticion === "semanal" && diasSemana.length === 0)
+        throw new Error("Selecciona al menos un día de la semana");
 
       const payload = {
+        uid: user.username, // quien crea la repetición
+        profesor: profesorSeleccionado, // profesor asignado
         idestancia,
         idperiodo_inicio: parseInt(inicio),
         idperiodo_fin: parseInt(fin),
-        uid: profesorSeleccionado,
-        fecha,
+        fecha_desde: fecha,
+        fecha_hasta: fechaLimite,
         descripcion,
-        repeticion: tipoRepeticion,
-        diasSemana,
-        fechaLimite,
+        frecuencia: tipoRepeticion, // diaria | semanal
+        dias_semana: tipoRepeticion === "semanal" ? diasSemana : [],
       };
 
-      const res = await fetch(`${API_URL}/db/reservas-estancias/periodicas`, {
+      const res = await fetch(`${API_URL}/db/reservas-estancias/repeticion`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -137,12 +141,14 @@ export function DialogoInsertarReservaPeriodica({
         throw new Error(data.error || "Error al insertar reserva periódica");
       return data;
     },
+
     onSuccess: () => {
       toast.success("Reserva periódica creada correctamente");
       queryClient.invalidateQueries(["reservas", "dia", fecha]);
       onSuccess?.();
       onClose();
     },
+
     onError: (err) => {
       toast.error(err.message || "Error al insertar reserva periódica");
     },
@@ -313,6 +319,7 @@ export function DialogoInsertarReservaPeriodica({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <DialogoConfirmacionReservaPeriodica
         open={openConfirm}
         setOpen={setOpenConfirm}
@@ -327,7 +334,7 @@ export function DialogoInsertarReservaPeriodica({
           descripcion,
           profesor: profesorObj
             ? `${profesorObj.givenName} ${profesorObj.sn}`
-            : "", // fallback
+            : "",
           periodos,
         }}
         onConfirm={() => mutation.mutate()}
