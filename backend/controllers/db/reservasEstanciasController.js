@@ -338,7 +338,7 @@ async function getReservasFiltradas(req, res) {
       `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion
        FROM reservas_estancias
        ${where}
-       ORDER BY fecha ASC, idperiodo_inicio ASC idestancia`,
+       ORDER BY fecha ASC, idperiodo_inicio ASC, idestancia ASC`,
       vals,
     );
 

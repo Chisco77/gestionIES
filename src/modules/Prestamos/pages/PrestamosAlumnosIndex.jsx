@@ -82,6 +82,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { generarListadoPrestamosLibrosAlumnosPdf } from "@/utils/Informes";
+
 export function PrestamosAlumnosIndex() {
   const [prestamosFiltrados, setPrestamosFiltrados] = useState([]);
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);
@@ -110,10 +112,30 @@ export function PrestamosAlumnosIndex() {
       iniciocurso: p.iniciocurso,
     })) || [];
 
+  const handleGenerarListadoPrestamosLibrosAlumnosPdf = () => {
+    if (!prestamosFiltrados || prestamosFiltrados.length === 0) {
+      alert("No hay datos para generar el informe.");
+      return;
+    }
+
+    generarListadoPrestamosLibrosAlumnosPdf({
+      alumnos: prestamosFiltrados,
+      nombrePdf: "listado_prestamos_libros_alumnos",
+    });
+  };
+
   // Sincroniza los filtrados con los datos actualizados
-  useEffect(() => {
+  /*useEffect(() => {
     setPrestamosFiltrados(prestamos || []);
   }, [prestamos]);
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-24">
+        <Loader className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }*/
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-24">
@@ -329,6 +351,12 @@ export function PrestamosAlumnosIndex() {
                 onClick={() => setAbrirDialogoDocumentoPrestamo(true)}
               >
                 <Tag className="mr-2 h-4 w-4" /> Documento compromiso préstamo
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleGenerarListadoPrestamosLibrosAlumnosPdf}
+              >
+                <FileText className="mr-2 h-4 w-4 text-red-500" />
+                Litado de préstamos
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setAbrirDialogoEtiquetas(true)}>
                 <Tag className="mr-2 h-4 w-4" /> Etiquetas libros

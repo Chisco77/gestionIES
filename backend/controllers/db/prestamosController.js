@@ -61,7 +61,9 @@ async function getPrestamosAgrupados(req, res) {
          pi.fechadevolucion, 
          pi.devuelto,
          pi.entregado,
-         l.libro AS nombre_libro
+         pi.idlibro,
+         l.libro AS nombre_libro,
+         l.idcurso as idcurso
        FROM prestamos p
        JOIN prestamos_items pi ON p.id = pi.idprestamo
        LEFT JOIN libros l ON l.id = pi.idlibro
@@ -119,6 +121,8 @@ async function getPrestamosAgrupados(req, res) {
         entregado: p.entregado,
         fechaentrega: p.fechaentrega,
         fechadevolucion: p.fechadevolucion,
+        idlibro: p.idlibro,
+        idcurso: p.idcurso,
       });
     }
 

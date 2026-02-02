@@ -58,18 +58,18 @@ export function generatePermisosPdf({ empleado, permiso }) {
     tableX + col1Width + col2Width,
     y,
     tableX + col1Width + col2Width,
-    y + row2Height,
+    y + row2Height
   );
 
   doc.text(
     "DNI:",
     tableX + col1Width + col2Width + textPad,
-    y + row2Height - 3,
+    y + row2Height - 3
   );
   doc.text(
     employeeNumber,
     tableX + col1Width + col2Width + 15,
-    y + row2Height - 3,
+    y + row2Height - 3
   );
 
   y += row2Height;
@@ -93,7 +93,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "Cuerpo: Profesores de Secundaria",
     tableX + textPad,
-    y + row4Height - 3,
+    y + row4Height - 3
   );
   doc.line(tableX + col4_1Width, y, tableX + col4_1Width, y + row4Height);
   doc.text("Grupo:", tableX + col4_1Width + textPad, y + row4Height - 3);
@@ -101,12 +101,12 @@ export function generatePermisosPdf({ empleado, permiso }) {
     tableX + col4_1Width + col4_2Width,
     y,
     tableX + col4_1Width + col4_2Width,
-    y + row4Height,
+    y + row4Height
   );
   doc.text(
     "Subgrupo:",
     tableX + col4_1Width + col4_2Width + textPad,
-    y + row4Height - 3,
+    y + row4Height - 3
   );
   y += row4Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -117,7 +117,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "(Marcar con una x el recuadro correspondiente)",
     tableX + 45,
-    y + 6,
+    y + 6
   );
   doc.setFont("helvetica", "bold");
   doc.text("Relación jurídica:", tableX + textPad, y + 6);
@@ -168,7 +168,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     `Centro de destino:    ${import.meta.env.VITE_IES_NAME}`,
     tableX + col6_1Width + textPad,
-    y + row6Height - 3,
+    y + row6Height - 3
   );
   y += row6Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -280,7 +280,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "3. DOCUMENTACIÓN QUE SE APORTA",
     tableX + textPad,
-    y + row3_1Height - 2,
+    y + row3_1Height - 2
   );
   y += row3_1Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -320,7 +320,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "Trujillo, _____ de _________________________ de 20_______",
     marginLeft,
-    y,
+    y
   );
   y += 10;
   doc.setFont("helvetica", "bold");
@@ -379,7 +379,7 @@ export async function generateEtiquetasGenericasPdf({
 
   const etiquetas = Array.from(
     { length: totalEtiquetas },
-    (_, i) => `${prefijo}${i + numeroInicial}`,
+    (_, i) => `${prefijo}${i + numeroInicial}`
   );
 
   for (let i = 0; i < etiquetas.length; i++) {
@@ -533,7 +533,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
   }, {});
 
   Object.values(permisosPorProfesor).forEach((lista) =>
-    lista.sort((a, b) => new Date(a.fecha) - new Date(b.fecha)),
+    lista.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
   );
 
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -575,15 +575,15 @@ export function generateListadoPermisosProfesores(permisos = []) {
     const firstRow = listaPermisos[0];
     const tipoLinesFirst = doc.splitTextToSize(
       getDescripcionTipoPermiso(firstRow.tipo),
-      80,
+      80
     ).length;
     const estadoLinesFirst = doc.splitTextToSize(
       estadosMap[firstRow.estado] ?? "—",
-      25,
+      25
     ).length;
     const descLinesFirst = doc.splitTextToSize(
       firstRow.descripcion || "",
-      50,
+      50
     ).length;
     const firstRowHeight =
       Math.max(tipoLinesFirst, estadoLinesFirst, descLinesFirst, 1) *
@@ -639,7 +639,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
         tipoLines.split("\n").length,
         estadoLines.split("\n").length,
         descLines.split("\n").length,
-        1,
+        1
       );
       const rowHeight = rowLines * lineHeight;
 
@@ -780,7 +780,7 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
 
   // --- Ordenar por fecha de celebración ---
   const actividadesOrdenadas = [...actividades].sort(
-    (a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio),
+    (a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio)
   );
 
   // --- Agrupar por profesor ---
@@ -792,7 +792,7 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
   }, {});
 
   const profesores = Object.keys(actividadesPorProfesor).sort((a, b) =>
-    a.localeCompare(b, "es", { sensitivity: "base" }),
+    a.localeCompare(b, "es", { sensitivity: "base" })
   );
 
   // --- PDF base ---
@@ -810,7 +810,7 @@ export function generateListadoExtraescolaresPorProfesor(actividades = []) {
     "Listado de Actividades Extraescolares por Profesor",
     pageWidth / 2,
     y,
-    { align: "center" },
+    { align: "center" }
   );
   y += 12;
 
@@ -915,7 +915,7 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
 
   // --- Ordenar por fecha_inicio ---
   const ordenadas = [...actividades].sort(
-    (a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio),
+    (a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio)
   );
 
   // --- Agrupar por fecha_inicio (YYYY-MM-DD) ---
@@ -943,7 +943,7 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
     "Listado de Actividades Extraescolares por Fecha",
     pageWidth / 2,
     y,
-    { align: "center" },
+    { align: "center" }
   );
   y += 12;
 
@@ -1011,11 +1011,11 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
       const tituloLines = doc.splitTextToSize(act.titulo || "", colTituloWidth);
       const profesorLines = doc.splitTextToSize(
         act.nombreProfesor || "",
-        colProfesorWidth,
+        colProfesorWidth
       );
       const departamentoLines = doc.splitTextToSize(
         act.departamento?.nombre || "-",
-        colDepartamentoWidth,
+        colDepartamentoWidth
       );
 
       const cursosTxt =
@@ -1033,7 +1033,7 @@ export function generateListadoExtraescolaresPorFecha(actividades = []) {
         departamentoLines.length,
         cursosLines.length,
         estadoLines.length,
-        1,
+        1
       );
       const rowHeight = rowLines * lineHeight;
 
@@ -1085,7 +1085,7 @@ export function generateListadoExtraescolaresPorDepartamento(actividades = []) {
 
   // --- Ordenar departamentos alfabéticamente ---
   const departamentos = Object.keys(actividadesPorDepartamento).sort((a, b) =>
-    a.localeCompare(b, "es", { sensitivity: "base" }),
+    a.localeCompare(b, "es", { sensitivity: "base" })
   );
 
   // --- PDF base ---
@@ -1103,7 +1103,7 @@ export function generateListadoExtraescolaresPorDepartamento(actividades = []) {
     "Listado de Actividades Extraescolares por Departamento",
     pageWidth / 2,
     y,
-    { align: "center" },
+    { align: "center" }
   );
   y += 12;
 
@@ -1136,7 +1136,7 @@ export function generateListadoExtraescolaresPorDepartamento(actividades = []) {
       return (a.nombreProfesor || "").localeCompare(
         b.nombreProfesor || "",
         "es",
-        { sensitivity: "base" },
+        { sensitivity: "base" }
       );
     });
 
@@ -1178,7 +1178,7 @@ export function generateListadoExtraescolaresPorDepartamento(actividades = []) {
 
       const profesorLines = doc.splitTextToSize(
         act.nombreProfesor || "",
-        colProfesorWidth,
+        colProfesorWidth
       );
 
       const tituloLines = doc.splitTextToSize(act.titulo || "", colTituloWidth);
@@ -1195,7 +1195,7 @@ export function generateListadoExtraescolaresPorDepartamento(actividades = []) {
         profesorLines.length,
         tituloLines.length,
         cursosLines.length,
-        1,
+        1
       );
       const rowHeight = rowLines * lineHeight;
 
@@ -1224,7 +1224,7 @@ Genera listado extraescolares en ODS con columnas:
 Departamento, Fecha, Actividad, Profesor, Cursos, Estado
 */
 export function generateListadoExtraescolaresPorDepartamentoXLS(
-  actividades = [],
+  actividades = []
 ) {
   if (!actividades.length) {
     alert("No hay actividades para generar el listado.");
@@ -1263,7 +1263,7 @@ export function generateListadoExtraescolaresPorDepartamentoXLS(
     return (a.nombreProfesor || "").localeCompare(
       b.nombreProfesor || "",
       "es",
-      { sensitivity: "base" },
+      { sensitivity: "base" }
     );
   });
 
@@ -1314,3 +1314,237 @@ export function generateListadoExtraescolaresPorDepartamentoXLS(
   a.click();
   URL.revokeObjectURL(url);
 }
+
+export const generarListadoPrestamosLibrosAlumnosPdf = ({
+  alumnos = [],
+  nombrePdf = "listado_prestamos_libros_alumnos",
+}) => {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  console.log ("Alumnos: ", alumnos);
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  /* --------------------------------------------------
+   * Layout
+   * -------------------------------------------------- */
+  const marginLeft = 15;
+  const marginRight = 15;
+  const marginTop = 25;
+  const marginBottom = 15;
+
+  const usableWidth = pageWidth - marginLeft - marginRight;
+
+  const rowHeight = 8;
+  const headerHeight = 34;
+  const colWidthAlumno = 60;
+
+  /* --------------------------------------------------
+   * Utilidad: partir texto en bloques
+   * -------------------------------------------------- */
+  const partirTexto = (texto, maxChars) => {
+    const partes = [];
+    for (let i = 0; i < texto.length; i += maxChars) {
+      partes.push(texto.substring(i, i + maxChars));
+    }
+    return partes;
+  };
+
+  /* --------------------------------------------------
+   * Agrupar alumnos por curso
+   * -------------------------------------------------- */
+  const alumnosPorCurso = alumnos.reduce((acc, alumno) => {
+    const curso = alumno.curso || "Sin curso";
+    if (!acc[curso]) acc[curso] = [];
+    acc[curso].push(alumno);
+    return acc;
+  }, {});
+
+  /* --------------------------------------------------
+   * Título general
+   * -------------------------------------------------- */
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text(
+    "Listado resumen de préstamos de libros por alumno",
+    pageWidth / 2,
+    12,
+    { align: "center" }
+  );
+
+  let y = marginTop;
+
+  /* ==================================================
+   * RECORRER CURSOS
+   * ================================================== */
+  Object.entries(alumnosPorCurso).forEach(
+    ([curso, alumnosCurso], indexCurso) => {
+      if (indexCurso > 0) {
+        doc.addPage();
+        y = marginTop;
+      }
+
+      /* ----------------------------------------------
+       * idcurso del grupo
+       * ---------------------------------------------- */
+      const idCursoGrupo = alumnosCurso
+        .flatMap((a) => a.prestamos ?? [])
+        .find((p) => p.idcurso)?.idcurso;
+
+      if (!idCursoGrupo) return;
+
+      /* ----------------------------------------------
+       * Libros del curso
+       * ---------------------------------------------- */
+      const librosCurso = [
+        ...new Map(
+          alumnosCurso
+            .flatMap((a) => a.prestamos ?? [])
+            .filter((p) => p.idcurso === idCursoGrupo)
+            .map((p) => [p.idlibro, { idlibro: p.idlibro, nombre: p.libro }])
+        ).values(),
+      ];
+
+      if (!librosCurso.length) return;
+
+      const colWidthLibro = (usableWidth - colWidthAlumno) / librosCurso.length;
+
+      /* ----------------------------------------------
+       * Cabecera
+       * ---------------------------------------------- */
+      /* ----------------------------------------------
+       * Cabecera (Corregida)
+       * ---------------------------------------------- */
+      const dibujarCabecera = (y) => {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8); // Un pelín más pequeño ayuda al espacio
+
+        const librosPartes = librosCurso.map(
+          (libro) =>
+            // Usamos splitTextToSize para que jsPDF calcule los cortes por nosotros
+            doc.splitTextToSize(libro.nombre, 25) // 25mm es el "alto" máximo del texto vertical
+        );
+
+        const maxLineas = Math.max(...librosPartes.map((p) => p.length));
+        const lineSpacing = 3; // Espacio entre líneas del mismo título
+
+        // Altura dinámica: margen + (líneas * espacio)
+        const dynamicHeaderHeight = Math.max(
+          headerHeight,
+          10 + maxLineas * lineSpacing
+        );
+
+        // Dibujar fondo
+        doc.setFillColor(230, 230, 230);
+        doc.rect(marginLeft, y, usableWidth, dynamicHeaderHeight, "F");
+
+        // Texto "Alumno"
+        doc.text("Alumno", marginLeft + 2, y + dynamicHeaderHeight / 2, {
+          baseline: "middle",
+        });
+
+        librosCurso.forEach((libro, i) => {
+          const partes = librosPartes[i];
+          // Centro de la columna del libro
+          const centerX =
+            marginLeft + colWidthAlumno + i * colWidthLibro + colWidthLibro / 2;
+
+          // Calculamos el inicio en X para que el bloque de líneas esté centrado en su columna
+          // Si hay 2 líneas, la primera se mueve a la izquierda y la segunda a la derecha
+          const totalWidthBlock = (partes.length - 1) * lineSpacing;
+          const startX = centerX - totalWidthBlock / 2;
+
+          partes.forEach((parte, idx) => {
+            const currentX = startX + idx * lineSpacing;
+            // El texto empieza cerca del borde inferior de la cabecera
+            const textY = y + dynamicHeaderHeight - 5;
+
+            doc.text(parte, currentX, textY, {
+              angle: 90,
+              align: "left",
+            });
+          });
+        });
+
+        // Línea de cierre
+        doc.line(
+          marginLeft,
+          y + dynamicHeaderHeight,
+          marginLeft + usableWidth,
+          y + dynamicHeaderHeight
+        );
+        return y + dynamicHeaderHeight;
+      };
+
+      /* ----------------------------------------------
+       * Título curso
+       * ---------------------------------------------- */
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Curso: ${curso}`, marginLeft, y);
+      y += 6;
+
+      y = dibujarCabecera(y);
+
+      /* ----------------------------------------------
+       * Alumnos
+       * ---------------------------------------------- */
+      alumnosCurso.forEach((alumno) => {
+        if (y + rowHeight > pageHeight - marginBottom) {
+          doc.addPage();
+          y = marginTop;
+          y = dibujarCabecera(y);
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(alumno.nombreUsuario ?? "", marginLeft + 2, y + 5);
+
+        const prestamosMap = {};
+        (alumno.prestamos ?? []).forEach((p) => {
+          if (p.idcurso === idCursoGrupo) {
+            prestamosMap[p.idlibro] = {
+              entregado: p.entregado,
+              devuelto: p.devuelto,
+            };
+          }
+        });
+
+        doc.setFont("helvetica", "normal");
+
+        librosCurso.forEach((libro, i) => {
+          const x =
+            marginLeft + colWidthAlumno + i * colWidthLibro + colWidthLibro / 2;
+
+          const estado = prestamosMap[libro.idlibro];
+          let texto = "";
+
+          if (estado) {
+            if (estado.entregado) texto += "E";
+            if (estado.devuelto) texto += "D";
+          }
+
+          if (texto) {
+            doc.text(texto, x - 2, y + 5);
+          }
+        });
+
+        doc.setLineWidth(0.2);
+        doc.line(
+          marginLeft,
+          y + rowHeight,
+          marginLeft + usableWidth,
+          y + rowHeight
+        );
+
+        y += rowHeight;
+      });
+    }
+  );
+
+  doc.save(nombrePdf.endsWith(".pdf") ? nombrePdf : `${nombrePdf}.pdf`);
+};
