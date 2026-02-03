@@ -1,5 +1,5 @@
 /**
- * DialogoInsertarReservaPeriodica.jsx
+ * DialogoEditarReservaPeriodica.jsx
  *
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
@@ -9,7 +9,7 @@
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
  *
- * Permite realizar reservas periódicas de aulas. Solo para directiva.
+ * Permite editar reservas periódicas de aulas.
  *
  */
 
@@ -33,18 +33,15 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getCursoActual, ddmmyyyyToISO } from "@/utils/cursoAcademico";
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 
 import { DialogoConfirmacionReservaPeriodica } from "./DialogoConfirmacionReservaPeriodica";
 
-export function DialogoInsertarReservaPeriodica({
+export function DialogoEditarReservaPeriodica({
   open,
   onClose,
-  fecha,
+  reserva, // objeto con la reserva periódica a editar
   periodos,
-  idestancia,
-  descripcionEstancia = "",
   onSuccess,
 }) {
   const { user } = useAuth();
@@ -59,8 +56,7 @@ export function DialogoInsertarReservaPeriodica({
   // Estados de periodicidad
   const [tipoRepeticion, setTipoRepeticion] = useState("diaria"); // diaria / semanal
   const [diasSemana, setDiasSemana] = useState([]);
-  const { finCurso } = getCursoActual();
-  const [fechaLimite, setFechaLimite] = useState(ddmmyyyyToISO(finCurso));
+  const [fechaLimite, setFechaLimite] = useState("");
 
   // Estados de profesor
   const [profesorSeleccionado, setProfesorSeleccionado] = useState("");
@@ -75,19 +71,33 @@ export function DialogoInsertarReservaPeriodica({
     error: errorProfesores,
   } = useProfesoresLdap();
 
-  // Reset al abrir
+  // Inicializar estados al abrir con los datos de la reserva
   useEffect(() => {
-    if (!open) return;
+    if (!open || !reserva) return;
 
-    setDescripcion("");
-    setInicio("");
-    setFin("");
-    setTipoRepeticion("diaria");
-    setDiasSemana([]);
-    setFechaLimite(ddmmyyyyToISO(finCurso));
-    setProfesorSeleccionado("");
+    // Descripción
+    setDescripcion(reserva.descripcion_reserva || "");
+
+    // Periodos
+    setInicio(reserva.idperiodo_inicio?.toString() || "");
+    setFin(reserva.idperiodo_fin?.toString() || "");
+
+    // Periodicidad
+    setTipoRepeticion(reserva.frecuencia || "diaria");
+
+    // Días de la semana (de números a nombres)
+    const MAPA_DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie"];
+    setDiasSemana(
+      reserva.dias_semana?.map((d) => MAPA_DIAS[d]).filter(Boolean) || []
+    );
+
+    // Fecha límite (solo YYYY-MM-DD)
+    setFechaLimite(reserva.fecha_hasta?.slice(0, 10) || "");
+
+    // Profesor
+    setProfesorSeleccionado(reserva.profesor || "");
     setBusquedaProfesor("");
-  }, [open]);
+  }, [open, reserva]);
 
   // Filtrado de profesores según búsqueda
   const profesoresFiltrados = profesores.filter((p) => {
@@ -103,7 +113,7 @@ export function DialogoInsertarReservaPeriodica({
     );
   };
 
-  // Mutation para crear reserva periódica (REPETICIÓN)
+  // Mutation para actualizar reserva periódica
   const mutation = useMutation({
     mutationFn: async () => {
       if (!inicio || !fin)
@@ -115,6 +125,7 @@ export function DialogoInsertarReservaPeriodica({
       if (tipoRepeticion === "semanal" && diasSemana.length === 0)
         throw new Error("Selecciona al menos un día de la semana");
 
+      // Mapear nombres de días a números
       const MAPA_DIAS = { Lun: 0, Mar: 1, Mié: 2, Jue: 3, Vie: 4 };
       const diasSemanaInt =
         tipoRepeticion === "semanal"
@@ -122,40 +133,40 @@ export function DialogoInsertarReservaPeriodica({
           : [];
 
       const payload = {
-        uid: user.username,
         profesor: profesorSeleccionado,
-        idestancia,
         idperiodo_inicio: parseInt(inicio),
         idperiodo_fin: parseInt(fin),
-        fecha_desde: fecha,
         fecha_hasta: fechaLimite,
-        descripcion,
+        descripcion_reserva: descripcion,
         frecuencia: tipoRepeticion, // diaria | semanal
         dias_semana: diasSemanaInt,
       };
 
-      const res = await fetch(`${API_URL}/db/reservas-estancias/repeticion`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        `${API_URL}/db/reservas-estancias/repeticion/${reserva.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        }
+      );
 
       const data = await res.json();
       if (!res.ok)
-        throw new Error(data.error || "Error al insertar reserva periódica");
+        throw new Error(data.error || "Error al actualizar reserva periódica");
       return data;
     },
 
     onSuccess: () => {
-      toast.success("Reserva periódica creada correctamente");
-      queryClient.invalidateQueries(["reservas", "dia", fecha]);
+      toast.success("Reserva periódica actualizada correctamente");
+      queryClient.invalidateQueries(["reservas-periodicas-directiva"]);
       onSuccess?.();
       onClose();
     },
 
     onError: (err) => {
-      toast.error(err.message || "Error al insertar reserva periódica");
+      toast.error(err.message || "Error al actualizar reserva periódica");
     },
   });
 
@@ -166,60 +177,23 @@ export function DialogoInsertarReservaPeriodica({
           onInteractOutside={(e) => e.preventDefault()}
           className="p-0 overflow-hidden rounded-lg"
         >
-          <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+          <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
             <DialogTitle className="text-lg font-semibold text-center leading-snug">
-              Reserva periódica ({new Date(fecha).toLocaleDateString("es-ES")})
-              – <span className="font-bold">{descripcionEstancia}</span>
+              Editar reserva periódica (
+              {new Date(reserva?.fecha_desde).toLocaleDateString("es-ES")}) –{" "}
+              <span className="font-bold">{reserva?.descripcion_estancia}</span>
             </DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-col space-y-4 p-6">
-            {/* Profesor */}
-            <div className="flex flex-col space-y-2">
+            {/* Profesor (solo lectura) */}
+            <div className="flex flex-col space-y-1">
               <label className="text-sm font-medium">Profesor</label>
               <Input
-                placeholder="Buscar por nombre, apellidos o UID"
-                value={busquedaProfesor}
-                onChange={(e) => setBusquedaProfesor(e.target.value)}
-                className="mb-2"
+                value={reserva?.nombreProfesor || ""}
+                readOnly
+                className="bg-gray-100 cursor-not-allowed"
               />
-              <div className="max-h-48 overflow-y-auto border rounded p-2">
-                {loadingProfesores && (
-                  <p className="text-sm text-muted-foreground">
-                    Cargando profesores...
-                  </p>
-                )}
-                {errorProfesores && (
-                  <p className="text-sm text-red-500">
-                    Error al cargar profesores
-                  </p>
-                )}
-                {!loadingProfesores &&
-                  !errorProfesores &&
-                  profesoresFiltrados.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      No se encontraron profesores
-                    </p>
-                  )}
-                {!loadingProfesores &&
-                  profesoresFiltrados.map((p) => (
-                    <label
-                      key={p.uid}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <input
-                        type="radio"
-                        name="profesor"
-                        value={p.uid}
-                        checked={profesorSeleccionado === p.uid}
-                        onChange={() => setProfesorSeleccionado(p.uid)}
-                      />
-                      <span>
-                        {p.givenName} {p.sn} ({p.uid})
-                      </span>
-                    </label>
-                  ))}
-              </div>
             </div>
 
             {/* Periodos */}
@@ -319,7 +293,7 @@ export function DialogoInsertarReservaPeriodica({
 
           <DialogFooter className="px-6 py-4 bg-gray-50">
             <Button variant="outline" onClick={() => setOpenConfirm(true)}>
-              Guardar
+              Guardar cambios
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -329,12 +303,12 @@ export function DialogoInsertarReservaPeriodica({
         open={openConfirm}
         setOpen={setOpenConfirm}
         datosReserva={{
-          aula: descripcionEstancia,
+          aula: reserva?.descripcion_estancia,
           tipoRepeticion,
           diasSemana,
           periodoInicio: inicio,
           periodoFin: fin,
-          fechaInicio: fecha,
+          fechaInicio: reserva?.fecha_desde,
           fechaLimite,
           descripcion,
           profesor: profesorObj

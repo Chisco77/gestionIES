@@ -22,13 +22,22 @@ import { toast } from "sonner";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { useReservasDelDia } from "@/hooks/Reservas/useReservasDelDia";
+import { useReservasPeriodicasTodas } from "@/hooks/Reservas/userReservasPeriodicasTodas";
 
 import { DialogoInsertarReserva } from "../components/DialogoInsertarReserva";
 import { DialogoEditarReserva } from "../components/DialogoEditarReserva";
 import { DialogoPlanoEstancia } from "../components/DialogoPlanoEstancia";
 import { DialogoInsertarReservaPeriodica } from "./DialogoInsertarReservaPeriodica";
+import { DialogoEditarReservaPeriodica } from "./DialogoEditarReservaPeriodica";
 
 import { useAuth } from "@/context/AuthContext";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function GridReservasEstancias({
   uid,
@@ -39,6 +48,7 @@ export function GridReservasEstancias({
   const esDirectiva = user?.perfil === "directiva";
   const { data: periodosDB = [] } = usePeriodosHorarios();
   const { data: estancias = [] } = useEstancias();
+  const { data: reservasPeriodicas = [] } = useReservasPeriodicasTodas();
 
   const [tipoEstancia, setTipoEstancia] = useState("");
   const [gridData, setGridData] = useState([]);
@@ -52,8 +62,41 @@ export function GridReservasEstancias({
   const [estanciaSeleccionadaPlano, setEstanciaSeleccionadaPlano] =
     useState(null);
 
+  // Para reservas periodicas
   const [abrirDialogoPeriodico, setAbrirDialogoPeriodico] = useState(false);
   const [estanciaParaProgramar, setEstanciaParaProgramar] = useState(null);
+  // Estados para reservas periódicas
+  const [
+    abrirDialogoEditarReservaPeriodica,
+    setAbrirDialogoEditarReservaPeriodica,
+  ] = useState(false);
+  const [reservaEditarPeriodica, setReservaEditarPeriodica] = useState(null);
+
+  // Handler para abrir el diálogo de edición de reserva periódica
+  const handleEditarReservaPeriodica = (reserva) => {
+    if (reserva.uid !== uid) {
+      toast.error("Solo puedes modificar tus propias reservas.");
+      return;
+    }
+
+    const periodoFin = periodosDB.find(
+      (p) => parseInt(p.id) === parseInt(reserva.idperiodo_fin)
+    );
+    const horaFin = periodoFin?.fin;
+    if (!horaFin || !esReservaFutura(reserva.fecha, horaFin)) {
+      toast.error("No puedes modificar reservas ya finalizadas.");
+      return;
+    }
+
+    const estancia = estancias.find(
+      (e) => e.id === parseInt(reserva.idestancia)
+    );
+    setReservaEditarPeriodica({
+      ...reserva,
+      descripcionEstancia: estancia?.descripcion || "",
+    });
+    setAbrirDialogoEditarReservaPeriodica(true);
+  };
 
   const selectedDate = fechaSeleccionada;
 
@@ -62,7 +105,6 @@ export function GridReservasEstancias({
     tipoEstancia
   );
 
-  
   // Filtrar estancias según tipo seleccionado
   useEffect(() => {
     if (!reservasDelDia?.estancias) {
@@ -78,7 +120,7 @@ export function GridReservasEstancias({
   // Generar gridData
   useEffect(() => {
     if (!reservasDelDia) return;
-    console.log ("Reservas del día: ", reservasDelDia);
+    console.log("Reservas del día: ", reservasDelDia);
     const newGridData = (
       reservasDelDia.periodos.length ? reservasDelDia.periodos : periodosDB
     ).map((p) => {
@@ -248,22 +290,69 @@ export function GridReservasEstancias({
                           <td
                             key={e.id}
                             rowSpan={rowspan}
-                            className={`p-2 border cursor-pointer transition ${reserva.uid === uid ? "bg-green-200 hover:bg-green-300" : "bg-yellow-200 hover:bg-yellow-300"}`}
+                            className={`p-2 border cursor-pointer transition ${
+                              reserva.uid === uid
+                                ? "bg-green-200 hover:bg-green-300"
+                                : "bg-yellow-200 hover:bg-yellow-300"
+                            }`}
                             onClick={() => handleEditarReserva(reserva)}
                           >
-                            <div className="flex items-center justify-between">
-                              <span>
-                                {reserva.uid === uid
-                                  ? "Mi reserva"
-                                  : (reserva.nombre || "Ocupado").slice(0, 23)}
+                            <div className="relative flex items-center justify-center w-full h-full">
+                              <span className="max-w-[90%] truncate text-center px-2">
+                                {reserva.descripcion || "Reserva"}
                               </span>
 
-                              {reserva.idrepeticion && (
-                                <Repeat2
-                                  size={16}
-                                  className="text-gray-500 ml-2"
-                                  title="Reserva periódica"
-                                />
+                              {/* Icono de edición de reserva periódica */}
+                              {reserva.idrepeticion && esDirectiva && (
+                                <div
+                                  className="absolute right-1"
+                                  onClick={(ev) => {
+                                    ev.stopPropagation(); // evita que se dispare el onClick de la celda
+
+                                    // Buscar la reserva periódica padre usando idrepeticion
+                                    const reservaPadre =
+                                      reservasPeriodicas.find(
+                                        (r) => r.id === reserva.idrepeticion
+                                      );
+
+                                    if (!reservaPadre) {
+                                      toast.error(
+                                        "No se encontró la reserva periódica padre."
+                                      );
+                                      return;
+                                    }
+
+                                    // Abrir diálogo de edición de la reserva periódica
+                                    const estancia = estancias.find(
+                                      (e) =>
+                                        e.id ===
+                                        parseInt(reservaPadre.idestancia)
+                                    );
+
+                                    setReservaEditarPeriodica({
+                                      ...reservaPadre,
+                                      descripcionEstancia:
+                                        estancia?.descripcion || "",
+                                    });
+                                    setAbrirDialogoEditarReservaPeriodica(true);
+                                  }}
+                                >
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Repeat2
+                                          size={16}
+                                          className="text-gray-600 cursor-pointer"
+                                        />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p className="text-xs">
+                                          Editar reserva periódica
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
                               )}
                             </div>
                           </td>
@@ -347,6 +436,21 @@ export function GridReservasEstancias({
           idestancia={estanciaParaProgramar.id}
           descripcionEstancia={estanciaParaProgramar.descripcion}
           periodos={periodosDB}
+        />
+      )}
+
+      {reservaEditarPeriodica && (
+        <DialogoEditarReservaPeriodica
+          open={abrirDialogoEditarReservaPeriodica}
+          onClose={() => {
+            setAbrirDialogoEditarReservaPeriodica(false);
+            setReservaEditarPeriodica(null);
+          }}
+          reserva={reservaEditarPeriodica}
+          periodos={periodosDB}
+          onSuccess={() => {
+            // refrescar tabla o invalidar query si usas React Query
+          }}
         />
       )}
     </Card>
