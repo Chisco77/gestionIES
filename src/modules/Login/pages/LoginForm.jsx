@@ -85,9 +85,10 @@ export function LoginForm({ className, ...props }) {
       queryClient.invalidateQueries(["permisosMes"]);
 
       queryClient.invalidateQueries(["avisos"]);
-      queryClient.invalidateQueries(["empleados"]); 
-      queryClient.invalidateQueries(["restricciones_asuntos"]);  
+      queryClient.invalidateQueries(["empleados"]);
+      queryClient.invalidateQueries(["restricciones_asuntos"]);
       queryClient.invalidateQueries(["asuntos_permitidos", "uid"]);
+      queryClient.invalidateQueries(["reservas-periodicas-directiva"]);
 
       // Hacer check-auth con reintento
       const checkAuth = async (retries = 2) => {

@@ -19,6 +19,7 @@
  * ================================================================
  */
 
+const { buscarPorUid } = require("../ldap/usuariosController");
 const pool = require("../../db");
 
 function generarFechasDiarias(desde, hasta) {
@@ -90,7 +91,7 @@ async function getReservasEstanciasRepeticion(req, res) {
        FROM reservas_estancias_repeticion
        ${where}
        ORDER BY fecha_desde ASC`,
-      vals,
+      vals
     );
 
     res.json({ ok: true, reservas: formatearFecha(rows) });
@@ -103,6 +104,10 @@ async function getReservasEstanciasRepeticion(req, res) {
 }
 
 async function getReservasEstanciasRepeticionEnriquecidas(req, res) {
+  const ldapSession = req.session?.ldap;
+  if (!ldapSession)
+    return res.status(401).json({ ok: false, error: "No autenticado" });
+
   try {
     const { rows } = await pool.query(`
       SELECT
@@ -113,37 +118,44 @@ async function getReservasEstanciasRepeticionEnriquecidas(req, res) {
         r.idperiodo_fin,
         r.fecha_desde,
         r.fecha_hasta,
-        r.descripcion,
+        r.descripcion AS descripcion_reserva,   -- descripcion de la reserva periódica
         r.frecuencia,
         r.dias_semana,
         r.created_at,
-        COALESCE(
-          json_agg(
-            jsonb_build_object(
-              'id', e.id,
-              'fecha', e.fecha,
-              'idestancia', e.idestancia,
-              'idperiodo_inicio', e.idperiodo_inicio,
-              'idperiodo_fin', e.idperiodo_fin,
-              'descripcion', e.descripcion
-            )
-          ) FILTER (WHERE e.id IS NOT NULL),
-          '[]'
-        ) AS reservas
+        e.descripcion AS descripcion_estancia   -- descripcion de la estancia
       FROM reservas_estancias_repeticion r
-      LEFT JOIN reservas_estancias e
-        ON e.idrepeticion = r.id
-      GROUP BY r.id
+      LEFT JOIN estancias e
+        ON e.id = r.idestancia
       ORDER BY r.fecha_desde ASC
     `);
 
-    res.json({
-      ok: true,
-      reservas: formatearFecha(rows).map((r) => ({
+    const cacheNombres = new Map();
+
+    const getNombre = async (uid) => {
+      if (!uid) return "—";
+      if (cacheNombres.has(uid)) return cacheNombres.get(uid);
+
+      const nombre = await new Promise((resolve) => {
+        buscarPorUid(ldapSession, uid, (err, datos) => {
+          if (!err && datos)
+            resolve(`${datos.givenName || ""} ${datos.sn || ""}`.trim());
+          else resolve("Profesor desconocido");
+        });
+      });
+
+      cacheNombres.set(uid, nombre);
+      return nombre;
+    };
+
+    const reservas = await Promise.all(
+      rows.map(async (r) => ({
         ...r,
-        reservas: r.reservas,
-      })),
-    });
+        nombreCreador: await getNombre(r.uid),
+        nombreProfesor: await getNombre(r.profesor),
+      }))
+    );
+
+    res.json({ ok: true, reservas });
   } catch (err) {
     console.error("[getReservasEstanciasRepeticionEnriquecidas] Error:", err);
     res.status(500).json({
@@ -223,7 +235,7 @@ async function insertReservaEstanciaRepeticion(req, res) {
         frecuencia,
         diasSemanaInt,
         idestancia,
-      ],
+      ]
     );
 
     const repeticion = rows[0];
@@ -258,7 +270,7 @@ async function insertReservaEstanciaRepeticion(req, res) {
           idperiodo_fin,
           descripcion,
           idrepeticion,
-        ],
+        ]
       );
     }
 
@@ -288,7 +300,7 @@ async function deleteReservaEstanciaRepeticion(req, res) {
   try {
     const { rowCount } = await pool.query(
       `DELETE FROM reservas_estancias_repeticion WHERE id = $1`,
-      [id],
+      [id]
     );
     if (rowCount === 0)
       return res
@@ -326,7 +338,7 @@ async function updateReservaEstanciaRepeticion(req, res) {
   try {
     const { rows: existentes } = await pool.query(
       `SELECT * FROM reservas_estancias_repeticion WHERE id = $1`,
-      [id],
+      [id]
     );
 
     if (existentes.length === 0) {
@@ -355,7 +367,7 @@ async function updateReservaEstanciaRepeticion(req, res) {
         frecuencia,
         dias_semana,
         id,
-      ],
+      ]
     );
 
     res.json({ ok: true, reserva: formatearFecha(rows)[0] });

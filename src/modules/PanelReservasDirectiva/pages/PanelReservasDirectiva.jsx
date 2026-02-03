@@ -21,6 +21,7 @@ import { TablaPermisosDirectiva } from "../components/TablaPermisosDirectiva";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TablaExtraescolares } from "@/modules/Extraescolares/components/TablaExtraescolares";
+import { TablaReservasPeriodicas } from "../components/TablaReservasPeriodicas";
 
 export function PanelReservasDirectiva({ user, fecha }) {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -34,13 +35,12 @@ export function PanelReservasDirectiva({ user, fecha }) {
           defaultValue="permisos"
           className="flex-1 flex flex-col overflow-hidden"
         >
-          <TabsList className="grid grid-cols-2 mb-2 gap-2">
-            <TabsTrigger value="permisos" className="text-sm py-1">
-              Permisos
-            </TabsTrigger>
-            <TabsTrigger value="actividades" className="text-sm py-1">
+          <TabsList className="grid grid-cols-3 mb-2 gap-2">
+            <TabsTrigger value="permisos">Permisos</TabsTrigger>
+            <TabsTrigger value="actividades">
               Actividades extraescolares
             </TabsTrigger>
+            <TabsTrigger value="periodicas">Reservas periódicas</TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-hidden">
@@ -58,6 +58,12 @@ export function PanelReservasDirectiva({ user, fecha }) {
               className="h-full overflow-y-auto pr-2"
             >
               <TablaExtraescolares user={user} fecha={fecha} />
+            </TabsContent>
+            <TabsContent
+              value="periodicas"
+              className="h-full overflow-y-auto pr-2"
+            >
+              <TablaReservasPeriodicas />
             </TabsContent>
           </div>
         </Tabs>
