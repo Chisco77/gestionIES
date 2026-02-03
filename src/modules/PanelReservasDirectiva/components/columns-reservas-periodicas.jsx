@@ -48,9 +48,4 @@ export const columnsReservasPeriodicas = () => [
     header: "Estancia",
   },
 
-  {
-    id: "num_reservas",
-    header: "Reservas generadas",
-    cell: ({ row }) => row.original.reservas?.length ?? 0,
-  },
 ];
