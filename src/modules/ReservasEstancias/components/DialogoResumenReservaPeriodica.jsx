@@ -41,7 +41,7 @@ export function DialogoResumenReservaPeriodica({ open, setOpen, resumen }) {
         <div className="p-4 bg-gray-50 space-y-2">
           {esActualizacion && (
             <p>
-              <strong>Hijos eliminados (futuros):</strong>{" "}
+              <strong>Se eliminaron estas reservas futuras:</strong>{" "}
               {resumenNormalizado.hijosEliminados}
             </p>
           )}

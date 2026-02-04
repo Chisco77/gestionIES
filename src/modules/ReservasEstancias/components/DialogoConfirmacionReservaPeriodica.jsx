@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +12,10 @@ import { Button } from "@/components/ui/button";
 
 export function DialogoConfirmacionReservaPeriodica({
   open,
-  setOpen,
-  datosReserva, // objeto con { aula, tipoRepeticion, diasSemana, periodoInicio, periodoFin, fechaInicio, fechaLimite, descripcion }
+  onOpenChange,
+  datosReserva, // { aula, tipoRepeticion, diasSemana, periodoInicio, periodoFin, fechaInicio, fechaLimite, descripcion, profesor, uid, periodos }
   onConfirm,
+  modo = "insercion", // "insercion" o "edicion"
 }) {
   if (!datosReserva) return null;
 
@@ -25,83 +28,113 @@ export function DialogoConfirmacionReservaPeriodica({
     fechaInicio,
     fechaLimite,
     descripcion = "",
+    profesor,
+    uid,
+    periodos,
   } = datosReserva;
 
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Mapear periodos
+  const pInicio = periodos?.find((p) => Number(p.id) === Number(periodoInicio));
+  const pFin = periodos?.find((p) => Number(p.id) === Number(periodoFin));
+
+  // Texto repetición
   const textoRepeticion =
     tipoRepeticion === "diaria"
-      ? "todos los días"
-      : `los días ${diasSemana.join(", ")}`;
+      ? "Todos los días"
+      : diasSemana
+          .map((d) => {
+            const diasMap = {
+              Lun: "Lunes",
+              Mar: "Martes",
+              Mié: "Miércoles",
+              Jue: "Jueves",
+              Vie: "Viernes",
+              Sáb: "Sábado",
+              Dom: "Domingo",
+            };
+            return diasMap[d] ?? d;
+          })
+          .join(", ");
+
+  // Header dinámico según modo
+  const tituloDialogo =
+    modo === "edicion"
+      ? "Confirmación de modificación de reserva periódica"
+      : "Confirmación inserción de reserva periódica";
+
+  const colorHeader = modo === "edicion" ? "bg-green-500" : "bg-blue-500";
+
+  const handleConfirm = () => {
+    if (onConfirm) onConfirm();
+    toast.success(
+      modo === "edicion"
+        ? "Reserva modificada correctamente"
+        : "Reserva confirmada"
+    );
+    queryClient.invalidateQueries(["reservasPeriodicasTodas"]);
+    onOpenChange(false);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen} modal>
-      <DialogContent
-        onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg"
-      >
-        <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
-          <DialogTitle className="text-lg font-semibold text-center leading-snug">
-            Confirmación de reserva periódica
+    <Dialog open={open} onOpenChange={onOpenChange} modal>
+      <DialogContent  onInteractOutside={(e) => e.preventDefault()} className="p-0 overflow-hidden rounded-lg">
+        {/* HEADER */}
+        <DialogHeader
+          className={`${colorHeader} text-white rounded-t-lg py-3 px-6 text-center`}
+        >
+          <DialogTitle className="text-lg font-semibold">
+            {tituloDialogo}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="border rounded-md bg-gray-50 p-3 space-y-1">
-          {datosReserva.profesor && (
-            <p>
-              <strong>Profesor:</strong> {datosReserva.profesor}
-            </p>
+        {/* BODY */}
+        <div className="px-6 py-4 text-sm space-y-2 text-gray-700">
+          <div>
+            <span className="font-medium">Estancia:</span> {aula || "—"}
+          </div>
+
+          {descripcion && (
+            <div>
+              <span className="font-medium">Descripción:</span> {descripcion}
+            </div>
           )}
 
-          <p>
-            <strong>Repetición:</strong>{" "}
-            {datosReserva.tipoRepeticion === "diaria"
-              ? "Todos los días"
-              : datosReserva.diasSemana
-                  .map((d) => {
-                    const diasMap = {
-                      Lun: "Lunes",
-                      Mar: "Martes",
-                      Mié: "Miércoles",
-                      Jue: "Jueves",
-                      Vie: "Viernes",
-                    };
-                    return diasMap[d] || d;
-                  })
-                  .join(", ")}
-          </p>
-
-          <p>
-            <strong>Periodo:</strong>{" "}
-            {`${datosReserva.periodos?.find((p) => p.id === parseInt(datosReserva.periodoInicio))?.nombre || datosReserva.periodoInicio} → ${
-              datosReserva.periodos?.find(
-                (p) => p.id === parseInt(datosReserva.periodoFin),
-              )?.nombre || datosReserva.periodoFin
-            }`}
-          </p>
-
-          <p>
-            <strong>Desde:</strong>{" "}
-            {new Date(datosReserva.fechaInicio).toLocaleDateString("es-ES")}{" "}
-            <strong>Hasta:</strong>{" "}
-            {new Date(datosReserva.fechaLimite).toLocaleDateString("es-ES")}
-          </p>
-
-          {datosReserva.descripcion && (
-            <p>
-              <strong>Descripción:</strong> {datosReserva.descripcion}
-            </p>
+          {profesor && (
+            <div>
+              <span className="font-medium">Profesor:</span> {profesor}{" "}
+            </div>
           )}
+
+          <div>
+            <span className="font-medium">Repetición:</span> {textoRepeticion}
+          </div>
+
+          <div>
+            <span className="font-medium">Horario:</span>{" "}
+            {pInicio?.nombre ?? periodoInicio} – {pFin?.nombre ?? periodoFin}
+          </div>
+
+          <div>
+            <span className="font-medium">Desde:</span>{" "}
+            {new Date(fechaInicio).toLocaleDateString("es-ES")}{" "}
+            <span className="font-medium">Hasta:</span>{" "}
+            {new Date(fechaLimite).toLocaleDateString("es-ES")}
+          </div>
         </div>
 
-        <DialogFooter className="px-6 py-3 bg-gray-50 flex gap-2">
+        {/* FOOTER */}
+        <DialogFooter className="px-6 py-4 bg-gray-50 flex gap-2">
           <Button
-            onClick={() => {
-              onConfirm?.();
-              setOpen(false);
-            }}
+            variant="destructive"
+            className={`${modo === "edicion" ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}
+            onClick={handleConfirm}
           >
             Confirmar
           </Button>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
         </DialogFooter>

@@ -11,6 +11,29 @@
  *
  * Permite realizar reservas periódicas de aulas. Solo para directiva.
  *
+ *
+ * Modelo conceptual
+ * Una reserva periódica tiene:
+ *  Un registro padre en reservas_estancias_repeticion
+ *  Múltiples registros hijo en reservas_estancias
+ *  La relación se hace mediante idrepeticion
+ *
+ * Los hijos representan reservas reales por día, el padre solo define la regla.
+ * Flujo de creación de una reserva periódica:
+ *  Se generan todas las fechas según:
+ *    fecha_desde → fecha_hasta
+ *    frecuencia (diaria / semanal)
+ *    dias_semana si aplica
+ *
+ *  Se inserta primero el PADRE
+ *  Siempre se crea el registro en reservas_estancias_repeticion, aunque luego no se pueda insertar ningún hijo
+ *  Se detectan colisiones. Se comprueba, fecha a fecha, si existe ya una reserva incompatible
+ *  Solo se insertan los hijos “libres”. Las fechas en conflicto NO se insertan.
+ *
+ * Filosofía
+ *  La creación no falla por colisiones parciales
+ *  El usuario siempre ve qué se creó y qué no
+ *  El padre existe como “intención declarada”
  */
 
 import { useEffect, useState } from "react";
@@ -154,7 +177,7 @@ export function DialogoInsertarReservaPeriodica({
       // Guardamos el resumen para el diálogo informativo
       setResumen(data);
 
-      // ⚡ Invalidamos los hooks para refrescar grid y listas
+      // Invalidamos los hooks para refrescar grid y listas
       queryClient.invalidateQueries(["reservas", "dia", fecha]); // refresca grid del día
       queryClient.invalidateQueries(["reservas", "uid", user.username]); // refresca panel del usuario
       queryClient.invalidateQueries(["reservasPeriodicasTodas"]);
@@ -334,7 +357,7 @@ export function DialogoInsertarReservaPeriodica({
       {/* Confirmación antes de enviar */}
       <DialogoConfirmacionReservaPeriodica
         open={openConfirm}
-        setOpen={setOpenConfirm}
+        onOpenChange={setOpenConfirm} // ✅ CORREGIDO
         datosReserva={{
           aula: descripcionEstancia,
           tipoRepeticion,
@@ -349,6 +372,7 @@ export function DialogoInsertarReservaPeriodica({
             : "",
           periodos,
         }}
+        modo="insercion"
         onConfirm={() => mutation.mutate()}
       />
 

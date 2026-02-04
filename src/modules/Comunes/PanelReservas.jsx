@@ -8,10 +8,10 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Componente con tabs para mostrar reservas de aulas, actividades extraescolares, asuntos propios
  *           y permisos de un usuario (recibido como prop, uid)
- * 
+ *
  *
  */
 
@@ -32,7 +32,7 @@ import { usePermisosUid } from "@/hooks/Permisos/usePermisosUid";
 import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
 import { generatePermisosPdf } from "@/utils/Informes";
 import { useAuth } from "@/context/AuthContext";
 import { DialogoEliminarPermiso } from "../Permisos/components/DialogoEliminarPermiso";
@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/tooltip";
 
 // virtualizar reservas de aulas, ya que diretiva puede tener miles
-import { useVirtualizer } from "@tanstack/react-virtual"; 
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef } from "react";
 
 export function PanelReservas({ uid, loading = false }) {
@@ -202,7 +202,6 @@ export function PanelReservas({ uid, loading = false }) {
   };
 
   // ===== Renderizados =====
-  
 
   useEffect(() => {
     if (tabActual === "estancias") {
@@ -210,7 +209,6 @@ export function PanelReservas({ uid, loading = false }) {
     }
   }, [tabActual, rowVirtualizer]);
 
-  
   const renderAsuntosPropios = () => {
     const asuntosPropios = asuntos.filter((a) => a.tipo === 13);
 
@@ -560,6 +558,10 @@ export function PanelReservas({ uid, loading = false }) {
                               year: "numeric",
                             }
                           );
+                          const textoDescripcion =
+                            [estancia?.descripcion, r.descripcion || r.titulo]
+                              .filter(Boolean)
+                              .join(" - ") || "Sin descripción";
 
                           return (
                             <Card
@@ -570,16 +572,11 @@ export function PanelReservas({ uid, loading = false }) {
                               <div className="flex items-center justify-between gap-2">
                                 <p
                                   className="font-semibold text-blue-600 truncate max-w-[80%]"
-                                  title={
-                                    estancia?.descripcion ||
-                                    r.titulo ||
-                                    "Sin descripción"
-                                  }
+                                  title={textoDescripcion}
                                 >
-                                  {estancia?.descripcion ||
-                                    r.titulo ||
-                                    "Sin descripción"}
+                                  {textoDescripcion}
                                 </p>
+
                                 <button
                                   type="button"
                                   className="text-red-500 hover:text-red-700 flex-shrink-0"
@@ -606,9 +603,7 @@ export function PanelReservas({ uid, loading = false }) {
                                   {periodoInicio?.nombre || r.idperiodo_inicio}{" "}
                                   a {periodoFin?.nombre || r.idperiodo_fin}
                                 </p>
-                                <p className="text-gray-500">
-                                  {fechaStr}
-                                </p>
+                                <p className="text-gray-500">{fechaStr}</p>
                               </div>
                             </Card>
                           );

@@ -26,11 +26,24 @@ import {
   ChevronRight,
   ChevronsRight,
   Eraser,
+  Pencil,
+  Trash2,
 } from "lucide-react";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { useState } from "react";
 import { columnsReservasPeriodicas } from "./columns-reservas-periodicas";
 import { useReservasPeriodicasTodas } from "@/hooks/Reservas/userReservasPeriodicasTodas";
+import { DialogoEditarReservaPeriodica } from "@/modules/ReservasEstancias/components/DialogoEditarReservaPeriodica";
+import { DialogoEliminarReservaPeriodica } from "@/modules/ReservasEstancias/components/DialogoEliminarReservaPeriodica";
+
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 
 export function TablaReservasPeriodicas() {
   const [sorting, setSorting] = useState([{ id: "fecha_desde", desc: false }]);
@@ -38,9 +51,69 @@ export function TablaReservasPeriodicas() {
 
   const { data: reservas = [], isLoading } = useReservasPeriodicasTodas();
 
+  const [openEditar, setOpenEditar] = useState(false);
+  const [reservaSeleccionada, setReservaSeleccionada] = useState(null);
+  const { data: periodosDB = [] } = usePeriodosHorarios();
+
+  const [openEliminar, setOpenEliminar] = useState(false);
+  const [reservaEliminar, setReservaEliminar] = useState(null);
+
   const table = useReactTable({
     data: reservas,
-    columns: columnsReservasPeriodicas(),
+    columns: [
+      ...columnsReservasPeriodicas(periodosDB),
+      {
+        id: "acciones",
+        header: "Acciones",
+        cell: ({ row }) => (
+          <div className="flex gap-2">
+            {/* EDITAR */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-blue-600"
+                    onClick={() => {
+                      setReservaSeleccionada(row.original);
+                      setOpenEditar(true);
+                    }}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Editar reserva periódica</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* ELIMINAR */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-red-600"
+                    onClick={() => {
+                      setReservaEliminar(row.original);
+                      setOpenEliminar(true);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-red-600 text-white">
+                  <p>Eliminar reserva periódica</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        ),
+      },
+    ],
     state: {
       sorting,
       columnFilters,
@@ -85,7 +158,7 @@ export function TablaReservasPeriodicas() {
               Solicitante
             </label>
             <Input
-              className="h-8 w-[180px]"
+              className="h-8 w-[180px] text-sm"
               placeholder="Buscar solicitante…"
               value={table.getColumn("nombreCreador")?.getFilterValue() ?? ""}
               onChange={(e) =>
@@ -99,7 +172,7 @@ export function TablaReservasPeriodicas() {
               Profesor destino
             </label>
             <Input
-              className="h-8 w-[180px]"
+              className="h-8 w-[180px] text-sm"
               placeholder="Buscar profesor…"
               value={table.getColumn("nombreProfesor")?.getFilterValue() ?? ""}
               onChange={(e) =>
@@ -123,7 +196,7 @@ export function TablaReservasPeriodicas() {
       </div>
 
       {/* TABLA */}
-      <div className="rounded-md border max-h-[288px] overflow-y-auto">
+      <div className="rounded-md border max-h-[288px] overflow-y-auto text-sm">
         <Table>
           <TableHeader className="bg-muted/50 sticky top-0 z-10">
             {table.getHeaderGroups().map((hg) => (
@@ -157,7 +230,10 @@ export function TablaReservasPeriodicas() {
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id} className="h-6">
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-0.5">
+                    <TableCell
+                      key={cell.id}
+                      className="py-0.5 min-h-6 align-middle"
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -187,7 +263,7 @@ export function TablaReservasPeriodicas() {
           <Button
             variant="outline"
             size="icon"
-            className="h-6 w-6"
+            className="h-6 w-6 p-0"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
@@ -196,7 +272,7 @@ export function TablaReservasPeriodicas() {
           <Button
             variant="outline"
             size="icon"
-            className="h-6 w-6"
+            className="h-6 w-6 p-0"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
@@ -208,7 +284,7 @@ export function TablaReservasPeriodicas() {
           <Button
             variant="outline"
             size="icon"
-            className="h-6 w-6"
+            className="h-6 w-6 p-0"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
@@ -217,7 +293,7 @@ export function TablaReservasPeriodicas() {
           <Button
             variant="outline"
             size="icon"
-            className="h-6 w-6"
+            className="h-6 w-6 p-0"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >
@@ -228,6 +304,33 @@ export function TablaReservasPeriodicas() {
           Total: {table.getFilteredRowModel().rows.length}
         </div>
       </div>
+
+      <DialogoEliminarReservaPeriodica
+        open={openEliminar}
+        onOpenChange={(v) => {
+          setOpenEliminar(v);
+          if (!v) setReservaEliminar(null);
+        }}
+        reserva={reservaEliminar}
+        periodos={periodosDB}
+      />
+
+      {reservaSeleccionada && (
+        <DialogoEditarReservaPeriodica
+          open={openEditar}
+          onClose={() => {
+            setOpenEditar(false);
+            setReservaSeleccionada(null);
+          }}
+          fecha={reservaSeleccionada.fecha_desde}
+          reserva={reservaSeleccionada}
+          periodos={periodosDB}
+          onSuccess={() => {
+            setOpenEditar(false);
+            setReservaSeleccionada(null);
+          }}
+        />
+      )}
     </div>
   );
 }

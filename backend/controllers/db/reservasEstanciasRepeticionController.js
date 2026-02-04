@@ -201,133 +201,6 @@ async function getReservasEstanciasRepeticionEnriquecidas(req, res) {
   }
 }
 
-// -------------------------------------------------------------
-// Insertar una nueva repetición
-/*async function insertReservaEstanciaRepeticion(req, res) {
-  const {
-    uid,
-    profesor,
-    idestancia,
-    idperiodo_inicio,
-    idperiodo_fin,
-    fecha_desde,
-    fecha_hasta,
-    descripcion = "",
-    frecuencia = "diaria",
-    dias_semana = [],
-  } = req.body || {};
-
-  if (!uid)
-    return res.status(401).json({ ok: false, error: "Usuario no autenticado" });
-
-  if (
-    !profesor ||
-    !idestancia ||
-    !idperiodo_inicio ||
-    !idperiodo_fin ||
-    !fecha_desde ||
-    !fecha_hasta
-  ) {
-    return res
-      .status(400)
-      .json({ ok: false, error: "Faltan datos obligatorios" });
-  }
-
-  const client = await pool.connect();
-  const MAPA_DIAS = {
-    Lun: 0,
-    Mar: 1,
-    Mié: 2,
-    Jue: 3,
-    Vie: 4,
-  };
-
-  try {
-    await client.query("BEGIN");
-
-    // Convertir días de la semana a números (0 = Lunes)
-    const diasSemanaInt =
-      Array.isArray(dias_semana) && dias_semana.length > 0
-        ? dias_semana
-            .map((d) => MAPA_DIAS[d])
-            .filter((d) => Number.isInteger(d))
-        : [];
-
-    // 1️⃣ Insertar padre
-    const { rows } = await client.query(
-      `INSERT INTO reservas_estancias_repeticion
-       (uid, profesor, idperiodo_inicio, idperiodo_fin,
-        fecha_desde, fecha_hasta, descripcion, frecuencia, dias_semana, idestancia)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-       RETURNING *`,
-      [
-        uid,
-        profesor,
-        idperiodo_inicio,
-        idperiodo_fin,
-        fecha_desde,
-        fecha_hasta,
-        descripcion,
-        frecuencia,
-        diasSemanaInt,
-        idestancia,
-      ]
-    );
-
-    const repeticion = rows[0];
-    const idrepeticion = repeticion.id;
-
-    // 2️⃣ Generar fechas
-    let fechas = [];
-
-    if (frecuencia === "diaria") {
-      fechas = generarFechasDiarias(fecha_desde, fecha_hasta);
-    } else if (frecuencia === "semanal") {
-      fechas = generarFechasSemanales(fecha_desde, fecha_hasta, dias_semana);
-    }
-
-    if (fechas.length === 0) {
-      throw new Error("No se generaron fechas para la repetición");
-    }
-
-    // 3️⃣ Insertar hijos
-    for (const fecha of fechas) {
-      await client.query(
-        `INSERT INTO reservas_estancias
-         (idestancia, uid, fecha,
-          idperiodo_inicio, idperiodo_fin,
-          descripcion, idrepeticion)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-        [
-          idestancia,
-          profesor,
-          fecha,
-          idperiodo_inicio,
-          idperiodo_fin,
-          descripcion,
-          idrepeticion,
-        ]
-      );
-    }
-
-    await client.query("COMMIT");
-
-    res.status(201).json({
-      ok: true,
-      idrepeticion,
-      numReservas: fechas.length,
-    });
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("[insertReservaEstanciaRepeticion] Error:", err);
-    res.status(500).json({
-      ok: false,
-      error: "Error insertando reserva periódica",
-    });
-  } finally {
-    client.release();
-  }
-}*/
 
 async function insertReservaEstanciaRepeticion(req, res) {
   const {
@@ -456,27 +329,70 @@ async function insertReservaEstanciaRepeticion(req, res) {
   }
 }
 
+
+// 
 // -------------------------------------------------------------
-// Eliminar una repetición por ID
+// Eliminar una repetición por ID (PADRE) y sus hijos futuros
+//
 async function deleteReservaEstanciaRepeticion(req, res) {
   const { id } = req.params;
+  const hoy = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+  const client = await pool.connect();
+
   try {
-    const { rowCount } = await pool.query(
+    await client.query("BEGIN");
+
+    // 1️⃣ Verificar existencia del padre
+    const { rows: padres } = await client.query(
+      `SELECT * FROM reservas_estancias_repeticion WHERE id = $1`,
+      [id]
+    );
+
+    if (padres.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Reserva no encontrada" });
+    }
+
+    const padre = padres[0];
+
+    // 2️⃣ Eliminar hijos futuros de reservas_estancias
+    const { rowCount: hijosEliminados } = await client.query(
+      `
+      DELETE FROM reservas_estancias
+      WHERE idrepeticion = $1
+        AND fecha >= $2
+      `,
+      [id, hoy]
+    );
+
+    // 3️⃣ Eliminar el padre
+    const { rowCount: padreEliminado } = await client.query(
       `DELETE FROM reservas_estancias_repeticion WHERE id = $1`,
       [id]
     );
-    if (rowCount === 0)
-      return res
-        .status(404)
-        .json({ ok: false, error: "Reserva no encontrada" });
-    res.json({ ok: true });
+
+    await client.query("COMMIT");
+
+    res.json({
+      ok: true,
+      padreEliminado: padreEliminado === 1,
+      hijosEliminados,
+      message: "Reserva periódica y sus hijos futuros eliminados correctamente",
+      padre,
+    });
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("[deleteReservaEstanciaRepeticion] Error:", err);
-    res
-      .status(500)
-      .json({ ok: false, error: "Error eliminando reserva repetida" });
+    res.status(500).json({
+      ok: false,
+      error: "Error eliminando reserva periódica",
+    });
+  } finally {
+    client.release();
   }
 }
+
 
 // -------------------------------------------------------------
 // Actualizar una repetición existente

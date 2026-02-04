@@ -11,6 +11,22 @@
  *
  * Permite editar reservas periódicas de aulas.
  *
+ *
+ * Flujo
+ *  Se obtiene el padre existente
+ *  Se eliminan SOLO los hijos futuros
+ *  Los hijos pasados se respetan siempre
+ *  Se actualiza el PADRE periodos, fecha_hasta, descripción, frecuencia, días, etc.
+ *  Se regeneran fechas desde hoy
+ *
+ * Nunca se tocan reservas pasadas.
+ * Se detectan colisiones igual que en creación. Se insertan solo los hijos libres. Los conflictos se omiten
+ *
+ * Filosofía
+ *  No se modifican reservas pasadas.
+ *  Se redefinen reseras futuras.
+ *  No se borran datos históricos
+ *
  */
 
 import { useEffect, useState } from "react";
@@ -166,7 +182,7 @@ export function DialogoEditarReservaPeriodica({
       // Guardamos el resumen para el diálogo informativo
       setResumen(data);
 
-      // ⚡ Invalidamos los hooks para refrescar grid y listas
+      // Invalidamos los hooks para refrescar grid y listas
       queryClient.invalidateQueries(["reservas", "dia", fecha]); // refresca grid del día
       queryClient.invalidateQueries(["reservas", "uid", user.username]); // refresca panel del usuario
       queryClient.invalidateQueries(["reservasPeriodicasTodas"]);
@@ -305,9 +321,10 @@ export function DialogoEditarReservaPeriodica({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <DialogoConfirmacionReservaPeriodica
         open={openConfirm}
-        setOpen={setOpenConfirm}
+        onOpenChange={setOpenConfirm} // ✅ Aquí sí funciona
         datosReserva={{
           aula: reserva?.descripcion_estancia,
           tipoRepeticion,
@@ -322,8 +339,10 @@ export function DialogoEditarReservaPeriodica({
             : "",
           periodos,
         }}
+        modo="edicion"
         onConfirm={() => mutation.mutate()}
       />
+
       <DialogoResumenReservaPeriodica
         open={!!resumen}
         setOpen={(val) => {
