@@ -108,7 +108,7 @@ export function DialogoEditarReservaPeriodica({
     // Días de la semana (de números a nombres)
     const MAPA_DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie"];
     setDiasSemana(
-      reserva.dias_semana?.map((d) => MAPA_DIAS[d]).filter(Boolean) || []
+      reserva.dias_semana?.map((d) => MAPA_DIAS[d]).filter(Boolean) || [],
     );
 
     // Fecha límite (solo YYYY-MM-DD)
@@ -129,22 +129,28 @@ export function DialogoEditarReservaPeriodica({
 
   const toggleDiaSemana = (dia) => {
     setDiasSemana((prev) =>
-      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia]
+      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia],
     );
+  };
+
+  const validarReservaPeriodica = () => {
+    if (!inicio || !fin) throw new Error("Selecciona periodo de inicio y fin");
+    if (parseInt(fin) < parseInt(inicio))
+      throw new Error("El periodo final no puede ser anterior al inicial");
+    if (!profesorSeleccionado) throw new Error("Selecciona un profesor");
+    if (!user?.username) throw new Error("Usuario no autenticado");
+    if (tipoRepeticion === "semanal" && diasSemana.length === 0)
+      throw new Error("Selecciona al menos un día de la semana");
+    if (fechaLimite < fecha)
+      throw new Error(
+        "La fecha límite no puede ser anterior a la fecha de la reserva",
+      );
   };
 
   // Mutation para actualizar reserva periódica
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!inicio || !fin)
-        throw new Error("Selecciona periodo de inicio y fin");
-      if (parseInt(fin) < parseInt(inicio))
-        throw new Error("El periodo final no puede ser anterior al inicial");
-      if (!profesorSeleccionado) throw new Error("Selecciona un profesor");
-      if (!user?.username) throw new Error("Usuario no autenticado");
-      if (tipoRepeticion === "semanal" && diasSemana.length === 0)
-        throw new Error("Selecciona al menos un día de la semana");
-
+      validarReservaPeriodica();
       // Mapear nombres de días a números
       const MAPA_DIAS = { Lun: 0, Mar: 1, Mié: 2, Jue: 3, Vie: 4 };
       const diasSemanaInt =
@@ -169,7 +175,7 @@ export function DialogoEditarReservaPeriodica({
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       const data = await res.json();
@@ -315,7 +321,17 @@ export function DialogoEditarReservaPeriodica({
           </div>
 
           <DialogFooter className="px-6 py-4 bg-gray-50">
-            <Button variant="outline" onClick={() => setOpenConfirm(true)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                try {
+                  validarReservaPeriodica(); // ✅ validación previa
+                  setOpenConfirm(true); // abrir diálogo solo si todo ok
+                } catch (err) {
+                  toast.error(err.message);
+                }
+              }}
+            >
               Guardar cambios
             </Button>
           </DialogFooter>

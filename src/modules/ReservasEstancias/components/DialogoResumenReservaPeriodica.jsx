@@ -28,7 +28,7 @@ export function DialogoResumenReservaPeriodica({ open, setOpen, resumen }) {
   const esActualizacion = resumen.hijosEliminados !== undefined;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen} modal>
+    <Dialog open={open} onOpenChange={setOpen} modalmodal={true}>
       <DialogContent className="p-0 overflow-hidden rounded-lg">
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">

@@ -79,7 +79,7 @@ export function DialogoConfirmacionReservaPeriodica({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal>
+    <Dialog open={open} onOpenChange={onOpenChange} modalmodal={true}>
       <DialogContent  onInteractOutside={(e) => e.preventDefault()} className="p-0 overflow-hidden rounded-lg">
         {/* HEADER */}
         <DialogHeader

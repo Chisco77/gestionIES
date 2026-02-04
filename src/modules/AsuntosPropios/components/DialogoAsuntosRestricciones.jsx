@@ -49,7 +49,6 @@ import {
 import { DialogoEliminarRango } from "./DialogoEliminarRango";
 import { DialogoEliminarAutorizacion } from "./DialogoEliminarAutorizacion";
 
-
 export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
   const API_URL = import.meta.env.VITE_API_URL;
   const queryClient = useQueryClient();
@@ -65,12 +64,13 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
   });
 
   const { data: profesores = [], isLoading, error } = useProfesoresLdap();
-  const [filtroProfesor, setFiltroProfesor] = useState("");
-  const profesoresFiltrados = profesores.filter((p) =>
-    `${p.givenName} ${p.sn}`
-      .toLowerCase()
-      .includes(filtroProfesor.toLowerCase())
-  );
+
+  const [busquedaProfesor, setBusquedaProfesor] = useState("");
+  const profesoresFiltrados = profesores.filter((p) => {
+    const nombreCompleto =
+      `${p.givenName ?? ""} ${p.sn ?? ""} ${p.uid}`.toLowerCase();
+    return nombreCompleto.includes(busquedaProfesor.toLowerCase());
+  });
 
   const [rangos, setRangos] = useState([]);
   const [nuevoRango, setNuevoRango] = useState({
@@ -443,10 +443,10 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                   ) : (
                     rangos.map((r, i) => {
                       const inicioStr = new Date(r.inicio).toLocaleDateString(
-                        "es-ES"
+                        "es-ES",
                       );
                       const finStr = new Date(r.fin).toLocaleDateString(
-                        "es-ES"
+                        "es-ES",
                       );
 
                       return (
@@ -517,68 +517,62 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
               >
                 {/* --- Formulario para añadir permiso --- */}
                 <div className="space-y-4">
-                  {/* Input + Lista de profesores */}
-                  <div className="space-y-2">
+                  {/* Profesor */}
+                  <div className="flex flex-col space-y-2">
                     <Label>Profesor</Label>
 
-                    <div className="flex flex-col gap-1">
-                      {/* Input de búsqueda */}
-                      <Input
-                        placeholder="Buscar profesor..."
-                        value={filtroProfesor}
-                        onChange={(e) => setFiltroProfesor(e.target.value)}
-                        autoFocus
-                      />
+                    <Input
+                      placeholder="Buscar por nombre, apellidos o UID"
+                      value={busquedaProfesor}
+                      onChange={(e) => setBusquedaProfesor(e.target.value)}
+                      className="mb-2"
+                    />
 
-                      {/* Lista filtrada */}
-                      <div className="border rounded-md max-h-[10rem] overflow-auto">
-                        {filtroProfesor === "" ? (
-                          <p className="px-2 py-1 text-sm text-muted-foreground text-center">
-                            Empieza a escribir para buscar...
-                          </p>
-                        ) : profesores.filter((p) =>
-                            `${p.givenName} ${p.sn}`
-                              .toLowerCase()
-                              .includes(filtroProfesor.toLowerCase())
-                          ).length === 0 ? (
-                          <p className="px-2 py-1 text-sm text-muted-foreground text-center">
-                            Sin resultados
-                          </p>
-                        ) : (
-                          <ul className="divide-y divide-gray-200">
-                            {profesores
-                              .filter((p) =>
-                                `${p.givenName} ${p.sn}`
-                                  .toLowerCase()
-                                  .includes(filtroProfesor.toLowerCase())
-                              )
-                              .map((p) => (
-                                <li
-                                  key={p.uid}
-                                  className={`px-2 py-2 cursor-pointer hover:bg-blue-50 transition-colors ${
-                                    nuevoPermitido.uid === p.uid
-                                      ? "bg-blue-100 font-medium"
-                                      : ""
-                                  }`}
-                                  onClick={() =>
-                                    setNuevoPermitido((prev) => ({
-                                      ...prev,
-                                      uid: p.uid,
-                                    }))
-                                  }
-                                >
-                                  {p.givenName} {p.sn}
-                                </li>
-                              ))}
-                          </ul>
-                        )}
-                      </div>
+                    <div className="max-h-48 overflow-y-auto border rounded p-2">
+                      {isLoading && (
+                        <p className="text-sm text-muted-foreground">
+                          Cargando profesores...
+                        </p>
+                      )}
 
                       {error && (
                         <p className="text-sm text-red-500">
                           Error al cargar profesores LDAP
                         </p>
                       )}
+
+                      {!isLoading &&
+                        !error &&
+                        profesoresFiltrados.length === 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            No se encontraron profesores
+                          </p>
+                        )}
+
+                      {!isLoading &&
+                        !error &&
+                        profesoresFiltrados.map((p) => (
+                          <label
+                            key={p.uid}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <input
+                              type="radio"
+                              name="profesor-permitido"
+                              value={p.uid}
+                              checked={nuevoPermitido.uid === p.uid}
+                              onChange={() =>
+                                setNuevoPermitido((prev) => ({
+                                  ...prev,
+                                  uid: p.uid,
+                                }))
+                              }
+                            />
+                            <span>
+                              {p.givenName} {p.sn} ({p.uid})
+                            </span>
+                          </label>
+                        ))}
                     </div>
                   </div>
 
@@ -614,7 +608,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                   ) : (
                     asuntosPermitidos.map((p) => {
                       const profesor = profesores.find(
-                        (prof) => prof.uid === p.uid
+                        (prof) => prof.uid === p.uid,
                       );
                       const nombreCompleto = profesor
                         ? `${profesor.givenName} ${profesor.sn}`
@@ -682,7 +676,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
           autorizacionSeleccionada
             ? (() => {
                 const prof = profesores.find(
-                  (p) => p.uid === autorizacionSeleccionada.uid
+                  (p) => p.uid === autorizacionSeleccionada.uid,
                 );
                 return prof
                   ? `${prof.givenName} ${prof.sn}`
