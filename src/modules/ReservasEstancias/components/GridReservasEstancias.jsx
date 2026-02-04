@@ -105,6 +105,8 @@ export function GridReservasEstancias({
     tipoEstancia
   );
 
+  console.log("Reservas: ", reservasDelDia);
+
   // Filtrar estancias según tipo seleccionado
   useEffect(() => {
     if (!reservasDelDia?.estancias) {
@@ -286,6 +288,12 @@ export function GridReservasEstancias({
                           parseInt(reserva.idperiodo_fin) -
                           parseInt(reserva.idperiodo_inicio) +
                           1;
+                        const esMia = reserva.uid === uid;
+
+                        const claseFondo = esMia
+                          ? "bg-green-200 text-green-900"
+                          : "bg-yellow-200 text-yellow-900";
+
                         return (
                           <td
                             key={e.id}
@@ -297,64 +305,64 @@ export function GridReservasEstancias({
                             }`}
                             onClick={() => handleEditarReserva(reserva)}
                           >
-                            <div className="relative flex items-center justify-center w-full h-full">
-                              <span className="max-w-[90%] truncate text-center px-2">
-                                {reserva.descripcion || "Reserva"}
-                              </span>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="relative flex items-center justify-center w-full h-full">
+                                    <span className="max-w-[90%] truncate text-center px-2">
+                                      {reserva.descripcion || "Reserva"}
+                                    </span>
 
-                              {/* Icono de edición de reserva periódica */}
-                              {reserva.idrepeticion && esDirectiva && (
-                                <div
-                                  className="absolute right-1"
-                                  onClick={(ev) => {
-                                    ev.stopPropagation(); // evita que se dispare el onClick de la celda
-
-                                    // Buscar la reserva periódica padre usando idrepeticion
-                                    const reservaPadre =
-                                      reservasPeriodicas.find(
-                                        (r) => r.id === reserva.idrepeticion
-                                      );
-
-                                    if (!reservaPadre) {
-                                      toast.error(
-                                        "No se encontró la reserva periódica padre."
-                                      );
-                                      return;
-                                    }
-
-                                    // Abrir diálogo de edición de la reserva periódica
-                                    const estancia = estancias.find(
-                                      (e) =>
-                                        e.id ===
-                                        parseInt(reservaPadre.idestancia)
-                                    );
-
-                                    setReservaEditarPeriodica({
-                                      ...reservaPadre,
-                                      descripcionEstancia:
-                                        estancia?.descripcion || "",
-                                    });
-                                    setAbrirDialogoEditarReservaPeriodica(true);
-                                  }}
-                                >
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
+                                    {/* Icono reserva periódica */}
+                                    {reserva.idrepeticion && esDirectiva && (
+                                      <div
+                                        className="absolute right-1"
+                                        onClick={(ev) => {
+                                          ev.stopPropagation();
+                                          const reservaPadre =
+                                            reservasPeriodicas.find(
+                                              (r) =>
+                                                r.id === reserva.idrepeticion
+                                            );
+                                          if (!reservaPadre) {
+                                            toast.error(
+                                              "No se encontró la reserva periódica padre."
+                                            );
+                                            return;
+                                          }
+                                          const estancia = estancias.find(
+                                            (e) =>
+                                              e.id ===
+                                              parseInt(reservaPadre.idestancia)
+                                          );
+                                          setReservaEditarPeriodica({
+                                            ...reservaPadre,
+                                            descripcionEstancia:
+                                              estancia?.descripcion || "",
+                                          });
+                                          setAbrirDialogoEditarReservaPeriodica(
+                                            true
+                                          );
+                                        }}
+                                      >
                                         <Repeat2
                                           size={16}
                                           className="text-gray-600 cursor-pointer"
                                         />
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p className="text-xs">
-                                          Editar reserva periódica
-                                        </p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </div>
-                              )}
-                            </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </TooltipTrigger>
+
+                                <TooltipContent className="text-white border border-blue-300 shadow-md">
+                                  <p className="text-xs font-medium">
+                                    {reserva.uid === uid
+                                      ? "Mi reserva"
+                                      : `Reserva de ${reserva.nombre}`}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </td>
                         );
                       }
@@ -446,11 +454,9 @@ export function GridReservasEstancias({
             setAbrirDialogoEditarReservaPeriodica(false);
             setReservaEditarPeriodica(null);
           }}
+          fecha={selectedDate}
           reserva={reservaEditarPeriodica}
           periodos={periodosDB}
-          onSuccess={() => {
-            // refrescar tabla o invalidar query si usas React Query
-          }}
         />
       )}
     </Card>

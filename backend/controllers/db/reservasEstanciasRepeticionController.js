@@ -22,6 +22,42 @@
 const { buscarPorUid } = require("../ldap/usuariosController");
 const pool = require("../../db");
 
+async function detectarColisiones({
+  idestancia,
+  fechas,
+  idperiodo_inicio,
+  idperiodo_fin,
+  client = pool,
+}) {
+  const fechasLibres = [];
+  const fechasConflicto = [];
+
+  for (const fecha of fechas) {
+    const { rowCount } = await client.query(
+      `
+      SELECT 1
+      FROM reservas_estancias
+      WHERE idestancia = $1
+        AND fecha = $2
+        AND NOT (
+          idperiodo_fin < $3
+          OR idperiodo_inicio > $4
+        )
+      LIMIT 1
+      `,
+      [idestancia, fecha, idperiodo_inicio, idperiodo_fin]
+    );
+
+    if (rowCount > 0) {
+      fechasConflicto.push(fecha);
+    } else {
+      fechasLibres.push(fecha);
+    }
+  }
+
+  return { fechasLibres, fechasConflicto };
+}
+
 function generarFechasDiarias(desde, hasta) {
   const fechas = [];
   let actual = new Date(desde);
@@ -167,7 +203,7 @@ async function getReservasEstanciasRepeticionEnriquecidas(req, res) {
 
 // -------------------------------------------------------------
 // Insertar una nueva repetición
-async function insertReservaEstanciaRepeticion(req, res) {
+/*async function insertReservaEstanciaRepeticion(req, res) {
   const {
     uid,
     profesor,
@@ -291,6 +327,133 @@ async function insertReservaEstanciaRepeticion(req, res) {
   } finally {
     client.release();
   }
+}*/
+
+async function insertReservaEstanciaRepeticion(req, res) {
+  const {
+    uid,
+    profesor,
+    idestancia,
+    idperiodo_inicio,
+    idperiodo_fin,
+    fecha_desde,
+    fecha_hasta,
+    descripcion = "",
+    frecuencia = "diaria",
+    dias_semana = [],
+  } = req.body || {};
+
+  if (!uid)
+    return res.status(401).json({ ok: false, error: "Usuario no autenticado" });
+
+  if (
+    !profesor ||
+    !idestancia ||
+    !idperiodo_inicio ||
+    !idperiodo_fin ||
+    !fecha_desde ||
+    !fecha_hasta
+  ) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "Faltan datos obligatorios" });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1️⃣ Generar fechas
+    let fechas = [];
+
+    if (frecuencia === "diaria") {
+      fechas = generarFechasDiarias(fecha_desde, fecha_hasta);
+    } else if (frecuencia === "semanal") {
+      fechas = generarFechasSemanales(fecha_desde, fecha_hasta, dias_semana);
+    }
+
+    if (fechas.length === 0) {
+      throw new Error("No se generaron fechas para la repetición");
+    }
+
+    // 2️⃣ Insertar PADRE
+    const { rows } = await client.query(
+      `
+      INSERT INTO reservas_estancias_repeticion
+      (uid, profesor, idperiodo_inicio, idperiodo_fin,
+       fecha_desde, fecha_hasta, descripcion, frecuencia, dias_semana, idestancia)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      RETURNING *
+      `,
+      [
+        uid,
+        profesor,
+        idperiodo_inicio,
+        idperiodo_fin,
+        fecha_desde,
+        fecha_hasta,
+        descripcion,
+        frecuencia,
+        dias_semana,
+        idestancia,
+      ]
+    );
+
+    const idrepeticion = rows[0].id;
+
+    // 3️⃣ Detectar colisiones (MISMA lógica que /simular)
+    const { fechasLibres, fechasConflicto } = await detectarColisiones({
+      idestancia,
+      fechas,
+      idperiodo_inicio,
+      idperiodo_fin,
+      client,
+    });
+
+    // 4️⃣ Insertar SOLO fechas libres
+    for (const fecha of fechasLibres) {
+      await client.query(
+        `
+        INSERT INTO reservas_estancias
+        (idestancia, uid, fecha,
+         idperiodo_inicio, idperiodo_fin,
+         descripcion, idrepeticion)
+        VALUES ($1,$2,$3,$4,$5,$6,$7)
+        `,
+        [
+          idestancia,
+          profesor,
+          fecha,
+          idperiodo_inicio,
+          idperiodo_fin,
+          descripcion,
+          idrepeticion,
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    // 5️⃣ Respuesta rica
+    res.status(201).json({
+      ok: true,
+      idrepeticion,
+      total: fechas.length,
+      creadas: fechasLibres.length,
+      omitidas: fechasConflicto.length,
+      fechas_omitidas: fechasConflicto,
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[insertReservaEstanciaRepeticion] Error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Error insertando reserva periódica",
+    });
+  } finally {
+    client.release();
+  }
 }
 
 // -------------------------------------------------------------
@@ -322,60 +485,228 @@ async function updateReservaEstanciaRepeticion(req, res) {
   const {
     idperiodo_inicio,
     idperiodo_fin,
-    fecha_desde,
     fecha_hasta,
-    descripcion,
-    frecuencia,
-    dias_semana,
+    descripcion_reserva = "",
+    frecuencia = "diaria",
+    dias_semana = [],
   } = req.body || {};
 
-  if (!idperiodo_inicio || !idperiodo_fin || !fecha_desde || !fecha_hasta) {
+  if (!idperiodo_inicio || !idperiodo_fin || !fecha_hasta) {
     return res
       .status(400)
       .json({ ok: false, error: "Faltan datos obligatorios" });
   }
 
+  const client = await pool.connect();
+
   try {
-    const { rows: existentes } = await pool.query(
+    await client.query("BEGIN");
+
+    // 1️⃣ Obtener el padre actual
+    const { rows: existentes } = await client.query(
       `SELECT * FROM reservas_estancias_repeticion WHERE id = $1`,
       [id]
     );
 
     if (existentes.length === 0) {
+      await client.query("ROLLBACK");
       return res
         .status(404)
-        .json({ ok: false, error: "Reserva no encontrada" });
+        .json({ ok: false, error: "Reserva periódica no encontrada" });
     }
 
-    const { rows } = await pool.query(
-      `UPDATE reservas_estancias_repeticion
-       SET idperiodo_inicio = $1,
-           idperiodo_fin = $2,
-           fecha_desde = $3,
-           fecha_hasta = $4,
-           descripcion = $5,
-           frecuencia = $6,
-           dias_semana = $7
-       WHERE id = $8
-       RETURNING *`,
+    const padre = existentes[0];
+
+    // 2️⃣ Borrar hijos futuros (desde hoy)
+    const hoy = new Date().toISOString().split("T")[0];
+
+    const { rowCount: eliminadas } = await client.query(
+      `
+      DELETE FROM reservas_estancias
+      WHERE idrepeticion = $1
+        AND fecha >= $2
+      `,
+      [id, hoy]
+    );
+
+    // 3️⃣ Actualizar padre
+    const { rows: actualizadoRows } = await client.query(
+      `
+      UPDATE reservas_estancias_repeticion
+      SET idperiodo_inicio = $1,
+          idperiodo_fin = $2,
+          fecha_hasta = $3,
+          descripcion = $4,
+          frecuencia = $5,
+          dias_semana = $6
+      WHERE id = $7
+      RETURNING *
+      `,
       [
         idperiodo_inicio,
         idperiodo_fin,
-        fecha_desde,
         fecha_hasta,
-        descripcion,
+        descripcion_reserva,
         frecuencia,
         dias_semana,
         id,
       ]
     );
 
-    res.json({ ok: true, reserva: formatearFecha(rows)[0] });
+    const padreActualizado = actualizadoRows[0];
+
+    // 4️⃣ Generar fechas nuevas desde hoy hasta fecha_hasta
+    let fechas = [];
+    if (frecuencia === "diaria") {
+      fechas = generarFechasDiarias(hoy, fecha_hasta);
+    } else if (frecuencia === "semanal") {
+      fechas = generarFechasSemanales(hoy, fecha_hasta, dias_semana);
+    }
+
+    // 5️⃣ Detectar colisiones
+    const { fechasLibres, fechasConflicto } = await detectarColisiones({
+      idestancia: padre.idestancia,
+      fechas,
+      idperiodo_inicio,
+      idperiodo_fin,
+      client,
+    });
+
+    // 6️⃣ Insertar SOLO fechas libres
+    for (const fecha of fechasLibres) {
+      await client.query(
+        `
+        INSERT INTO reservas_estancias
+        (idestancia, uid, fecha,
+         idperiodo_inicio, idperiodo_fin,
+         descripcion, idrepeticion)
+        VALUES ($1,$2,$3,$4,$5,$6,$7)
+        `,
+        [
+          padre.idestancia,
+          padre.profesor,
+          fecha,
+          idperiodo_inicio,
+          idperiodo_fin,
+          descripcion_reserva,
+          id,
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    // 7️⃣ Respuesta detallada
+    res.json({
+      ok: true,
+      padre: padreActualizado,
+      totalNuevas: fechas.length,
+      insertadas: fechasLibres.length,
+      omitidas: fechasConflicto.length,
+      fechasOmitidas: fechasConflicto,
+      hijosEliminados: eliminadas,
+    });
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("[updateReservaEstanciaRepeticion] Error:", err);
-    res
-      .status(500)
-      .json({ ok: false, error: "Error actualizando reserva repetida" });
+    res.status(500).json({
+      ok: false,
+      error: "Error actualizando reserva periódica",
+    });
+  } finally {
+    client.release();
+  }
+}
+
+// -------------------------------------------------------------
+// Simular una reserva periódica (sin insertar nada)
+async function simularReservaEstanciaRepeticion(req, res) {
+  const {
+    idestancia,
+    idperiodo_inicio,
+    idperiodo_fin,
+    fecha_desde,
+    fecha_hasta,
+    frecuencia = "diaria",
+    dias_semana = [],
+  } = req.body || {};
+
+  if (
+    !idestancia ||
+    !idperiodo_inicio ||
+    !idperiodo_fin ||
+    !fecha_desde ||
+    !fecha_hasta
+  ) {
+    return res.status(400).json({
+      ok: false,
+      error: "Faltan datos obligatorios para la simulación",
+    });
+  }
+
+  try {
+    // 1️⃣ Generar fechas
+    let fechas = [];
+
+    if (frecuencia === "diaria") {
+      fechas = generarFechasDiarias(fecha_desde, fecha_hasta);
+    } else if (frecuencia === "semanal") {
+      fechas = generarFechasSemanales(fecha_desde, fecha_hasta, dias_semana);
+    }
+
+    if (fechas.length === 0) {
+      return res.json({
+        ok: true,
+        total: 0,
+        libres: 0,
+        conflictos: 0,
+        fechas_libres: [],
+        fechas_conflicto: [],
+      });
+    }
+
+    // 2️⃣ Comprobar colisiones
+    const fechasLibres = [];
+    const fechasConflicto = [];
+
+    for (const fecha of fechas) {
+      const { rowCount } = await pool.query(
+        `
+        SELECT 1
+        FROM reservas_estancias
+        WHERE idestancia = $1
+          AND fecha = $2
+          AND NOT (
+            idperiodo_fin < $3
+            OR idperiodo_inicio > $4
+          )
+        LIMIT 1
+        `,
+        [idestancia, fecha, idperiodo_inicio, idperiodo_fin]
+      );
+
+      if (rowCount > 0) {
+        fechasConflicto.push(fecha);
+      } else {
+        fechasLibres.push(fecha);
+      }
+    }
+
+    // 3️⃣ Respuesta
+    res.json({
+      ok: true,
+      total: fechas.length,
+      libres: fechasLibres.length,
+      conflictos: fechasConflicto.length,
+      fechas_libres: fechasLibres,
+      fechas_conflicto: fechasConflicto,
+    });
+  } catch (err) {
+    console.error("[simularReservaEstanciaRepeticion] Error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Error simulando reserva periódica",
+    });
   }
 }
 
@@ -385,4 +716,5 @@ module.exports = {
   deleteReservaEstanciaRepeticion,
   updateReservaEstanciaRepeticion,
   getReservasEstanciasRepeticionEnriquecidas,
+  simularReservaEstanciaRepeticion,
 };

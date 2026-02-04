@@ -319,6 +319,7 @@ const {
   updateReservaEstanciaRepeticion,
   deleteReservaEstanciaRepeticion,
   getReservasEstanciasRepeticionEnriquecidas,
+  simularReservaEstanciaRepeticion,
 } = require("../controllers/db/reservasEstanciasRepeticionController");
 
 // ================================================================
@@ -338,5 +339,11 @@ router.get(
   "/reservas-estancias/repeticiones/enriquecidas",
   getReservasEstanciasRepeticionEnriquecidas,
 );
+
+router.post(
+  "/reservas-estancias/repeticion/simular",
+  simularReservaEstanciaRepeticion,
+);
+
 
 module.exports = router;

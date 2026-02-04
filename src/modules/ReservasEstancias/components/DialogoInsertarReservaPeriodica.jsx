@@ -37,6 +37,7 @@ import { getCursoActual, ddmmyyyyToISO } from "@/utils/cursoAcademico";
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 
 import { DialogoConfirmacionReservaPeriodica } from "./DialogoConfirmacionReservaPeriodica";
+import { DialogoResumenReservaPeriodica } from "./DialogoResumenReservaPeriodica";
 
 export function DialogoInsertarReservaPeriodica({
   open,
@@ -67,6 +68,9 @@ export function DialogoInsertarReservaPeriodica({
   const [busquedaProfesor, setBusquedaProfesor] = useState("");
 
   const [openConfirm, setOpenConfirm] = useState(false);
+
+  // Estado para el resumen de inserción
+  const [resumen, setResumen] = useState(null);
 
   // Obtener profesores con hook
   const {
@@ -146,16 +150,18 @@ export function DialogoInsertarReservaPeriodica({
         throw new Error(data.error || "Error al insertar reserva periódica");
       return data;
     },
+    onSuccess: (data) => {
+      // Guardamos el resumen para el diálogo informativo
+      setResumen(data);
 
-    onSuccess: () => {
-      toast.success("Reserva periódica creada correctamente");
-      queryClient.invalidateQueries(["reservas", "dia", fecha]);
-      onSuccess?.();
-      onClose();
+      // ⚡ Invalidamos los hooks para refrescar grid y listas
+      queryClient.invalidateQueries(["reservas", "dia", fecha]); // refresca grid del día
+      queryClient.invalidateQueries(["reservas", "uid", user.username]); // refresca panel del usuario
+      queryClient.invalidateQueries(["reservasPeriodicasTodas"]);
     },
 
     onError: (err) => {
-      toast.error(err.message || "Error al insertar reserva periódica");
+      toast.error(err.message || "Error al actualizar reserva periódica");
     },
   });
 
@@ -176,7 +182,7 @@ export function DialogoInsertarReservaPeriodica({
           <div className="flex flex-col space-y-4 p-6">
             {/* Profesor */}
             <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium">Profesor</label>
+              <label className="text-sm font-medium">Reserva para:</label>
               <Input
                 placeholder="Buscar por nombre, apellidos o UID"
                 value={busquedaProfesor}
@@ -325,6 +331,7 @@ export function DialogoInsertarReservaPeriodica({
         </DialogContent>
       </Dialog>
 
+      {/* Confirmación antes de enviar */}
       <DialogoConfirmacionReservaPeriodica
         open={openConfirm}
         setOpen={setOpenConfirm}
@@ -343,6 +350,20 @@ export function DialogoInsertarReservaPeriodica({
           periodos,
         }}
         onConfirm={() => mutation.mutate()}
+      />
+
+      {/* Resumen después de insertar */}
+      <DialogoResumenReservaPeriodica
+        open={!!resumen}
+        setOpen={(val) => {
+          if (!val) {
+            setResumen(null);
+            queryClient.invalidateQueries(["reservas", "dia", fecha]);
+            onClose?.();
+            onSuccess?.();
+          }
+        }}
+        resumen={resumen}
       />
     </>
   );

@@ -36,10 +36,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 
 import { DialogoConfirmacionReservaPeriodica } from "./DialogoConfirmacionReservaPeriodica";
+import { DialogoResumenReservaPeriodica } from "./DialogoResumenReservaPeriodica";
 
 export function DialogoEditarReservaPeriodica({
   open,
   onClose,
+  fecha,
   reserva, // objeto con la reserva periódica a editar
   periodos,
   onSuccess,
@@ -47,6 +49,8 @@ export function DialogoEditarReservaPeriodica({
   const { user } = useAuth();
   const API_URL = import.meta.env.VITE_API_URL;
   const queryClient = useQueryClient();
+
+  const [resumen, setResumen] = useState(null); // resultado de la mutación
 
   // Estados básicos de la reserva
   const [descripcion, setDescripcion] = useState("");
@@ -158,11 +162,14 @@ export function DialogoEditarReservaPeriodica({
       return data;
     },
 
-    onSuccess: () => {
-      toast.success("Reserva periódica actualizada correctamente");
-      queryClient.invalidateQueries(["reservas-periodicas-directiva"]);
-      onSuccess?.();
-      onClose();
+    onSuccess: (data) => {
+      // Guardamos el resumen para el diálogo informativo
+      setResumen(data);
+
+      // ⚡ Invalidamos los hooks para refrescar grid y listas
+      queryClient.invalidateQueries(["reservas", "dia", fecha]); // refresca grid del día
+      queryClient.invalidateQueries(["reservas", "uid", user.username]); // refresca panel del usuario
+      queryClient.invalidateQueries(["reservasPeriodicasTodas"]);
     },
 
     onError: (err) => {
@@ -188,7 +195,7 @@ export function DialogoEditarReservaPeriodica({
           <div className="flex flex-col space-y-4 p-6">
             {/* Profesor (solo lectura) */}
             <div className="flex flex-col space-y-1">
-              <label className="text-sm font-medium">Profesor</label>
+              <label className="text-sm font-medium">Reserva para:</label>
               <Input
                 value={reserva?.nombreProfesor || ""}
                 readOnly
@@ -298,7 +305,6 @@ export function DialogoEditarReservaPeriodica({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       <DialogoConfirmacionReservaPeriodica
         open={openConfirm}
         setOpen={setOpenConfirm}
@@ -317,6 +323,17 @@ export function DialogoEditarReservaPeriodica({
           periodos,
         }}
         onConfirm={() => mutation.mutate()}
+      />
+      <DialogoResumenReservaPeriodica
+        open={!!resumen}
+        setOpen={(val) => {
+          if (!val) {
+            setResumen(null); // reset resumen al cerrar
+            queryClient.invalidateQueries(["reservas-periodicas-directiva"]);
+            onClose?.();
+          }
+        }}
+        resumen={resumen}
       />
     </>
   );
