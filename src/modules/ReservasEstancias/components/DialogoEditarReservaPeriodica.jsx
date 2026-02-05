@@ -108,7 +108,7 @@ export function DialogoEditarReservaPeriodica({
     // Días de la semana (de números a nombres)
     const MAPA_DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie"];
     setDiasSemana(
-      reserva.dias_semana?.map((d) => MAPA_DIAS[d]).filter(Boolean) || [],
+      reserva.dias_semana?.map((d) => MAPA_DIAS[d]).filter(Boolean) || []
     );
 
     // Fecha límite (solo YYYY-MM-DD)
@@ -129,7 +129,7 @@ export function DialogoEditarReservaPeriodica({
 
   const toggleDiaSemana = (dia) => {
     setDiasSemana((prev) =>
-      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia],
+      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia]
     );
   };
 
@@ -143,7 +143,7 @@ export function DialogoEditarReservaPeriodica({
       throw new Error("Selecciona al menos un día de la semana");
     if (fechaLimite < fecha)
       throw new Error(
-        "La fecha límite no puede ser anterior a la fecha de la reserva",
+        "La fecha límite no puede ser anterior a la fecha de la reserva"
       );
   };
 
@@ -162,9 +162,10 @@ export function DialogoEditarReservaPeriodica({
         profesor: profesorSeleccionado,
         idperiodo_inicio: parseInt(inicio),
         idperiodo_fin: parseInt(fin),
+        fecha_desde: reserva.fecha_desde,
         fecha_hasta: fechaLimite,
         descripcion_reserva: descripcion,
-        frecuencia: tipoRepeticion, // diaria | semanal
+        frecuencia: tipoRepeticion,
         dias_semana: diasSemanaInt,
       };
 
@@ -175,7 +176,7 @@ export function DialogoEditarReservaPeriodica({
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(payload),
-        },
+        }
       );
 
       const data = await res.json();

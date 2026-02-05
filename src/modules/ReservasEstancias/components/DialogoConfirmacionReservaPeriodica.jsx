@@ -71,8 +71,8 @@ export function DialogoConfirmacionReservaPeriodica({
     if (onConfirm) onConfirm();
     toast.success(
       modo === "edicion"
-        ? "Reserva modificada correctamente"
-        : "Reserva confirmada"
+        ? "Reserva periódica modificada correctamente"
+        : "Reserva periódica confirmada"
     );
     queryClient.invalidateQueries(["reservasPeriodicasTodas"]);
     onOpenChange(false);

@@ -60,29 +60,34 @@ async function detectarColisiones({
 
 function generarFechasDiarias(desde, hasta) {
   const fechas = [];
-  let actual = new Date(desde);
-  const fin = new Date(hasta);
+
+  let actual = new Date(`${desde}T12:00:00`);
+  const fin = new Date(`${hasta}T12:00:00`);
 
   while (actual <= fin) {
-    fechas.push(actual.toISOString().split("T")[0]);
+    fechas.push(actual.toISOString().slice(0, 10));
     actual.setDate(actual.getDate() + 1);
   }
+
   return fechas;
 }
 
 function generarFechasSemanales(desde, hasta, diasSemanaInt) {
   const fechas = [];
-  let actual = new Date(desde);
-  const fin = new Date(hasta);
+
+  let actual = new Date(`${desde}T12:00:00`);
+  const fin = new Date(`${hasta}T12:00:00`);
 
   while (actual <= fin) {
-    // getDay(): 0 = domingo, 1 = lunes ...
-    const dia = actual.getDay() === 0 ? 6 : actual.getDay() - 1; // 0 = lunes
+    const dia = (actual.getDay() + 6) % 7; // lunes = 0
+
     if (diasSemanaInt.includes(dia)) {
-      fechas.push(actual.toISOString().split("T")[0]);
+      fechas.push(actual.toISOString().slice(0, 10));
     }
+
     actual.setDate(actual.getDate() + 1);
   }
+
   return fechas;
 }
 
@@ -200,7 +205,6 @@ async function getReservasEstanciasRepeticionEnriquecidas(req, res) {
     });
   }
 }
-
 
 async function insertReservaEstanciaRepeticion(req, res) {
   const {
@@ -329,8 +333,7 @@ async function insertReservaEstanciaRepeticion(req, res) {
   }
 }
 
-
-// 
+//
 // -------------------------------------------------------------
 // Eliminar una repetición por ID (PADRE) y sus hijos futuros
 //
@@ -351,7 +354,9 @@ async function deleteReservaEstanciaRepeticion(req, res) {
 
     if (padres.length === 0) {
       await client.query("ROLLBACK");
-      return res.status(404).json({ ok: false, error: "Reserva no encontrada" });
+      return res
+        .status(404)
+        .json({ ok: false, error: "Reserva no encontrada" });
     }
 
     const padre = padres[0];
@@ -393,7 +398,6 @@ async function deleteReservaEstanciaRepeticion(req, res) {
   }
 }
 
-
 // -------------------------------------------------------------
 // Actualizar una repetición existente
 async function updateReservaEstanciaRepeticion(req, res) {
@@ -401,13 +405,14 @@ async function updateReservaEstanciaRepeticion(req, res) {
   const {
     idperiodo_inicio,
     idperiodo_fin,
+    fecha_desde, 
     fecha_hasta,
     descripcion_reserva = "",
     frecuencia = "diaria",
     dias_semana = [],
   } = req.body || {};
 
-  if (!idperiodo_inicio || !idperiodo_fin || !fecha_hasta) {
+  if (!idperiodo_inicio || !idperiodo_fin || !fecha_desde || !fecha_hasta) {
     return res
       .status(400)
       .json({ ok: false, error: "Faltan datos obligatorios" });
@@ -433,19 +438,23 @@ async function updateReservaEstanciaRepeticion(req, res) {
 
     const padre = existentes[0];
 
-    // 2️⃣ Borrar hijos futuros (desde hoy)
-    const hoy = new Date().toISOString().split("T")[0];
+    // Fecha de hoy en formato YYYY-MM-DD
+    const hoy = new Date().toISOString().slice(0, 10);
 
+    // La fecha efectiva desde la que se pueden modificar reservas
+    const fechaDesdeEfectiva = fecha_desde < hoy ? hoy : fecha_desde;
+
+    // 2️⃣ Borrar hijos desde la fecha seleccionada
     const { rowCount: eliminadas } = await client.query(
       `
       DELETE FROM reservas_estancias
       WHERE idrepeticion = $1
         AND fecha >= $2
       `,
-      [id, hoy]
+      [id, fechaDesdeEfectiva]
     );
 
-    // 3️⃣ Actualizar padre
+    // 3️⃣ Actualizar el padre (NO tocamos fecha_desde)
     const { rows: actualizadoRows } = await client.query(
       `
       UPDATE reservas_estancias_repeticion
@@ -471,12 +480,12 @@ async function updateReservaEstanciaRepeticion(req, res) {
 
     const padreActualizado = actualizadoRows[0];
 
-    // 4️⃣ Generar fechas nuevas desde hoy hasta fecha_hasta
+    // 4️⃣ Generar fechas desde la fecha seleccionada
     let fechas = [];
     if (frecuencia === "diaria") {
-      fechas = generarFechasDiarias(hoy, fecha_hasta);
+      fechas = generarFechasDiarias(fechaDesdeEfectiva, fecha_hasta);
     } else if (frecuencia === "semanal") {
-      fechas = generarFechasSemanales(hoy, fecha_hasta, dias_semana);
+      fechas = generarFechasSemanales(fechaDesdeEfectiva, fecha_hasta, dias_semana);
     }
 
     // 5️⃣ Detectar colisiones
@@ -512,7 +521,7 @@ async function updateReservaEstanciaRepeticion(req, res) {
 
     await client.query("COMMIT");
 
-    // 7️⃣ Respuesta detallada
+    // 7️⃣ Respuesta
     res.json({
       ok: true,
       padre: padreActualizado,
