@@ -37,6 +37,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 import { useState } from "react";
 import { columnsReservasPeriodicas } from "./columns-reservas-periodicas";
 import { useReservasPeriodicasTodas } from "@/hooks/Reservas/userReservasPeriodicasTodas";
@@ -57,6 +65,10 @@ export function TablaReservasPeriodicas() {
 
   const [openEliminar, setOpenEliminar] = useState(false);
   const [reservaEliminar, setReservaEliminar] = useState(null);
+
+  const estanciasUnicas = Array.from(
+    new Set(reservas.map((r) => r.descripcion_estancia).filter(Boolean))
+  ).sort();
 
   const table = useReactTable({
     data: reservas,
@@ -155,7 +167,7 @@ export function TablaReservasPeriodicas() {
         <div className="flex flex-wrap gap-4 items-end text-sm">
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">
-              Solicitante
+              Creada por ...
             </label>
             <Input
               className="h-8 w-[180px] text-sm"
@@ -169,7 +181,7 @@ export function TablaReservasPeriodicas() {
 
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">
-              Profesor destino
+              Creada Para ...
             </label>
             <Input
               className="h-8 w-[180px] text-sm"
@@ -181,6 +193,38 @@ export function TablaReservasPeriodicas() {
                   ?.setFilterValue(e.target.value)
               }
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Estancia
+            </label>
+
+            <Select
+              value={
+                table.getColumn("descripcion_estancia")?.getFilterValue() ??
+                "__all__"
+              }
+              onValueChange={(value) =>
+                table
+                  .getColumn("descripcion_estancia")
+                  ?.setFilterValue(value === "__all__" ? "" : value)
+              }
+            >
+              <SelectTrigger className="h-8 w-[180px] text-sm">
+                <SelectValue placeholder="Todas las estancias" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="__all__">Todas</SelectItem>
+
+                {estanciasUnicas.map((estancia) => (
+                  <SelectItem key={estancia} value={estancia}>
+                    {estancia}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <Button

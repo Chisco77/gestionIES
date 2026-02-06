@@ -69,6 +69,7 @@ export const columnsReservasPeriodicas = (periodos = []) => {
     {
       accessorKey: "descripcion_estancia",
       header: "Estancia",
+      filterFn: (row, col, value) => !value || row.getValue(col) === value,
     },
   ];
 };

@@ -403,9 +403,10 @@ async function deleteReservaEstanciaRepeticion(req, res) {
 async function updateReservaEstanciaRepeticion(req, res) {
   const { id } = req.params;
   const {
+    profesor,
     idperiodo_inicio,
     idperiodo_fin,
-    fecha_desde, 
+    fecha_desde,
     fecha_hasta,
     descripcion_reserva = "",
     frecuencia = "diaria",
@@ -416,6 +417,10 @@ async function updateReservaEstanciaRepeticion(req, res) {
     return res
       .status(400)
       .json({ ok: false, error: "Faltan datos obligatorios" });
+  }
+
+  if (!profesor) {
+    return res.status(400).json({ ok: false, error: "Profesor obligatorio" });
   }
 
   const client = await pool.connect();
@@ -457,17 +462,19 @@ async function updateReservaEstanciaRepeticion(req, res) {
     // 3️⃣ Actualizar el padre (NO tocamos fecha_desde)
     const { rows: actualizadoRows } = await client.query(
       `
-      UPDATE reservas_estancias_repeticion
-      SET idperiodo_inicio = $1,
-          idperiodo_fin = $2,
-          fecha_hasta = $3,
-          descripcion = $4,
-          frecuencia = $5,
-          dias_semana = $6
-      WHERE id = $7
-      RETURNING *
+     UPDATE reservas_estancias_repeticion
+SET profesor = $1,
+    idperiodo_inicio = $2,
+    idperiodo_fin = $3,
+    fecha_hasta = $4,
+    descripcion = $5,
+    frecuencia = $6,
+    dias_semana = $7
+WHERE id = $8
+RETURNING *
       `,
       [
+        profesor,
         idperiodo_inicio,
         idperiodo_fin,
         fecha_hasta,
@@ -485,7 +492,11 @@ async function updateReservaEstanciaRepeticion(req, res) {
     if (frecuencia === "diaria") {
       fechas = generarFechasDiarias(fechaDesdeEfectiva, fecha_hasta);
     } else if (frecuencia === "semanal") {
-      fechas = generarFechasSemanales(fechaDesdeEfectiva, fecha_hasta, dias_semana);
+      fechas = generarFechasSemanales(
+        fechaDesdeEfectiva,
+        fecha_hasta,
+        dias_semana
+      );
     }
 
     // 5️⃣ Detectar colisiones
@@ -501,15 +512,15 @@ async function updateReservaEstanciaRepeticion(req, res) {
     for (const fecha of fechasLibres) {
       await client.query(
         `
-        INSERT INTO reservas_estancias
-        (idestancia, uid, fecha,
-         idperiodo_inicio, idperiodo_fin,
-         descripcion, idrepeticion)
-        VALUES ($1,$2,$3,$4,$5,$6,$7)
-        `,
+    INSERT INTO reservas_estancias
+    (idestancia, uid, fecha,
+     idperiodo_inicio, idperiodo_fin,
+     descripcion, idrepeticion)
+    VALUES ($1,$2,$3,$4,$5,$6,$7)
+    `,
         [
           padre.idestancia,
-          padre.profesor,
+          profesor, // ✅ el nuevo
           fecha,
           idperiodo_inicio,
           idperiodo_fin,

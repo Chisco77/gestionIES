@@ -216,14 +216,63 @@ export function DialogoEditarReservaPeriodica({
           </DialogHeader>
 
           <div className="flex flex-col space-y-4 p-6">
-            {/* Profesor (solo lectura) */}
-            <div className="flex flex-col space-y-1">
+            {profesorObj && (
+              <div className="rounded-md border bg-muted px-3 py-2 text-sm">
+                <span className="font-medium">Profesor actual:</span>{" "}
+                {profesorObj.givenName} {profesorObj.sn} ({profesorObj.uid})
+              </div>
+            )}
+            {/* Profesor */}
+            <div className="flex flex-col space-y-2">
               <label className="text-sm font-medium">Reserva para:</label>
+
               <Input
-                value={reserva?.nombreProfesor || ""}
-                readOnly
-                className="bg-gray-100 cursor-not-allowed"
+                placeholder="Buscar por nombre, apellidos o UID"
+                value={busquedaProfesor}
+                onChange={(e) => setBusquedaProfesor(e.target.value)}
+                className="mb-2"
               />
+
+              <div className="max-h-48 overflow-y-auto border rounded p-2">
+                {loadingProfesores && (
+                  <p className="text-sm text-muted-foreground">
+                    Cargando profesores...
+                  </p>
+                )}
+
+                {errorProfesores && (
+                  <p className="text-sm text-red-500">
+                    Error al cargar profesores
+                  </p>
+                )}
+
+                {!loadingProfesores &&
+                  !errorProfesores &&
+                  profesoresFiltrados.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No se encontraron profesores
+                    </p>
+                  )}
+
+                {!loadingProfesores &&
+                  profesoresFiltrados.map((p) => (
+                    <label
+                      key={p.uid}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="profesor"
+                        value={p.uid}
+                        checked={profesorSeleccionado === p.uid}
+                        onChange={() => setProfesorSeleccionado(p.uid)}
+                      />
+                      <span>
+                        {p.givenName} {p.sn} ({p.uid})
+                      </span>
+                    </label>
+                  ))}
+              </div>
             </div>
 
             {/* Periodos */}

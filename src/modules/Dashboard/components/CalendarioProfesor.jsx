@@ -64,7 +64,7 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
   // Solo asuntos propios -> tipo = 13
   const asuntosPorDia = {};
   (asuntos || [])
-    .filter((a) => a.tipo === 13)
+    //.filter((a) => a.tipo === 13)
     .forEach((a) => {
       const fechaObj = new Date(a.fecha);
       const fecha = formatDateKey(fechaObj);
@@ -171,15 +171,15 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
           <div className="flex gap-6">
             <div className="flex items-center gap-1">
               <div className="w-4 h-4 bg-green-100 rounded"></div>
-              Asuntos Propios
+              Mis Permisos
             </div>
             <div className="flex items-center gap-1">
               <div className="w-4 h-4 bg-purple-100 rounded"></div>
-              Extraescolares
+              Extraescolares del centro
             </div>
             <div className="flex items-center gap-1">
               <div className="w-4 h-4 bg-diagonal-extra-asuntos rounded"></div>
-              Extraescolares y Asuntos Propios
+              Extraescolares y Permisos
             </div>
           </div>
         </div>
