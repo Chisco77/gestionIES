@@ -20,7 +20,7 @@
 import { TablaPermisosDirectiva } from "../components/TablaPermisosDirectiva";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TablaExtraescolares } from "@/modules/Extraescolares/components/TablaExtraescolares";
+import { TablaExtraescolaresDirectiva } from "../components/TablaExtraescolaresDirectiva";
 import { TablaReservasPeriodicas } from "../components/TablaReservasPeriodicas";
 
 export function PanelReservasDirectiva({ user, fecha }) {
@@ -57,7 +57,7 @@ export function PanelReservasDirectiva({ user, fecha }) {
               value="actividades"
               className="h-full overflow-y-auto pr-2"
             >
-              <TablaExtraescolares user={user} fecha={fecha} />
+              <TablaExtraescolaresDirectiva user={user} fecha={fecha} />
             </TabsContent>
             <TabsContent
               value="periodicas"

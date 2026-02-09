@@ -48,19 +48,13 @@ export default function DialogoEditarUsuario({
   modo = "admin",
 }) {
   const queryClient = useQueryClient();
-  const { user: usuarioActivo } = useAuth(); // perfil del usuario logueado
+  const { user: usuarioActivo } = useAuth();
 
-  // ⚠️ Evitar errores si no hay usuario seleccionado
-  if (!usuarioSeleccionado) return null;
+  const API_URL = import.meta.env.VITE_API_URL;
 
-  // Permisos dinámicos
-  const esPropietario = usuarioActivo?.username === usuarioSeleccionado?.uid;
-  const puedeEditarAvanzados = ["admin", "directiva"].includes(
-    usuarioActivo?.perfil
-  );
-  const puedeEditarBasicos = esPropietario || puedeEditarAvanzados;
-
-  // LDAP
+  // ----------------------------------------
+  // ⚠️ Hooks siempre inicializados
+  // ----------------------------------------
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [grupo, setGrupo] = useState("");
@@ -68,7 +62,6 @@ export default function DialogoEditarUsuario({
   const [fotoUrl, setFotoUrl] = useState(null);
   const [gruposDisponibles, setGruposDisponibles] = useState([]);
 
-  // Empleados
   const [dni, setDni] = useState("");
   const [asuntosPropios, setAsuntosPropios] = useState(0);
   const [tipoEmpleado, setTipoEmpleado] = useState("");
@@ -76,60 +69,34 @@ export default function DialogoEditarUsuario({
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
 
-  const API_URL = import.meta.env.VITE_API_URL;
-  const SERVER_URL = import.meta.env.VITE_SERVER_URL;
+  // ----------------------------------------
+  // Permisos
+  // ----------------------------------------
+  const esPropietario = usuarioActivo?.username === usuarioSeleccionado?.uid;
+  const puedeEditarAvanzados = ["admin", "directiva"].includes(
+    usuarioActivo?.perfil,
+  );
+  const puedeEditarBasicos = esPropietario || puedeEditarAvanzados;
 
-  // Sincronizar datos LDAP
-  /*useEffect(() => {
-    if (!open || !usuarioSeleccionado) return;
-
-    setNombre(usuarioSeleccionado.givenName || "");
-    setApellidos(usuarioSeleccionado.sn || "");
-    setUid(usuarioSeleccionado.uid || "");
-    setGrupo(usuarioSeleccionado.gidNumber || "");
-    setFotoUrl(null);
-
-    if (esAlumno) {
-      const fetchFoto = async () => {
-        const extensiones = ["jpg", "jpeg", "png"];
-        const baseUrl = `${SERVER_URL}/uploads/alumnos/${usuarioSeleccionado.uid}`;
-        //const baseUrl = `/gestionIES/uploads/alumnos/${usuarioSeleccionado.uid}`;
-        for (const ext of extensiones) {
-          try {
-            const res = await fetch(`${baseUrl}.${ext}`, { method: "HEAD" });
-            if (res.ok) {
-              setFotoUrl(`${baseUrl}.${ext}`);
-              return;
-            }
-          } catch (e) {}
-        }
-        setFotoUrl(null);
-      };
-      fetchFoto();
-    }
-  }, [usuarioSeleccionado, open, esAlumno, SERVER_URL]);*/
-
-  // Sincronizar foto del alumno desde Nginx
+  // ----------------------------------------
+  // Efectos para sincronizar datos desde props
+  // ----------------------------------------
   useEffect(() => {
-    if (!open || !usuarioSeleccionado) return;
+    if (!usuarioSeleccionado) return;
+
     setNombre(usuarioSeleccionado.givenName || "");
     setApellidos(usuarioSeleccionado.sn || "");
     setUid(usuarioSeleccionado.uid || "");
     setGrupo(usuarioSeleccionado.gidNumber || "");
     setFotoUrl(null);
 
-    if (esAlumno) {
+    // Foto del alumno
+    if (esAlumno && usuarioSeleccionado.uid) {
       const extensiones = ["jpg", "jpeg", "png"];
       let encontrada = false;
 
       for (const ext of extensiones) {
-        // URL relativa a Nginx (misma origen que frontend)
         const url = `/gestionIES/uploads/alumnos/${usuarioSeleccionado.uid}.${ext}`;
-
-        // Opcional: podrías hacer HEAD para verificar existencia
-        // fetch(url, { method: "HEAD" }).then(res => { if (res.ok) setFotoUrl(url) ... });
-
-        // Por simplicidad, asignamos la primera que creemos que puede existir
         setFotoUrl(url);
         encontrada = true;
         break;
@@ -137,11 +104,10 @@ export default function DialogoEditarUsuario({
 
       if (!encontrada) setFotoUrl(null);
     }
-  }, [usuarioSeleccionado, open, esAlumno]);
+  }, [usuarioSeleccionado, esAlumno]);
 
-  // Sincronizar datos empleados
   useEffect(() => {
-    if (!empleadoSeleccionado || !open) return;
+    if (!empleadoSeleccionado) return;
 
     setDni(empleadoSeleccionado.dni || "");
     setAsuntosPropios(empleadoSeleccionado.asuntos_propios || 0);
@@ -149,11 +115,11 @@ export default function DialogoEditarUsuario({
     setJornada(empleadoSeleccionado.jornada ?? 0);
     setEmail(empleadoSeleccionado.email || "");
     setTelefono(empleadoSeleccionado.telefono || "");
-  }, [empleadoSeleccionado, open]);
+  }, [empleadoSeleccionado]);
 
-  // Cargar grupos disponibles según tipo de usuario
   useEffect(() => {
     if (!open) return;
+
     const groupType = esAlumno ? "school_class" : "school_department";
 
     fetch(`${API_URL}/ldap/grupos?groupType=${groupType}`, {
@@ -161,14 +127,18 @@ export default function DialogoEditarUsuario({
     })
       .then((res) => res.json())
       .then((data) =>
-        setGruposDisponibles(data.sort((a, b) => a.cn.localeCompare(b.cn)))
+        setGruposDisponibles(data.sort((a, b) => a.cn.localeCompare(b.cn))),
       )
       .catch(() => toast.error("Error al obtener grupos"));
   }, [open, esAlumno, API_URL]);
 
+  // ----------------------------------------
   // Mutation para guardar empleado
+  // ----------------------------------------
   const mutation = useMutation({
     mutationFn: async (datos) => {
+      if (!usuarioSeleccionado) throw new Error("No hay usuario seleccionado");
+
       const res = await fetch(
         `${API_URL}/db/empleados/${usuarioSeleccionado.uid}`,
         {
@@ -176,8 +146,9 @@ export default function DialogoEditarUsuario({
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(datos),
-        }
+        },
       );
+
       const json = await res.json();
       if (!res.ok)
         throw new Error(json.message || "Error al actualizar usuario");
@@ -213,6 +184,9 @@ export default function DialogoEditarUsuario({
     mutation.mutate(datos);
   };
 
+  // ----------------------------------------
+  // Render seguro
+  // ----------------------------------------
   return (
     <Dialog open={open} onOpenChange={onClose} modal>
       <DialogContent
@@ -232,7 +206,7 @@ export default function DialogoEditarUsuario({
             </div>
           ) : null}
           <DialogTitle>
-            {usuarioSeleccionado.givenName} {usuarioSeleccionado.sn}
+            {usuarioSeleccionado?.givenName} {usuarioSeleccionado?.sn}
           </DialogTitle>
         </DialogHeader>
 
@@ -240,19 +214,11 @@ export default function DialogoEditarUsuario({
           {/* LDAP */}
           <div>
             <label className="block text-sm font-medium">Nombre</label>
-            <Input
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              disabled
-            />
+            <Input value={nombre} disabled />
           </div>
           <div>
             <label className="block text-sm font-medium">Apellidos</label>
-            <Input
-              value={apellidos}
-              onChange={(e) => setApellidos(e.target.value)}
-              disabled
-            />
+            <Input value={apellidos} disabled />
           </div>
           <div>
             <label className="block text-sm font-medium">Grupo</label>

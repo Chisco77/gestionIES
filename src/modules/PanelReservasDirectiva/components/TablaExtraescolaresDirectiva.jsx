@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -42,12 +42,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-import { columnsExtraescolares } from "./columns";
+import { columnsExtraescolares } from "./columns-extraescolares";
 
 // Diálogos
-import { DialogoEditarExtraescolar } from "../components/DialogoEditarExtraescolar";
-import { DialogoConfirmacionExtraescolar } from "./DialogoConfirmacionExtraescolar";
-
+import { DialogoEditarExtraescolar } from "@/modules/Extraescolares/components/DialogoEditarExtraescolar";
+import { DialogoConfirmacionExtraescolar } from "@/modules/Extraescolares/components/DialogoConfirmacionExtraescolar";
 import { useCursosLdap } from "@/hooks/useCursosLdap";
 import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
@@ -75,7 +74,7 @@ import { generateListadoExtraescolaresPorDepartamento } from "@/Informes/extraes
 import { generateListadoExtraescolaresPorDepartamentoXLS } from "@/Informes/extraescolares";
 import { generateListadoExtraescolaresMensual } from "@/Informes/extraescolares";
 
-export function TablaExtraescolares({ user, fecha }) {
+export function TablaExtraescolaresDirectiva({ user, fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
@@ -175,15 +174,9 @@ export function TablaExtraescolares({ user, fecha }) {
     generateListadoExtraescolaresMensual(filasFiltradas);
   };
 
-  // Filtramos solo las extraescolares aceptadas
-  const extraescolaresAceptadas = useMemo(
-    () => (extraescolaresTodas || []).filter((a) => a.estado === 1),
-    [extraescolaresTodas],
-  );
-
   // Tabla
   const table = useReactTable({
-    data: extraescolaresAceptadas,
+    data: extraescolaresTodas,
     columns: [
       ...columnsExtraescolares(cursos),
       {
@@ -465,7 +458,9 @@ export function TablaExtraescolares({ user, fecha }) {
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleGenerarExtraescolaresMensual}>
+                <DropdownMenuItem
+                  onClick={handleGenerarExtraescolaresMensual}
+                >
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
                   Listado extraescolares mensual
                 </DropdownMenuItem>

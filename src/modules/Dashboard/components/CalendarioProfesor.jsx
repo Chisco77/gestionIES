@@ -43,21 +43,24 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
   }
 
   // --- Extraescolares por día ---
+  // --- Extraescolares por día ---
   const extraescolaresPorDia = {};
-  (extraescolares || []).forEach((a) => {
-    const fechaInicio = new Date(a.fecha_inicio);
-    const fechaFin = new Date(a.fecha_fin);
+  (extraescolares || [])
+    .filter((a) => a.estado === 1) // <-- solo aceptadas
+    .forEach((a) => {
+      const fechaInicio = new Date(a.fecha_inicio);
+      const fechaFin = new Date(a.fecha_fin);
 
-    // Iterar todos los días entre fechaInicio y fechaFin
-    for (
-      let d = new Date(fechaInicio);
-      d <= fechaFin;
-      d.setDate(d.getDate() + 1)
-    ) {
-      const fecha = formatDateKey(d);
-      extraescolaresPorDia[fecha] = (extraescolaresPorDia[fecha] || 0) + 1;
-    }
-  });
+      // Iterar todos los días entre fechaInicio y fechaFin
+      for (
+        let d = new Date(fechaInicio);
+        d <= fechaFin;
+        d.setDate(d.getDate() + 1)
+      ) {
+        const fecha = formatDateKey(d);
+        extraescolaresPorDia[fecha] = (extraescolaresPorDia[fecha] || 0) + 1;
+      }
+    });
 
   // --- Asuntos propios por día ---
 
@@ -130,7 +133,7 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
                     if (!d) return <td key={j} className="p-2"></td>;
 
                     const dateKey = formatDateKey(
-                      new Date(currentYear, currentMonth, d)
+                      new Date(currentYear, currentMonth, d),
                     );
 
                     const numExtra = extraescolaresPorDia[dateKey] || 0;
