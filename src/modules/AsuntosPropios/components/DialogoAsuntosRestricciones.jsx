@@ -293,7 +293,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
             >
               <TabsList className="justify-start">
                 <TabsTrigger value="restricciones">Restricciones</TabsTrigger>
-                <TabsTrigger value="rangos">Rangos bloqueados</TabsTrigger>
+                <TabsTrigger value="rangos">Fechas bloqueadas</TabsTrigger>
                 <TabsTrigger value="permitidos">Autorizar fechas</TabsTrigger>
               </TabsList>
 
