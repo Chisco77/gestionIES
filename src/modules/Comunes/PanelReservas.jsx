@@ -33,7 +33,7 @@ import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUi
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { toast } from "sonner";
-import { generatePermisosPdf } from "@/utils/Informes";
+import { generatePermisosPdf } from "@/Informes/permisos";
 import { useAuth } from "@/context/AuthContext";
 import { DialogoEliminarPermiso } from "../Permisos/components/DialogoEliminarPermiso";
 import { DialogoEditarPermiso } from "../Permisos/components/DialogoEditarPermiso";

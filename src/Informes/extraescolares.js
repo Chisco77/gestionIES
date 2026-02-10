@@ -127,7 +127,7 @@ export function generateListadoExtraescolaresPorDepartamentoXLS(
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "Listado_Extraescolares.ods";
+  a.download = "Agenda_extraescolares.ods";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -181,7 +181,7 @@ export function generateListadoExtraescolaresPorDepartamento(
   };
 
   // --- Cabecera inicial ---
-  y = drawHeader(doc, "Listado de Actividades Extraescolares por Departamento");
+  y = drawHeader(doc, "Agenda de Actividades Extraescolares por Departamento");
   resetContentStyle();
 
   // --- Información de filtros aplicada ---
@@ -229,7 +229,7 @@ export function generateListadoExtraescolaresPorDepartamento(
     if (y > pageHeight - marginBottom - 40) {
       y = addPageWithHeader(
         doc,
-        "Listado de Actividades Extraescolares por Departamento"
+        "Agenda de Actividades Extraescolares por Departamento"
       );
       resetContentStyle();
     }
@@ -291,7 +291,7 @@ export function generateListadoExtraescolaresPorDepartamento(
       if (y + rowHeight > pageHeight - marginBottom - 10) {
         y = addPageWithHeader(
           doc,
-          "Listado de Actividades Extraescolares por Departamento"
+          "Agenda de Actividades Extraescolares por Departamento"
         );
         resetContentStyle();
 
@@ -328,7 +328,7 @@ export function generateListadoExtraescolaresPorDepartamento(
   // --- Pie ---
   drawFooter(doc);
 
-  doc.save("Listado_Extraescolares_por_Departamento.pdf");
+  doc.save("Agenda_Extraescolares_por_Departamento.pdf");
 }
 
 /*
@@ -382,7 +382,7 @@ export function generateListadoExtraescolaresPorFecha(
   };
 
   // --- Cabecera inicial ---
-  y = drawHeader(doc, "Listado de Actividades Extraescolares por Fecha");
+  y = drawHeader(doc, "Agenda de Actividades Extraescolares por Fecha");
   resetContentStyle();
 
   doc.text(`Total actividades: ${ordenadas.length}`, marginLeft, y);
@@ -417,7 +417,7 @@ export function generateListadoExtraescolaresPorFecha(
     if (y > pageHeight - marginBottom - 40) {
       y = addPageWithHeader(
         doc,
-        "Listado de Actividades Extraescolares por Fecha"
+        "Agenda de Actividades Extraescolares por Fecha"
       );
       resetContentStyle();
     }
@@ -484,7 +484,7 @@ export function generateListadoExtraescolaresPorFecha(
       if (y + rowHeight > pageHeight - marginBottom - 10) {
         y = addPageWithHeader(
           doc,
-          "Listado de Actividades Extraescolares por Fecha"
+          "Agenda de Actividades Extraescolares por Fecha"
         );
         resetContentStyle();
 
@@ -522,7 +522,7 @@ export function generateListadoExtraescolaresPorFecha(
   // --- Pie ---
   drawFooter(doc);
 
-  doc.save("Listado_Extraescolares_por_Fecha.pdf");
+  doc.save("Agenda_Extraescolares_por_Fecha.pdf");
 }
 
 /*
@@ -573,7 +573,7 @@ export function generateListadoExtraescolaresPorProfesor(
   };
 
   // --- Cabecera inicial ---
-  y = drawHeader(doc, "Listado de Actividades Extraescolares por Profesor");
+  y = drawHeader(doc, "Agenda de Actividades Extraescolares por Profesor");
   resetContentStyle();
 
   // --- Información de filtros aplicada ---
@@ -610,7 +610,7 @@ export function generateListadoExtraescolaresPorProfesor(
     if (y > pageHeight - marginBottom - 40) {
       y = addPageWithHeader(
         doc,
-        "Listado de Actividades Extraescolares por Profesor"
+        "Agenda de Actividades Extraescolares por Profesor"
       );
       resetContentStyle();
     }
@@ -659,7 +659,7 @@ export function generateListadoExtraescolaresPorProfesor(
       if (y + rowHeight > pageHeight - marginBottom - 10) {
         y = addPageWithHeader(
           doc,
-          "Listado de Actividades Extraescolares por Profesor"
+          "Agenda de Actividades Extraescolares por Profesor"
         );
         resetContentStyle();
 
@@ -692,7 +692,7 @@ export function generateListadoExtraescolaresPorProfesor(
 
   drawFooter(doc);
 
-  doc.save("Listado_Extraescolares_por_Profesor.pdf");
+  doc.save("Agenda_Extraescolares_por_Profesor.pdf");
 }
 
 function getMonthInfo(year, month) {
@@ -828,10 +828,10 @@ export function generateListadoExtraescolaresMensual(
     if (!firstPage) {
       y = addPageWithHeader(
         doc,
-        "Listado mensual de actividades extraescolares"
+        "Agenda mensual de actividades extraescolares"
       );
     } else {
-      y = drawHeader(doc, "Listado mensual de actividades extraescolares");
+      y = drawHeader(doc, "Agenda mensual de actividades extraescolares");
       firstPage = false;
       y = y - 5;
       // --- Información de filtros aplicada ---
@@ -954,7 +954,7 @@ export function generateListadoExtraescolaresMensual(
       if (y + rowHeight > pageHeight - marginBottom) {
         y = addPageWithHeader(
           doc,
-          "Listado mensual de actividades extraescolares"
+          "Agenda mensual de actividades extraescolares"
         );
         drawTableHeader();
       }

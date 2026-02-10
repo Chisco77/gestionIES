@@ -162,6 +162,11 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
       .getFilteredRowModel()
       .rows.map((row) => row.original);
 
+    if (!filasFiltradas.length) {
+      toast.info("No hay actividades que coincidan con los filtros.");
+      return;
+    }
+
     let desde = fechaDesde;
     let hasta = fechaHasta;
 
@@ -182,6 +187,11 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
     const filasFiltradas = table
       .getFilteredRowModel()
       .rows.map((row) => row.original);
+
+    if (!filasFiltradas.length) {
+      toast.info("No hay actividades que coincidan con los filtros.");
+      return;
+    }
 
     let desde = fechaDesde;
     let hasta = fechaHasta;
@@ -215,6 +225,11 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
     const filasFiltradas = table
       .getFilteredRowModel()
       .rows.map((row) => row.original);
+
+    if (!filasFiltradas.length) {
+      toast.info("No hay actividades que coincidan con los filtros.");
+      return;
+    }
 
     let desde = fechaDesde;
     let hasta = fechaHasta;

@@ -75,6 +75,8 @@ import { generateListadoExtraescolaresPorDepartamento } from "@/Informes/extraes
 import { generateListadoExtraescolaresPorDepartamentoXLS } from "@/Informes/extraescolares";
 import { generateListadoExtraescolaresMensual } from "@/Informes/extraescolares";
 
+import { getCursoActual, ddmmyyyyToISO } from "@/utils/cursoAcademico";
+
 export function TablaExtraescolares({ user, fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -135,8 +137,25 @@ export function TablaExtraescolares({ user, fecha }) {
       .getFilteredRowModel()
       .rows.map((row) => row.original);
 
-    // informe
-    generateListadoExtraescolaresPorProfesor(filasFiltradas);
+    if (!filasFiltradas.length) {
+      toast.info("No hay actividades que coincidan con los filtros.");
+      return;
+    }
+
+    let desde = fechaDesde;
+    let hasta = fechaHasta;
+
+    // Si el filtro de fechas está vacío, usamos el curso actual
+    if (!desde || !hasta) {
+      const curso = getCursoActual();
+      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      hasta = ddmmyyyyToISO(curso.finCurso);
+    }
+
+    generateListadoExtraescolaresPorProfesor(filasFiltradas, {
+      desde,
+      hasta,
+    });
   };
 
   const handleGenerarExtraescolaresDepartamento = () => {
@@ -144,8 +163,25 @@ export function TablaExtraescolares({ user, fecha }) {
       .getFilteredRowModel()
       .rows.map((row) => row.original);
 
+    if (!filasFiltradas.length) {
+      toast.info("No hay actividades que coincidan con los filtros.");
+      return;
+    }
+
+    let desde = fechaDesde;
+    let hasta = fechaHasta;
+
+    // Si el filtro de fechas está vacío, usamos el curso actual
+    if (!desde || !hasta) {
+      const curso = getCursoActual();
+      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      hasta = ddmmyyyyToISO(curso.finCurso);
+    }
     // informe
-    generateListadoExtraescolaresPorDepartamento(filasFiltradas);
+    generateListadoExtraescolaresPorDepartamento(filasFiltradas, {
+      desde,
+      hasta,
+    });
   };
 
   const handleGenerarExtraescolaresDepartamentoXLS = () => {
@@ -153,8 +189,25 @@ export function TablaExtraescolares({ user, fecha }) {
       .getFilteredRowModel()
       .rows.map((row) => row.original);
 
+    if (!filasFiltradas.length) {
+      toast.info("No hay actividades que coincidan con los filtros.");
+      return;
+    }
+
+    let desde = fechaDesde;
+    let hasta = fechaHasta;
+
+    // Si el filtro de fechas está vacío, usamos el curso actual
+    if (!desde || !hasta) {
+      const curso = getCursoActual();
+      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      hasta = ddmmyyyyToISO(curso.finCurso);
+    }
     // informe
-    generateListadoExtraescolaresPorDepartamentoXLS(filasFiltradas);
+    generateListadoExtraescolaresPorDepartamentoXLS(filasFiltradas, {
+      desde,
+      hasta,
+    });
   };
 
   const handleGenerarExtraescolaresFecha = () => {
@@ -171,8 +224,26 @@ export function TablaExtraescolares({ user, fecha }) {
       .getFilteredRowModel()
       .rows.map((row) => row.original);
 
+    if (!filasFiltradas.length) {
+      toast.info("No hay actividades que coincidan con los filtros.");
+      return;
+    }
+
+    let desde = fechaDesde;
+    let hasta = fechaHasta;
+
+    // Si el filtro de fechas está vacío, usamos el curso actual
+    if (!desde || !hasta) {
+      const curso = getCursoActual();
+      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      hasta = ddmmyyyyToISO(curso.finCurso);
+    }
+
     // informe
-    generateListadoExtraescolaresMensual(filasFiltradas);
+    generateListadoExtraescolaresMensual(filasFiltradas, {
+      desde,
+      hasta,
+    });
   };
 
   // Filtramos solo las extraescolares aceptadas

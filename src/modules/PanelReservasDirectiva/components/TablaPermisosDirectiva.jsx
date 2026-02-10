@@ -70,7 +70,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-import { generateListadoPermisosProfesores } from "@/utils/Informes";
+import { generateListadoPermisosProfesores } from "@/Informes/permisos";
 import { MAPEO_TIPOS_PERMISOS } from "@/utils/mapeoTiposPermisos";
 
 export function TablaPermisosDirectiva({ fecha }) {
