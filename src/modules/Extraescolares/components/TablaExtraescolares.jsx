@@ -178,7 +178,7 @@ export function TablaExtraescolares({ user, fecha }) {
   // Filtramos solo las extraescolares aceptadas
   const extraescolaresAceptadas = useMemo(
     () => (extraescolaresTodas || []).filter((a) => a.estado === 1),
-    [extraescolaresTodas],
+    [extraescolaresTodas]
   );
 
   // Tabla
@@ -191,50 +191,6 @@ export function TablaExtraescolares({ user, fecha }) {
         header: "Acciones",
         cell: ({ row }) => (
           <div className="flex gap-2">
-            {/* ACEPTAR */}
-            {(user.perfil === "administrador" ||
-              user.perfil === "directiva" ||
-              user.perfil === "extraescolares") && (
-              <>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-green-600"
-                        onClick={() => handleAccion(row.original, "aceptar")}
-                      >
-                        <Check size={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-green-500 text-white">
-                      <p>Aceptar actividad</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                {/* RECHAZAR */}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-red-600"
-                        onClick={() => handleAccion(row.original, "rechazar")}
-                      >
-                        <X size={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
-                      <p>Rechazar actividad</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </>
-            )}
-
             {/* EDITAR */}
             <TooltipProvider>
               <Tooltip>
@@ -324,7 +280,7 @@ export function TablaExtraescolares({ user, fecha }) {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ estado: nuevoEstado }),
-        },
+        }
       );
       const r = await res.json();
       if (!res.ok) {
@@ -332,7 +288,7 @@ export function TablaExtraescolares({ user, fecha }) {
         return;
       }
       toast.success(
-        nuevoEstado === 1 ? "Actividad aceptada" : "Actividad rechazada",
+        nuevoEstado === 1 ? "Actividad aceptada" : "Actividad rechazada"
       );
       setDialogConfirmOpen(false);
     } catch (e) {
@@ -398,13 +354,13 @@ export function TablaExtraescolares({ user, fecha }) {
                     variant="outline"
                     className={cn(
                       "h-8 w-[240px] justify-start text-left text-sm",
-                      !fechaDesde && !fechaHasta && "text-muted-foreground",
+                      !fechaDesde && !fechaHasta && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {fechaDesde && fechaHasta
                       ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(
-                          fechaHasta,
+                          fechaHasta
                         ).toLocaleDateString()}`
                       : "Seleccionar rango"}
                   </Button>
@@ -420,7 +376,7 @@ export function TablaExtraescolares({ user, fecha }) {
                     }}
                     onSelect={(range) => {
                       setFechaDesde(
-                        range?.from ? formatLocalDate(range.from) : "",
+                        range?.from ? formatLocalDate(range.from) : ""
                       );
                       setFechaHasta(range?.to ? formatLocalDate(range.to) : "");
                     }}
@@ -441,21 +397,6 @@ export function TablaExtraescolares({ user, fecha }) {
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
-            {/* Switch estado */}
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={table.getColumn("estado")?.getFilterValue() === true}
-                onCheckedChange={(checked) =>
-                  table
-                    .getColumn("estado")
-                    ?.setFilterValue(checked ? true : null)
-                }
-              />
-              <span className="text-sm text-muted-foreground">
-                Solo pendientes
-              </span>
-            </div>
-
             {/* Menú informes */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -467,11 +408,7 @@ export function TablaExtraescolares({ user, fecha }) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleGenerarExtraescolaresMensual}>
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Listado extraescolares mensual
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleGenerarExtraescolaresFecha}>
-                  <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Listado extraescolares por fecha
+                  Resumen mensual
                 </DropdownMenuItem>
 
                 <DropdownMenuItem onClick={handleGenerarExtraescolaresProfesor}>
@@ -527,7 +464,7 @@ export function TablaExtraescolares({ user, fecha }) {
                     <TableCell key={cell.id} className="py-0.5">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext(),
+                        cell.getContext()
                       )}
                     </TableCell>
                   ))}

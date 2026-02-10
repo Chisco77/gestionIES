@@ -59,7 +59,7 @@ export function DashboardProfesor() {
       <Card className="shadow-lg rounded-2xl flex flex-col p-2 mt-6">
         <div className="px-4 py-2 border-b">
           <h2 className="text-lg font-semibold text-center">
-            Actividades extraescolares del día{" "}
+            Agenda de extraescolares del {" "}
             {new Date(fechaSeleccionada).toLocaleDateString("es-ES", {
               day: "2-digit",
               month: "long",

@@ -74,6 +74,8 @@ import { generateListadoExtraescolaresPorDepartamento } from "@/Informes/extraes
 import { generateListadoExtraescolaresPorDepartamentoXLS } from "@/Informes/extraescolares";
 import { generateListadoExtraescolaresMensual } from "@/Informes/extraescolares";
 
+import { getCursoActual, ddmmyyyyToISO } from "@/utils/cursoAcademico";
+
 export function TablaExtraescolaresDirectiva({ user, fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -134,8 +136,25 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
       .getFilteredRowModel()
       .rows.map((row) => row.original);
 
-    // informe
-    generateListadoExtraescolaresPorProfesor(filasFiltradas);
+    if (!filasFiltradas.length) {
+      toast.info("No hay actividades que coincidan con los filtros.");
+      return;
+    }
+
+    let desde = fechaDesde;
+    let hasta = fechaHasta;
+
+    // Si el filtro de fechas está vacío, usamos el curso actual
+    if (!desde || !hasta) {
+      const curso = getCursoActual();
+      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      hasta = ddmmyyyyToISO(curso.finCurso);
+    }
+
+    generateListadoExtraescolaresPorProfesor(filasFiltradas, {
+      desde,
+      hasta,
+    });
   };
 
   const handleGenerarExtraescolaresDepartamento = () => {
@@ -143,8 +162,20 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
       .getFilteredRowModel()
       .rows.map((row) => row.original);
 
+    let desde = fechaDesde;
+    let hasta = fechaHasta;
+
+    // Si el filtro de fechas está vacío, usamos el curso actual
+    if (!desde || !hasta) {
+      const curso = getCursoActual();
+      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      hasta = ddmmyyyyToISO(curso.finCurso);
+    }
     // informe
-    generateListadoExtraescolaresPorDepartamento(filasFiltradas);
+    generateListadoExtraescolaresPorDepartamento(filasFiltradas, {
+      desde,
+      hasta,
+    });
   };
 
   const handleGenerarExtraescolaresDepartamentoXLS = () => {
@@ -152,8 +183,20 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
       .getFilteredRowModel()
       .rows.map((row) => row.original);
 
+    let desde = fechaDesde;
+    let hasta = fechaHasta;
+
+    // Si el filtro de fechas está vacío, usamos el curso actual
+    if (!desde || !hasta) {
+      const curso = getCursoActual();
+      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      hasta = ddmmyyyyToISO(curso.finCurso);
+    }
     // informe
-    generateListadoExtraescolaresPorDepartamentoXLS(filasFiltradas);
+    generateListadoExtraescolaresPorDepartamentoXLS(filasFiltradas, {
+      desde,
+      hasta,
+    });
   };
 
   const handleGenerarExtraescolaresFecha = () => {
@@ -162,7 +205,10 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
       .rows.map((row) => row.original);
 
     // informe
-    generateListadoExtraescolaresPorFecha(filasFiltradas);
+    generateListadoExtraescolaresPorFecha(filasFiltradas, {
+      desde: fechaDesde,
+      hasta: fechaHasta,
+    });
   };
 
   const handleGenerarExtraescolaresMensual = () => {
@@ -170,8 +216,21 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
       .getFilteredRowModel()
       .rows.map((row) => row.original);
 
+    let desde = fechaDesde;
+    let hasta = fechaHasta;
+
+    // Si el filtro de fechas está vacío, usamos el curso actual
+    if (!desde || !hasta) {
+      const curso = getCursoActual();
+      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      hasta = ddmmyyyyToISO(curso.finCurso);
+    }
+
     // informe
-    generateListadoExtraescolaresMensual(filasFiltradas);
+    generateListadoExtraescolaresMensual(filasFiltradas, {
+      desde,
+      hasta,
+    });
   };
 
   // Tabla
@@ -317,7 +376,7 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ estado: nuevoEstado }),
-        },
+        }
       );
       const r = await res.json();
       if (!res.ok) {
@@ -325,7 +384,7 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
         return;
       }
       toast.success(
-        nuevoEstado === 1 ? "Actividad aceptada" : "Actividad rechazada",
+        nuevoEstado === 1 ? "Actividad aceptada" : "Actividad rechazada"
       );
       setDialogConfirmOpen(false);
     } catch (e) {
@@ -391,13 +450,13 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
                     variant="outline"
                     className={cn(
                       "h-8 w-[240px] justify-start text-left text-sm",
-                      !fechaDesde && !fechaHasta && "text-muted-foreground",
+                      !fechaDesde && !fechaHasta && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {fechaDesde && fechaHasta
                       ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(
-                          fechaHasta,
+                          fechaHasta
                         ).toLocaleDateString()}`
                       : "Seleccionar rango"}
                   </Button>
@@ -413,7 +472,7 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
                     }}
                     onSelect={(range) => {
                       setFechaDesde(
-                        range?.from ? formatLocalDate(range.from) : "",
+                        range?.from ? formatLocalDate(range.from) : ""
                       );
                       setFechaHasta(range?.to ? formatLocalDate(range.to) : "");
                     }}
@@ -458,15 +517,9 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={handleGenerarExtraescolaresMensual}
-                >
+                <DropdownMenuItem onClick={handleGenerarExtraescolaresMensual}>
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
                   Listado extraescolares mensual
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleGenerarExtraescolaresFecha}>
-                  <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Listado extraescolares por fecha
                 </DropdownMenuItem>
 
                 <DropdownMenuItem onClick={handleGenerarExtraescolaresProfesor}>
@@ -522,7 +575,7 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
                     <TableCell key={cell.id} className="py-0.5">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext(),
+                        cell.getContext()
                       )}
                     </TableCell>
                   ))}
