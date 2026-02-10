@@ -98,6 +98,12 @@ export function TablaPermisosDirectiva({ fecha }) {
     const filasFiltradas = table
       .getFilteredRowModel()
       .rows.map((row) => row.original);
+
+    if (!filasFiltradas.length) {
+      toast.info("No hay permisos que coincidan con los filtros.");
+      return;
+    }
+    
     generateListadoPermisosProfesores(filasFiltradas);
   };
 
@@ -192,7 +198,7 @@ export function TablaPermisosDirectiva({ fecha }) {
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ estado: nuevoEstado }),
-        },
+        }
       );
 
       const result = await res.json();
@@ -204,14 +210,14 @@ export function TablaPermisosDirectiva({ fecha }) {
 
       // Actualizar tabla localmente
       const index = asuntosPropiosTodos.findIndex(
-        (a) => a.id === asuntoSeleccionado.id,
+        (a) => a.id === asuntoSeleccionado.id
       );
       if (index !== -1) asuntosPropiosTodos[index].estado = nuevoEstado;
 
       toast.success(
         accion === "aceptar"
           ? "Asunto aceptado correctamente"
-          : "Asunto rechazado correctamente",
+          : "Asunto rechazado correctamente"
       );
 
       setDialogOpen(false);
@@ -326,7 +332,7 @@ export function TablaPermisosDirectiva({ fecha }) {
                     variant="outline"
                     className={cn(
                       "w-[260px] justify-start text-left font-normal h-8 text-sm",
-                      !fechaDesde && !fechaHasta && "text-muted-foreground",
+                      !fechaDesde && !fechaHasta && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -346,7 +352,7 @@ export function TablaPermisosDirectiva({ fecha }) {
                     }}
                     onSelect={(range) => {
                       setFechaDesde(
-                        range?.from ? formatLocalDate(range.from) : "",
+                        range?.from ? formatLocalDate(range.from) : ""
                       );
                       setFechaHasta(range?.to ? formatLocalDate(range.to) : "");
                     }}
@@ -417,7 +423,7 @@ export function TablaPermisosDirectiva({ fecha }) {
                       >
                         {flexRender(
                           header.column.columnDef.header,
-                          header.getContext(),
+                          header.getContext()
                         )}
                         {{
                           asc: "↑",
@@ -439,7 +445,7 @@ export function TablaPermisosDirectiva({ fecha }) {
                     <TableCell key={cell.id} className="py-0.5">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext(),
+                        cell.getContext()
                       )}
                     </TableCell>
                   ))}

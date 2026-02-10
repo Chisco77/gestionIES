@@ -534,26 +534,26 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleGenerarExtraescolaresMensual}>
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Listado extraescolares mensual
+                  Agenda extraescolares mensual
                 </DropdownMenuItem>
 
                 <DropdownMenuItem onClick={handleGenerarExtraescolaresProfesor}>
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Listado extraescolares por profesor
+                  Agenda extraescolares por profesor
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
                   onClick={handleGenerarExtraescolaresDepartamento}
                 >
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Listado extraescolares por departamento
+                  Agenda extraescolares por departamento
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
                   onClick={handleGenerarExtraescolaresDepartamentoXLS}
                 >
                   <Grid className="mr-2 h-4 w-4 text-green-500" />
-                  Listado extraescolares por departamento (XLS)
+                  Agenda extraescolares por departamento (XLS)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
