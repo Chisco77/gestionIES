@@ -11,6 +11,9 @@ import { DialogoEditarAviso } from "../components/DialogoEditarAviso";
 import { DialogoEliminarAviso } from "../components/DialogoEliminarAviso";
 import { DialogoSMTP } from "../components/DialogoSMTP";
 
+import { useAuth } from "@/context/AuthContext"; // ajusta ruta si cambia
+import { toast } from "sonner";
+
 export function AvisosIndex() {
   const [abrirDialogoInsertar, setAbrirDialogoInsertar] = useState(false);
   const [abrirDialogoEditar, setAbrirDialogoEditar] = useState(false);
@@ -20,6 +23,8 @@ export function AvisosIndex() {
 
   // 🔹 Hook React Query para obtener todos los avisos
   const { data: avisos = [], isLoading } = useAvisos();
+
+  const { user } = useAuth();
 
   const handleEditar = (aviso) => {
     if (!aviso) return alert("Selecciona un aviso para editar.");
@@ -31,6 +36,15 @@ export function AvisosIndex() {
     if (!aviso) return alert("Selecciona un aviso para eliminar.");
     setAvisoSeleccionado(aviso);
     setAbrirDialogoEliminar(true);
+  };
+
+  const handleAbrirSMTP = () => {
+    if (user?.perfil !== "administrador") {
+      toast.error("Solo el administrador puede modificar los datos SMTP.");
+      return;
+    }
+
+    setAbrirDialogoSMTP(true);
   };
 
   return (
@@ -66,11 +80,7 @@ export function AvisosIndex() {
             >
               <Trash2 className="w-4 h-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setAbrirDialogoSMTP(true)}
-            >
+            <Button variant="outline" size="icon" onClick={handleAbrirSMTP}>
               <Mail className="w-4 h-4" />
             </Button>
           </>
