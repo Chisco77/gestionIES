@@ -149,7 +149,7 @@ export function LoginForm({ className, ...props }) {
             <div className="flex flex-col gap-6">
               <Avatar className="flex justify-center">
                 <AvatarImage
-                  src={`${import.meta.env.BASE_URL}public/logo.png`}
+                  src={`${import.meta.env.BASE_URL}public/miIES.png`}
                   alt="Logo"
                   style={{ width: "25%", height: "25%" }}
                 />
