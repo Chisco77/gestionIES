@@ -258,22 +258,18 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
         prestamos: normalizados,
       }));
 
-      const fetchFoto = async () => {
+      const fetchFoto = () => {
         const extensiones = ["jpg", "jpeg", "png"];
-        const baseUrl = `${SERVER_URL}/uploads/alumnos/${usuario.uid}`;
+        let encontrada = false;
         for (const ext of extensiones) {
-          try {
-            const res = await fetch(`${baseUrl}.${ext}`, { method: "HEAD" });
-            if (res.ok) {
-              setFotoUrl(`${baseUrl}.${ext}`);
-              return;
-            }
-          } catch (e) {
-            /* ignore */
-          }
+          const url = `${SERVER_URL}/uploads/alumnos/${usuario.uid}.${ext}`;
+          setFotoUrl(url);
+          encontrada = true;
+          break;
         }
-        setFotoUrl(null);
+        if (!encontrada) setFotoUrl(null);
       };
+      fetchFoto();
       fetchFoto();
     }
   }, [open, usuario, SERVER_URL]);
