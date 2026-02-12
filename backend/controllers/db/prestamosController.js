@@ -31,7 +31,6 @@
  * ================================================================
  */
 
-
 const pool = require("../../db");
 const {
   obtenerGruposDesdeLdap,
@@ -134,7 +133,7 @@ async function getPrestamosAgrupados(req, res) {
   }
 }
 
-// Marca atributo devuelto a true de prestamos
+// Marca atributo devuelto a true de prestamos (items)
 async function devolverPrestamos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -167,7 +166,7 @@ async function devolverPrestamos(req, res) {
   }
 }
 
-// Marca deuvelto a false y entregado a true de prestamos
+// Marca deuvelto a false y entregado a true de prestamos (items)
 async function prestarPrestamos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -562,7 +561,6 @@ async function actualizarPrestamoItem(req, res) {
   }
 }
 
-
 // Eliminar préstamo completo (cabecera + items)
 async function eliminarPrestamo(req, res) {
   try {
@@ -598,7 +596,110 @@ async function eliminarPrestamo(req, res) {
   }
 }
 
+async function updatePrestamoCompleto(req, res) {
+  const ldapSession = req.session?.ldap;
+  if (!ldapSession) {
+    return res.status(401).json({ error: "No autenticado" });
+  }
 
+  const { id } = req.params;
+  const { prestamo, items } = req.body;
+
+  if (!id || !prestamo || !Array.isArray(items)) {
+    return res.status(400).json({ error: "Datos incompletos" });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1️⃣ Obtener estado actual del préstamo
+    const { rows } = await client.query(
+      `SELECT doc_compromiso FROM prestamos WHERE id = $1`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      throw new Error("Préstamo no encontrado");
+    }
+
+    const estadoActual = rows[0].doc_compromiso;
+    let nuevoEstado = prestamo.doc_compromiso;
+
+    let fechaEntregaDoc = null;
+    let fechaRecepcionDoc = null;
+
+    // 2️⃣ Blindar transiciones de estado
+    if (estadoActual === 2) {
+      // Ya recibido → no se puede modificar
+      nuevoEstado = 2;
+    } else if (estadoActual === 0 && nuevoEstado === 1) {
+      // Entrega documento
+      fechaEntregaDoc = new Date();
+    } else if (estadoActual === 1 && nuevoEstado === 2) {
+      // Recepción documento
+      fechaRecepcionDoc = new Date();
+    } else if (nuevoEstado === 0) {
+      // Volver a no entregado → limpiar fechas
+      fechaEntregaDoc = null;
+      fechaRecepcionDoc = null;
+    } else {
+      // Si la transición no es válida, mantener estado actual
+      nuevoEstado = estadoActual;
+    }
+
+    // 3️⃣ Actualizar cabecera
+    await client.query(
+      `
+      UPDATE prestamos
+      SET doc_compromiso = $1,
+          iniciocurso = $2,
+          fechaentregadoc = $3,
+          fecharecepciondoc = $4
+      WHERE id = $5
+      `,
+      [
+        nuevoEstado,
+        prestamo.iniciocurso,
+        fechaEntregaDoc,
+        fechaRecepcionDoc,
+        id,
+      ]
+    );
+
+    // 4️⃣ Actualizar items
+    for (const item of items) {
+      await client.query(
+        `
+        UPDATE prestamos_items
+        SET entregado = $1,
+            devuelto = $2,
+            fechaentrega = $3,
+            fechadevolucion = $4
+        WHERE id = $5
+        `,
+        [
+          item.entregado,
+          item.devuelto,
+          item.fechaentrega,
+          item.fechadevolucion,
+          item.id,
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    res.json({ success: true });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("❌ Error en updatePrestamoCompleto:", error);
+    res.status(500).json({ error: "Error actualizando préstamo" });
+  } finally {
+    client.release();
+  }
+}
 
 module.exports = {
   getPrestamosAgrupados,
@@ -611,4 +712,5 @@ module.exports = {
   eliminarPrestamosItems,
   actualizarPrestamoItem,
   eliminarPrestamo,
+  updatePrestamoCompleto,
 };

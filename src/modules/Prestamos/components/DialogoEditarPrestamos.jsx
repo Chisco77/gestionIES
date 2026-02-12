@@ -183,6 +183,7 @@ const ListSection = ({
 );
 
 export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
+  const [usuarioEdit, setUsuarioEdit] = useState(usuario);
   const [state, setState] = useState({
     prestamos: [],
     seleccionadosIzquierda: [],
@@ -226,6 +227,10 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
       return { success: false };
     }
   };
+
+  useEffect(() => {
+    setUsuarioEdit(usuario);
+  }, [usuario]);
 
   // Pone foto, normaliza préstamos y resetea el estado de la UI al abrirse
   useEffect(() => {
@@ -354,6 +359,51 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
         ids.includes(p.id_item) ? { ...p, ...updates } : p
       ),
     }));
+  };
+
+  const handleGuardarCompleto = async () => {
+    console.log("Uasuario: ", usuario);
+    try {
+      if (!usuario?.id_prestamo) {
+        toast.error("No se encontró el préstamo");
+        return;
+      }
+
+      const payload = {
+        prestamo: {
+          doc_compromiso: Number(usuarioEdit.doc_compromiso),
+          iniciocurso: usuarioEdit.iniciocurso,
+        },
+        items: state.prestamos.map((p) => ({
+          id: p.id_item,
+          entregado: p.entregado,
+          devuelto: p.devuelto,
+          fechaentrega: p.fechaentrega,
+          fechadevolucion: p.fechadevolucion,
+        })),
+      };
+
+      const res = await fetch(
+        `${API_URL}/db/prestamos/${usuario.id_prestamo}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data?.error || "Error");
+
+      toast.success("Préstamo actualizado correctamente");
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      toast.error("Error al guardar cambios");
+      console.error(error);
+    }
   };
 
   const handleAction = async (endpoint, ids, successMsg, errorMsg, updates) => {
@@ -536,6 +586,25 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
         seleccionadosIzquierda: [],
       }));
     }
+  };
+
+  const handleDocCompromisoChange = (nuevoValor) => {
+    const valorActual = Number(usuarioEdit.doc_compromiso);
+    const valorNuevo = Number(nuevoValor);
+
+    const esCambioValido =
+      (valorActual === 0 && valorNuevo === 1) ||
+      (valorActual === 1 && valorNuevo === 0);
+
+    if (!esCambioValido) {
+      toast.error("Cambio de estado no permitido.");
+      return;
+    }
+
+    setUsuarioEdit((prev) => ({
+      ...prev,
+      doc_compromiso: valorNuevo,
+    }));
   };
 
   return (
@@ -964,24 +1033,41 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
           <div className="flex justify-center mt-4 mb-4 border-t pt-4">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <label
-                  htmlFor="docCompromiso"
-                  className="text-sm font-medium text-gray-700"
-                >
+                <label className="text-sm font-medium text-gray-700">
                   Documento de compromiso:
                 </label>
-                <select
-                  id="docCompromiso"
-                  value={usuario.doc_compromiso}
-                  onChange={(e) => {
-                    /* Logic for doc_compromiso update */
+
+                <Select
+                  value={usuarioEdit?.doc_compromiso?.toString()}
+                  onValueChange={(nuevoValor) => {
+                    const valorActual = Number(usuarioEdit.doc_compromiso);
+                    const valorNuevo = Number(nuevoValor);
+
+                    // Solo permitir cambios entre 0 y 1
+                    if (valorActual === 2) return; // recibido, no editable
+                    if (
+                      (valorActual === 0 && valorNuevo === 1) ||
+                      (valorActual === 1 && valorNuevo === 0)
+                    ) {
+                      setUsuarioEdit((prev) => ({
+                        ...prev,
+                        doc_compromiso: valorNuevo,
+                      }));
+                    } else {
+                      toast.error("Cambio de estado no permitido.");
+                    }
                   }}
-                  className="block w-36 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  disabled={usuarioEdit?.doc_compromiso === 2} // Recibido no editable
                 >
-                  <option value={0}>No entregado</option>
-                  <option value={1}>Entregado</option>
-                  <option value={2}>Recibido</option>
-                </select>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Selecciona estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Pendiente</SelectItem>
+                    <SelectItem value="1">Entregado</SelectItem>
+                    <SelectItem value="2">Recibido</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -998,10 +1084,12 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
             </div>
           </div>
         )}
-        <DialogFooter className="mt-4">
-          <Button onClick={onClose} className="ml-auto">
-            Cerrar
+        <DialogFooter className="mt-4 flex justify-between">
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
           </Button>
+
+          <Button onClick={handleGuardarCompleto}>Guardar cambios</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

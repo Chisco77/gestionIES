@@ -89,6 +89,7 @@ const {
   eliminarPrestamosItems,
   actualizarPrestamoItem,
   eliminarPrestamo,
+  updatePrestamoCompleto,
 } = require("../controllers/db/prestamosController");
 
 // --- Controlador de estancias / planos ---
@@ -173,6 +174,7 @@ router.post("/prestamos/asignarUsuario", asignarUsuario);
 router.post("/prestamos/eliminarUnAlumno", eliminarPrestamosItems);
 router.post("/prestamos/update", actualizarPrestamoItem);
 router.post("/prestamos/eliminar", eliminarPrestamo);
+router.put("/prestamos/:id", updatePrestamoCompleto);
 
 // ================================================================
 //   Rutas de Préstamos de llaves
