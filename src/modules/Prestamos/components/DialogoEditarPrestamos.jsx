@@ -258,18 +258,24 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
         prestamos: normalizados,
       }));
 
-      const fetchFoto = () => {
+      const fetchFoto = async () => {
         const extensiones = ["jpg", "jpeg", "png"];
-        let encontrada = false;
         for (const ext of extensiones) {
-          const url = `${SERVER_URL}/uploads/alumnos/${usuario.uid}.${ext}`;
-          setFotoUrl(url);
-          encontrada = true;
-          break;
+          try {
+            const res = await fetch(
+              `/gestionIES/uploads/alumnos/${usuario.uid}.${ext}`,
+              { method: "HEAD" }
+            );
+            if (res.ok) {
+              setFotoUrl(`/gestionIES/uploads/alumnos/${usuario.uid}.${ext}`);
+              return;
+            }
+          } catch (e) {
+            /* ignore */
+          }
         }
-        if (!encontrada) setFotoUrl(null);
+        setFotoUrl(null);
       };
-      fetchFoto();
       fetchFoto();
     }
   }, [open, usuario, SERVER_URL]);
