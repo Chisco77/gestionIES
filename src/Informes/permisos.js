@@ -1,16 +1,17 @@
 import { jsPDF } from "jspdf";
+import { drawHeader, drawFooter, addPageWithHeader } from "./utils";
+
 
 import { MAPEO_TIPOS_PERMISOS } from "@/utils/mapeoTiposPermisos";
 
 const getDescripcionTipoPermiso = (tipo) =>
   MAPEO_TIPOS_PERMISOS[tipo] ?? "Otros";
 
-
 /*
-* 
-* Genera el ANEXO V de los permisos
-* 
-*/
+ *
+ * Genera el ANEXO V de los permisos
+ *
+ */
 
 export function generatePermisosPdf({ empleado, permiso }) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -63,18 +64,18 @@ export function generatePermisosPdf({ empleado, permiso }) {
     tableX + col1Width + col2Width,
     y,
     tableX + col1Width + col2Width,
-    y + row2Height
+    y + row2Height,
   );
 
   doc.text(
     "DNI:",
     tableX + col1Width + col2Width + textPad,
-    y + row2Height - 3
+    y + row2Height - 3,
   );
   doc.text(
     employeeNumber,
     tableX + col1Width + col2Width + 15,
-    y + row2Height - 3
+    y + row2Height - 3,
   );
 
   y += row2Height;
@@ -98,7 +99,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "Cuerpo: Profesores de Secundaria",
     tableX + textPad,
-    y + row4Height - 3
+    y + row4Height - 3,
   );
   doc.line(tableX + col4_1Width, y, tableX + col4_1Width, y + row4Height);
   doc.text("Grupo:", tableX + col4_1Width + textPad, y + row4Height - 3);
@@ -106,12 +107,12 @@ export function generatePermisosPdf({ empleado, permiso }) {
     tableX + col4_1Width + col4_2Width,
     y,
     tableX + col4_1Width + col4_2Width,
-    y + row4Height
+    y + row4Height,
   );
   doc.text(
     "Subgrupo:",
     tableX + col4_1Width + col4_2Width + textPad,
-    y + row4Height - 3
+    y + row4Height - 3,
   );
   y += row4Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -122,7 +123,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "(Marcar con una x el recuadro correspondiente)",
     tableX + 45,
-    y + 6
+    y + 6,
   );
   doc.setFont("helvetica", "bold");
   doc.text("Relación jurídica:", tableX + textPad, y + 6);
@@ -173,7 +174,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     `Centro de destino:    ${import.meta.env.VITE_IES_NAME}`,
     tableX + col6_1Width + textPad,
-    y + row6Height - 3
+    y + row6Height - 3,
   );
   y += row6Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -285,7 +286,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "3. DOCUMENTACIÓN QUE SE APORTA",
     tableX + textPad,
-    y + row3_1Height - 2
+    y + row3_1Height - 2,
   );
   y += row3_1Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -325,7 +326,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "Trujillo, _____ de _________________________ de 20_______",
     marginLeft,
-    y
+    y,
   );
   y += 10;
   doc.setFont("helvetica", "bold");
@@ -334,20 +335,37 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.save("anexo_v_concesion_permisos.pdf");
 }
 
-
 /**
  * Genera un PDF con los asuntos propios agrupados por profesor
  *
  * @param {Array} permisos - Array de asuntos propios (filtrados)
  */
 export function generateListadoPermisosProfesores(permisos = []) {
-  if (!permisos || permisos.length === 0) {
+  if (!permisos?.length) {
     alert("No hay permisos para generar el informe.");
     return;
   }
 
   const estadosMap = { 0: "Pendiente", 1: "Aceptado", 2: "Rechazado" };
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const marginLeft = 15;
+  const marginTop = 20;
+  const marginBottom = 15;
 
+  let y = 0;
+  const lineHeight = 5;
+  const espacioEntreProfesores = 8;
+
+  // 🔹 Función para restaurar estilos base
+  const resetContentStyle = () => {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+  };
+
+  // 🔹 Agrupar permisos por profesor
   const permisosPorProfesor = permisos.reduce((acc, permiso) => {
     const nombre = permiso.nombreProfesor || "Sin nombre";
     if (!acc[nombre]) acc[nombre] = [];
@@ -359,120 +377,96 @@ export function generateListadoPermisosProfesores(permisos = []) {
     lista.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
   );
 
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const marginLeft = 15;
-  const marginTop = 20;
-  const marginBottom = 20;
-  let y = marginTop;
-
-  const espacioEntreProfesores = 8;
-  const lineHeight = 5;
-  const resumenHeight = 14 + 3 + 6;
-
-  // --- Cabecera general ---
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("Listado de Permisos por Profesor", pageWidth / 2, y, {
-    align: "center",
-  });
-  y += 12;
-
   const nombresProfesores = Object.keys(permisosPorProfesor).sort();
+
+  // 🔹 Cabecera corporativa inicial
+  y = drawHeader(doc, "Listado de Permisos por Profesor");
+  resetContentStyle();
+
+  // 🔹 Información resumen inicial
   doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
   doc.text(`Total profesores: ${nombresProfesores.length}`, marginLeft, y);
   y += 10;
 
+  // 🔹 Posiciones columnas
   const colFechaX = marginLeft;
   const colTipoX = marginLeft + 28;
   const colEstadoX = marginLeft + 115;
   const colDescX = marginLeft + 145;
 
-  // --- Contenido ---
+  const printTableHeader = () => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("Fecha", colFechaX, y);
+    doc.text("Tipo de permiso", colTipoX, y);
+    doc.text("Estado", colEstadoX, y);
+    doc.text("Descripción", colDescX, y);
+    y += 4;
+    doc.setLineWidth(0.3);
+    doc.line(marginLeft, y, pageWidth - marginLeft, y);
+    y += 4;
+    resetContentStyle();
+  };
+
   nombresProfesores.forEach((nombreProfesor) => {
+    // 🔹 Restaurar estilo antes del nombre del profesor
+    resetContentStyle();
+
+    // 🔹 Salto de página si es necesario
     const listaPermisos = permisosPorProfesor[nombreProfesor];
-
-    // --- Calcular altura mínima para evitar huérfanos ---
     const firstRow = listaPermisos[0];
-    const tipoLinesFirst = doc.splitTextToSize(
-      getDescripcionTipoPermiso(firstRow.tipo),
-      80
-    ).length;
-    const estadoLinesFirst = doc.splitTextToSize(
-      estadosMap[firstRow.estado] ?? "—",
-      25
-    ).length;
-    const descLinesFirst = doc.splitTextToSize(
-      firstRow.descripcion || "",
-      50
-    ).length;
     const firstRowHeight =
-      Math.max(tipoLinesFirst, estadoLinesFirst, descLinesFirst, 1) *
-      lineHeight;
+      Math.max(
+        doc.splitTextToSize(getDescripcionTipoPermiso(firstRow.tipo), 80).length,
+        doc.splitTextToSize(estadosMap[firstRow.estado] ?? "—", 25).length,
+        doc.splitTextToSize(firstRow.descripcion || "", 50).length,
+        1
+      ) * lineHeight;
 
-    const headerHeight = 8; // encabezado tabla
-    const nombreHeight = 10; // nombre + línea
-    const minSpaceNeeded =
-      nombreHeight + headerHeight + firstRowHeight + resumenHeight;
-
+    const minSpaceNeeded = 10 + 8 + firstRowHeight + 14; // nombre + header + fila + resumen
     if (y + minSpaceNeeded > pageHeight - marginBottom) {
       doc.addPage();
-      y = marginTop;
+      y = drawHeader(doc, "Listado de Permisos por Profesor");
+      resetContentStyle();
     }
 
-    // --- Nombre profesor ---
+    // 🔹 Nombre profesor
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0); // asegurar negro
     doc.text(nombreProfesor, marginLeft, y);
     y += 4;
     doc.setLineWidth(0.5);
     doc.line(marginLeft, y, pageWidth - marginLeft, y);
     y += 6;
 
-    // --- Encabezado tabla ---
-    function printTableHeader() {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text("Fecha", colFechaX, y);
-      doc.text("Tipo de permiso", colTipoX, y);
-      doc.text("Estado", colEstadoX, y);
-      doc.text("Descripción", colDescX, y);
-      y += 4;
-      doc.setLineWidth(0.3);
-      doc.line(marginLeft, y, pageWidth - marginLeft, y);
-      y += 4;
-    }
-
+    // 🔹 Encabezado de tabla
     printTableHeader();
 
-    // --- Filas ---
+    // 🔹 Filas del profesor
     listaPermisos.forEach((permiso) => {
-      const fechaTxt = new Date(permiso.fecha).toLocaleDateString();
+      const fechaTxt = new Date(permiso.fecha).toLocaleDateString("es-ES");
       const tipoTxt = getDescripcionTipoPermiso(permiso.tipo);
       const estadoTxt = estadosMap[permiso.estado] ?? "—";
       const descTxt = permiso.descripcion || "";
 
-      const tipoLines = doc.splitTextToSize(tipoTxt, 80).join("\n");
-      const estadoLines = doc.splitTextToSize(estadoTxt, 25).join("\n");
-      const descLines = doc.splitTextToSize(descTxt, 50).join("\n");
+      const tipoLines = doc.splitTextToSize(tipoTxt, 80);
+      const estadoLines = doc.splitTextToSize(estadoTxt, 25);
+      const descLines = doc.splitTextToSize(descTxt, 50);
 
-      const rowLines = Math.max(
-        tipoLines.split("\n").length,
-        estadoLines.split("\n").length,
-        descLines.split("\n").length,
-        1
-      );
-      const rowHeight = rowLines * lineHeight;
+      const rowHeight =
+        Math.max(tipoLines.length, estadoLines.length, descLines.length, 1) *
+        lineHeight;
 
-      if (y + rowHeight + resumenHeight > pageHeight - marginBottom) {
+      // 🔹 Salto de página si la fila no cabe
+      if (y + rowHeight + 14 > pageHeight - marginBottom) {
         doc.addPage();
-        y = marginTop;
+        y = drawHeader(doc, "Listado de Permisos por Profesor");
+        resetContentStyle();
         printTableHeader();
       }
 
-      // Color según estado
+      // 🔹 Color según estado
       if (permiso.estado === 1) doc.setTextColor(0, 120, 0);
       else if (permiso.estado === 2) doc.setTextColor(180, 0, 0);
       else doc.setTextColor(0, 0, 0);
@@ -484,104 +478,16 @@ export function generateListadoPermisosProfesores(permisos = []) {
       doc.text(descLines, colDescX, y);
 
       y += rowHeight + 2;
+
+      // 🔹 Restaurar color a negro para la siguiente fila o nombre del siguiente profesor
+      resetContentStyle();
     });
 
-    y += 4;
-
-    // --- Resumen ---
-    const permisosAP = listaPermisos.filter((p) => p.tipo === 13);
-    const solicitados = permisosAP.length;
-    const aceptados = permisosAP.filter((p) => p.estado === 1).length;
-    const rechazados = permisosAP.filter((p) => p.estado === 2).length;
-    const apTotal = listaPermisos[0]?.ap_total ?? 0;
-    const disponibles = apTotal - aceptados;
-
-    const boxWidth = 120;
-    const boxHeight = 14;
-    const labelHeight = 3;
-    const totalHeightNeeded = boxHeight + labelHeight + 6;
-
-    if (y + totalHeightNeeded > pageHeight - marginBottom) {
-      doc.addPage();
-      y = marginTop;
-    }
-
-    const boxX = pageWidth - marginLeft - boxWidth;
-    const boxY = y + labelHeight;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Resumen Asuntos Propios", boxX + boxWidth, y + 1, {
-      align: "right",
-    });
-
-    doc.setLineWidth(0.4);
-    doc.rect(boxX, boxY, boxWidth, boxHeight);
-
-    const colWidth = boxWidth / 4;
-    const headerY = boxY + 5;
-    const valueY = boxY + 10;
-
-    doc.setFontSize(9);
-    doc.text("Solicitados", boxX + colWidth * 0.5, headerY, {
-      align: "center",
-    });
-    doc.text("Aceptados", boxX + colWidth * 1.5, headerY, { align: "center" });
-    doc.text("Rechazados", boxX + colWidth * 2.5, headerY, { align: "center" });
-    doc.text("Disponibles", boxX + colWidth * 3.5, headerY, {
-      align: "center",
-    });
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    doc.text(String(solicitados), boxX + colWidth * 0.5, valueY, {
-      align: "center",
-    });
-    doc.text(String(aceptados), boxX + colWidth * 1.5, valueY, {
-      align: "center",
-    });
-    if (rechazados > 0) doc.setTextColor(180, 0, 0);
-    doc.text(String(rechazados), boxX + colWidth * 2.5, valueY, {
-      align: "center",
-    });
-    doc.setTextColor(disponibles > 0 ? 0 : 0, disponibles > 0 ? 120 : 0, 0);
-    doc.text(String(disponibles), boxX + colWidth * 3.5, valueY, {
-      align: "center",
-    });
-
-    doc.setTextColor(0, 0, 0);
-    y += totalHeightNeeded + espacioEntreProfesores;
+    y += espacioEntreProfesores;
   });
 
-  // --- Pie de página ---
-  const totalPages = doc.getNumberOfPages();
-  const now = new Date();
-  const fecha = now.toLocaleDateString();
-  const hora = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+  // 🔹 Pie de página corporativo con fecha y hora
+  drawFooter(doc);
 
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    const yPie = pageHeight - 10;
-
-    // Línea horizontal sobre el pie
-    doc.setLineWidth(0.3);
-    doc.line(marginLeft, yPie - 3, pageWidth - marginLeft, yPie - 3);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
-
-    // Fecha y hora a la izquierda
-    doc.text(`Informe generado el ${fecha} a las ${hora}`, marginLeft, yPie);
-
-    // Número de página a la derecha
-    doc.text(`Página ${i} de ${totalPages}`, pageWidth - marginLeft, yPie, {
-      align: "right",
-    });
-  }
-
-  doc.save("Listado_Asuntos_Propios_Profesores.pdf");
+  doc.save("Listado_Permisos_Profesores.pdf");
 }
-

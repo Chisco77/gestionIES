@@ -63,7 +63,9 @@ export function drawFooter(doc) {
   const marginRight = 15;
   const footerY = pageHeight - 15;
 
-  const fecha = new Date().toLocaleDateString("es-ES");
+  const now = new Date();
+  const fecha = now.toLocaleDateString("es-ES");
+  const hora = now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -73,12 +75,12 @@ export function drawFooter(doc) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
 
-    // Línea superior del pie (fina y elegante)
+    // Línea superior del pie 
     doc.setLineWidth(0.3);
     doc.line(marginLeft, footerY - 5, pageWidth - marginRight, footerY - 5);
 
-    // Izquierda: fecha
-    doc.text(`Informe generado el ${fecha}`, marginLeft, footerY);
+    // Izquierda: fecha + hora
+    doc.text(`Informe generado el ${fecha} a las ${hora}`, marginLeft, footerY);
 
     // Derecha: página X de Y
     doc.text(`Página ${i} de ${pageCount}`, pageWidth - marginRight, footerY, {

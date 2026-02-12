@@ -64,7 +64,6 @@ import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { generateInformeReservasPeriodicas } from "@/Informes/reservas";
 import { toast } from "sonner";
 
-
 export function TablaReservasPeriodicas() {
   const [sorting, setSorting] = useState([{ id: "fecha_desde", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -79,7 +78,7 @@ export function TablaReservasPeriodicas() {
   const [reservaEliminar, setReservaEliminar] = useState(null);
 
   const estanciasUnicas = Array.from(
-    new Set(reservas.map((r) => r.descripcion_estancia).filter(Boolean))
+    new Set(reservas.map((r) => r.descripcion_estancia).filter(Boolean)),
   ).sort();
 
   const handleGenerarInformeReservasPeriodicas = () => {
@@ -92,7 +91,7 @@ export function TablaReservasPeriodicas() {
       return;
     }
 
-    generateInformeReservasPeriodicas(filasFiltradas);
+    generateInformeReservasPeriodicas(filasFiltradas, periodosDB);
   };
   const table = useReactTable({
     data: reservas,
@@ -301,7 +300,7 @@ export function TablaReservasPeriodicas() {
                     >
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext()
+                        header.getContext(),
                       )}
                       {{
                         asc: "↑",
@@ -325,7 +324,7 @@ export function TablaReservasPeriodicas() {
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}
