@@ -28,6 +28,8 @@ import {
   Eraser,
   Pencil,
   Trash2,
+  Printer,
+  FileText,
 } from "lucide-react";
 
 import {
@@ -45,6 +47,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+
 import { useState } from "react";
 import { columnsReservasPeriodicas } from "./columns-reservas-periodicas";
 import { useReservasPeriodicasTodas } from "@/hooks/Reservas/userReservasPeriodicasTodas";
@@ -52,6 +61,9 @@ import { DialogoEditarReservaPeriodica } from "@/modules/ReservasEstancias/compo
 import { DialogoEliminarReservaPeriodica } from "@/modules/ReservasEstancias/components/DialogoEliminarReservaPeriodica";
 
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
+import { generateInformeReservasPeriodicas } from "@/Informes/reservas";
+import { toast } from "sonner";
+
 
 export function TablaReservasPeriodicas() {
   const [sorting, setSorting] = useState([{ id: "fecha_desde", desc: false }]);
@@ -70,6 +82,18 @@ export function TablaReservasPeriodicas() {
     new Set(reservas.map((r) => r.descripcion_estancia).filter(Boolean))
   ).sort();
 
+  const handleGenerarInformeReservasPeriodicas = () => {
+    const filasFiltradas = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
+
+    if (!filasFiltradas.length) {
+      toast.info("No hay reservas periódicas que coincidan con los filtros.");
+      return;
+    }
+
+    generateInformeReservasPeriodicas(filasFiltradas);
+  };
   const table = useReactTable({
     data: reservas,
     columns: [
@@ -165,6 +189,7 @@ export function TablaReservasPeriodicas() {
       {/* FILTROS */}
       <div className="p-2 border rounded-md bg-muted/40">
         <div className="flex flex-wrap gap-4 items-end text-sm">
+          {/* Filtro Creada por */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">
               Creada por ...
@@ -179,6 +204,7 @@ export function TablaReservasPeriodicas() {
             />
           </div>
 
+          {/* Filtro Creada para */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">
               Creada Para ...
@@ -195,6 +221,7 @@ export function TablaReservasPeriodicas() {
             />
           </div>
 
+          {/* Filtro Estancia */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">
               Estancia
@@ -217,7 +244,6 @@ export function TablaReservasPeriodicas() {
 
               <SelectContent>
                 <SelectItem value="__all__">Todas</SelectItem>
-
                 {estanciasUnicas.map((estancia) => (
                   <SelectItem key={estancia} value={estancia}>
                     {estancia}
@@ -226,16 +252,35 @@ export function TablaReservasPeriodicas() {
               </SelectContent>
             </Select>
           </div>
-
+          {/* Limpiar filtros */}
           <Button
             variant="outline"
             size="sm"
-            className="h-8 px-3 ml-auto flex items-center gap-2"
+            className="h-8 px-3 flex items-center gap-2"
             onClick={limpiarFiltros}
           >
             <Eraser className="w-4 h-4" />
             Limpiar filtros
           </Button>
+          {/* Botones a la derecha */}
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Impresora / informes */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-8 w-8">
+                  <Printer className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={handleGenerarInformeReservasPeriodicas}
+                >
+                  <FileText className="mr-2 h-4 w-4 text-red-500" />
+                  Informe reservas periódicas
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
