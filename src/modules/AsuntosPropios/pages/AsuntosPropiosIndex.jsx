@@ -1,3 +1,34 @@
+/**
+ * AsuntosPropiosIndex.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Componente principal para la gestión de asuntos propios de un usuario.
+ *
+ * Características:
+ * - Visualiza un calendario mensual con días bloqueados, autorizaciones
+ *   y asuntos propios del usuario.
+ * - Permite insertar o editar asuntos propios directamente desde el calendario.
+ * - Muestra un panel de reservas con estancias, periodos y actividades extraescolares.
+ * - Gestiona concurrencia máxima y rangos bloqueados según reglas del sistema.
+ * - Integración con múltiples hooks: reservas, permisos, extraescolares, estancias,
+ *   periodos y restricciones.
+ *
+ * Flujo principal:
+ * 1. Obtiene datos de usuario y fecha actual.
+ * 2. Carga asuntos propios, reservas y autorizaciones.
+ * 3. Calcula semanas y días del mes para renderizar el calendario.
+ * 4. Permite abrir diálogos de inserción o edición según la selección del día.
+ * 5. Refresca el panel y el calendario tras insertar o modificar un asunto propio.
+ *
+ */
+
 import { useState, useEffect } from "react";
 
 import { useAuth } from "@/context/AuthContext";

@@ -102,7 +102,7 @@ export function EstanciasIndex() {
         )}
       />
 
-      {/* Diálogos (a implementar después) */}
+      {/* Diálogos */}
       <DialogoEditarEstancia
         open={abrirEditar}
         onClose={() => setAbrirEditar(false)}

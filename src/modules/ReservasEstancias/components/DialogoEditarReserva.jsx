@@ -1,3 +1,20 @@
+/**
+ * DialogoEditarReserva.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Muestra un diálogo para editar una reserva existente de una estancia.
+ * Permite modificar el periodo de inicio y fin, así como la descripción,
+ * y actualiza la reserva mediante React Query.
+ *
+ */
+
 import {
   Dialog,
   DialogContent,

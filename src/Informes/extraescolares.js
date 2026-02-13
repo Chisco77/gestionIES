@@ -1,3 +1,71 @@
+/**
+ * extraescolaresReports.js
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * 
+ * Funciones para generar listados e informes de actividades extraescolares.
+ * Permite exportar tanto en formato PDF como ODS, agrupando por departamento, fecha o profesor,
+ * e incluyendo calendarios mensuales con días destacados de actividades.
+ *
+ * Funciones exportadas:
+ *
+ * 1. generateListadoExtraescolaresPorDepartamentoXLS(actividades, rangoFechas, otrosFiltros)
+ *    - Genera un archivo ODS con columnas: Departamento, Fecha, Actividad, Profesor, Cursos, Estado.
+ *    - Incluye fila con rango de fechas y filtros aplicados.
+ *    - Ordena primero por departamento, luego por fecha y profesor.
+ *
+ * 2. generateListadoExtraescolaresPorDepartamento(actividades, rangoFechas)
+ *    - Genera un PDF agrupando actividades por departamento.
+ *    - Incluye cabecera, columnas ajustadas y pie de página.
+ *    - Orden interno: fecha → profesor.
+ *
+ * 3. generateListadoExtraescolaresPorFecha(actividades, rangoFechas)
+ *    - Genera un PDF agrupando actividades por fecha de inicio.
+ *    - Columnas: Actividad, Profesor, Departamento, Cursos, Estado.
+ *    - Orden cronológico.
+ *
+ * 4. generateListadoExtraescolaresPorProfesor(actividades, rangoFechas)
+ *    - Genera un PDF agrupando actividades por profesor.
+ *    - Columnas: Fecha, Actividad, Cursos, Estado.
+ *    - Orden cronológico dentro de cada profesor.
+ *
+ * 5. generateListadoExtraescolaresMensual(actividades, rangoFechas)
+ *    - Genera un PDF mensual, incluyendo:
+ *       • Calendario del mes al inicio de cada página.
+ *       • Días con actividades resaltados.
+ *       • Listado de actividades del mes debajo del calendario.
+ *    - Agrupa por mes y ordena cronológicamente.
+ *    - Resalta el estado de cada actividad mediante color de texto.
+ *
+ * Utilidades internas:
+ * - getInfoFiltros({fechaDesde, fechaHasta, otrosFiltros}): devuelve texto con rango de fechas y filtros aplicados.
+ * - getMonthInfo(year, month): devuelve primer día de la semana y número de días del mes.
+ * - drawCalendar(doc, year, month, actividadesMes, startX, startY): dibuja calendario mensual en PDF.
+ * - drawHeader(doc, title), drawFooter(doc), addPageWithHeader(doc, title): funciones auxiliares de cabecera/pie y paginación.
+ *
+ * Características generales:
+ * - Maneja saltos de página automáticos si no hay espacio suficiente.
+ * - Ajusta tamaño de columnas y líneas según contenido.
+ * - Colorea estados de actividades (Pendiente, Aceptada, Rechazada).
+ * - Ordena datos alfabética o cronológicamente según contexto.
+ * - Compatible con jsPDF para PDFs y XLSX para ODS.
+ *
+ * Uso:
+ * generateListadoExtraescolaresPorDepartamentoXLS(actividades, {desde, hasta}, {curso: "1º ESO"});
+ * generateListadoExtraescolaresPorDepartamento(actividades, {desde, hasta});
+ * generateListadoExtraescolaresPorFecha(actividades, {desde, hasta});
+ * generateListadoExtraescolaresPorProfesor(actividades, {desde, hasta});
+ * generateListadoExtraescolaresMensual(actividades, {desde, hasta});
+ *
+ */
+
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import { getLocalDateKey } from "@/utils/dateHelpers";

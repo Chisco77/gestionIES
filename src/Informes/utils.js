@@ -1,3 +1,52 @@
+/**
+ * utils.js
+ *
+ * Funciones auxiliares para generación de informes PDF con jsPDF.
+ * Incluye cabecera, pie de página y paginación automática con título.
+ * Permite mantener un estilo corporativo uniforme en todos los informes.
+ *
+ * Funciones exportadas:
+ *
+ * 1. addPageWithHeader(doc, titulo)
+ *    - Añade una nueva página al documento PDF.
+ *    - Llama a drawHeader para dibujar la cabecera de cada página.
+ *    - Devuelve la posición Y inicial para empezar a escribir el contenido.
+ *
+ * 2. drawHeader(doc, titulo)
+ *    - Dibuja la cabecera estándar del informe:
+ *       • Logo del centro en la esquina superior izquierda.
+ *       • Título del informe a la derecha del logo.
+ *       • Línea horizontal inferior separando cabecera del contenido.
+ *    - Forza fuente y color base antes de dibujar.
+ *    - Devuelve la posición Y inicial del contenido con un margen de separación.
+ *
+ * 3. drawFooter(doc)
+ *    - Dibuja el pie de página en todas las páginas del documento:
+ *       • Línea horizontal superior del pie de página.
+ *       • Fecha y hora de generación a la izquierda.
+ *       • Número de página "Página X de Y" a la derecha.
+ *    - Ajusta estilo, fuente y color automáticamente.
+ *
+ * Características generales:
+ * - Compatible con jsPDF para informes PDF.
+ * - Cabecera y pie de página uniformes para todos los módulos de informes.
+ * - Maneja múltiples páginas automáticamente.
+ * - Fácil de integrar en otros módulos de generación de PDFs.
+ *
+ * Uso:
+ * addPageWithHeader(doc, "Título del Informe");
+ * drawHeader(doc, "Título del Informe");
+ * drawFooter(doc);
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ */
+
 import logo from "/src/images/logo.png";
 
 /**

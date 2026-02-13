@@ -1,3 +1,23 @@
+/**
+ * DialogoConfirmacionReservaPeriodica.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Muestra un diálogo de confirmación antes de insertar o editar
+ * una reserva periódica de estancias.
+ * Incluye información resumida de la reserva: estancia, profesor,
+ * descripción, repetición, horarios y fechas.
+ * Permite confirmar o cancelar la acción, y actualiza la cache de
+ * React Query tras la confirmación.
+ *
+ */
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";

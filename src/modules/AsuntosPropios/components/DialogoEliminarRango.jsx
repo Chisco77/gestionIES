@@ -1,3 +1,31 @@
+/**
+ * DialogoEliminarRango.jsx
+ *
+ * Componente de diálogo para eliminar un rango de fechas bloqueado en asuntos propios.
+ *
+ * Props:
+ * - open: boolean → indica si el diálogo está abierto.
+ * - onOpenChange: function → callback para cerrar/abrir el diálogo.
+ * - rango: object → objeto con información del rango { inicio, fin, motivo }.
+ * - onDeleteSuccess: function → callback tras eliminar correctamente el rango.
+ *
+ * Características:
+ * - Muestra fechas de inicio y fin del rango.
+ * - Opcionalmente muestra el motivo del bloqueo.
+ * - Botón destructivo para eliminar el rango, con confirmación visual.
+ * - Utiliza fetch a la API para realizar la eliminación (DELETE) y muestra notificaciones.
+ * - Impide cerrar el diálogo al interactuar fuera del contenido.
+ *
+ * Uso:
+ * <DialogoEliminarRango
+ *   open={abrirDialogoEliminar}
+ *   onOpenChange={setAbrirDialogoEliminar}
+ *   rango={rangoSeleccionado}
+ *   onDeleteSuccess={recargarRangos}
+ * />
+ *
+ */
+
 import {
   Dialog,
   DialogContent,

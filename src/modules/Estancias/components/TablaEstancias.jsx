@@ -44,7 +44,7 @@ export function TablaEstancias({
   const [sorting, setSorting] = useState([{ id: "codigo", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
 
-    // 🔍 Filtros individuales
+    // Filtros individuales
   const [filtroCodigo, setFiltroCodigo] = useState("");
   const [filtroDescripcion, setFiltroDescripcion] = useState("");
   const [filtroPlanta, setFiltroPlanta] = useState("");

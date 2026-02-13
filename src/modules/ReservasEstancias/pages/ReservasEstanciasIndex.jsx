@@ -1,3 +1,51 @@
+/**
+ * Componente: ReservasEstanciasIndex
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Este componente gestiona la vista principal de reservas de estancias,
+ * mostrando un calendario, el panel de reservas del usuario y un grid con
+ * las reservas de cada estancia para el día seleccionado.
+ *
+ * Funcionalidades principales:
+ *   - Calendario interactivo de reservas con selección de fecha.
+ *   - Panel de reservas filtrado por el usuario logueado.
+ *   - Grid de reservas por estancia, permitiendo editar reservas futuras.
+ *   - Validación de permisos: solo se pueden modificar reservas propias y futuras.
+ *
+ * Estados internos:
+ *   - fechaHora: Date → fecha y hora actual usada para inicializar estados.
+ *   - selectedDate: string → fecha seleccionada en formato YYYY-MM-DD.
+ *   - currentMonth: number → mes actual mostrado en el calendario.
+ *   - currentYear: number → año actual mostrado en el calendario.
+ *   - periodosDB: array → periodos de reservas obtenidos de la base de datos.
+ *
+ * Funciones auxiliares:
+ *   - formatDateKey(date): string → formatea un objeto Date a 'YYYY-MM-DD'.
+ *   - esReservaFutura(fecha, horaFin): boolean → determina si una reserva
+ *       aún no ha finalizado comparando con la fecha y hora actuales.
+ *   - handleEditarReserva(reserva): void → valida permisos y reserva futura,
+ *       y abre el diálogo de edición si es posible.
+ *   - handleDiaClick(dateKey, estanciaId, periodoId): void → selecciona fecha y
+ *       celda de reserva para posibles acciones en el grid.
+ *
+ * Componentes usados:
+ *   - CalendarioReservas → calendario visual de reservas.
+ *   - PanelReservas → panel de reservas filtrado por usuario.
+ *   - GridReservasEstancias → grid de reservas por estancia, interactivo.
+ *   - toast (sonner) → notificaciones de error o éxito.
+ *
+ * Librerías:
+ *   - React: useState
+ *   - Contexto de autenticación: useAuth
+ */
+
 import {  useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";

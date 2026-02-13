@@ -1,4 +1,47 @@
-// src/modules/Asuntos/CalendarioAsuntos.jsx
+/**
+ * CalendarioAsuntos.jsx
+ *
+ * Componente de calendario para visualizar y gestionar asuntos propios de un usuario.
+ *
+ * Props:
+ * - currentMonth: number → mes actual mostrado (0-11).
+ * - currentYear: number → año actual mostrado.
+ * - todayStr: string → fecha de hoy en formato YYYY-MM-DD.
+ * - selectedDate: string → fecha actualmente seleccionada.
+ * - asuntosPorDia: object → conteo de asuntos por día { "YYYY-MM-DD": numeroAsuntos }.
+ * - asuntosPropiosUsuario: object → asuntos propios del usuario { "YYYY-MM-DD": asunto }.
+ * - autorizacionesUsuario: object → días con autorización especial del usuario { "YYYY-MM-DD": autorizacion }.
+ * - rangosBloqueados: array → rangos de fechas bloqueadas [{ inicio, fin, motivo }].
+ * - maxConcurrentes: number → máximo de asuntos permitidos por día sin autorización.
+ * - onDiaClick: function → callback al hacer clic en un día habilitado, recibe dateKey.
+ * - onMonthChange: function → callback al cambiar mes, recibe { newMonth, newYear }.
+ *
+ * Características:
+ * - Muestra un calendario mensual con días de lunes a domingo.
+ * - Indica días bloqueados, completos, parcialmente ocupados y asuntos propios.
+ * - Considera fines de semana, rangos bloqueados y concurrencia máxima.
+ * - Ignora restricciones si el usuario tiene autorización especial en un día.
+ * - Navegación entre meses con botones prev/next, notificando al padre mediante callback.
+ * - Tooltip opcional para mostrar motivo de bloqueo en días bloqueados.
+ * - Visualización de badges indicando cantidad de asuntos en cada día.
+ * - Leyenda explicativa de colores y estados al pie del calendario.
+ *
+ * Uso:
+ * <CalendarioAsuntos
+ *   currentMonth={mes}
+ *   currentYear={año}
+ *   todayStr={fechaHoy}
+ *   selectedDate={fechaSeleccionada}
+ *   asuntosPorDia={asuntosPorDia}
+ *   asuntosPropiosUsuario={asuntosUsuario}
+ *   autorizacionesUsuario={autorizaciones}
+ *   rangosBloqueados={rangos}
+ *   maxConcurrentes={max}
+ *   onDiaClick={handleClickDia}
+ *   onMonthChange={handleCambioMes}
+ * />
+ */
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Tooltip,

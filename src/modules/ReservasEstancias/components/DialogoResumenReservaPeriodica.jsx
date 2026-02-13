@@ -1,3 +1,20 @@
+/**
+ * DialogoResumenReservaPeriodica.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Muestra un diálogo resumen con el resultado de la creación o actualización
+ * de reservas periódicas. Incluye totales de reservas insertadas, omitidas,
+ * eliminadas y las fechas que no se pudieron reservar.
+ *
+ */
+
 import {
   Dialog,
   DialogContent,

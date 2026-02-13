@@ -1,3 +1,25 @@
+/**
+ * CalendarioReservas.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Componente de calendario mensual que permite seleccionar días
+ * para visualizar o gestionar reservas de un usuario específico.
+ * 
+ * Características principales:
+ * - Navegación entre meses con botones de anterior/siguiente.
+ * - Destaca el día actual y el día seleccionado.
+ * - Deshabilita selección de días pasados.
+ * - Integración con reservas del usuario para mostrar días reservados.
+ *
+ */
+
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";

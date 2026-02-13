@@ -1,6 +1,53 @@
+/**
+ * permisosPdf.js
+ *
+ * Funciones para generar PDFs relacionados con los permisos del personal docente.
+ * Permite exportar tanto el ANEXO V de concesión de permisos como listados agrupados
+ * por profesor, incluyendo información detallada de fechas, tipo de permiso, estado
+ * y descripción, así como resúmenes de Asuntos Propios.
+ *
+ * Funciones exportadas:
+ *
+ * 1. generatePermisosPdf({ empleado, permiso })
+ *    - Genera el ANEXO V para un empleado.
+ *    - Incluye datos del solicitante (apellidos, nombre, DNI, teléfono, email),
+ *      relación jurídica, cuerpo, grupo, subgrupo y jornada.
+ *    - Muestra los permisos solicitados con opción marcada según tipo.
+ *    - Añade documentación aportada y firma del director/a.
+ *
+ * 2. generateListadoPermisosProfesores(permisos)
+ *    - Genera un listado PDF de todos los permisos agrupados por profesor.
+ *    - Columnas: Fecha, Tipo de permiso, Estado y Descripción.
+ *    - Ordena permisos cronológicamente dentro de cada profesor.
+ *    - Colorea estados: Pendiente = negro, Aceptado = verde, Rechazado = rojo.
+ *    - Añade resumen de Asuntos Propios (Solicitados, Aceptados, Rechazados, Disponibles).
+ *    - Gestiona paginación automática y evita huérfanos.
+ *
+ * Utilidades internas:
+ * - drawHeader(doc, title), drawFooter(doc), addPageWithHeader(doc, title): funciones auxiliares
+ *   para cabecera, pie de página y paginación automática.
+ * - getDescripcionTipoPermiso(tipo): devuelve la descripción legible del tipo de permiso.
+ *
+ * Características generales:
+ * - Maneja saltos de página automáticos si no hay espacio suficiente.
+ * - Ajusta tamaño de columnas y filas según contenido.
+ * - Compatible con jsPDF para generación de PDFs.
+ *
+ * Uso:
+ * generatePermisosPdf({ empleado, permiso });
+ * generateListadoPermisosProfesores(listaDePermisos);
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ */
+
 import { jsPDF } from "jspdf";
 import { drawHeader, drawFooter, addPageWithHeader } from "./utils";
-
 
 import { MAPEO_TIPOS_PERMISOS } from "@/utils/mapeoTiposPermisos";
 
@@ -64,18 +111,18 @@ export function generatePermisosPdf({ empleado, permiso }) {
     tableX + col1Width + col2Width,
     y,
     tableX + col1Width + col2Width,
-    y + row2Height,
+    y + row2Height
   );
 
   doc.text(
     "DNI:",
     tableX + col1Width + col2Width + textPad,
-    y + row2Height - 3,
+    y + row2Height - 3
   );
   doc.text(
     employeeNumber,
     tableX + col1Width + col2Width + 15,
-    y + row2Height - 3,
+    y + row2Height - 3
   );
 
   y += row2Height;
@@ -99,7 +146,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "Cuerpo: Profesores de Secundaria",
     tableX + textPad,
-    y + row4Height - 3,
+    y + row4Height - 3
   );
   doc.line(tableX + col4_1Width, y, tableX + col4_1Width, y + row4Height);
   doc.text("Grupo:", tableX + col4_1Width + textPad, y + row4Height - 3);
@@ -107,12 +154,12 @@ export function generatePermisosPdf({ empleado, permiso }) {
     tableX + col4_1Width + col4_2Width,
     y,
     tableX + col4_1Width + col4_2Width,
-    y + row4Height,
+    y + row4Height
   );
   doc.text(
     "Subgrupo:",
     tableX + col4_1Width + col4_2Width + textPad,
-    y + row4Height - 3,
+    y + row4Height - 3
   );
   y += row4Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -123,7 +170,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "(Marcar con una x el recuadro correspondiente)",
     tableX + 45,
-    y + 6,
+    y + 6
   );
   doc.setFont("helvetica", "bold");
   doc.text("Relación jurídica:", tableX + textPad, y + 6);
@@ -174,7 +221,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     `Centro de destino:    ${import.meta.env.VITE_IES_NAME}`,
     tableX + col6_1Width + textPad,
-    y + row6Height - 3,
+    y + row6Height - 3
   );
   y += row6Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -286,7 +333,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "3. DOCUMENTACIÓN QUE SE APORTA",
     tableX + textPad,
-    y + row3_1Height - 2,
+    y + row3_1Height - 2
   );
   y += row3_1Height;
   doc.line(tableX, y, tableX + tableWidth, y);
@@ -326,7 +373,7 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.text(
     "Trujillo, _____ de _________________________ de 20_______",
     marginLeft,
-    y,
+    y
   );
   y += 10;
   doc.setFont("helvetica", "bold");
@@ -335,11 +382,6 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.save("anexo_v_concesion_permisos.pdf");
 }
 
-/**
- * Genera un PDF con los asuntos propios agrupados por profesor
- *
- * @param {Array} permisos - Array de asuntos propios (filtrados)
- */
 export function generateListadoPermisosProfesores(permisos = []) {
   if (!permisos?.length) {
     alert("No hay permisos para generar el informe.");
@@ -357,6 +399,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
   let y = 0;
   const lineHeight = 5;
   const espacioEntreProfesores = 8;
+  const resumenHeight = 14 + 3 + 6; // altura estimada del cuadro resumen
 
   // 🔹 Función para restaurar estilos base
   const resetContentStyle = () => {
@@ -409,31 +452,30 @@ export function generateListadoPermisosProfesores(permisos = []) {
   };
 
   nombresProfesores.forEach((nombreProfesor) => {
-    // 🔹 Restaurar estilo antes del nombre del profesor
     resetContentStyle();
-
-    // 🔹 Salto de página si es necesario
     const listaPermisos = permisosPorProfesor[nombreProfesor];
+
+    // 🔹 Calcular altura mínima para evitar huérfanos
     const firstRow = listaPermisos[0];
     const firstRowHeight =
       Math.max(
-        doc.splitTextToSize(getDescripcionTipoPermiso(firstRow.tipo), 80).length,
+        doc.splitTextToSize(getDescripcionTipoPermiso(firstRow.tipo), 80)
+          .length,
         doc.splitTextToSize(estadosMap[firstRow.estado] ?? "—", 25).length,
         doc.splitTextToSize(firstRow.descripcion || "", 50).length,
         1
       ) * lineHeight;
 
-    const minSpaceNeeded = 10 + 8 + firstRowHeight + 14; // nombre + header + fila + resumen
+    const minSpaceNeeded = 10 + 8 + firstRowHeight + resumenHeight;
     if (y + minSpaceNeeded > pageHeight - marginBottom) {
       doc.addPage();
       y = drawHeader(doc, "Listado de Permisos por Profesor");
       resetContentStyle();
     }
 
-    // 🔹 Nombre profesor
+    // 🔹 Nombre del profesor
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0); // asegurar negro
     doc.text(nombreProfesor, marginLeft, y);
     y += 4;
     doc.setLineWidth(0.5);
@@ -443,7 +485,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
     // 🔹 Encabezado de tabla
     printTableHeader();
 
-    // 🔹 Filas del profesor
+    // 🔹 Filas
     listaPermisos.forEach((permiso) => {
       const fechaTxt = new Date(permiso.fecha).toLocaleDateString("es-ES");
       const tipoTxt = getDescripcionTipoPermiso(permiso.tipo);
@@ -458,15 +500,14 @@ export function generateListadoPermisosProfesores(permisos = []) {
         Math.max(tipoLines.length, estadoLines.length, descLines.length, 1) *
         lineHeight;
 
-      // 🔹 Salto de página si la fila no cabe
-      if (y + rowHeight + 14 > pageHeight - marginBottom) {
+      if (y + rowHeight + resumenHeight > pageHeight - marginBottom) {
         doc.addPage();
         y = drawHeader(doc, "Listado de Permisos por Profesor");
         resetContentStyle();
         printTableHeader();
       }
 
-      // 🔹 Color según estado
+      // Color según estado
       if (permiso.estado === 1) doc.setTextColor(0, 120, 0);
       else if (permiso.estado === 2) doc.setTextColor(180, 0, 0);
       else doc.setTextColor(0, 0, 0);
@@ -478,15 +519,78 @@ export function generateListadoPermisosProfesores(permisos = []) {
       doc.text(descLines, colDescX, y);
 
       y += rowHeight + 2;
-
-      // 🔹 Restaurar color a negro para la siguiente fila o nombre del siguiente profesor
       resetContentStyle();
     });
 
-    y += espacioEntreProfesores;
+    y += 4;
+
+    // 🔹 Resumen al pie del profesor
+    const permisosAP = listaPermisos.filter((p) => p.tipo === 13);
+    const solicitados = permisosAP.length;
+    const aceptados = permisosAP.filter((p) => p.estado === 1).length;
+    const rechazados = permisosAP.filter((p) => p.estado === 2).length;
+    const apTotal = listaPermisos[0]?.ap_total ?? 0;
+    const disponibles = apTotal - aceptados;
+
+    const boxWidth = 120;
+    const boxHeight = 14;
+    const labelHeight = 3;
+    const totalHeightNeeded = boxHeight + labelHeight + 6;
+
+    if (y + totalHeightNeeded > pageHeight - marginBottom) {
+      doc.addPage();
+      y = drawHeader(doc, "Listado de Permisos por Profesor");
+      resetContentStyle();
+    }
+
+    const boxX = pageWidth - marginLeft - boxWidth;
+    const boxY = y + labelHeight;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("Resumen Asuntos Propios", boxX + boxWidth, y + 1, {
+      align: "right",
+    });
+
+    doc.setLineWidth(0.4);
+    doc.rect(boxX, boxY, boxWidth, boxHeight);
+
+    const colWidth = boxWidth / 4;
+    const headerY = boxY + 5;
+    const valueY = boxY + 10;
+
+    doc.setFontSize(9);
+    doc.text("Solicitados", boxX + colWidth * 0.5, headerY, {
+      align: "center",
+    });
+    doc.text("Aceptados", boxX + colWidth * 1.5, headerY, { align: "center" });
+    doc.text("Rechazados", boxX + colWidth * 2.5, headerY, { align: "center" });
+    doc.text("Disponibles", boxX + colWidth * 3.5, headerY, {
+      align: "center",
+    });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(String(solicitados), boxX + colWidth * 0.5, valueY, {
+      align: "center",
+    });
+    doc.text(String(aceptados), boxX + colWidth * 1.5, valueY, {
+      align: "center",
+    });
+    if (rechazados > 0) doc.setTextColor(180, 0, 0);
+    doc.text(String(rechazados), boxX + colWidth * 2.5, valueY, {
+      align: "center",
+    });
+    doc.setTextColor(disponibles > 0 ? 0 : 0, disponibles > 0 ? 120 : 0, 0);
+    doc.text(String(disponibles), boxX + colWidth * 3.5, valueY, {
+      align: "center",
+    });
+    doc.setTextColor(0, 0, 0);
+
+    y += totalHeightNeeded + espacioEntreProfesores;
   });
 
-  // 🔹 Pie de página corporativo con fecha y hora
+  // 🔹 Pie de página
   drawFooter(doc);
 
   doc.save("Listado_Permisos_Profesores.pdf");

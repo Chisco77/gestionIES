@@ -1,3 +1,20 @@
+/**
+ * DialogoPlanoEstancia.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Muestra un diálogo con el plano de la planta de una estancia seleccionada,
+ * resaltando la ubicación de la estancia y mostrando información relevante
+ * como la planta y el número de ordenadores disponibles.
+ *
+ */
+
 import {
   Dialog,
   DialogContent,

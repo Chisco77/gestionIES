@@ -1,3 +1,20 @@
+/**
+ * DialogoInsertarReserva.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Muestra un diálogo para insertar una nueva reserva en una estancia
+ * determinada en una fecha concreta. Permite seleccionar periodo de inicio
+ * y fin, añadir descripción y guarda la reserva mediante React Query.
+ *
+ */
+
 import {
   Dialog,
   DialogContent,

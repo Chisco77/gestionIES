@@ -1,4 +1,53 @@
-// src/Informes/reservasPeriodicas.js
+/**
+ * reservasPeriodicas.js
+ *
+ * Funciones para generar informes PDF de reservas periódicas de aulas y recursos.
+ * Permite generar informes tanto por aula como por profesor, mostrando columnas
+ * de información detallada: creador de la reserva, destinatario, fechas, días,
+ * periodo y descripción de la reserva.
+ *
+ * Funciones exportadas:
+ *
+ * 1. generateInformeReservasPeriodicas(reservas, periodosDB)
+ *    - Genera un PDF en orientación horizontal (landscape) agrupando reservas por aula.
+ *    - Columnas: Creado por, Para, Desde, Hasta, Días, Periodo, Descripción.
+ *    - Orden interno de reservas: profesor creador → destinatario → fecha desde → periodo.
+ *    - Cada aula comienza en nueva página (excepto la primera).
+ *    - Gestiona paginación automática y evita huérfanos.
+ *
+ * 2. generateInformeReservasPeriodicasProfesor(reservas, periodosDB)
+ *    - Genera un PDF en orientación vertical (portrait) agrupando reservas por profesor.
+ *    - Columnas: Aula, Días, Periodo, Desde, Hasta.
+ *    - Orden interno: aula → fecha desde → periodo.
+ *    - Cada profesor comienza en nueva página (excepto el primero).
+ *    - Gestiona paginación automática y evita huérfanos.
+ *
+ * Utilidades internas:
+ * - drawHeader(doc, title), drawFooter(doc), addPageWithHeader(doc, title): funciones auxiliares
+ *   para cabecera, pie de página y paginación automática.
+ * - resetContentStyle(): restaura fuente, tamaño y color de texto base.
+ * - truncate(text, max): recorta texto largo para cabecera de tabla o celdas.
+ *
+ * Características generales:
+ * - Maneja saltos de página automáticos si no hay espacio suficiente.
+ * - Ajusta tamaño de columnas y filas según contenido.
+ * - Compatible con jsPDF para generación de PDFs.
+ * - Resalta títulos y encabezados mediante fuente bold.
+ *
+ * Uso:
+ * generateInformeReservasPeriodicas(listaReservas, periodosDB);
+ * generateInformeReservasPeriodicasProfesor(listaReservas, periodosDB);
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ */
+
+
 import jsPDF from "jspdf";
 import { drawHeader, drawFooter, addPageWithHeader } from "./utils";
 
