@@ -62,7 +62,9 @@ import { DialogoEliminarReservaPeriodica } from "@/modules/ReservasEstancias/com
 
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { generateInformeReservasPeriodicas } from "@/Informes/reservas";
+import { generateInformeReservasPeriodicasProfesor } from "@/Informes/reservas";
 import { toast } from "sonner";
+
 
 export function TablaReservasPeriodicas() {
   const [sorting, setSorting] = useState([{ id: "fecha_desde", desc: false }]);
@@ -93,6 +95,21 @@ export function TablaReservasPeriodicas() {
 
     generateInformeReservasPeriodicas(filasFiltradas, periodosDB);
   };
+
+    const handleGenerarInformeReservasPeriodicasProfesor = () => {
+    const filasFiltradas = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
+
+    if (!filasFiltradas.length) {
+      toast.info("No hay reservas periódicas que coincidan con los filtros.");
+      return;
+    }
+
+    generateInformeReservasPeriodicasProfesor(filasFiltradas, periodosDB);
+  };
+
+  
   const table = useReactTable({
     data: reservas,
     columns: [
@@ -275,8 +292,14 @@ export function TablaReservasPeriodicas() {
                   onClick={handleGenerarInformeReservasPeriodicas}
                 >
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Informe reservas periódicas
+                  Reservas periódicas por aula
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleGenerarInformeReservasPeriodicasProfesor}
+                >
+                  <FileText className="mr-2 h-4 w-4 text-red-500" />
+                  Reservas periódicas por profesor
+                </DropdownMenuItem>                
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
