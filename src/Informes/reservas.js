@@ -195,7 +195,10 @@ export const generateInformeReservasPeriodicas = (reservas, periodosDB) => {
   doc.save("Informe_Reservas_Periodicas.pdf");
 };
 
-export const generateInformeReservasPeriodicasProfesor = (reservas, periodosDB) => {
+export const generateInformeReservasPeriodicasProfesor = (
+  reservas,
+  periodosDB
+) => {
   if (!reservas?.length) {
     alert("No hay reservas periódicas.");
     return;
@@ -220,16 +223,27 @@ export const generateInformeReservasPeriodicasProfesor = (reservas, periodosDB) 
   y = drawHeader(doc, "Informe de Reservas Periódicas por Profesor");
   resetContentStyle();
 
+  // 🔹 Columnas: Aula → Días → Periodo → Fecha desde → Fecha hasta
   const colWidth = {
+    descripcion: 60,
     dias: 20,
-    periodo: 50,
-    descripcion: 110,
+    periodo: 40,
+    fechaDesde: 25,
+    fechaHasta: 25,
   };
 
   const columns = {
-    dias: marginLeft,
-    periodo: marginLeft + colWidth.dias,
-    descripcion: marginLeft + colWidth.dias + colWidth.periodo,
+    descripcion: marginLeft,
+    dias: marginLeft + colWidth.descripcion,
+    periodo: marginLeft + colWidth.descripcion + colWidth.dias,
+    fechaDesde:
+      marginLeft + colWidth.descripcion + colWidth.dias + colWidth.periodo,
+    fechaHasta:
+      marginLeft +
+      colWidth.descripcion +
+      colWidth.dias +
+      colWidth.periodo +
+      colWidth.fechaDesde,
   };
 
   const diasSemanaTexto = ["L", "M", "X", "J", "V", "S", "D"];
@@ -238,9 +252,11 @@ export const generateInformeReservasPeriodicasProfesor = (reservas, periodosDB) 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
 
+    doc.text("Aula", columns.descripcion, y);
     doc.text("Días", columns.dias, y);
     doc.text("Periodo", columns.periodo, y);
-    doc.text("Aula", columns.descripcion, y);
+    doc.text("Desde", columns.fechaDesde, y);
+    doc.text("Hasta", columns.fechaHasta, y);
 
     y += 4;
     doc.setLineWidth(0.3);
@@ -284,7 +300,6 @@ export const generateInformeReservasPeriodicasProfesor = (reservas, periodosDB) 
     y += 8;
 
     resetContentStyle();
-
     drawTableHeader();
 
     // 🔹 Ordenar reservas por: descripción del aula → fecha desde → periodo
@@ -296,19 +311,26 @@ export const generateInformeReservasPeriodicasProfesor = (reservas, periodosDB) 
       );
       if (aulaCompare !== 0) return aulaCompare;
 
-      const fechaCompare =
-        new Date(r1.fecha_desde) - new Date(r2.fecha_desde);
+      const fechaCompare = new Date(r1.fecha_desde) - new Date(r2.fecha_desde);
       if (fechaCompare !== 0) return fechaCompare;
 
       return (r1.idperiodo_inicio || 0) - (r2.idperiodo_inicio || 0);
     });
 
     reservasProfesor.forEach((r) => {
-      const diasTexto = r.dias_semana?.map(d => diasSemanaTexto[d]).join(", ") || "";
+      const diasTexto =
+        r.dias_semana?.map((d) => diasSemanaTexto[d]).join(", ") || "";
 
-      const inicio = periodosDB?.find(p => p.id === r.idperiodo_inicio)?.nombre || r.idperiodo_inicio;
-      const fin = periodosDB?.find(p => p.id === r.idperiodo_fin)?.nombre || r.idperiodo_fin;
+      const inicio =
+        periodosDB?.find((p) => p.id === r.idperiodo_inicio)?.nombre ||
+        r.idperiodo_inicio;
+      const fin =
+        periodosDB?.find((p) => p.id === r.idperiodo_fin)?.nombre ||
+        r.idperiodo_fin;
       const periodoTexto = `${inicio} - ${fin}`;
+
+      const fechaDesde = new Date(r.fecha_desde).toLocaleDateString("es-ES");
+      const fechaHasta = new Date(r.fecha_hasta).toLocaleDateString("es-ES");
 
       const descripcionLines = doc.splitTextToSize(
         r.descripcion_estancia || "",
@@ -324,9 +346,11 @@ export const generateInformeReservasPeriodicasProfesor = (reservas, periodosDB) 
         drawTableHeader();
       }
 
+      doc.text(descripcionLines, columns.descripcion, y);
       doc.text(diasTexto, columns.dias, y);
       doc.text(periodoTexto, columns.periodo, y);
-      doc.text(descripcionLines, columns.descripcion, y);
+      doc.text(fechaDesde, columns.fechaDesde, y);
+      doc.text(fechaHasta, columns.fechaHasta, y);
 
       y += rowHeight + 2;
     });
