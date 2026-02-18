@@ -232,6 +232,12 @@ async function updateEstadoExtraescolar(req, res) {
             <p><b>Fecha de inicio:</b> ${fechaInicioFmt}</p>
             <p><b>Estado:</b> ${estadoTxt}</p>
             <p><b>Descripción:</b> ${actividad.descripcion}</p>
+            <hr>
+            <p>
+               <a href="https://172.16.218.200/gestionIES/" target="_blank">
+                  Pulse aquí para acceder a la aplicación
+               </a>
+            </p>
           `,
         });
 
@@ -364,6 +370,12 @@ async function insertExtraescolar(req, res) {
         <p><b>Descripción:</b> ${actividad.descripcion}</p>
         <p><b>Ubicación:</b> ${actividad.ubicacion || "-"}</p>
         ${extraCamposHTML}
+        <hr>
+        <p>
+           <a href="https://172.16.218.200/gestionIES/" target="_blank">
+              Pulse aquí para acceder a la aplicación
+           </a>
+        </p>
       `,
         });
 
@@ -478,7 +490,6 @@ async function deleteExtraescolar(req, res) {
 async function updateExtraescolar(req, res) {
   try {
     const id = req.params.id;
-    console.log ("Sesion: ", req.session);
     const usuarioSesion = req.session?.user;
     if (!usuarioSesion) {
       return res.status(401).json({

@@ -72,7 +72,7 @@ async function getPermisos(req, res) {
        FROM permisos
        ${where}
        ORDER BY fecha ASC`,
-      vals,
+      vals
     );
 
     res.json({ ok: true, asuntos: rows });
@@ -119,7 +119,7 @@ async function getPermisosEnriquecidos(req, res) {
          ap.created_at
        FROM permisos ap
        ${where}`,
-      vals,
+      vals
     );
 
     const uids = [...new Set(permisos.map((p) => p.uid))];
@@ -129,7 +129,7 @@ async function getPermisosEnriquecidos(req, res) {
     if (uids.length > 0) {
       const { rows: empleados } = await db.query(
         `SELECT uid, asuntos_propios FROM empleados WHERE uid = ANY($1)`,
-        [uids],
+        [uids]
       );
       empleadosMap = empleados.reduce((acc, emp) => {
         acc[emp.uid] = emp;
@@ -170,7 +170,7 @@ async function getPermisosEnriquecidos(req, res) {
            AND fecha >= $2
            AND fecha <= $3
          GROUP BY uid`,
-        [uids, fechaInicioCurso, fechaFinCurso],
+        [uids, fechaInicioCurso, fechaFinCurso]
       );
       diasMap = diasDisfrutados.reduce((acc, row) => {
         acc[row.uid] = Number(row.dias_disfrutados);
@@ -251,7 +251,7 @@ async function insertAsuntoPropio(req, res) {
       return res.status(400).json({
         ok: false,
         error: `Faltan restricciones obligatorias: ${faltan.join(
-          ", ",
+          ", "
         )}. Deben definirse antes de solicitar asuntos propios.`,
       });
     }
@@ -271,7 +271,7 @@ async function insertAsuntoPropio(req, res) {
     // === Comprobar si hay autorización especial para esa fecha y usuario
     const { rows: autorizaciones } = await db.query(
       `SELECT id FROM asuntos_permitidos WHERE uid = $1 AND fecha = $2`,
-      [uid, fecha],
+      [uid, fecha]
     );
     const tieneAutorizacion = autorizaciones.length > 0;
 
@@ -288,7 +288,7 @@ async function insertAsuntoPropio(req, res) {
     // Comprobar máximo de días del usuario. Solo cuento aquellos APs cuyo estado es aceptado (1)
     const { rows: totalCurso } = await db.query(
       `SELECT COUNT(*)::int AS total FROM permisos WHERE uid = $1 AND tipo = 13 AND estado = 1`,
-      [uid],
+      [uid]
     );
     if (totalCurso[0].total >= maxDias)
       return res.status(400).json({
@@ -299,7 +299,7 @@ async function insertAsuntoPropio(req, res) {
     // --- Si NO tiene autorización, aplicamos todas las restricciones normales ---
     if (!tieneAutorizacion) {
       const diffDias = Math.ceil(
-        (fechaSolicitada - hoy) / (1000 * 60 * 60 * 24),
+        (fechaSolicitada - hoy) / (1000 * 60 * 60 * 24)
       );
 
       // Antelación mínima
@@ -319,7 +319,7 @@ async function insertAsuntoPropio(req, res) {
       // Concurrencia
       const { rows: concurrencia } = await db.query(
         `SELECT COUNT(*)::int AS total FROM permisos WHERE fecha = $1 AND tipo = 13`,
-        [fecha],
+        [fecha]
       );
 
       if (concurrencia[0].total >= concurrentes)
@@ -335,7 +335,7 @@ async function insertAsuntoPropio(req, res) {
          AND fecha BETWEEN ($2::date - INTERVAL '10 days')
                        AND ($2::date + INTERVAL '10 days')
          ORDER BY fecha`,
-        [uid, fecha],
+        [uid, fecha]
       );
 
       const fechas = diasCercanos.map((r) => new Date(r.fecha).getTime());
@@ -347,7 +347,7 @@ async function insertAsuntoPropio(req, res) {
 
       for (let i = 1; i < fechas.length; i++) {
         const diff = Math.round(
-          (fechas[i] - fechas[i - 1]) / (1000 * 60 * 60 * 24),
+          (fechas[i] - fechas[i - 1]) / (1000 * 60 * 60 * 24)
         );
         consecutivosActual = diff === 1 ? consecutivosActual + 1 : 1;
         if (consecutivosActual > maxConsecutivos)
@@ -366,7 +366,7 @@ async function insertAsuntoPropio(req, res) {
       `INSERT INTO permisos (uid, fecha, descripcion, tipo)
        VALUES ($1, $2, $3, $4)
        RETURNING id, uid, fecha, descripcion, tipo`,
-      [uid, fecha, descripcion, tipo],
+      [uid, fecha, descripcion, tipo]
     );
 
     // Responder antes de enviar email
@@ -376,7 +376,7 @@ async function insertAsuntoPropio(req, res) {
     setImmediate(async () => {
       try {
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'asuntos-propios' LIMIT 1`,
+          `SELECT emails FROM avisos WHERE modulo = 'asuntos-propios' LIMIT 1`
         );
 
         const emails = (avisos[0]?.emails || [])
@@ -389,8 +389,8 @@ async function insertAsuntoPropio(req, res) {
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, uid, (err, datos) =>
             resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" },
-            ),
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
+            )
           );
         });
 
@@ -403,13 +403,24 @@ async function insertAsuntoPropio(req, res) {
           from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
           to: emails.join(", "),
           subject: `[ASUNTOS PROPIOS - Solicitud] Solicitud asunto propio (${fechaFmt})`,
-          html: `<p>Profesor: ${nombreProfesor}</p>
-                 <p>Fecha: ${fechaFmt}</p>
-                 <p>Descripción: ${descripcion}</p>`,
+          html: `
+              <p><b>Profesor:</b> ${nombreProfesor}</p>
+              <p><b>Fecha:</b> ${fechaFmt}</p>
+              <p><b>Descripción:</b> ${descripcion}</p>
+  
+              <hr>
+
+              <p>
+                <a href="https://172.16.218.200/gestionIES/" target="_blank">
+                  Pulse aquí 
+                </a>
+                para acceder a la aplicación
+              </p>
+            `,
         });
 
         console.log(
-          `[insertAsuntoPropio] Email enviado a: ${emails.join(", ")}`,
+          `[insertAsuntoPropio] Email enviado a: ${emails.join(", ")}`
         );
       } catch (errMail) {
         console.error("[insertAsuntoPropio] Error enviando email:", errMail);
@@ -450,7 +461,7 @@ async function insertPermiso(req, res) {
       `INSERT INTO permisos (uid, fecha, descripcion, tipo)
        VALUES ($1, $2, $3, $4)
        RETURNING id, uid, fecha, descripcion, tipo`,
-      [uid, fecha, descripcion, tipo],
+      [uid, fecha, descripcion, tipo]
     );
 
     // Respuesta inmediata
@@ -462,7 +473,7 @@ async function insertPermiso(req, res) {
     setImmediate(async () => {
       try {
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'permisos' LIMIT 1`,
+          `SELECT emails FROM avisos WHERE modulo = 'permisos' LIMIT 1`
         );
 
         const emailsRaw = avisos[0]?.emails || [];
@@ -472,7 +483,7 @@ async function insertPermiso(req, res) {
         const ldapSession = req.session?.ldap;
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, uid, (err, datos) =>
-            resolve(datos || { givenName: "Desconocido", sn: "" }),
+            resolve(datos || { givenName: "Desconocido", sn: "" })
           );
         });
 
@@ -489,11 +500,19 @@ async function insertPermiso(req, res) {
           to: emails.join(", "),
           subject: `[PERMISOS] Nueva solicitud (${fechaFmt})`,
           html: `
-        <p><b>Profesor:</b> ${nombreProfesor}</p>
-        <p><b>Fecha:</b> ${fechaFmt}</p>
-        <p><b>Descripción:</b> ${descripcion}</p>
-        <p><b>Tipo:</b> ${tipoTexto}</p>
-      `,
+    <p><b>Profesor:</b> ${nombreProfesor}</p>
+    <p><b>Fecha:</b> ${fechaFmt}</p>
+    <p><b>Descripción:</b> ${descripcion}</p>
+    <p><b>Tipo:</b> ${tipoTexto}</p>
+
+    <hr>
+
+    <p>
+      <a href="https://172.16.218.200/gestionIES/" target="_blank">
+        Pulse aquí 
+      </a>para acceder a la aplicación
+    </p>
+  `,
         });
 
         console.log(`[insertPermiso] Email enviado a: ${emails.join(", ")}`);
@@ -590,7 +609,7 @@ async function updateEstadoPermiso(req, res) {
       // Obtener el permiso que se quiere aceptar
       const { rows: permisoRows } = await db.query(
         `SELECT uid, tipo, estado FROM permisos WHERE id = $1`,
-        [id],
+        [id]
       );
 
       const permiso = permisoRows[0];
@@ -610,7 +629,7 @@ async function updateEstadoPermiso(req, res) {
         if (!maxDias || maxDias === 0) {
           const restricciones = await getRestriccionesAsuntos();
           const diasRestriccion = restricciones.find(
-            (r) => r.descripcion === "dias",
+            (r) => r.descripcion === "dias"
           );
           maxDias = diasRestriccion?.valor_num ?? 0;
         }
@@ -625,7 +644,7 @@ async function updateEstadoPermiso(req, res) {
           `SELECT COUNT(*)::int AS total
      FROM permisos
      WHERE uid = $1 AND tipo = 13 AND estado = 1`,
-          [permiso.uid],
+          [permiso.uid]
         );
 
         if (concedidos[0].total >= maxDias)
@@ -652,7 +671,7 @@ async function updateEstadoPermiso(req, res) {
     setImmediate(async () => {
       try {
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'asuntos-propios' LIMIT 1`,
+          `SELECT emails FROM avisos WHERE modulo = 'asuntos-propios' LIMIT 1`
         );
         const emailsRaw = avisos[0]?.emails || [];
         const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
@@ -662,8 +681,8 @@ async function updateEstadoPermiso(req, res) {
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, asunto.uid, (err, datos) =>
             resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" },
-            ),
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
+            )
           );
         });
 
@@ -680,11 +699,18 @@ async function updateEstadoPermiso(req, res) {
           from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
           to: emails.join(", "),
           subject: `${subjectPrefix} Estado actualizado (${fechaFmt})`,
-          html: `<p>Profesor: ${nombreProfesor}</p><p>Fecha: ${fechaFmt}</p><p>Descripción: ${asunto.descripcion}</p><p>Estado: ${estadoTexto}</p>`,
+          html: `
+    <p><b>Profesor:</b> ${nombreProfesor}</p>
+    <p><b>Fecha:</b> ${fechaFmt}</p>
+    <p><b>Descripción:</b> ${asunto.descripcion}</p>
+    <p><b>Estado:</b> ${estadoTexto}</p>
+
+    <p><a href="https://172.16.218.200/gestionIES/">Pulse aquí</a> para acceder a la aplicación.</p>
+  `,
         });
 
         console.log(
-          `[updateEstadoPermiso] Email enviado a: ${emails.join(", ")}`,
+          `[updateEstadoPermiso] Email enviado a: ${emails.join(", ")}`
         );
       } catch (errMail) {
         console.error("[updateEstadoPermiso] Error enviando email:", errMail);
