@@ -199,6 +199,44 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         ],
       },
     ],
+
+    extraescolares: [
+      {
+        title: "Inicio",
+        url: "/",
+        icon: Home,
+      },
+      {
+        title: "Usuarios",
+        url: "#",
+        icon: Users,
+        items: [{ title: "Alumnos", url: "/alumnos", icon: GraduationCap }],
+      },
+      {
+        title: "Reservas",
+        url: "#",
+        icon: CalendarCheck,
+        items: [
+          { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
+
+          {
+            title: "Extraescolares",
+            url: "/extraescolares",
+            icon: CalendarCheck,
+          },
+          {
+            title: "Asuntos Propios",
+            url: "/asuntos",
+            icon: ListChecks,
+          },
+          {
+            title: "Permisos",
+            url: "/permisos",
+            icon: ListChecks,
+          },
+        ],
+      },
+    ],
     ordenanza: [
       {
         title: "Préstamo Llaves",
@@ -379,7 +417,7 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         icon: Library,
         items: [
           { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
-         // { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
+          // { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
           { title: "Libros", url: "/libros", icon: BookMarked },
           { title: "Cursos", url: "/cursos", icon: BookOpen },
         ],
