@@ -517,8 +517,9 @@ async function updateExtraescolar(req, res) {
     const esPropietario = actividadActual.uid === usuarioSesion.username;
 
     const esDirectiva = usuarioSesion.perfil === "directiva";
+    const esExtraescolares = usuarioSesion.perfil === "extraescolares";
 
-    if (!esPropietario && !esDirectiva) {
+    if (!esPropietario && !esDirectiva &&!esExtraescolares) {
       return res.status(403).json({
         ok: false,
         error: "No autorizado",
