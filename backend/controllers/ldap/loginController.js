@@ -22,6 +22,8 @@
  * ================================================================
  */
 
+const db = require("../../db");
+
 const ldap = require("ldapjs");
 
 exports.loginLdap = (req, res) => {
@@ -74,11 +76,11 @@ exports.loginLdap = (req, res) => {
         searchRes.on("searchEntry", (entry) => {
           const empNum =
             entry.attributes.find((a) => a.type === "employeeNumber")
-              ?.vals[0] || null;
+              ?.values[0] || null;
           const givenName =
-            entry.attributes.find((a) => a.type === "givenName")?.vals[0] || "";
+            entry.attributes.find((a) => a.type === "givenName")?.values[0] || "";
           const sn =
-            entry.attributes.find((a) => a.type === "sn")?.vals[0] || "";
+            entry.attributes.find((a) => a.type === "sn")?.values[0] || "";
 
           req.session.ldap = {
             dn: userDN,
@@ -167,12 +169,12 @@ exports.loginLdap = (req, res) => {
           searchRes2.on("searchEntry", (entry) => {
             const empNum =
               entry.attributes.find((a) => a.type === "employeeNumber")
-                ?.vals[0] || null;
+                ?.values[0] || null;
             const givenName =
-              entry.attributes.find((a) => a.type === "givenName")?.vals[0] ||
+              entry.attributes.find((a) => a.type === "givenName")?.values[0] ||
               "";
             const sn =
-              entry.attributes.find((a) => a.type === "sn")?.vals[0] || "";
+              entry.attributes.find((a) => a.type === "sn")?.values[0] || "";
 
             // Guardar sesión LDAP con employeeNumber, givenName y sn
             req.session.ldap = {
@@ -186,9 +188,36 @@ exports.loginLdap = (req, res) => {
             console.log("✅ Login correcto como teacher");
           });
 
-          searchRes2.on("end", () => {
-            client.unbind();
-            return res.json({ message: "Login correcto (grupo teachers)" });
+          searchRes2.on("end", async () => {
+            try {
+              // Buscar perfil en PostgreSQL
+              const { rows } = await db.query(
+                `SELECT perfil FROM perfiles_usuario WHERE uid = $1`,
+                [username]
+              );
+
+              const perfil = rows[0]?.perfil || "profesor";
+
+              // Guardar sesión completa
+              req.session.user = {
+                username,
+                perfil,
+              };
+
+              console.log("🟢 Perfil cargado:", perfil);
+
+              client.unbind();
+              return res.json({
+                message: "Login correcto",
+                perfil,
+              });
+            } catch (errDb) {
+              console.error("❌ Error obteniendo perfil:", errDb);
+              client.unbind();
+              return res.status(500).json({
+                error: "Error obteniendo perfil de usuario",
+              });
+            }
           });
         });
       });

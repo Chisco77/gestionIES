@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -97,6 +96,7 @@ export function DialogoEditarExtraescolar({
   cursos = [],
 }) {
   const { user } = useAuth();
+  const esDirectiva = user?.perfil === "directiva";
   const queryClient = useQueryClient();
 
   // --- State ---
@@ -118,8 +118,14 @@ export function DialogoEditarExtraescolar({
 
   // --- Permisos ---
   const esPropietario = user.username === actividad?.uid;
-  const editableCamposGenerales = esPropietario && actividad?.estado === 0;
-  const editableCamposBasicos = esPropietario;
+
+  // Directiva puede editar siempre
+  const editableCamposGenerales =
+    esDirectiva || (esPropietario && actividad?.estado === 0);
+
+  const editableCamposBasicos = esDirectiva || esPropietario;
+
+  const puedeGuardar = esDirectiva || esPropietario;
 
   // --- Inicializar datos ---
   useEffect(() => {
@@ -565,7 +571,7 @@ export function DialogoEditarExtraescolar({
           <Button
             variant="outline"
             onClick={handleGuardar}
-            disabled={!esPropietario || mutation.isLoading}
+            disabled={!puedeGuardar || mutation.isLoading}
           >
             {mutation.isLoading ? "Guardando..." : "Guardar cambios"}
           </Button>

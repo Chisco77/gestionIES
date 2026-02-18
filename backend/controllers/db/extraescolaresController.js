@@ -52,17 +52,17 @@ async function getExtraescolaresEnriquecidos(req, res) {
     // ========================================
     const departamentos = await obtenerGruposPorTipo(
       ldapSession,
-      "school_department",
+      "school_department"
     );
 
     const cursos = await obtenerGruposPorTipo(ldapSession, "school_class");
 
     const departamentosMap = Object.fromEntries(
-      departamentos.map((d) => [String(d.gidNumber), d.cn]),
+      departamentos.map((d) => [String(d.gidNumber), d.cn])
     );
 
     const cursosMap = Object.fromEntries(
-      cursos.map((c) => [String(c.gidNumber), c.cn]),
+      cursos.map((c) => [String(c.gidNumber), c.cn])
     );
 
     // ========================================
@@ -103,7 +103,7 @@ async function getExtraescolaresEnriquecidos(req, res) {
       FROM extraescolares e
       ${where}
       ORDER BY e.fecha_inicio ASC`,
-      vals,
+      vals
     );
 
     const enriquecidos = [];
@@ -178,7 +178,7 @@ async function updateEstadoExtraescolar(req, res) {
       WHERE id = $2
       RETURNING *
     `,
-      [estado, id],
+      [estado, id]
     );
 
     if (!rows[0])
@@ -196,7 +196,7 @@ async function updateEstadoExtraescolar(req, res) {
       try {
         // Emails de avisos para este módulo
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`,
+          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
         );
         const emailsRaw = avisos[0]?.emails || [];
         const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
@@ -207,8 +207,8 @@ async function updateEstadoExtraescolar(req, res) {
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, actividad.uid, (err, datos) =>
             resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" },
-            ),
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
+            )
           );
         });
 
@@ -216,7 +216,7 @@ async function updateEstadoExtraescolar(req, res) {
           `${datosUsuario.givenName} ${datosUsuario.sn}`.trim();
 
         const fechaInicioFmt = new Date(
-          actividad.fecha_inicio,
+          actividad.fecha_inicio
         ).toLocaleDateString("es-ES");
         const estadoTxt = estado === 1 ? "Aceptada" : "Rechazada";
         const subjectPrefix =
@@ -236,12 +236,12 @@ async function updateEstadoExtraescolar(req, res) {
         });
 
         console.log(
-          `[updateEstadoExtraescolar] Email enviado a: ${emails.join(", ")}`,
+          `[updateEstadoExtraescolar] Email enviado a: ${emails.join(", ")}`
         );
       } catch (errMail) {
         console.error(
           "[updateEstadoExtraescolar] Error enviando email:",
-          errMail,
+          errMail
         );
       }
     });
@@ -295,7 +295,7 @@ async function insertExtraescolar(req, res) {
         responsables_uids,
         ubicacion,
         coords,
-      ],
+      ]
     );
 
     const actividad = rows[0];
@@ -309,7 +309,7 @@ async function insertExtraescolar(req, res) {
     setImmediate(async () => {
       try {
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`,
+          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
         );
         const emailsRaw = avisos[0]?.emails || [];
         const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
@@ -320,8 +320,8 @@ async function insertExtraescolar(req, res) {
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, uid, (err, datos) =>
             resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" },
-            ),
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
+            )
           );
         });
 
@@ -368,7 +368,7 @@ async function insertExtraescolar(req, res) {
         });
 
         console.log(
-          `[insertExtraescolar] Email enviado a: ${emails.join(", ")}`,
+          `[insertExtraescolar] Email enviado a: ${emails.join(", ")}`
         );
       } catch (errMail) {
         console.error("[insertExtraescolar] Error enviando email:", errMail);
@@ -390,7 +390,7 @@ async function deleteExtraescolar(req, res) {
 
     const { rowCount } = await db.query(
       `DELETE FROM extraescolares WHERE id = $1`,
-      [id],
+      [id]
     );
 
     if (rowCount === 0)
@@ -407,7 +407,7 @@ async function deleteExtraescolar(req, res) {
  * Actualizar actividad extraescolar
  * ================================================================
  */
-async function updateExtraescolar(req, res) {
+/*async function updateExtraescolar(req, res) {
   try {
     const id = req.params.id;
     const {
@@ -472,6 +472,112 @@ async function updateExtraescolar(req, res) {
   } catch (err) {
     console.error("[updateExtraescolar] Error:", err);
     res.status(500).json({ ok: false, error: "Error actualizando actividad" });
+  }
+}*/
+
+async function updateExtraescolar(req, res) {
+  try {
+    const id = req.params.id;
+    console.log ("Sesion: ", req.session);
+    const usuarioSesion = req.session?.user;
+    if (!usuarioSesion) {
+      return res.status(401).json({
+        ok: false,
+        error: "No autenticado",
+      });
+    }
+
+    // 1️⃣ Obtener actividad actual
+    const { rows: actuales } = await db.query(
+      `SELECT * FROM extraescolares WHERE id = $1`,
+      [id]
+    );
+
+    const actividadActual = actuales[0];
+
+    if (!actividadActual) {
+      return res.status(404).json({
+        ok: false,
+        error: "No encontrado",
+      });
+    }
+
+    // 2️⃣ Comprobar permisos
+    const esPropietario = actividadActual.uid === usuarioSesion.username;
+
+    const esDirectiva = usuarioSesion.perfil === "directiva";
+
+    if (!esPropietario && !esDirectiva) {
+      return res.status(403).json({
+        ok: false,
+        error: "No autorizado",
+      });
+    }
+
+    // 3️⃣ Extraer datos del body
+    const {
+      uid,
+      gidnumber,
+      cursos_gids,
+      tipo,
+      titulo,
+      descripcion,
+      fecha_inicio,
+      fecha_fin,
+      idperiodo_inicio,
+      idperiodo_fin,
+      responsables_uids = [],
+      estado,
+      ubicacion,
+      coords,
+    } = req.body;
+
+    // 4️⃣ Actualizar
+    const { rows } = await db.query(
+      `UPDATE extraescolares
+       SET 
+         uid = $1,
+         gidnumber = $2,
+         cursos_gids = $3,
+         tipo = $4,
+         titulo = $5,
+         descripcion = $6,
+         fecha_inicio = $7,
+         fecha_fin = $8,
+         idperiodo_inicio = $9,
+         idperiodo_fin = $10,
+         responsables_uids = $11,
+         estado = $12,
+         ubicacion = $13,
+         coords = $14
+       WHERE id = $15
+       RETURNING *`,
+      [
+        uid,
+        gidnumber,
+        cursos_gids,
+        tipo,
+        titulo,
+        descripcion,
+        fecha_inicio,
+        fecha_fin,
+        idperiodo_inicio,
+        idperiodo_fin,
+        responsables_uids,
+        estado,
+        ubicacion,
+        coords,
+        id,
+      ]
+    );
+
+    res.json({ ok: true, actividad: rows[0] });
+  } catch (err) {
+    console.error("[updateExtraescolar] Error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Error actualizando actividad",
+    });
   }
 }
 
