@@ -52,7 +52,6 @@ import {
 
 import DialogoEditarUsuario from "@/modules/Usuarios/components/DialogoEditarUsuario";
 
-
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
@@ -78,12 +77,26 @@ export default function Header() {
   useEffect(() => {
     if (!abrirPerfil || !user?.username) return;
 
+    console.log(
+      "[DEBUG] Abriendo perfil, cargando empleado para:",
+      user.username
+    );
+
     fetch(`${API_URL}/db/empleados/${user.username}`, {
       credentials: "include",
     })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setEmpleadoPerfil(data))
-      .catch(() => setEmpleadoPerfil(null));
+      .then((res) => {
+        console.log("[DEBUG] Respuesta fetch empleado:", res);
+        return res.ok ? res.json() : null;
+      })
+      .then((data) => {
+        console.log("[DEBUG] Datos de empleado recibidos:", data);
+        setEmpleadoPerfil(data);
+      })
+      .catch((err) => {
+        console.error("[DEBUG] Error al obtener empleado:", err);
+        setEmpleadoPerfil(null);
+      });
   }, [abrirPerfil, user]);
 
   useEffect(() => {
@@ -158,12 +171,22 @@ export default function Header() {
         open={abrirPerfil}
         onClose={() => setAbrirPerfil(false)}
         usuarioSeleccionado={
-          user
+          empleadoPerfil
             ? {
                 ...user,
                 uid: user.username,
+                dni: empleadoPerfil.dni,
+                asuntos_propios: empleadoPerfil.asuntos_propios,
+                tipo_empleado: empleadoPerfil.tipo_empleado,
+                jornada: empleadoPerfil.jornada,
+                email: empleadoPerfil.email,
+                telefono: empleadoPerfil.telefono,
+                cuerpo: empleadoPerfil.cuerpo,
+                grupo: empleadoPerfil.grupo,
               }
-            : null
+            : user
+              ? { ...user, uid: user.username }
+              : null
         }
         empleadoSeleccionado={empleadoPerfil}
         esAlumno={false}

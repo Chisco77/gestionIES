@@ -15,6 +15,8 @@
  *
  */
 
+import { DialogoEliminarReserva } from "./DialogoEliminarReserva";
+
 import {
   Dialog,
   DialogContent,
@@ -35,6 +37,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEstancias } from "@/hooks/Estancias/useEstancias";
 
 export function DialogoEditarReserva({
   open,
@@ -47,10 +50,14 @@ export function DialogoEditarReserva({
   const [inicio, setInicio] = useState("");
   const [fin, setFin] = useState("");
 
+  const [abrirEliminar, setAbrirEliminar] = useState(false);
+
   const { user } = useAuth();
   const API_URL = import.meta.env.VITE_API_URL;
 
   const queryClient = useQueryClient();
+
+  const { data: estancias = [] } = useEstancias();
 
   // Reset de estado al abrir
   useEffect(() => {
@@ -70,17 +77,20 @@ export function DialogoEditarReserva({
       if (parseInt(fin) < parseInt(inicio))
         throw new Error("El periodo final no puede ser anterior al inicial");
 
-      const res = await fetch(`${API_URL}/db/reservas-estancias/${reserva.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          idperiodo_inicio: parseInt(inicio),
-          idperiodo_fin: parseInt(fin),
-          descripcion,
-          uid: user.username,
-        }),
-      });
+      const res = await fetch(
+        `${API_URL}/db/reservas-estancias/${reserva.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            idperiodo_inicio: parseInt(inicio),
+            idperiodo_fin: parseInt(fin),
+            descripcion,
+            uid: user.username,
+          }),
+        }
+      );
 
       const data = await res.json();
 
@@ -114,7 +124,8 @@ export function DialogoEditarReserva({
       >
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
-            Editar Reserva ({new Date(reserva?.fecha).toLocaleDateString("es-ES")}) –{" "}
+            Editar Reserva (
+            {new Date(reserva?.fecha).toLocaleDateString("es-ES")}) –{" "}
             <span className="font-bold">{descripcionEstancia}</span>
           </DialogTitle>
         </DialogHeader>
@@ -122,7 +133,9 @@ export function DialogoEditarReserva({
         <div className="flex flex-col space-y-4 p-6">
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">Periodo Inicio</label>
+              <label className="block text-sm font-medium mb-1">
+                Periodo Inicio
+              </label>
               <Select value={inicio} onValueChange={setInicio}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar inicio" />
@@ -138,7 +151,9 @@ export function DialogoEditarReserva({
             </div>
 
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">Periodo Fin</label>
+              <label className="block text-sm font-medium mb-1">
+                Periodo Fin
+              </label>
               <Select value={fin} onValueChange={setFin}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar fin" />
@@ -155,7 +170,9 @@ export function DialogoEditarReserva({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Descripción</label>
+            <label className="block text-sm font-medium mb-1">
+              Descripción
+            </label>
             <Input
               placeholder="Descripción"
               value={descripcion}
@@ -164,7 +181,17 @@ export function DialogoEditarReserva({
           </div>
         </div>
 
-        <DialogFooter className="px-6 py-4 bg-gray-50">
+        <DialogFooter className="px-6 py-4 bg-gray-50 flex justify-between">
+          {/* Botón eliminar */}
+          <Button
+            variant="destructive"
+            className="bg-red-600 text-white hover:bg-red-700"
+            onClick={() => setAbrirEliminar(true)}
+          >
+            Eliminar
+          </Button>
+
+          {/* Botón guardar */}
           <Button
             variant="outline"
             onClick={handleGuardar}
@@ -174,6 +201,21 @@ export function DialogoEditarReserva({
           </Button>
         </DialogFooter>
       </DialogContent>
+      {reserva && (
+        <DialogoEliminarReserva
+          open={abrirEliminar}
+          onOpenChange={(estado) => {
+            setAbrirEliminar(estado);
+            // Si se cerró porque la reserva se eliminó, cerramos también el diálogo de edición
+            if (!estado) {
+              onClose();
+            }
+          }}
+          reserva={reserva}
+          estancias={estancias}
+          periodos={periodos}
+        />
+      )}
     </Dialog>
   );
 }

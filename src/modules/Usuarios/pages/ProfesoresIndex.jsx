@@ -76,7 +76,7 @@ export function ProfesoresIndex() {
 
     // Buscar empleado correspondiente por UID
     //const empleado = empleados.find((e) => e.uid === seleccionado.uid) || null;
-    setEmpleadoSeleccionado(empleado);
+    setEmpleadoSeleccionado(seleccionado);
 
     setAbrirEditar(true);
   };
