@@ -58,6 +58,8 @@ function DashboardSelector() {
       return <DashboardDirectiva />;
     case "profesor":
       return <DashboardProfesor />;
+    case "extraescolares":
+      return <DashboardProfesor />;      
     case "administrador":
       return <DashboardAdmin />;
     case "educadora":

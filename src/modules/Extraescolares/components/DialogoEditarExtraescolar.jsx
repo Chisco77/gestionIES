@@ -97,6 +97,7 @@ export function DialogoEditarExtraescolar({
 }) {
   const { user } = useAuth();
   const esDirectiva = user?.perfil === "directiva";
+  const esExtraescolares = user?.perfil === "extraescolares";
   const queryClient = useQueryClient();
 
   // --- State ---
@@ -119,13 +120,16 @@ export function DialogoEditarExtraescolar({
   // --- Permisos ---
   const esPropietario = user.username === actividad?.uid;
 
-  // Directiva puede editar siempre
+  // Directiva o responsable de extraescolares pueden editar siempre
   const editableCamposGenerales =
-    esDirectiva || (esPropietario && actividad?.estado === 0);
+    esDirectiva ||
+    esExtraescolares ||
+    (esPropietario && actividad?.estado === 0);
 
-  const editableCamposBasicos = esDirectiva || esPropietario;
+  const editableCamposBasicos =
+    esDirectiva || esExtraescolares || esPropietario;
 
-  const puedeGuardar = esDirectiva || esPropietario;
+  const puedeGuardar = esDirectiva || esExtraescolares || esPropietario;
 
   // --- Inicializar datos ---
   useEffect(() => {
