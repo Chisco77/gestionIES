@@ -27,7 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 const API_URL = import.meta.env.VITE_API_URL;
 // Login externo o interno
 
-export function useProfesoresLdap() {
+/*export function useProfesoresLdap() {
   return useQuery({
     queryKey: ["profesores-ldap"],
     queryFn: async () => {
@@ -38,6 +38,40 @@ export function useProfesoresLdap() {
         throw new Error("Error al obtener los profesores desde LDAP");
       }
       return res.json();
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutos
+  });
+}
+*/
+
+export function useProfesoresLdap() {
+  return useQuery({
+    queryKey: ["profesores-ldap"],
+    queryFn: async () => {
+      // 1️⃣ Traemos los profesores desde LDAP
+      const res = await fetch(`${API_URL}/ldap/usuarios?tipo=teachers`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Error al obtener los profesores desde LDAP");
+      const profesoresLDAP = await res.json();
+
+      // 2️⃣ Para cada profesor, traemos los datos de empleados
+      const profesoresEnriquecidos = await Promise.all(
+        profesoresLDAP.map(async (profesor) => {
+          try {
+            const resEmp = await fetch(`${API_URL}/db/empleados/${profesor.uid}`, {
+              credentials: "include",
+            });
+            if (!resEmp.ok) return profesor; // si no existe, devolvemos solo LDAP
+            const empleado = await resEmp.json();
+            return { ...profesor, ...empleado };
+          } catch {
+            return profesor; // en caso de error, devolvemos solo LDAP
+          }
+        })
+      );
+
+      return profesoresEnriquecidos;
     },
     staleTime: 1000 * 60 * 5, // 5 minutos
   });

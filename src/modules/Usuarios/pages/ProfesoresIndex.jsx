@@ -35,7 +35,7 @@ import { useState, useEffect } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
-import { useEmpleados } from "@/hooks/useEmpleados";
+//import { useEmpleados } from "@/hooks/useEmpleados";
 import { Loader, Plus, Pencil, Trash2, Users, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DialogoEditarUsuario from "../components/DialogoEditarUsuario";
@@ -60,7 +60,7 @@ export function ProfesoresIndex() {
     error: errorProfesores,
   } = useProfesoresLdap();
 
-  const { data: empleados = [], isLoading: loadingEmpleados } = useEmpleados();
+  //const { data: empleados = [], isLoading: loadingEmpleados } = useEmpleados();
 
   const handleInsertar = () => {
     alert("Inserción de profesor: No implementado");
@@ -75,7 +75,7 @@ export function ProfesoresIndex() {
     setProfesorSeleccionado(seleccionado);
 
     // Buscar empleado correspondiente por UID
-    const empleado = empleados.find((e) => e.uid === seleccionado.uid) || null;
+    //const empleado = empleados.find((e) => e.uid === seleccionado.uid) || null;
     setEmpleadoSeleccionado(empleado);
 
     setAbrirEditar(true);
@@ -89,7 +89,7 @@ export function ProfesoresIndex() {
     alert(`Eliminación de profesor ${profesor.uid}: No implementado`);
   };
 
-  const handleGenerarPdf = () => {
+  /*const handleGenerarPdf = () => {
     // Combinamos profesoresFiltrados con datos de empleados
     const listadoCombinado = profesoresFiltrados.map((profesor) => {
       const empleadoExtra = empleados.find((e) => e.uid === profesor.uid) || {};
@@ -102,10 +102,21 @@ export function ProfesoresIndex() {
     });
 
     generateListadoAPs(listadoCombinado);
+  };*/
+
+  const handleGenerarPdf = () => {
+    // Ahora los datos de empleado ya están en cada profesor
+    const listadoCombinado = profesoresFiltrados.map((profesor) => ({
+      ...profesor,
+      dni: profesor.dni || "",
+      asuntos_propios: profesor.asuntos_propios || 0,
+      tipo_empleado: profesor.tipo_empleado || "",
+    }));
+
+    generateListadoAPs(listadoCombinado);
   };
 
-  const isLoading = loadingProfesores || loadingEmpleados;
-
+  const isLoading = loadingProfesores;
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
       {isLoading ? (

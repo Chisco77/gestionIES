@@ -39,6 +39,8 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 export default function DialogoEditarUsuario({
   open,
   onClose,
@@ -68,13 +70,14 @@ export default function DialogoEditarUsuario({
   const [jornada, setJornada] = useState(0);
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [cuerpo, setCuerpo] = useState(""); // Nuevo select Cuerpo
 
   // ----------------------------------------
   // Permisos
   // ----------------------------------------
   const esPropietario = usuarioActivo?.username === usuarioSeleccionado?.uid;
   const puedeEditarAvanzados = ["admin", "directiva"].includes(
-    usuarioActivo?.perfil,
+    usuarioActivo?.perfil
   );
   const puedeEditarBasicos = esPropietario || puedeEditarAvanzados;
 
@@ -87,50 +90,29 @@ export default function DialogoEditarUsuario({
     setNombre(usuarioSeleccionado.givenName || "");
     setApellidos(usuarioSeleccionado.sn || "");
     setUid(usuarioSeleccionado.uid || "");
-    setGrupo(usuarioSeleccionado.gidNumber || "");
+
+    // Datos de empleados (enriquecidos)
+    setDni(usuarioSeleccionado.dni || "");
+    setAsuntosPropios(usuarioSeleccionado.asuntos_propios || 0);
+    setTipoEmpleado(usuarioSeleccionado.tipo_empleado || "");
+    setJornada(usuarioSeleccionado.jornada ?? 0);
+    setEmail(usuarioSeleccionado.email || "");
+    setTelefono(usuarioSeleccionado.telefono || "");
+    setCuerpo(usuarioSeleccionado.cuerpo || "");
+    setGrupo(usuarioSeleccionado.grupo || ""); // <-- A1 o A2
+
     setFotoUrl(null);
 
     // Foto del alumno
     if (esAlumno && usuarioSeleccionado.uid) {
       const extensiones = ["jpg", "jpeg", "png"];
-      let encontrada = false;
-
       for (const ext of extensiones) {
         const url = `/gestionIES/uploads/alumnos/${usuarioSeleccionado.uid}.${ext}`;
         setFotoUrl(url);
-        encontrada = true;
         break;
       }
-
-      if (!encontrada) setFotoUrl(null);
     }
   }, [usuarioSeleccionado, esAlumno]);
-
-  useEffect(() => {
-    if (!empleadoSeleccionado) return;
-
-    setDni(empleadoSeleccionado.dni || "");
-    setAsuntosPropios(empleadoSeleccionado.asuntos_propios || 0);
-    setTipoEmpleado(empleadoSeleccionado.tipo_empleado || "");
-    setJornada(empleadoSeleccionado.jornada ?? 0);
-    setEmail(empleadoSeleccionado.email || "");
-    setTelefono(empleadoSeleccionado.telefono || "");
-  }, [empleadoSeleccionado]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const groupType = esAlumno ? "school_class" : "school_department";
-
-    fetch(`${API_URL}/ldap/grupos?groupType=${groupType}`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) =>
-        setGruposDisponibles(data.sort((a, b) => a.cn.localeCompare(b.cn))),
-      )
-      .catch(() => toast.error("Error al obtener grupos"));
-  }, [open, esAlumno, API_URL]);
 
   // ----------------------------------------
   // Mutation para guardar empleado
@@ -146,7 +128,7 @@ export default function DialogoEditarUsuario({
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(datos),
-        },
+        }
       );
 
       const json = await res.json();
@@ -156,6 +138,7 @@ export default function DialogoEditarUsuario({
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["empleados"]);
+      queryClient.invalidateQueries(["profesores-ldap"]);
       toast.success("Usuario actualizado correctamente");
       onClose();
     },
@@ -170,15 +153,20 @@ export default function DialogoEditarUsuario({
 
     const datos = {};
 
+    // Campos básicos
     if (puedeEditarBasicos) {
       datos.dni = dni;
       datos.email = email;
       datos.telefono = telefono;
     }
+
+    // Campos avanzados
     if (puedeEditarAvanzados) {
       datos.asuntos_propios = asuntosPropios;
       datos.tipo_empleado = tipoEmpleado;
       datos.jornada = jornada;
+      datos.cuerpo = cuerpo;
+      datos.grupo = grupo;
     }
 
     mutation.mutate(datos);
@@ -210,124 +198,159 @@ export default function DialogoEditarUsuario({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 mt-4">
-          {/* LDAP */}
-          <div>
-            <label className="block text-sm font-medium">Nombre</label>
-            <Input value={nombre} disabled />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Apellidos</label>
-            <Input value={apellidos} disabled />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Grupo</label>
-            <Select value={grupo} onValueChange={setGrupo} disabled>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecciona un grupo" />
-              </SelectTrigger>
-              <SelectContent>
-                {gruposDisponibles.map((g) => (
-                  <SelectItem key={g.gidNumber} value={g.cn}>
-                    {g.cn}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium">UID</label>
-            <Input value={uid} disabled />
-          </div>
+        <Tabs defaultValue="personales" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="personales">Datos Personales</TabsTrigger>
+            <TabsTrigger value="profesionales">Datos Profesionales</TabsTrigger>
+          </TabsList>
 
-          {/* Empleados */}
-          {!esAlumno && empleadoSeleccionado && (
-            <>
-              <div>
-                <label className="block text-sm font-medium">DNI</label>
-                <Input
-                  value={dni}
-                  onChange={(e) => setDni(e.target.value)}
-                  disabled={!puedeEditarBasicos}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">Email</label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={!puedeEditarBasicos}
-                  placeholder="correo@centro.es"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">Teléfono</label>
-                <Input
-                  value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
-                  disabled={!puedeEditarBasicos}
-                  placeholder="600123456"
-                />
-              </div>
+          {/* ------------------ Datos Personales ------------------ */}
+          <TabsContent value="personales" className="space-y-4 mt-2">
+            <div>
+              <label className="block text-sm font-medium">Nombre</label>
+              <Input value={nombre} disabled />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Apellidos</label>
+              <Input value={apellidos} disabled />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">UID</label>
+              <Input value={uid} disabled />
+            </div>
+            {!esAlumno && empleadoSeleccionado && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium">DNI</label>
+                  <Input
+                    value={dni}
+                    onChange={(e) => setDni(e.target.value)}
+                    disabled={!puedeEditarBasicos}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Email</label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={!puedeEditarBasicos}
+                    placeholder="correo@centro.es"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Teléfono</label>
+                  <Input
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    disabled={!puedeEditarBasicos}
+                    placeholder="600123456"
+                  />
+                </div>
+              </>
+            )}
+          </TabsContent>
 
-              <div>
-                <label className="block text-sm font-medium">
-                  Máximo Asuntos Propios
-                </label>
-                <Input
-                  type="number"
-                  value={asuntosPropios}
-                  onChange={(e) => setAsuntosPropios(Number(e.target.value))}
-                  disabled={!puedeEditarAvanzados}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">
-                  Tipo Empleado
-                </label>
-                <Select
-                  value={tipoEmpleado}
-                  onValueChange={setTipoEmpleado}
-                  disabled={!puedeEditarAvanzados}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecciona tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[
-                      "funcionario de carrera",
-                      "funcionario interino",
-                      "funcionario en prácticas",
-                      "laboral indefinido",
-                      "laboral temporal",
-                    ].map((tipo) => (
-                      <SelectItem key={tipo} value={tipo}>
-                        {tipo}
+          {/* ------------------ Datos Profesionales ------------------ */}
+          <TabsContent value="profesionales" className="space-y-4 mt-2">
+            {!esAlumno && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium">Cuerpo</label>
+                  <Select
+                    value={cuerpo}
+                    onValueChange={setCuerpo}
+                    disabled={!puedeEditarAvanzados}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecciona cuerpo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Profesores de Secundaria">
+                        Profesores de Secundaria
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium">Jornada</label>
-                <Select
-                  value={String(jornada)}
-                  onValueChange={(val) => setJornada(Number(val))}
-                  disabled={!puedeEditarAvanzados}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecciona jornada" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">Completa</SelectItem>
-                    <SelectItem value="1">Partida</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </>
-          )}
-        </div>
+                      <SelectItem value="Maestros">Maestros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium">Grupo</label>
+                  <Select
+                    value={grupo}
+                    onValueChange={setGrupo}
+                    disabled={!puedeEditarAvanzados}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecciona un grupo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A1">A1</SelectItem>
+                      <SelectItem value="A2">A2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium">
+                    Tipo Empleado
+                  </label>
+                  <Select
+                    value={tipoEmpleado}
+                    onValueChange={setTipoEmpleado}
+                    disabled={!puedeEditarAvanzados}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecciona tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        "funcionario de carrera",
+                        "funcionario interino",
+                        "funcionario en prácticas",
+                        "laboral indefinido",
+                        "laboral temporal",
+                      ].map((tipo) => (
+                        <SelectItem key={tipo} value={tipo}>
+                          {tipo}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium">Jornada</label>
+                  <Select
+                    value={String(jornada)}
+                    onValueChange={(val) => setJornada(Number(val))}
+                    disabled={!puedeEditarAvanzados}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecciona jornada" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Completa</SelectItem>
+                      <SelectItem value="1">Partida</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium">
+                    Máximo Asuntos Propios
+                  </label>
+                  <Input
+                    type="number"
+                    value={asuntosPropios}
+                    onChange={(e) => setAsuntosPropios(Number(e.target.value))}
+                    disabled={!puedeEditarAvanzados}
+                  />
+                </div>
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
 
         <DialogFooter className="mt-6 flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
