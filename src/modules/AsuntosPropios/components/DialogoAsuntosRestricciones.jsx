@@ -592,7 +592,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                       />
                     </div>
                     <Button className="sm:mt-6" onClick={handleAddPermitido}>
-                      Añadir permiso
+                      Autorizar fecha
                     </Button>
                   </div>
                 </div>
