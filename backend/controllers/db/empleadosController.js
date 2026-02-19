@@ -12,8 +12,8 @@ exports.insertEmpleado = async ({
   jornada,
   email,
   telefono,
-  cuerpo, // <-- nueva columna
-  grupo, // <-- nueva columna
+  cuerpo, 
+  grupo, 
 }) => {
   const query = `
     INSERT INTO empleados

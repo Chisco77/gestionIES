@@ -14,7 +14,7 @@ const { obtenerGruposPorTipo } = require("../ldap/gruposController");
  * Obtener actividades extraescolares enriquecidas
  * ================================================================
  */
-async function getExtraescolaresEnriquecidos(req, res) {
+/*async function getExtraescolaresEnriquecidos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
 
@@ -152,6 +152,211 @@ async function getExtraescolaresEnriquecidos(req, res) {
     }
 
     res.json({ ok: true, extraescolares: enriquecidos });
+  } catch (err) {
+    console.error("[getExtraescolaresEnriquecidos] Error:", err);
+    res.status(500).json({ ok: false, error: "Error obteniendo actividades" });
+  }
+}*/
+
+/**
+ * Obtener actividades extraescolares enriquecidas
+ * ================================================================
+ */
+async function getExtraescolaresEnriquecidos(req, res) {
+  try {
+    const ldapSession = req.session?.ldap;
+
+    if (!ldapSession)
+      return res
+        .status(401)
+        .json({ ok: false, error: "No autenticado en LDAP" });
+
+    // ========================================
+    // Cache por request (usuarios LDAP)
+    // ========================================
+    const usuariosCache = {};
+
+    const getNombrePorUid = (uid) =>
+      new Promise((resolve) => {
+        if (!uid) return resolve("Usuario desconocido");
+
+        if (usuariosCache[uid]) {
+          return resolve(usuariosCache[uid]);
+        }
+
+        buscarPorUid(ldapSession, uid, (err, datos) => {
+          const nombre =
+            !err && datos
+              ? `${datos.sn || ""}, ${datos.givenName || ""}`.trim()
+              : "Profesor desconocido";
+
+          usuariosCache[uid] = nombre;
+          resolve(nombre);
+        });
+      });
+
+    // ========================================
+    // Cargar departamentos y cursos desde LDAP
+    // ========================================
+    const departamentos = await obtenerGruposPorTipo(
+      ldapSession,
+      "school_department"
+    );
+
+    const cursos = await obtenerGruposPorTipo(
+      ldapSession,
+      "school_class"
+    );
+
+    const departamentosMap = Object.fromEntries(
+      departamentos.map((d) => [String(d.gidNumber), d.cn])
+    );
+
+    const cursosMap = Object.fromEntries(
+      cursos.map((c) => [String(c.gidNumber), c.cn])
+    );
+
+    // ========================================
+    // Filtros
+    // ========================================
+    const { estado, tipo, uid } = req.query;
+
+    const filtros = [];
+    const vals = [];
+    let i = 0;
+
+    if (uid) {
+      filtros.push(`e.uid = $${++i}`);
+      vals.push(uid);
+    }
+
+    if (tipo) {
+      filtros.push(`e.tipo ILIKE $${++i}`);
+      vals.push(`%${tipo}%`);
+    }
+
+    if (typeof estado !== "undefined") {
+      filtros.push(`e.estado = $${++i}`);
+      vals.push(Number(estado));
+    }
+
+    const where = filtros.length ? "WHERE " + filtros.join(" AND ") : "";
+
+    // ========================================
+    // Consulta a BD (extraescolares)
+    // ========================================
+    const { rows } = await db.query(
+      `SELECT 
+        e.id, e.uid, e.gidnumber, e.cursos_gids, e.tipo,
+        e.titulo, e.descripcion,
+        e.fecha_inicio, e.fecha_fin,
+        e.idperiodo_inicio, e.idperiodo_fin,
+        e.estado, e.responsables_uids,
+        e.ubicacion, e.coords
+      FROM extraescolares e
+      ${where}
+      ORDER BY e.fecha_inicio ASC`,
+      vals
+    );
+
+    // ========================================
+    // Obtener todos los UIDs implicados
+    // ========================================
+    const uidsSet = new Set();
+
+    for (const item of rows) {
+      if (item.uid) uidsSet.add(item.uid);
+
+      if (Array.isArray(item.responsables_uids)) {
+        item.responsables_uids.forEach((u) => uidsSet.add(u));
+      }
+    }
+
+    const uids = Array.from(uidsSet);
+
+    // ========================================
+    // Cargar empleados desde BD
+    // ========================================
+    let empleadosMap = {};
+
+    if (uids.length > 0) {
+      const { rows: empleados } = await db.query(
+        `SELECT 
+          uid,
+          tipo_usuario,
+          dni,
+          asuntos_propios,
+          tipo_empleado,
+          jornada,
+          email,
+          telefono,
+          cuerpo,
+          grupo
+         FROM empleados
+         WHERE uid = ANY($1)`,
+        [uids]
+      );
+
+      empleadosMap = Object.fromEntries(
+        empleados.map((emp) => [emp.uid, emp])
+      );
+    }
+
+    // ========================================
+    // Enriquecimiento final
+    // ========================================
+    const enriquecidos = [];
+
+    for (const item of rows) {
+      // Departamento
+      const departamento = item.gidnumber
+        ? {
+            gidNumber: item.gidnumber,
+            nombre:
+              departamentosMap[String(item.gidnumber)] ||
+              "Departamento desconocido",
+          }
+        : null;
+
+      // Cursos
+      const cursosActividad = Array.isArray(item.cursos_gids)
+        ? item.cursos_gids.map((gid) => ({
+            gidNumber: gid,
+            nombre: cursosMap[String(gid)] || "Curso desconocido",
+          }))
+        : [];
+
+      // Profesor creador
+      const nombreProfesor = await getNombrePorUid(item.uid);
+      const empleadoCreador = empleadosMap[item.uid] || null;
+
+      // Responsables
+      const responsables = [];
+
+      if (Array.isArray(item.responsables_uids)) {
+        for (const uidResp of item.responsables_uids) {
+          const nombre = await getNombrePorUid(uidResp);
+
+          responsables.push({
+            uid: uidResp,
+            nombre,
+            empleado: empleadosMap[uidResp] || null,
+          });
+        }
+      }
+
+      enriquecidos.push({
+        ...item,
+        nombreProfesor,
+        empleado: empleadoCreador,
+        responsables,
+        departamento,
+        cursos: cursosActividad,
+      });
+    }
+
+    res.json({ ok: true, extraescolares: enriquecidos });
+
   } catch (err) {
     console.error("[getExtraescolaresEnriquecidos] Error:", err);
     res.status(500).json({ ok: false, error: "Error obteniendo actividades" });
