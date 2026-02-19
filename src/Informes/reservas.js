@@ -47,9 +47,9 @@
  * ------------------------------------------------------------
  */
 
-
 import jsPDF from "jspdf";
 import { drawHeader, drawFooter, addPageWithHeader } from "./utils";
+import { addMonths } from "date-fns";
 
 export const generateInformeReservasPeriodicas = (reservas, periodosDB) => {
   if (!reservas?.length) {
@@ -410,3 +410,202 @@ export const generateInformeReservasPeriodicasProfesor = (
   drawFooter(doc);
   doc.save("Informe_Reservas_Periodicas_Por_Profesor.pdf");
 };
+
+export function generateCalendarioOcupacionPorEstancia(
+  resultados = [],
+  periodosDB = [],
+  { tipoEstancia, desde, hasta }
+) {
+  const doc = new jsPDF({
+    unit: "mm",
+    format: "a4",
+    orientation: "landscape",
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // --- Mapeo idPeriodo → nombrePeriodo ---
+  const periodoMap = {};
+  periodosDB.forEach((p) => {
+    periodoMap[p.id] = p.nombre;
+  });
+
+  let current = new Date(desde);
+  const end = new Date(hasta);
+
+  while (current <= end) {
+    // --- Filtrar y ordenar estancias ---
+    const estanciasFiltradas = (
+      tipoEstancia
+        ? resultados.filter((r) => r.estancia.tipoestancia === tipoEstancia)
+        : resultados
+    ).sort((a, b) =>
+      a.estancia.descripcion.localeCompare(b.estancia.descripcion)
+    );
+
+    const year = current.getFullYear();
+    const month = current.getMonth();
+
+    for (const [index, res] of estanciasFiltradas.entries()) {
+      const estancia = res.estancia;
+
+      // 🔹 Filtrar reservas del mes
+      const reservasMes = (res.reservas || []).filter((r) => {
+        if (!r.fecha) return false;
+        const f = new Date(r.fecha);
+        return f.getFullYear() === year && f.getMonth() === month;
+      });
+
+      // 🔹 Agrupar reservas por día y ordenar por idperiodo_inicio
+      const reservasPorDia = {};
+      reservasMes.forEach((r) => {
+        const dia = new Date(r.fecha).getDate();
+        if (!reservasPorDia[dia]) reservasPorDia[dia] = [];
+
+        const nombreInicio =
+          periodoMap[r.idperiodo_inicio] || r.idperiodo_inicio;
+        const nombreFin = periodoMap[r.idperiodo_fin] || r.idperiodo_fin;
+
+        r.descripcionPeriodo =
+          r.idperiodo_inicio === r.idperiodo_fin
+            ? nombreInicio
+            : `${nombreInicio} - ${nombreFin}`;
+
+        reservasPorDia[dia].push(r);
+      });
+
+      // Ordenar reservas por periodo de inicio
+      Object.keys(reservasPorDia).forEach((dia) => {
+        reservasPorDia[dia].sort(
+          (a, b) => a.idperiodo_inicio - b.idperiodo_inicio
+        );
+      });
+
+      // 🔹 Encabezado con drawHeader
+      const mesTexto = new Date(year, month)
+        .toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+        .toUpperCase();
+      const yInicio = drawHeader(
+        doc,
+        `Calendario de ocupación - ${estancia.descripcion} ${mesTexto}`
+      );
+
+      // 🔹 Dibujar calendario
+      drawCalendarReservas(doc, year, month, reservasPorDia, 20, yInicio);
+
+      // 🔹 Footer
+      drawFooter(doc);
+
+      // 🔹 Nueva página si hay más estancias
+      if (index !== estanciasFiltradas.length - 1) {
+        doc.addPage("a4", "landscape");
+      }
+    }
+
+    // Pasamos al siguiente mes
+    current = addMonths(current, 1);
+    if (current <= end) doc.addPage("a4", "landscape");
+  }
+
+  doc.save(`Calendario_Ocupacion_${tipoEstancia || "Todas"}.pdf`);
+}
+
+// --- Modificación de drawCalendarReservas ---
+function drawCalendarReservas(doc, year, month, reservasPorDia, startX, startY) {
+  const totalWidth = doc.internal.pageSize.getWidth() - 30; // margen 15 mm cada lado
+  const diasSemana = ["L", "M", "X", "J", "V", "S", "D"];
+
+  // --- Definir anchos: sáb y dom = 0.5, resto repartido ---
+  const numDiasLaborables = 5;
+  const factorFinSemana = 0.5; // sáb y dom mitad
+  const anchoDiaLaborable = totalWidth / (numDiasLaborables + 2 * factorFinSemana);
+  const anchoFinSemana = anchoDiaLaborable * factorFinSemana;
+
+  const cellHeights = 22;
+  const cellWArr = [
+    anchoDiaLaborable, // L
+    anchoDiaLaborable, // M
+    anchoDiaLaborable, // X
+    anchoDiaLaborable, // J
+    anchoDiaLaborable, // V
+    anchoFinSemana,    // S
+    anchoFinSemana,    // D
+  ];
+
+  // --- Posición inicial centrada ---
+  const startXCentered = (doc.internal.pageSize.getWidth() - totalWidth) / 2;
+
+  // --- Cabecera días ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  let x = startXCentered;
+  diasSemana.forEach((d, i) => {
+    doc.text(d, x + cellWArr[i] / 2, startY, { align: "center" });
+    x += cellWArr[i];
+  });
+
+  const { firstWeekDay, daysInMonth } = getMonthInfo(year, month);
+
+  // --- Dibujar celdas ---
+  let day = 1;
+  let y = startY + 6;
+
+  for (let row = 0; row < 6; row++) {
+    x = startXCentered;
+    for (let col = 0; col < 7; col++) {
+      const cellIndex = row * 7 + col;
+      const cellW = cellWArr[col];
+
+      if (cellIndex >= firstWeekDay && day <= daysInMonth) {
+        doc.setDrawColor(200);
+        doc.roundedRect(x, y, cellW, cellHeights, 2, 2);
+
+        // Número día
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(String(day), x + 2, y + 4);
+
+        // 🔹 Reservas del día
+        const reservasDia = reservasPorDia[day] || [];
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+        let textY = y + 8;
+
+        reservasDia.forEach((r) => {
+          const linea = `${r.descripcionPeriodo} ${r.descripcion}`;
+          const lines = doc.splitTextToSize(linea, cellW - 4);
+
+          lines.forEach((l) => {
+            if (textY < y + cellHeights - 2) {
+              doc.text(l, x + 2, textY);
+              textY += 3.5;
+            }
+          });
+        });
+
+        day++;
+      } else {
+        doc.setDrawColor(230);
+        doc.roundedRect(x, y, cellW, cellHeights, 2, 2);
+      }
+
+      x += cellW;
+    }
+    y += cellHeights;
+  }
+}
+
+// --- Funciones auxiliares
+function drawHeaderReservas(doc, nombreEstancia) {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text(`Calendario de ocupación - ${nombreEstancia}`, 15, 12);
+}
+
+function getMonthInfo(year, month) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  let firstWeekDay = firstDay.getDay();
+  firstWeekDay = (firstWeekDay + 6) % 7; // lunes = 0
+  return { firstWeekDay, daysInMonth: lastDay.getDate() };
+}

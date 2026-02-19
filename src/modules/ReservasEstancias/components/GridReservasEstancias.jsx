@@ -17,7 +17,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Repeat2 } from "lucide-react";
-import { toast } from "sonner";
 
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
@@ -29,6 +28,18 @@ import { DialogoEditarReserva } from "../components/DialogoEditarReserva";
 import { DialogoPlanoEstancia } from "../components/DialogoPlanoEstancia";
 import { DialogoInsertarReservaPeriodica } from "./DialogoInsertarReservaPeriodica";
 import { DialogoEditarReservaPeriodica } from "./DialogoEditarReservaPeriodica";
+import { getCursoActual, ddmmyyyyToISO } from "@/utils/cursoAcademico";
+import { toast } from "sonner";
+
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+
+import { Printer, FileText, Grid } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { useAuth } from "@/context/AuthContext";
 
@@ -38,6 +49,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+import { generateCalendarioOcupacionPorEstancia } from "@/Informes/reservas";
 
 export function GridReservasEstancias({
   uid,
@@ -105,8 +118,6 @@ export function GridReservasEstancias({
     tipoEstancia
   );
 
-  console.log("Reservas: ", reservasDelDia);
-
   // Filtrar estancias según tipo seleccionado
   useEffect(() => {
     if (!reservasDelDia?.estancias) {
@@ -122,7 +133,6 @@ export function GridReservasEstancias({
   // Generar gridData
   useEffect(() => {
     if (!reservasDelDia) return;
-    console.log("Reservas del día: ", reservasDelDia);
     const newGridData = (
       reservasDelDia.periodos.length ? reservasDelDia.periodos : periodosDB
     ).map((p) => {
@@ -178,6 +188,73 @@ export function GridReservasEstancias({
     setAbrirDialogo(true);
   };
 
+  const handleGenerarCalendarioOcupacionPorEstancia = async () => {
+    try {
+      if (!tipoEstancia) {
+        toast.info("Selecciona un tipo de estancia.");
+        return;
+      }
+
+      if (!fechaSeleccionada) {
+        toast.error("No hay fecha seleccionada.");
+        return;
+      }
+
+      // --- Parseamos fechaSeleccionada ---
+      const [year, month, day] = fechaSeleccionada.split("-").map(Number);
+      const primerDiaMes = new Date(year, month - 1, 1);
+      const ultimoDiaMes = new Date(year, month, 0);
+
+      const fechaDesde = `${year}-${String(month).padStart(2, "0")}-01`;
+      const fechaHasta = `${year}-${String(month).padStart(2, "0")}-${ultimoDiaMes.getDate()}`;
+
+      // --- Filtrar estancias del tipo seleccionado ---
+      const estanciasDelGrid = estancias.filter(
+        (e) => e.tipoestancia === tipoEstancia && e.reservable === true
+      );
+
+      if (!estanciasDelGrid.length) {
+        toast.info("No hay estancias de ese tipo.");
+        return;
+      }
+
+      const API_URL = import.meta.env.VITE_API_URL;
+      const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
+
+      // --- Preparamos lista de IDs separados por coma ---
+      const idEstanciasParam = estanciasDelGrid.map((e) => e.id).join(",");
+
+      const res = await fetch(
+        `${API_BASE}/reservas-estancias?fechaDesde=${fechaDesde}&fechaHasta=${fechaHasta}&idestancia=${idEstanciasParam}`,
+        { credentials: "include" }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        toast.error("Error obteniendo reservas.");
+        return;
+      }
+
+      // --- Asociamos reservas a cada estancia ---
+      const resultados = estanciasDelGrid.map((estancia) => ({
+        estancia,
+        reservas: data.reservas.filter(
+          (r) => Number(r.idestancia) === estancia.id
+        ),
+      }));
+
+      generateCalendarioOcupacionPorEstancia(resultados, periodosDB, {
+        tipoEstancia,
+        desde: fechaDesde,
+        hasta: fechaHasta,
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error("Error generando el informe.");
+    }
+  };
+
   return (
     <Card className="shadow-lg rounded-2xl w-full">
       <CardHeader className="py-1 px-3 border-b">
@@ -190,19 +267,46 @@ export function GridReservasEstancias({
               year: "numeric",
             })}
           </h2>
-          <div className="max-w-sm mx-auto mt-1">
-            <label className="text-xs font-medium">Tipo de Estancia</label>
-            <select
-              value={tipoEstancia}
-              onChange={(e) => setTipoEstancia(e.target.value)}
-              className="border p-1 rounded w-full text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
-            >
-              <option value="">Seleccionar tipo de estancia</option>
-              <option value="Aula Polivalente">Aula Polivalente</option>
-              <option value="Infolab">Infolab</option>
-              <option value="Laboratorio">Laboratorio</option>
-              <option value="Optativa">Optativa</option>
-            </select>
+
+          <div className="flex items-end justify-between mt-2">
+            {/* Espacio vacío a la izquierda para equilibrar */}
+            <div className="w-8" />
+
+            {/* Select centrado */}
+            <div className="max-w-sm w-full">
+              <label className="text-xs font-medium">Tipo de Estancia</label>
+              <select
+                value={tipoEstancia}
+                onChange={(e) => setTipoEstancia(e.target.value)}
+                className="border p-1 rounded w-full text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <option value="">Seleccionar tipo de estancia</option>
+                <option value="Aula Polivalente">Aula Polivalente</option>
+                <option value="Infolab">Infolab</option>
+                <option value="Laboratorio">Laboratorio</option>
+                <option value="Optativa">Optativa</option>
+              </select>
+            </div>
+
+            {/* Menú impresora a la derecha */}
+            <div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Printer className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={handleGenerarCalendarioOcupacionPorEstancia}
+                  >
+                    <FileText className="mr-2 h-4 w-4 text-red-500" />
+                    Calendario Mensual de Reservas
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </CardTitle>
       </CardHeader>

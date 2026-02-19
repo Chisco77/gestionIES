@@ -17,7 +17,6 @@ const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error obteniendo reservas");
-      console.log ("Reservas periódicas:", data.reservas);
       return data.reservas ?? [];
     },
   });

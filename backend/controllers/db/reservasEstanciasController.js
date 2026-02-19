@@ -74,7 +74,7 @@ function formatearFecha(reservas) {
 }*/
 
 // Obtiene reservas filtradas por fecha y estancia
-async function getReservasEstancias(req, res) {
+/*async function getReservasEstancias(req, res) {
   const { fecha, idestancia, fechaDesde, fechaHasta } = req.query;
 
   const filtros = [];
@@ -94,6 +94,56 @@ async function getReservasEstancias(req, res) {
   if (idestancia) {
     filtros.push(`idestancia = $${++i}`);
     vals.push(Number(idestancia));
+  }
+
+  const where = filtros.length ? `WHERE ${filtros.join(" AND ")}` : "";
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid,
+              TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha,
+              descripcion, idrepeticion
+       FROM reservas_estancias
+       ${where}
+       ORDER BY fecha ASC, idperiodo_inicio ASC`,
+      vals
+    );
+
+    res.json({ ok: true, reservas: rows });
+  } catch (err) {
+    console.error("[getReservasEstancias] Error:", err);
+    res.status(500).json({ ok: false, error: "Error obteniendo reservas" });
+  }
+}*/
+
+async function getReservasEstancias(req, res) {
+  const { fecha, idestancia, fechaDesde, fechaHasta } = req.query;
+
+  const filtros = [];
+  const vals = [];
+  let i = 0;
+
+  if (fecha) {
+    filtros.push(`fecha = $${++i}`);
+    vals.push(fecha);
+  }
+
+  if (fechaDesde && fechaHasta) {
+    filtros.push(`fecha BETWEEN $${++i} AND $${++i}`);
+    vals.push(fechaDesde, fechaHasta);
+  }
+
+  if (idestancia) {
+    // Permitir múltiples id's separados por coma
+    const ids = idestancia.split(",").map((id) => Number(id.trim()));
+    if (ids.length === 1) {
+      filtros.push(`idestancia = $${++i}`);
+      vals.push(ids[0]);
+    } else if (ids.length > 1) {
+      const placeholders = ids.map(() => `$${++i}`).join(",");
+      filtros.push(`idestancia IN (${placeholders})`);
+      vals.push(...ids);
+    }
   }
 
   const where = filtros.length ? `WHERE ${filtros.join(" AND ")}` : "";

@@ -116,6 +116,8 @@ async function procesarProfesor(client, uid) {
             jornada: 0,
             email: "",
             telefono:"",
+            grupo:"",
+            cuerpo:"",
           });
           console.log(`   ✔ Insertado en empleados: ${uid}`);
         } catch (err) {
