@@ -247,12 +247,12 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
       hasta,
     });
   };
-
+  console.log("Extraescolares: ", extraescolaresTodas);
   // Tabla
   const table = useReactTable({
     data: extraescolaresTodas,
     columns: [
-      ...columnsExtraescolares(cursos),
+      ...columnsExtraescolares(cursos, periodos),
       {
         id: "acciones",
         header: "Acciones",

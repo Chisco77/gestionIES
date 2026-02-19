@@ -51,6 +51,7 @@ async function initServer() {
 
     // Middleware
     app.set("trust proxy", 1);
+
     app.use(
       cors({
         origin: (origin, callback) => {
@@ -60,6 +61,8 @@ async function initServer() {
         credentials: true,
       })
     );
+
+
     app.use(express.json());
 
     app.use(

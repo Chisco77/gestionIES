@@ -1,6 +1,5 @@
 // src/components/extraescolares/columns.jsx
-export const columnsExtraescolares = (cursos) => [
-
+export const columnsExtraescolares = (cursos, periodos) => [
   {
     accessorKey: "fecha_inicio",
     header: "Inicio",
@@ -34,6 +33,26 @@ export const columnsExtraescolares = (cursos) => [
     accessorKey: "fecha_fin",
     header: "Fin",
     cell: ({ row }) => new Date(row.original.fecha_fin).toLocaleDateString(),
+  },
+
+  {
+    id: "periodo",
+    header: "Periodo",
+    cell: ({ row }) => {
+      const idInicio = row.original.idperiodo_inicio;
+      const idFin = row.original.idperiodo_fin;
+
+      const periodoInicio = periodos.find(
+        (p) => String(p.id) === String(idInicio)
+      );
+
+      const periodoFin = periodos.find((p) => String(p.id) === String(idFin));
+
+      const nombreInicio = periodoInicio?.nombre ?? idInicio ?? "-";
+      const nombreFin = periodoFin?.nombre ?? idFin ?? "-";
+
+      return `${nombreInicio} - ${nombreFin}`;
+    },
   },
   {
     accessorKey: "nombreProfesor",
