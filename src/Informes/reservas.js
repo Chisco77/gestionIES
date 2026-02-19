@@ -511,29 +511,43 @@ export function generateCalendarioOcupacionPorEstancia(
 }
 
 // --- Modificación de drawCalendarReservas ---
-function drawCalendarReservas(doc, year, month, reservasPorDia, startX, startY) {
-  const totalWidth = doc.internal.pageSize.getWidth() - 30; // margen 15 mm cada lado
-  const diasSemana = ["L", "M", "X", "J", "V", "S", "D"];
+function drawCalendarReservas(
+  doc,
+  year,
+  month,
+  reservasPorDia,
+  startX,
+  startY
+) {
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const totalWidth = pageWidth - 30; // margen 15 mm cada lado
+  const topMargin = startY; // margen superior
+  const bottomMargin = 15; // margen inferior
+  const usableHeight = pageHeight - topMargin - bottomMargin - 10; // -10 extra por seguridad
 
-  // --- Definir anchos: sáb y dom = 0.5, resto repartido ---
+  const diasSemana = ["L", "M", "X", "J", "V", "S", "D"];
   const numDiasLaborables = 5;
   const factorFinSemana = 0.5; // sáb y dom mitad
-  const anchoDiaLaborable = totalWidth / (numDiasLaborables + 2 * factorFinSemana);
+  const anchoDiaLaborable =
+    totalWidth / (numDiasLaborables + 2 * factorFinSemana);
   const anchoFinSemana = anchoDiaLaborable * factorFinSemana;
-
-  const cellHeights = 22;
   const cellWArr = [
     anchoDiaLaborable, // L
     anchoDiaLaborable, // M
     anchoDiaLaborable, // X
     anchoDiaLaborable, // J
     anchoDiaLaborable, // V
-    anchoFinSemana,    // S
-    anchoFinSemana,    // D
+    anchoFinSemana, // S
+    anchoFinSemana, // D
   ];
 
+  const maxReservas = 7; // máximo filas de reservas visibles por día
+  const cellHeights = usableHeight / 6; // 6 filas de semanas máximo
+  const reservaHeight = (cellHeights - 6) / maxReservas; // altura por reserva, dejando margen
+
   // --- Posición inicial centrada ---
-  const startXCentered = (doc.internal.pageSize.getWidth() - totalWidth) / 2;
+  const startXCentered = (pageWidth - totalWidth) / 2;
 
   // --- Cabecera días ---
   doc.setFont("helvetica", "bold");
@@ -548,7 +562,7 @@ function drawCalendarReservas(doc, year, month, reservasPorDia, startX, startY) 
 
   // --- Dibujar celdas ---
   let day = 1;
-  let y = startY + 6;
+  let y = startY + 3; // 🔹 subimos todo el bloque 3mm sin cambiar cellHeights
 
   for (let row = 0; row < 6; row++) {
     x = startXCentered;
@@ -569,18 +583,18 @@ function drawCalendarReservas(doc, year, month, reservasPorDia, startX, startY) 
         const reservasDia = reservasPorDia[day] || [];
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7);
-        let textY = y + 8;
+        let textY = y + 7; // mantiene margen interno
 
-        reservasDia.forEach((r) => {
-          const linea = `${r.descripcionPeriodo} ${r.descripcion}`;
-          const lines = doc.splitTextToSize(linea, cellW - 4);
+        reservasDia.slice(0, maxReservas).forEach((r) => {
+          let linea = `${r.descripcionPeriodo} ${r.descripcion}`;
 
-          lines.forEach((l) => {
-            if (textY < y + cellHeights - 2) {
-              doc.text(l, x + 2, textY);
-              textY += 3.5;
-            }
-          });
+          // 🔹 Ajuste truncado a ~35 caracteres
+          const maxChars = 35;
+          if (linea.length > maxChars)
+            linea = linea.substring(0, maxChars - 2) + "..";
+
+          doc.text(linea, x + 2, textY);
+          textY += reservaHeight;
         });
 
         day++;

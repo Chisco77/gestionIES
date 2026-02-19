@@ -12,21 +12,16 @@ const generarDocumentoExcel = async (req, res) => {
     const actividad = req.body;
 
     const plantillaPath = path.join(__dirname, "../uploads/DIETAS.xlsx");
-    console.log("Ruta de plantilla Excel:", plantillaPath, "Existe:", fs.existsSync(plantillaPath));
-
     if (!fs.existsSync(plantillaPath)) {
       return res
         .status(500)
         .json({ error: "No se encontró la plantilla Excel" });
     }
 
-    // Crear carpeta tmp si no existe
     const tmpDir = path.join(__dirname, "../tmp");
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
     const zipPath = path.join(tmpDir, "Dietas.zip");
-
-    // Borrar ZIP previo si existía
     if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
 
     // Crear ZIP en streaming
@@ -39,8 +34,6 @@ const generarDocumentoExcel = async (req, res) => {
       await workbook.xlsx.readFile(plantillaPath);
 
       const hoja = workbook.getWorksheet("Anverso");
-      if (!hoja) throw new Error("La hoja 'Anverso' no existe en la plantilla");
-
       hoja.getCell("K3").value = profesor.nombre;
 
       const filePath = path.join(tmpDir, `${profesor.uid}_DIETAS.xlsx`);
@@ -51,15 +44,21 @@ const generarDocumentoExcel = async (req, res) => {
 
     await archive.finalize();
 
-    // Esperar a que el ZIP termine de escribirse antes de enviar
+    // Esperar a que el ZIP termine de escribirse
     output.on("close", () => {
-      res.download(zipPath, "Dietas.zip", (err) => {
-        if (err) console.error("Error enviando ZIP:", err);
+      // Enviar como blob con headers correctos
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", 'attachment; filename="Dietas.zip"');
+      const zipStream = fs.createReadStream(zipPath);
+      zipStream.pipe(res);
+      zipStream.on("error", (err) => {
+        console.error("Error enviando ZIP:", err);
+        res.status(500).end();
       });
     });
 
     output.on("error", (err) => {
-      console.error("Error escribiendo ZIP:", err);
+      console.error("Error creando ZIP:", err);
       res.status(500).json({ error: "Error creando ZIP" });
     });
   } catch (error) {
