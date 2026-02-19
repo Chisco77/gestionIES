@@ -6,7 +6,7 @@ const archiver = require("archiver");
 const generarDocumentoExcel = async (req, res) => {
   try {
     const actividad = req.body;
-    
+
     // 1. Verificación de datos recibidos
     if (!actividad || !actividad.responsables || !Array.isArray(actividad.responsables)) {
       console.error("❌ Datos de actividad inválidos:", actividad);

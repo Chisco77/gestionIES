@@ -98,6 +98,7 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
   const { data: extraescolaresTodas = [] } = useExtraescolaresAll();
 
   const handleGenerarExcel = async (actividad) => {
+    console.log ("Actividad: ", actividad);
     try {
       const res = await fetch(`${API_URL}/excel-dietas/generar-excel`, {
         method: "POST",
