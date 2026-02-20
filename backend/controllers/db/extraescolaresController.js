@@ -198,15 +198,10 @@ async function getExtraescolaresEnriquecidos(req, res) {
     // ========================================
     // Cargar departamentos y cursos desde LDAP
     // ========================================
-    const departamentos = await obtenerGruposPorTipo(
-      ldapSession,
-      "school_department"
-    );
-
-    const cursos = await obtenerGruposPorTipo(
-      ldapSession,
-      "school_class"
-    );
+    const [departamentos, cursos] = await Promise.all([
+      obtenerGruposPorTipo(ldapSession, "school_department"),
+      obtenerGruposPorTipo(ldapSession, "school_class"),
+    ]);
 
     const departamentosMap = Object.fromEntries(
       departamentos.map((d) => [String(d.gidNumber), d.cn])
@@ -243,7 +238,7 @@ async function getExtraescolaresEnriquecidos(req, res) {
     const where = filtros.length ? "WHERE " + filtros.join(" AND ") : "";
 
     // ========================================
-    // Consulta a BD (extraescolares)
+    // Consulta BD con JOIN a periodos
     // ========================================
     const { rows } = await db.query(
       `SELECT 
@@ -252,63 +247,48 @@ async function getExtraescolaresEnriquecidos(req, res) {
         e.fecha_inicio, e.fecha_fin,
         e.idperiodo_inicio, e.idperiodo_fin,
         e.estado, e.responsables_uids,
-        e.ubicacion, e.coords
+        e.ubicacion, e.coords,
+
+        p_ini.nombre AS periodo_inicio_nombre,
+        p_fin.nombre AS periodo_fin_nombre
+
       FROM extraescolares e
+
+      LEFT JOIN periodos_horarios p_ini
+        ON e.idperiodo_inicio = p_ini.id
+
+      LEFT JOIN periodos_horarios p_fin
+        ON e.idperiodo_fin = p_fin.id
+
       ${where}
       ORDER BY e.fecha_inicio ASC`,
       vals
     );
 
     // ========================================
-    // Obtener todos los UIDs implicados
+    // 1️⃣ Obtener TODOS los UID únicos primero
     // ========================================
-    const uidsSet = new Set();
+    const uidsUnicos = new Set();
 
     for (const item of rows) {
-      if (item.uid) uidsSet.add(item.uid);
+      if (item.uid) uidsUnicos.add(item.uid);
 
       if (Array.isArray(item.responsables_uids)) {
-        item.responsables_uids.forEach((u) => uidsSet.add(u));
+        item.responsables_uids.forEach((u) => u && uidsUnicos.add(u));
       }
     }
 
-    const uids = Array.from(uidsSet);
+    // ========================================
+    // 2️⃣ Resolver TODOS los nombres en paralelo
+    // ========================================
+    await Promise.all(
+      Array.from(uidsUnicos).map((uid) => getNombrePorUid(uid))
+    );
 
     // ========================================
-    // Cargar empleados desde BD
+    // 3️⃣ Enriquecimiento final (ya sin esperas LDAP)
     // ========================================
-    let empleadosMap = {};
-
-    if (uids.length > 0) {
-      const { rows: empleados } = await db.query(
-        `SELECT 
-          uid,
-          tipo_usuario,
-          dni,
-          asuntos_propios,
-          tipo_empleado,
-          jornada,
-          email,
-          telefono,
-          cuerpo,
-          grupo
-         FROM empleados
-         WHERE uid = ANY($1)`,
-        [uids]
-      );
-
-      empleadosMap = Object.fromEntries(
-        empleados.map((emp) => [emp.uid, emp])
-      );
-    }
-
-    // ========================================
-    // Enriquecimiento final
-    // ========================================
-    const enriquecidos = [];
-
-    for (const item of rows) {
-      // Departamento
+    const enriquecidos = rows.map((item) => {
       const departamento = item.gidnumber
         ? {
             gidNumber: item.gidnumber,
@@ -318,7 +298,6 @@ async function getExtraescolaresEnriquecidos(req, res) {
           }
         : null;
 
-      // Cursos
       const cursosActividad = Array.isArray(item.cursos_gids)
         ? item.cursos_gids.map((gid) => ({
             gidNumber: gid,
@@ -326,37 +305,39 @@ async function getExtraescolaresEnriquecidos(req, res) {
           }))
         : [];
 
-      // Profesor creador
-      const nombreProfesor = await getNombrePorUid(item.uid);
-      const empleadoCreador = empleadosMap[item.uid] || null;
-
-      // Responsables
-      const responsables = [];
-
-      if (Array.isArray(item.responsables_uids)) {
-        for (const uidResp of item.responsables_uids) {
-          const nombre = await getNombrePorUid(uidResp);
-
-          responsables.push({
+      const responsables = Array.isArray(item.responsables_uids)
+        ? item.responsables_uids.map((uidResp) => ({
             uid: uidResp,
-            nombre,
-            empleado: empleadosMap[uidResp] || null,
-          });
-        }
-      }
+            nombre: usuariosCache[uidResp] || "Profesor desconocido",
+          }))
+        : [];
 
-      enriquecidos.push({
+      return {
         ...item,
-        nombreProfesor,
-        empleado: empleadoCreador,
+
+        nombreProfesor: usuariosCache[item.uid] || "Profesor desconocido",
+
         responsables,
         departamento,
         cursos: cursosActividad,
-      });
-    }
+
+        periodo_inicio: item.idperiodo_inicio
+          ? {
+              id: item.idperiodo_inicio,
+              nombre: item.periodo_inicio_nombre || "Periodo desconocido",
+            }
+          : null,
+
+        periodo_fin: item.idperiodo_fin
+          ? {
+              id: item.idperiodo_fin,
+              nombre: item.periodo_fin_nombre || "Periodo desconocido",
+            }
+          : null,
+      };
+    });
 
     res.json({ ok: true, extraescolares: enriquecidos });
-
   } catch (err) {
     console.error("[getExtraescolaresEnriquecidos] Error:", err);
     res.status(500).json({ ok: false, error: "Error obteniendo actividades" });
@@ -724,7 +705,7 @@ async function updateExtraescolar(req, res) {
     const esDirectiva = usuarioSesion.perfil === "directiva";
     const esExtraescolares = usuarioSesion.perfil === "extraescolares";
 
-    if (!esPropietario && !esDirectiva &&!esExtraescolares) {
+    if (!esPropietario && !esDirectiva && !esExtraescolares) {
       return res.status(403).json({
         ok: false,
         error: "No autorizado",

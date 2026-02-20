@@ -97,6 +97,8 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
   const { data: periodos = [] } = usePeriodosHorarios();
   const { data: extraescolaresTodas = [] } = useExtraescolaresAll();
 
+  console.log ("Extraescolare: ", extraescolaresTodas);
+
   const handleGenerarExcel = async (actividad) => {
     console.log ("Actividad: ", actividad);
     try {

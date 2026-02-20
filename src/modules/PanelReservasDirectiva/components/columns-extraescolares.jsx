@@ -56,9 +56,29 @@ export const columnsExtraescolares = (cursos, periodos) => [
   },
   {
     accessorKey: "nombreProfesor",
-    header: "Profesor",
+    header: "Última Modificación",
     filterFn: (row, col, value) =>
       !value || row.getValue(col).toLowerCase().includes(value.toLowerCase()),
+  },
+  {
+    id: "responsables",
+    header: "Responsables",
+    cell: ({ row }) => {
+      const responsables = row.original.responsables;
+
+      if (!Array.isArray(responsables) || !responsables.length) return "-";
+
+      return responsables.map((r) => r.nombre).join(", ");
+    },
+    filterFn: (row, columnId, value) => {
+      if (!value) return true;
+
+      const responsables = row.original.responsables || [];
+
+      const texto = responsables.map((r) => r.nombre.toLowerCase()).join(" ");
+
+      return texto.includes(value.toLowerCase());
+    },
   },
   {
     accessorKey: "titulo",
@@ -90,6 +110,7 @@ export const columnsExtraescolares = (cursos, periodos) => [
       return nombres;
     },
   },
+
   {
     accessorKey: "estado",
     header: "Estado",

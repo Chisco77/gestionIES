@@ -1,5 +1,5 @@
 // src/components/extraescolares/columns.jsx
-export const columnsExtraescolares = (cursos) => [
+export const columnsExtraescolares = (cursos, periodos) => [
   // <-- recibe cursosMap
 
   /*{
@@ -58,10 +58,49 @@ export const columnsExtraescolares = (cursos) => [
     cell: ({ row }) => new Date(row.original.fecha_fin).toLocaleDateString(),
   },
   {
+    id: "periodo",
+    header: "Periodo",
+    cell: ({ row }) => {
+      const idInicio = row.original.idperiodo_inicio;
+      const idFin = row.original.idperiodo_fin;
+
+      const periodoInicio = periodos.find(
+        (p) => String(p.id) === String(idInicio)
+      );
+
+      const periodoFin = periodos.find((p) => String(p.id) === String(idFin));
+
+      const nombreInicio = periodoInicio?.nombre ?? idInicio ?? "-";
+      const nombreFin = periodoFin?.nombre ?? idFin ?? "-";
+
+      return `${nombreInicio} - ${nombreFin}`;
+    },
+  },
+  {
     accessorKey: "nombreProfesor",
-    header: "Profesor",
+    header: "Última modificación",
     filterFn: (row, col, value) =>
       !value || row.getValue(col).toLowerCase().includes(value.toLowerCase()),
+  },
+  {
+    id: "responsables",
+    header: "Responsables",
+    cell: ({ row }) => {
+      const responsables = row.original.responsables;
+
+      if (!Array.isArray(responsables) || !responsables.length) return "-";
+
+      return responsables.map((r) => r.nombre).join(", ");
+    },
+    filterFn: (row, columnId, value) => {
+      if (!value) return true;
+
+      const responsables = row.original.responsables || [];
+
+      const texto = responsables.map((r) => r.nombre.toLowerCase()).join(" ");
+
+      return texto.includes(value.toLowerCase());
+    },
   },
   {
     accessorKey: "titulo",
@@ -93,6 +132,7 @@ export const columnsExtraescolares = (cursos) => [
       return nombres;
     },
   },
+
   {
     accessorKey: "estado",
     header: "Estado",

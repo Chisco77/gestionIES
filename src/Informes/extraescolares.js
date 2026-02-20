@@ -8,8 +8,8 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
- * 
+ *
+ *
  * Funciones para generar listados e informes de actividades extraescolares.
  * Permite exportar tanto en formato PDF como ODS, agrupando por departamento, fecha o profesor,
  * e incluyendo calendarios mensuales con días destacados de actividades.
@@ -636,7 +636,7 @@ export function generateListadoExtraescolaresPorProfesor(
 
   const resetContentStyle = () => {
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
   };
 
@@ -644,34 +644,38 @@ export function generateListadoExtraescolaresPorProfesor(
   y = drawHeader(doc, "Agenda de Actividades Extraescolares por Profesor");
   resetContentStyle();
 
-  // --- Información de filtros aplicada ---
   const infoFiltros = getInfoFiltros({
     fechaDesde: rangoFechas.desde,
     fechaHasta: rangoFechas.hasta,
   });
 
   if (infoFiltros) {
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
     doc.text(infoFiltros.split("\n"), 15, y);
     y += 8;
   }
-  // Ahora total profesores
-  doc.text(`Total profesores: ${profesores.length}`, marginLeft, y);
 
+  doc.text(`Total profesores: ${profesores.length}`, marginLeft, y);
   y += 10;
 
-  // --- Columnas ajustadas ---
+  // --- Columnas ---
   const colFechaX = marginLeft;
-  const colTituloX = marginLeft + 28;
-  const colCursosX = colTituloX + 85; // antes 80 + 5 mm
-  const colEstadoX = colCursosX + 50; // antes 55, ahora a la izquierda
+  const colFechaWidth = 28;
 
-  const colTituloWidth = 85; // antes 80
-  const colCursosWidth = 50; // antes 55
+  const gap = 3; // margen entre columnas
+
+  const colPeriodoX = colFechaX + colFechaWidth + gap;
+  const colPeriodoWidth = 28;
+
+  const colTituloX = colPeriodoX + colPeriodoWidth + gap;
+  const colTituloWidth = 58;
+
+  const colCursosX = colTituloX + colTituloWidth + gap;
+  const colCursosWidth = 38;
+
+  const colEstadoX = colCursosX + colCursosWidth + gap;
+
   const lineHeight = 5;
 
-  // --- Contenido ---
   profesores.forEach((profesor) => {
     const lista = actividadesPorProfesor[profesor];
 
@@ -695,9 +699,9 @@ export function generateListadoExtraescolaresPorProfesor(
 
     // --- Encabezado tabla ---
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
     doc.text("Fecha", colFechaX, y);
+    doc.text("Periodo", colPeriodoX, y);
     doc.text("Actividad", colTituloX, y);
     doc.text("Cursos", colCursosX, y);
     doc.text("Estado", colEstadoX, y);
@@ -710,9 +714,42 @@ export function generateListadoExtraescolaresPorProfesor(
     resetContentStyle();
 
     lista.forEach((act) => {
-      const fechaTxt = new Date(act.fecha_inicio).toLocaleDateString("es-ES");
+      // ===== FECHA =====
+      const fechaInicio = new Date(act.fecha_inicio);
+      const fechaFin = new Date(act.fecha_fin);
+
+      let fechaStr;
+      const mismaFecha = fechaInicio.toDateString() === fechaFin.toDateString();
+
+      if (mismaFecha) {
+        fechaStr = fechaInicio.toLocaleDateString("es-ES");
+      } else {
+        fechaStr =
+          fechaInicio.toLocaleDateString("es-ES") +
+          " a " +
+          fechaFin.toLocaleDateString("es-ES");
+      }
+
+      const fechaLines = doc.splitTextToSize(fechaStr, colFechaWidth);
+
+      // ===== PERIODO =====
+      let periodoStr = "----";
+
+      if (act.periodo_inicio && act.periodo_fin) {
+        if (act.periodo_inicio.nombre === act.periodo_fin.nombre) {
+          periodoStr = act.periodo_inicio.nombre;
+        } else {
+          periodoStr =
+            act.periodo_inicio.nombre + " a " + act.periodo_fin.nombre;
+        }
+      }
+
+      const periodoLines = doc.splitTextToSize(periodoStr, colPeriodoWidth);
+
+      // ===== ACTIVIDAD =====
       const tituloLines = doc.splitTextToSize(act.titulo || "", colTituloWidth);
 
+      // ===== CURSOS =====
       const cursosTxt =
         Array.isArray(act.cursos) && act.cursos.length
           ? act.cursos.map((c) => c.nombre).join(", ")
@@ -721,7 +758,14 @@ export function generateListadoExtraescolaresPorProfesor(
 
       const estadoTxt = estadosMap[act.estado] ?? "—";
 
-      const rowLines = Math.max(tituloLines.length, cursosLines.length, 1);
+      const rowLines = Math.max(
+        fechaLines.length,
+        periodoLines.length,
+        tituloLines.length,
+        cursosLines.length,
+        1
+      );
+
       const rowHeight = rowLines * lineHeight;
 
       if (y + rowHeight > pageHeight - marginBottom - 10) {
@@ -732,8 +776,9 @@ export function generateListadoExtraescolaresPorProfesor(
         resetContentStyle();
 
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.text("Fecha", colFechaX, y);
+        doc.text("Periodo", colPeriodoX, y);
         doc.text("Actividad", colTituloX, y);
         doc.text("Cursos", colCursosX, y);
         doc.text("Estado", colEstadoX, y);
@@ -746,8 +791,8 @@ export function generateListadoExtraescolaresPorProfesor(
         resetContentStyle();
       }
 
-      doc.setTextColor(0, 0, 0);
-      doc.text(fechaTxt, colFechaX, y);
+      doc.text(fechaLines, colFechaX, y);
+      doc.text(periodoLines, colPeriodoX, y);
       doc.text(tituloLines, colTituloX, y);
       doc.text(cursosLines, colCursosX, y);
       doc.text(estadoTxt, colEstadoX, y);
@@ -759,7 +804,6 @@ export function generateListadoExtraescolaresPorProfesor(
   });
 
   drawFooter(doc);
-
   doc.save("Agenda_Extraescolares_por_Profesor.pdf");
 }
 
@@ -870,7 +914,6 @@ export function generateListadoExtraescolaresMensual(
   let firstPage = true;
   let y = 0;
 
-  // --- Estados ---
   const estadosMap = {
     0: "Pendiente",
     1: "Aceptada",
@@ -902,7 +945,7 @@ export function generateListadoExtraescolaresMensual(
       y = drawHeader(doc, "Agenda mensual de actividades extraescolares");
       firstPage = false;
       y = y - 5;
-      // --- Información de filtros aplicada ---
+
       const infoFiltros = getInfoFiltros({
         fechaDesde: rangoFechas.desde,
         fechaHasta: rangoFechas.hasta,
@@ -919,7 +962,6 @@ export function generateListadoExtraescolaresMensual(
     const [year, month] = mesKey.split("-").map(Number);
     const monthIndex = month - 1;
 
-    // ===== TÍTULO DEL MES =====
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
@@ -934,7 +976,6 @@ export function generateListadoExtraescolaresMensual(
 
     y += 8;
 
-    // ===== CALENDARIO =====
     y = drawCalendar(doc, year, monthIndex, actividadesMes, marginLeft, y);
     y += 8;
 
@@ -944,19 +985,25 @@ export function generateListadoExtraescolaresMensual(
 
     // --- Columnas ---
     const colFechaX = marginLeft;
-    const colFechaWidth = 25;
-    const colTituloX = colFechaX + colFechaWidth;
-    const colTituloWidth = 60;
+    const colFechaWidth = 28;
+
+    const colPeriodoX = colFechaX + colFechaWidth;
+    const colPeriodoWidth = 28;
+
+    const colTituloX = colPeriodoX + colPeriodoWidth;
+    const colTituloWidth = 50;
+
     const colProfesorX = colTituloX + colTituloWidth;
-    const colProfesorWidth = 45;
+    const colProfesorWidth = 40;
+
     const colCursosX = colProfesorX + colProfesorWidth;
-    const colCursosWidth = 35;
+    const colCursosWidth = 30;
+
     const colEstadoX = colCursosX + colCursosWidth;
-    const colEstadoWidth = 25;
+    const colEstadoWidth = 19;
 
     const lineHeight = 5;
 
-    // --- Título del bloque ---
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
@@ -969,15 +1016,17 @@ export function generateListadoExtraescolaresMensual(
 
     const drawTableHeader = () => {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setTextColor(0, 0, 0);
+
       doc.text("Fecha", colFechaX, y);
+      doc.text("Periodo", colPeriodoX, y);
       doc.text("Actividad", colTituloX, y);
       doc.text("Profesor", colProfesorX, y);
       doc.text("Cursos", colCursosX, y);
       doc.text("Estado", colEstadoX, y);
-      y += 4;
 
+      y += 4;
       doc.setLineWidth(0.2);
       doc.line(marginLeft, y, pageWidth - marginLeft, y);
       y += 4;
@@ -988,29 +1037,66 @@ export function generateListadoExtraescolaresMensual(
     drawTableHeader();
 
     ordenadas.forEach((act) => {
-      const fechaStr = new Date(act.fecha_inicio).toLocaleDateString("es-ES");
+      // ===== FECHA =====
+      const fechaInicio = new Date(act.fecha_inicio);
+      const fechaFin = new Date(act.fecha_fin);
 
+      let fechaStr;
+
+      const mismaFecha = fechaInicio.toDateString() === fechaFin.toDateString();
+
+      if (mismaFecha) {
+        fechaStr = fechaInicio.toLocaleDateString("es-ES");
+      } else {
+        fechaStr =
+          fechaInicio.toLocaleDateString("es-ES") +
+          " a " +
+          fechaFin.toLocaleDateString("es-ES");
+      }
+
+      const fechaLines = doc.splitTextToSize(fechaStr, colFechaWidth);
+
+      // ===== PERIODO =====
+      let periodoStr = "----";
+
+      if (act.periodo_inicio && act.periodo_fin) {
+        if (act.periodo_inicio.nombre === act.periodo_fin.nombre) {
+          periodoStr = act.periodo_inicio.nombre;
+        } else {
+          periodoStr =
+            act.periodo_inicio.nombre + " a " + act.periodo_fin.nombre;
+        }
+      }
+
+      const periodoLines = doc.splitTextToSize(periodoStr, colPeriodoWidth);
+
+      // ===== ACTIVIDAD =====
       const actividadStr = `${act.titulo || ""}${
         act.descripcion ? " - " + act.descripcion : ""
       }`;
       const tituloLines = doc.splitTextToSize(actividadStr, colTituloWidth);
 
+      // ===== PROFESOR =====
       let profesorStr = act.nombreProfesor || "";
       const maxCharsProfesor = Math.floor(colProfesorWidth / 1.8);
       if (profesorStr.length > maxCharsProfesor) {
         profesorStr = profesorStr.substring(0, maxCharsProfesor - 3) + "...";
       }
 
+      // ===== CURSOS =====
       const cursosTxt =
         Array.isArray(act.cursos) && act.cursos.length
           ? act.cursos.map((c) => c.nombre).join(", ")
           : "-";
       const cursosLines = doc.splitTextToSize(cursosTxt, colCursosWidth);
 
+      // ===== ESTADO =====
       const estadoTxt = estadosMap[act.estado] ?? "—";
       const estadoLines = doc.splitTextToSize(estadoTxt, colEstadoWidth);
 
       const rowLines = Math.max(
+        fechaLines.length,
+        periodoLines.length,
         tituloLines.length,
         cursosLines.length,
         estadoLines.length,
@@ -1030,7 +1116,8 @@ export function generateListadoExtraescolaresMensual(
       const color = estadoColorMap[act.estado] || [0, 0, 0];
       doc.setTextColor(...color);
 
-      doc.text(fechaStr, colFechaX, y);
+      doc.text(fechaLines, colFechaX, y);
+      doc.text(periodoLines, colPeriodoX, y);
       doc.text(tituloLines, colTituloX, y);
       doc.text(profesorStr, colProfesorX, y);
       doc.text(cursosLines, colCursosX, y);
@@ -1040,8 +1127,6 @@ export function generateListadoExtraescolaresMensual(
     });
   });
 
-  // --- Footer global ---
   drawFooter(doc);
-
   doc.save("Informe_Extraescolares_Mensual.pdf");
 }

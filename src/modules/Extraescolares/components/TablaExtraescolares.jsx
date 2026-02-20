@@ -231,6 +231,7 @@ export function TablaExtraescolares({ user, fecha }) {
 
     let desde = fechaDesde;
     let hasta = fechaHasta;
+    console.log ("Filas: ", filasFiltradas);
 
     // Si el filtro de fechas está vacío, usamos el curso actual
     if (!desde || !hasta) {
@@ -256,7 +257,7 @@ export function TablaExtraescolares({ user, fecha }) {
   const table = useReactTable({
     data: extraescolaresAceptadas,
     columns: [
-      ...columnsExtraescolares(cursos),
+      ...columnsExtraescolares(cursos, periodos),
       {
         id: "acciones",
         header: "Acciones",
