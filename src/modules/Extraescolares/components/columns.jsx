@@ -73,6 +73,11 @@ export const columnsExtraescolares = (cursos, periodos) => [
       const nombreInicio = periodoInicio?.nombre ?? idInicio ?? "-";
       const nombreFin = periodoFin?.nombre ?? idFin ?? "-";
 
+      // Si los IDs son iguales, solo mostramos el nombre del inicio
+      if (String(idInicio) === String(idFin)) {
+        return nombreInicio;
+      }
+
       return `${nombreInicio} - ${nombreFin}`;
     },
   },
