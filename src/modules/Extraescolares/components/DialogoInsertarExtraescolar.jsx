@@ -28,6 +28,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { es } from "date-fns/locale";
 
 import { TimePicker } from "@/components/ui/TimePicker";
 
@@ -224,7 +225,7 @@ export function DialogoInsertarExtraescolar({
       idperiodo_inicio:
         tipo === "complementaria" ? Number(periodoInicio) : undefined,
       idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : undefined,
-      cursos_gids: cursosSeleccionados,
+      cursos_gids: cursosSeleccionados.length > 0 ? cursosSeleccionados : [], // array vacío si no hay selección
       responsables_uids: profesoresSeleccionados,
       ubicacion,
       coords,
@@ -343,6 +344,7 @@ export function DialogoInsertarExtraescolar({
                         mode="single"
                         selected={fechaInicio}
                         onSelect={setFechaInicio}
+                        locale={es}
                       />
                     </PopoverContent>
                   </Popover>
@@ -373,6 +375,7 @@ export function DialogoInsertarExtraescolar({
                         mode="single"
                         selected={fechaFin}
                         onSelect={setFechaFin}
+                        locale={es}
                       />
                     </PopoverContent>
                   </Popover>
@@ -447,17 +450,26 @@ export function DialogoInsertarExtraescolar({
                 )}
               </div>
 
+              {/* ====== CURSOS PARTICIPANTES ====== */}
               <div className="space-y-2">
                 <Label>Cursos participantes</Label>
 
-                <div className="flex items-center gap-2">
+                {/* Checkbox "Todos los cursos" */}
+                <div className="flex items-center gap-2 mb-2">
                   <Checkbox
                     checked={todosLosCursosSeleccionados}
-                    onCheckedChange={handleToggleTodosCursos}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setCursosSeleccionados(cursos.map((c) => c.gid));
+                      } else {
+                        setCursosSeleccionados([]);
+                      }
+                    }}
                   />
                   <span className="text-sm">Todos los cursos</span>
                 </div>
 
+                {/* MultiSelect */}
                 <MultiSelect
                   values={cursosSeleccionados}
                   onChange={(values) => {
@@ -475,6 +487,11 @@ export function DialogoInsertarExtraescolar({
                     label: c.nombre,
                   }))}
                   className={errores.cursos_gids && "border-red-500"}
+                  placeholder={
+                    cursosSeleccionados.length === 0
+                      ? "No hay cursos seleccionados"
+                      : ""
+                  }
                 />
 
                 {errores.cursos_gids && (

@@ -98,40 +98,6 @@ export function TablaExtraescolares({ user, fecha }) {
   const { data: periodos = [] } = usePeriodosHorarios();
   const { data: extraescolaresTodas = [] } = useExtraescolaresAll();
 
-  const handleGenerarExcel = async (actividad) => {
-    try {
-      const res = await fetch(`${API_URL}/excel-dietas/generar-excel`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(actividad),
-      });
-
-      if (!res.ok) {
-        toast.error("Error generando el documento ZIP");
-        return;
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Dietas.zip`;
-      a.style.display = "none";
-      document.body.appendChild(a);
-
-      a.click();
-      a.remove();
-
-      window.URL.revokeObjectURL(url);
-      toast.success("ZIP generado");
-    } catch (e) {
-      console.error(e);
-      toast.error("Error de conexión");
-    }
-  };
-
   const handleGenerarExtraescolaresProfesor = () => {
     const filasFiltradas = table
       .getFilteredRowModel()
@@ -231,7 +197,7 @@ export function TablaExtraescolares({ user, fecha }) {
 
     let desde = fechaDesde;
     let hasta = fechaHasta;
-    console.log ("Filas: ", filasFiltradas);
+    console.log("Filas: ", filasFiltradas);
 
     // Si el filtro de fechas está vacío, usamos el curso actual
     if (!desde || !hasta) {
@@ -280,24 +246,6 @@ export function TablaExtraescolares({ user, fecha }) {
                 </TooltipTrigger>
                 <TooltipContent className="bg-[#1DA1F2] text-white">
                   <p>Editar/Ver actividad</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            {/* XLS */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleGenerarExcel(row.original)}
-                    className="p-0 h-auto bg-transparent hover:bg-transparent text-green-600 hover:text-green-700 font-bold text-xs"
-                  >
-                    XLS
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="bg-[#1DA1F2] text-white">
-                  <p>Generar Excel Dietas</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

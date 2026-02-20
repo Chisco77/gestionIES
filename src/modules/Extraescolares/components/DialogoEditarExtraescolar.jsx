@@ -513,6 +513,11 @@ export function DialogoEditarExtraescolar({
                   }))}
                   className={errores.cursos_gids && "border-red-500"}
                   disabled={!editableCamposBasicos}
+                  placeholder={
+                    cursosSeleccionados.length === 0
+                      ? "No hay cursos seleccionados"
+                      : ""
+                  }
                 />
                 {errores.cursos_gids && (
                   <CampoError>{errores.cursos_gids}</CampoError>

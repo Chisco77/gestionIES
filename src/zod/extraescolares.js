@@ -21,9 +21,7 @@ export const schemaExtraescolar = z
 
     fecha_fin: z.string().nonempty("Debe indicar la fecha de fin"),
 
-    cursos_gids: z
-      .array(z.coerce.number())
-      .min(1, "Debe seleccionar al menos un curso"),
+    cursos_gids: z.array(z.coerce.number()), // ← ahora acepta array vacío
 
     responsables_uids: z
       .array(z.string())
