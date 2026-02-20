@@ -278,9 +278,14 @@ exports.getLdapUsuarios = (req, res) => {
           groupRes.on("end", () => {
             const result = people
               .map((p) => {
-                const userGroups = Object.entries(groups)
+                let userGroups = Object.entries(groups)
                   .filter(([_, uids]) => uids.includes(p.uid))
                   .map(([name]) => name);
+
+                // Quitar 'lpadmin' si existe
+                userGroups = userGroups.filter(
+                  (g) => g.toLowerCase() !== "lpadmin"
+                );
 
                 return {
                   id: p.uidNumber,
@@ -296,8 +301,7 @@ exports.getLdapUsuarios = (req, res) => {
                 (p) =>
                   grupoPermitido === "all" || p.groups.includes(grupoPermitido)
               );
-
-            // 🔥 ORDENACIÓN DOBLE: 1º sn, 2º givenName
+            // ORDENACIÓN DOBLE: 1º sn, 2º givenName
             result.sort((a, b) => {
               const snA = a.sn?.toLowerCase() || "";
               const snB = b.sn?.toLowerCase() || "";

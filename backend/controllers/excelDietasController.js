@@ -49,28 +49,21 @@ const generarDocumentoExcel = async (req, res) => {
       const hoja = workbook.getWorksheet("Anverso");
 
       if (hoja) {
-        const empleado = profesor.empleado || {};
+        const cuerpo = profesor.cuerpo || "";
+        const dni = profesor.dni || "";
+        const tipoEmpleado = profesor.tipo_empleado || "";
 
-        const cuerpo = empleado.cuerpo || "";
-        const dni = empleado.dni || "";
+        const letraVinculacion = tipoEmpleado
+          .toLowerCase()
+          .includes("funcionario")
+          ? "F"
+          : "L";
 
-        const esFuncionario =
-          empleado.tipo_empleado &&
-          empleado.tipo_empleado.toLowerCase().includes("funcionario");
-
-        const letraVinculacion = esFuncionario ? "F" : "L";
-
-        // 🔹 Nombre
         hoja.getCell("K3").value = profesor.nombre || "Sin nombre";
-
-        // 🔹 Cuerpo
         hoja.getCell("K4").value = cuerpo;
-
-        // 🔹 Tipo vinculación (F / L)
         hoja.getCell("O4").value = letraVinculacion;
-
-        // 🔹 DNI
         hoja.getCell("Q4").value = dni;
+        hoja.getCell("Q3").value = 15;
       }
 
       const buffer = await workbook.xlsx.writeBuffer();

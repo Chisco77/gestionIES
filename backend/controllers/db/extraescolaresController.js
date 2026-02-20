@@ -165,7 +165,6 @@ const { obtenerGruposPorTipo } = require("../ldap/gruposController");
 async function getExtraescolaresEnriquecidos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
-
     if (!ldapSession)
       return res
         .status(401)
@@ -180,9 +179,7 @@ async function getExtraescolaresEnriquecidos(req, res) {
       new Promise((resolve) => {
         if (!uid) return resolve("Usuario desconocido");
 
-        if (usuariosCache[uid]) {
-          return resolve(usuariosCache[uid]);
-        }
+        if (usuariosCache[uid]) return resolve(usuariosCache[uid]);
 
         buscarPorUid(ldapSession, uid, (err, datos) => {
           const nombre =
@@ -215,7 +212,6 @@ async function getExtraescolaresEnriquecidos(req, res) {
     // Filtros
     // ========================================
     const { estado, tipo, uid } = req.query;
-
     const filtros = [];
     const vals = [];
     let i = 0;
@@ -224,12 +220,10 @@ async function getExtraescolaresEnriquecidos(req, res) {
       filtros.push(`e.uid = $${++i}`);
       vals.push(uid);
     }
-
     if (tipo) {
       filtros.push(`e.tipo ILIKE $${++i}`);
       vals.push(`%${tipo}%`);
     }
-
     if (typeof estado !== "undefined") {
       filtros.push(`e.estado = $${++i}`);
       vals.push(Number(estado));
@@ -266,27 +260,39 @@ async function getExtraescolaresEnriquecidos(req, res) {
     );
 
     // ========================================
-    // 1️⃣ Obtener TODOS los UID únicos primero
+    // 1️⃣ Obtener TODOS los UID únicos
     // ========================================
     const uidsUnicos = new Set();
-
     for (const item of rows) {
       if (item.uid) uidsUnicos.add(item.uid);
-
       if (Array.isArray(item.responsables_uids)) {
         item.responsables_uids.forEach((u) => u && uidsUnicos.add(u));
       }
     }
 
     // ========================================
-    // 2️⃣ Resolver TODOS los nombres en paralelo
+    // 2️⃣ Resolver nombres LDAP en paralelo
     // ========================================
     await Promise.all(
       Array.from(uidsUnicos).map((uid) => getNombrePorUid(uid))
     );
 
     // ========================================
-    // 3️⃣ Enriquecimiento final (ya sin esperas LDAP)
+    // 3️⃣ Obtener info adicional de empleados en PostgreSQL
+    // ========================================
+    const { rows: empleadosInfo } = await db.query(
+      `SELECT uid, dni, tipo_empleado, cuerpo, grupo
+       FROM empleados
+       WHERE uid = ANY($1::text[])`,
+      [Array.from(uidsUnicos)]
+    );
+
+    const empleadosMap = Object.fromEntries(
+      empleadosInfo.map((e) => [e.uid, e])
+    );
+
+    // ========================================
+    // 4️⃣ Enriquecimiento final
     // ========================================
     const enriquecidos = rows.map((item) => {
       const departamento = item.gidnumber
@@ -309,25 +315,22 @@ async function getExtraescolaresEnriquecidos(req, res) {
         ? item.responsables_uids.map((uidResp) => ({
             uid: uidResp,
             nombre: usuariosCache[uidResp] || "Profesor desconocido",
+            ...(empleadosMap[uidResp] || {}), // <-- añadimos dni, tipo_empleado, cuerpo, grupo
           }))
         : [];
 
       return {
         ...item,
-
         nombreProfesor: usuariosCache[item.uid] || "Profesor desconocido",
-
         responsables,
         departamento,
         cursos: cursosActividad,
-
         periodo_inicio: item.idperiodo_inicio
           ? {
               id: item.idperiodo_inicio,
               nombre: item.periodo_inicio_nombre || "Periodo desconocido",
             }
           : null,
-
         periodo_fin: item.idperiodo_fin
           ? {
               id: item.idperiodo_fin,
