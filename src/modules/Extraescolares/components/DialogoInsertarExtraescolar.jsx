@@ -220,16 +220,25 @@ export function DialogoInsertarExtraescolar({
       descripcion,
       gidnumber: Number(departamento),
       tipo,
+
       fecha_inicio: format(fechaInicioCompleta, "yyyy-MM-dd HH:mm:ss"),
       fecha_fin: format(fechaFinCompleta, "yyyy-MM-dd HH:mm:ss"),
+
       idperiodo_inicio:
         tipo === "complementaria" ? Number(periodoInicio) : undefined,
+
       idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : undefined,
-      cursos_gids: cursosSeleccionados.length > 0 ? cursosSeleccionados : [], // array vacío si no hay selección
+
+      cursos_gids: cursosSeleccionados.length > 0 ? cursosSeleccionados : [],
+
       responsables_uids: profesoresSeleccionados,
+
       ubicacion,
       coords,
-      uid: user.username,
+
+      // 👇 Auditoría
+      uid: user.username, // creador
+      updated_by: user.username, // última actualización (inicialmente el mismo)
     };
 
     const result = schemaExtraescolar.safeParse(datos);

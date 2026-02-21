@@ -434,10 +434,10 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
             <Input
               className="h-8 text-sm"
               placeholder="Buscar..."
-              value={table.getColumn("nombreProfesor")?.getFilterValue() ?? ""}
+              value={table.getColumn("actualizadaPor")?.getFilterValue() ?? ""}
               onChange={(e) =>
                 table
-                  .getColumn("nombreProfesor")
+                  .getColumn("actualizadaPor")
                   ?.setFilterValue(e.target.value)
               }
             />

@@ -82,7 +82,7 @@ export const columnsExtraescolares = (cursos, periodos) => [
     },
   },
   {
-    accessorKey: "nombreProfesor",
+    accessorKey: "actualizadaPor",
     header: "Última modificación",
     filterFn: (row, col, value) =>
       !value || row.getValue(col).toLowerCase().includes(value.toLowerCase()),

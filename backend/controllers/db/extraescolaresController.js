@@ -17,154 +17,6 @@ const { obtenerGruposPorTipo } = require("../ldap/gruposController");
 /*async function getExtraescolaresEnriquecidos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
-
-    if (!ldapSession)
-      return res
-        .status(401)
-        .json({ ok: false, error: "No autenticado en LDAP" });
-
-    // ========================================
-    // Cache por request (usuarios LDAP)
-    // ========================================
-    const usuariosCache = {};
-
-    const getNombrePorUid = (uid) =>
-      new Promise((resolve) => {
-        if (!uid) return resolve("Usuario desconocido");
-
-        if (usuariosCache[uid]) {
-          return resolve(usuariosCache[uid]);
-        }
-
-        buscarPorUid(ldapSession, uid, (err, datos) => {
-          const nombre =
-            !err && datos
-              ? `${datos.sn || ""}, ${datos.givenName || ""}`.trim()
-              : "Profesor desconocido";
-
-          usuariosCache[uid] = nombre;
-          resolve(nombre);
-        });
-      });
-
-    // ========================================
-    // Cargar departamentos y cursos desde LDAP
-    // ========================================
-    const departamentos = await obtenerGruposPorTipo(
-      ldapSession,
-      "school_department"
-    );
-
-    const cursos = await obtenerGruposPorTipo(ldapSession, "school_class");
-
-    const departamentosMap = Object.fromEntries(
-      departamentos.map((d) => [String(d.gidNumber), d.cn])
-    );
-
-    const cursosMap = Object.fromEntries(
-      cursos.map((c) => [String(c.gidNumber), c.cn])
-    );
-
-    // ========================================
-    // Filtros
-    // ========================================
-    const { estado, tipo, uid } = req.query;
-
-    const filtros = [];
-    const vals = [];
-    let i = 0;
-
-    if (uid) {
-      filtros.push(`e.uid = $${++i}`);
-      vals.push(uid);
-    }
-    if (tipo) {
-      filtros.push(`e.tipo ILIKE $${++i}`);
-      vals.push(`%${tipo}%`);
-    }
-    if (typeof estado !== "undefined") {
-      filtros.push(`e.estado = $${++i}`);
-      vals.push(Number(estado));
-    }
-
-    const where = filtros.length ? "WHERE " + filtros.join(" AND ") : "";
-
-    // ========================================
-    // Consulta a BD
-    // ========================================
-    const { rows } = await db.query(
-      `SELECT 
-        e.id, e.uid, e.gidnumber, e.cursos_gids, e.tipo,
-        e.titulo, e.descripcion,
-        e.fecha_inicio, e.fecha_fin,
-        e.idperiodo_inicio, e.idperiodo_fin,
-        e.estado, e.responsables_uids,
-        e.ubicacion, e.coords
-      FROM extraescolares e
-      ${where}
-      ORDER BY e.fecha_inicio ASC`,
-      vals
-    );
-
-    const enriquecidos = [];
-
-    // ========================================
-    // Enriquecimiento
-    // ========================================
-    for (const item of rows) {
-      // Departamento
-      const departamento = item.gidnumber
-        ? {
-            gidNumber: item.gidnumber,
-            nombre:
-              departamentosMap[String(item.gidnumber)] ||
-              "Departamento desconocido",
-          }
-        : null;
-
-      // Cursos
-      const cursosActividad = Array.isArray(item.cursos_gids)
-        ? item.cursos_gids.map((gid) => ({
-            gidNumber: gid,
-            nombre: cursosMap[String(gid)] || "Curso desconocido",
-          }))
-        : [];
-
-      // Profesor creador
-      const nombreProfesor = await getNombrePorUid(item.uid);
-
-      // Responsables
-      const responsables = [];
-      if (Array.isArray(item.responsables_uids)) {
-        for (const uidResp of item.responsables_uids) {
-          const nombre = await getNombrePorUid(uidResp);
-          responsables.push({ uid: uidResp, nombre });
-        }
-      }
-
-      enriquecidos.push({
-        ...item,
-        nombreProfesor,
-        responsables,
-        departamento,
-        cursos: cursosActividad,
-      });
-    }
-
-    res.json({ ok: true, extraescolares: enriquecidos });
-  } catch (err) {
-    console.error("[getExtraescolaresEnriquecidos] Error:", err);
-    res.status(500).json({ ok: false, error: "Error obteniendo actividades" });
-  }
-}*/
-
-/**
- * Obtener actividades extraescolares enriquecidas
- * ================================================================
- */
-async function getExtraescolaresEnriquecidos(req, res) {
-  try {
-    const ldapSession = req.session?.ldap;
     if (!ldapSession)
       return res
         .status(401)
@@ -345,6 +197,219 @@ async function getExtraescolaresEnriquecidos(req, res) {
     console.error("[getExtraescolaresEnriquecidos] Error:", err);
     res.status(500).json({ ok: false, error: "Error obteniendo actividades" });
   }
+}*/
+
+/**
+ * Obtener actividades extraescolares enriquecidas
+ * ================================================================
+ */
+async function getExtraescolaresEnriquecidos(req, res) {
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession)
+      return res
+        .status(401)
+        .json({ ok: false, error: "No autenticado en LDAP" });
+
+    // ========================================
+    // Cache por request (usuarios LDAP)
+    // ========================================
+    const usuariosCache = {};
+
+    const getNombrePorUid = (uid) =>
+      new Promise((resolve) => {
+        if (!uid) return resolve("Usuario desconocido");
+
+        if (usuariosCache[uid]) return resolve(usuariosCache[uid]);
+
+        buscarPorUid(ldapSession, uid, (err, datos) => {
+          const nombre =
+            !err && datos
+              ? `${datos.sn || ""}, ${datos.givenName || ""}`.trim()
+              : "Profesor desconocido";
+
+          usuariosCache[uid] = nombre;
+          resolve(nombre);
+        });
+      });
+
+    // ========================================
+    // Cargar departamentos y cursos desde LDAP
+    // ========================================
+    const [departamentos, cursos] = await Promise.all([
+      obtenerGruposPorTipo(ldapSession, "school_department"),
+      obtenerGruposPorTipo(ldapSession, "school_class"),
+    ]);
+
+    const departamentosMap = Object.fromEntries(
+      departamentos.map((d) => [String(d.gidNumber), d.cn]),
+    );
+
+    const cursosMap = Object.fromEntries(
+      cursos.map((c) => [String(c.gidNumber), c.cn]),
+    );
+
+    // ========================================
+    // Filtros
+    // ========================================
+    const { estado, tipo, uid } = req.query;
+    const filtros = [];
+    const vals = [];
+    let i = 0;
+
+    if (uid) {
+      filtros.push(`e.uid = $${++i}`);
+      vals.push(uid);
+    }
+    if (tipo) {
+      filtros.push(`e.tipo ILIKE $${++i}`);
+      vals.push(`%${tipo}%`);
+    }
+    if (typeof estado !== "undefined") {
+      filtros.push(`e.estado = $${++i}`);
+      vals.push(Number(estado));
+    }
+
+    const where = filtros.length ? "WHERE " + filtros.join(" AND ") : "";
+
+    // ========================================
+    // Consulta BD con JOIN a periodos
+    // ========================================
+    const { rows } = await db.query(
+      `SELECT 
+        e.id,
+        e.uid,
+        e.updated_by,
+        e.gidnumber,
+        e.cursos_gids,
+        e.tipo,
+        e.titulo,
+        e.descripcion,
+        e.fecha_inicio,
+        e.fecha_fin,
+        e.idperiodo_inicio,
+        e.idperiodo_fin,
+        e.estado,
+        e.responsables_uids,
+        e.ubicacion,
+        e.coords,
+        e.updated_at,
+
+        p_ini.nombre AS periodo_inicio_nombre,
+        p_fin.nombre AS periodo_fin_nombre
+
+      FROM extraescolares e
+
+      LEFT JOIN periodos_horarios p_ini
+        ON e.idperiodo_inicio = p_ini.id
+
+      LEFT JOIN periodos_horarios p_fin
+        ON e.idperiodo_fin = p_fin.id
+
+      ${where}
+      ORDER BY e.fecha_inicio ASC`,
+      vals,
+    );
+
+    // ========================================
+    // 1️⃣ Obtener TODOS los UID únicos
+    // ========================================
+    const uidsUnicos = new Set();
+
+    for (const item of rows) {
+      if (item.uid) uidsUnicos.add(item.uid);
+      if (item.updated_by) uidsUnicos.add(item.updated_by);
+
+      if (Array.isArray(item.responsables_uids)) {
+        item.responsables_uids.forEach((u) => u && uidsUnicos.add(u));
+      }
+    }
+
+    // ========================================
+    // 2️⃣ Resolver nombres LDAP en paralelo
+    // ========================================
+    await Promise.all(
+      Array.from(uidsUnicos).map((uid) => getNombrePorUid(uid)),
+    );
+
+    // ========================================
+    // 3️⃣ Obtener info adicional de empleados en PostgreSQL
+    // ========================================
+    const { rows: empleadosInfo } = await db.query(
+      `SELECT uid, dni, tipo_empleado, cuerpo, grupo
+       FROM empleados
+       WHERE uid = ANY($1::text[])`,
+      [Array.from(uidsUnicos)],
+    );
+
+    const empleadosMap = Object.fromEntries(
+      empleadosInfo.map((e) => [e.uid, e]),
+    );
+
+    // ========================================
+    // 4️⃣ Enriquecimiento final
+    // ========================================
+    const enriquecidos = rows.map((item) => {
+      const departamento = item.gidnumber
+        ? {
+            gidNumber: item.gidnumber,
+            nombre:
+              departamentosMap[String(item.gidnumber)] ||
+              "Departamento desconocido",
+          }
+        : null;
+
+      const cursosActividad = Array.isArray(item.cursos_gids)
+        ? item.cursos_gids.map((gid) => ({
+            gidNumber: gid,
+            nombre: cursosMap[String(gid)] || "Curso desconocido",
+          }))
+        : [];
+
+      const responsables = Array.isArray(item.responsables_uids)
+        ? item.responsables_uids.map((uidResp) => ({
+            uid: uidResp,
+            nombre: usuariosCache[uidResp] || "Profesor desconocido",
+            ...(empleadosMap[uidResp] || {}),
+          }))
+        : [];
+
+      return {
+        ...item,
+
+        // Creador
+        nombreProfesor: usuariosCache[item.uid] || "Profesor desconocido",
+
+        // Última actualización
+        actualizadaPor: item.updated_by
+          ? usuariosCache[item.updated_by] || "Profesor desconocido"
+          : null,
+
+        responsables,
+        departamento,
+        cursos: cursosActividad,
+
+        periodo_inicio: item.idperiodo_inicio
+          ? {
+              id: item.idperiodo_inicio,
+              nombre: item.periodo_inicio_nombre || "Periodo desconocido",
+            }
+          : null,
+
+        periodo_fin: item.idperiodo_fin
+          ? {
+              id: item.idperiodo_fin,
+              nombre: item.periodo_fin_nombre || "Periodo desconocido",
+            }
+          : null,
+      };
+    });
+
+    res.json({ ok: true, extraescolares: enriquecidos });
+  } catch (err) {
+    console.error("[getExtraescolaresEnriquecidos] Error:", err);
+    res.status(500).json({ ok: false, error: "Error obteniendo actividades" });
+  }
 }
 
 /**
@@ -367,7 +432,7 @@ async function updateEstadoExtraescolar(req, res) {
       WHERE id = $2
       RETURNING *
     `,
-      [estado, id]
+      [estado, id],
     );
 
     if (!rows[0])
@@ -385,7 +450,7 @@ async function updateEstadoExtraescolar(req, res) {
       try {
         // Emails de avisos para este módulo
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
+          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`,
         );
         const emailsRaw = avisos[0]?.emails || [];
         const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
@@ -396,8 +461,8 @@ async function updateEstadoExtraescolar(req, res) {
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, actividad.uid, (err, datos) =>
             resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
-            )
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" },
+            ),
           );
         });
 
@@ -405,7 +470,7 @@ async function updateEstadoExtraescolar(req, res) {
           `${datosUsuario.givenName} ${datosUsuario.sn}`.trim();
 
         const fechaInicioFmt = new Date(
-          actividad.fecha_inicio
+          actividad.fecha_inicio,
         ).toLocaleDateString("es-ES");
         const estadoTxt = estado === 1 ? "Aceptada" : "Rechazada";
         const subjectPrefix =
@@ -431,12 +496,12 @@ async function updateEstadoExtraescolar(req, res) {
         });
 
         console.log(
-          `[updateEstadoExtraescolar] Email enviado a: ${emails.join(", ")}`
+          `[updateEstadoExtraescolar] Email enviado a: ${emails.join(", ")}`,
         );
       } catch (errMail) {
         console.error(
           "[updateEstadoExtraescolar] Error enviando email:",
-          errMail
+          errMail,
         );
       }
     });
@@ -466,13 +531,14 @@ async function insertExtraescolar(req, res) {
       responsables_uids = [],
       ubicacion,
       coords,
+      updated_by,
     } = req.body;
 
     const { rows } = await db.query(
       `INSERT INTO extraescolares (
         uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
         fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
-        responsables_uids, ubicacion, coords
+        responsables_uids, ubicacion, coords, updated_by
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
       RETURNING *`,
@@ -490,7 +556,8 @@ async function insertExtraescolar(req, res) {
         responsables_uids,
         ubicacion,
         coords,
-      ]
+        updated_by,
+      ],
     );
 
     const actividad = rows[0];
@@ -504,7 +571,7 @@ async function insertExtraescolar(req, res) {
     setImmediate(async () => {
       try {
         const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
+          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`,
         );
         const emailsRaw = avisos[0]?.emails || [];
         const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
@@ -515,8 +582,8 @@ async function insertExtraescolar(req, res) {
         const datosUsuario = await new Promise((resolve) => {
           buscarPorUid(ldapSession, uid, (err, datos) =>
             resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
-            )
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" },
+            ),
           );
         });
 
@@ -553,7 +620,7 @@ async function insertExtraescolar(req, res) {
           html: `
         <p><b>Nueva actividad ${actividad.tipo} creada</b></p>
         <p><b>Título:</b> ${actividad.titulo}</p>
-        <p><b>Profesor responsable:</b> ${nombreProfesor}</p>
+        <p><b>Creada por:</b> ${nombreProfesor}</p>
         <p><b>Fecha de inicio:</b> ${fechaInicioFmt}</p>
         <p><b>Fecha de fin:</b> ${fechaFinFmt}</p>        
         <p><b>Descripción:</b> ${actividad.descripcion}</p>
@@ -569,7 +636,7 @@ async function insertExtraescolar(req, res) {
         });
 
         console.log(
-          `[insertExtraescolar] Email enviado a: ${emails.join(", ")}`
+          `[insertExtraescolar] Email enviado a: ${emails.join(", ")}`,
         );
       } catch (errMail) {
         console.error("[insertExtraescolar] Error enviando email:", errMail);
@@ -591,7 +658,7 @@ async function deleteExtraescolar(req, res) {
 
     const { rowCount } = await db.query(
       `DELETE FROM extraescolares WHERE id = $1`,
-      [id]
+      [id],
     );
 
     if (rowCount === 0)
@@ -604,82 +671,12 @@ async function deleteExtraescolar(req, res) {
   }
 }
 
-/**
- * Actualizar actividad extraescolar
- * ================================================================
- */
-/*async function updateExtraescolar(req, res) {
-  try {
-    const id = req.params.id;
-    const {
-      uid,
-      gidnumber,
-      cursos_gids,
-      tipo,
-      titulo,
-      descripcion,
-      fecha_inicio,
-      fecha_fin,
-      idperiodo_inicio,
-      idperiodo_fin,
-      responsables_uids = [],
-      estado,
-      ubicacion,
-      coords,
-    } = req.body;
-
-    const { rows } = await db.query(
-      `UPDATE extraescolares
-       SET 
-         uid = $1,
-         gidnumber = $2,
-         cursos_gids = $3,
-         tipo = $4,
-         titulo = $5,
-         descripcion = $6,
-         fecha_inicio = $7,
-         fecha_fin = $8,
-         idperiodo_inicio = $9,
-         idperiodo_fin = $10,
-         responsables_uids = $11,
-         estado = $12,
-         ubicacion = $13,
-         coords = $14
-       WHERE id = $15
-       RETURNING *`,
-      [
-        uid,
-        gidnumber,
-        cursos_gids,
-        tipo,
-        titulo,
-        descripcion,
-        fecha_inicio,
-        fecha_fin,
-        idperiodo_inicio,
-        idperiodo_fin,
-        responsables_uids,
-        estado,
-        ubicacion,
-        coords,
-        id,
-      ],
-    );
-
-    if (!rows[0])
-      return res.status(404).json({ ok: false, error: "No encontrado" });
-
-    res.json({ ok: true, actividad: rows[0] });
-  } catch (err) {
-    console.error("[updateExtraescolar] Error:", err);
-    res.status(500).json({ ok: false, error: "Error actualizando actividad" });
-  }
-}*/
 
 async function updateExtraescolar(req, res) {
   try {
     const id = req.params.id;
     const usuarioSesion = req.session?.user;
+
     if (!usuarioSesion) {
       return res.status(401).json({
         ok: false,
@@ -704,7 +701,6 @@ async function updateExtraescolar(req, res) {
 
     // 2️⃣ Comprobar permisos
     const esPropietario = actividadActual.uid === usuarioSesion.username;
-
     const esDirectiva = usuarioSesion.perfil === "directiva";
     const esExtraescolares = usuarioSesion.perfil === "extraescolares";
 
@@ -717,7 +713,6 @@ async function updateExtraescolar(req, res) {
 
     // 3️⃣ Extraer datos del body
     const {
-      uid,
       gidnumber,
       cursos_gids,
       tipo,
@@ -733,28 +728,27 @@ async function updateExtraescolar(req, res) {
       coords,
     } = req.body;
 
-    // 4️⃣ Actualizar
+    // 4️⃣ Actualizar (NO tocamos uid)
     const { rows } = await db.query(
       `UPDATE extraescolares
        SET 
-         uid = $1,
-         gidnumber = $2,
-         cursos_gids = $3,
-         tipo = $4,
-         titulo = $5,
-         descripcion = $6,
-         fecha_inicio = $7,
-         fecha_fin = $8,
-         idperiodo_inicio = $9,
-         idperiodo_fin = $10,
-         responsables_uids = $11,
-         estado = $12,
-         ubicacion = $13,
-         coords = $14
+         gidnumber = $1,
+         cursos_gids = $2,
+         tipo = $3,
+         titulo = $4,
+         descripcion = $5,
+         fecha_inicio = $6,
+         fecha_fin = $7,
+         idperiodo_inicio = $8,
+         idperiodo_fin = $9,
+         responsables_uids = $10,
+         estado = $11,
+         ubicacion = $12,
+         coords = $13,
+         updated_by = $14
        WHERE id = $15
        RETURNING *`,
       [
-        uid,
         gidnumber,
         cursos_gids,
         tipo,
@@ -768,11 +762,13 @@ async function updateExtraescolar(req, res) {
         estado,
         ubicacion,
         coords,
+        usuarioSesion.username, // 👈 FORZADO DESDE SESIÓN
         id,
       ]
     );
 
     res.json({ ok: true, actividad: rows[0] });
+
   } catch (err) {
     console.error("[updateExtraescolar] Error:", err);
     res.status(500).json({
@@ -781,7 +777,6 @@ async function updateExtraescolar(req, res) {
     });
   }
 }
-
 module.exports = {
   getExtraescolaresEnriquecidos,
   updateEstadoExtraescolar,

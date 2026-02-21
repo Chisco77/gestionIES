@@ -150,15 +150,15 @@ export function DialogoEditarExtraescolar({
     }
 
     const depto = departamentos.find(
-      (d) => String(d.gidNumber) === String(actividad.gidnumber)
+      (d) => String(d.gidNumber) === String(actividad.gidnumber),
     );
     setDepartamento(depto ? String(depto.gidNumber) : "");
 
     const periodoIni = periodos.find(
-      (p) => String(p.id) === String(actividad.idperiodo_inicio)
+      (p) => String(p.id) === String(actividad.idperiodo_inicio),
     );
     const periodoFi = periodos.find(
-      (p) => String(p.id) === String(actividad.idperiodo_fin)
+      (p) => String(p.id) === String(actividad.idperiodo_fin),
     );
     setPeriodoInicio(periodoIni ? String(periodoIni.id) : "");
     setPeriodoFin(periodoFi ? String(periodoFi.id) : "");
@@ -231,16 +231,23 @@ export function DialogoEditarExtraescolar({
     }
 
     const datos = {
-      uid: user.username,
+      // actualizamos el uid del usuario que actualiza el registro
+
+      updated_by: user.username, 
+
       titulo,
       descripcion,
       tipo,
       gidnumber: Number(departamento),
+
       fecha_inicio: format(fInicio, "yyyy-MM-dd HH:mm:ss"),
       fecha_fin: format(fFin, "yyyy-MM-dd HH:mm:ss"),
+
       idperiodo_inicio:
         tipo === "complementaria" ? Number(periodoInicio) : undefined,
+
       idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : undefined,
+
       cursos_gids: cursosSeleccionados,
       responsables_uids: profesoresSeleccionados,
       ubicacion,
