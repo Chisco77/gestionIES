@@ -72,7 +72,7 @@
  *
  */
 
-import { useState, Fragment, useEffect } from "react";
+/*import { useState, Fragment, useEffect } from "react";
 import {
   flexRender,
   useReactTable,
@@ -177,6 +177,393 @@ export function TablaPrestamos({
 
   return (
     <div>
+      <div className="flex flex-wrap gap-4 py-2 text-sm text-muted-foreground items-end">
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Curso</label>
+          <select
+            className="border p-2 rounded text-sm"
+            value={filtroCurso}
+            onChange={(e) => {
+              const value = e.target.value;
+              setFiltroCurso(value);
+              table.getColumn("curso")?.setFilterValue(value || undefined);
+            }}
+          >
+            <option value="">Todos</option>
+            {cursosUnicos.map((curso) => (
+              <option key={curso} value={curso}>
+                {curso}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Alumno</label>
+          <input
+            type="text"
+            className="border p-2 rounded text-sm"
+            placeholder="Buscar por nombre"
+            value={filtroAlumno}
+            onChange={(e) => {
+              const value = e.target.value;
+              setFiltroAlumno(value);
+              table.getColumn("nombreUsuario")?.setFilterValue(value);
+            }}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Doc Compromiso</label>
+          <select
+            className="border p-2 rounded text-sm"
+            value={filtroDocCompromiso}
+            onChange={(e) => {
+              const value = e.target.value;
+              setFiltroDocCompromiso(value);
+              table
+                .getColumn("doc_compromiso")
+                ?.setFilterValue(value || undefined);
+            }}
+          >
+            <option value="">Todos</option>
+            <option value="0">Pendiente</option>
+            <option value="1">Entregado</option>
+            <option value="2">Recibido</option>
+          </select>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-3 text-xs flex items-center gap-2"
+          onClick={limpiarTodosLosFiltros}
+        >
+          <Eraser className="w-4 h-4" />
+          Limpiar filtros
+        </Button>
+
+        {informes && <div className="ml-auto">{informes}</div>}
+      </div>
+
+      <div className="rounded-md border mt-4">
+        <Table>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id} className="h-6">
+              {headerGroup.headers.map((header) => (
+                <TableHead
+                  key={header.id}
+                  className={`py-1 px-2 ${
+                    header.column.id === "nombreUsuario"
+                      ? "text-left"
+                      : "text-center"
+                  }`}
+                >
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => {
+                const usuario = row.original;
+                const isExpanded = expandedRows[usuario.id_prestamo] || false;
+
+                return (
+                  <Fragment key={usuario.id_prestamo}>
+                    <TableRow
+                      className={`h-6 cursor-pointer ${
+                        selectedId === usuario.id_prestamo ? "bg-blue-100" : ""
+                      } hover:bg-gray-200`}
+                      onClick={() => handleRowClick(usuario)}
+                    >
+                      <TableCell
+                        className="text-center py-1 px-0"
+                        style={{ width: "30px", maxWidth: "30px" }}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="p-0 w-5 h-5"
+                          onClick={(e) =>
+                            toggleExpandClick(usuario.id_prestamo, e)
+                          }
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="w-3 h-3" />
+                          ) : (
+                            <ChevronRight className="w-3 h-3" />
+                          )}
+                        </Button>
+                      </TableCell>
+
+                      <TableCell className="py-1 px-2">
+                        {usuario.nombreUsuario}
+                      </TableCell>
+
+                      <TableCell className="text-center py-1 px-2">
+                        {(() => {
+                          let text = "";
+                          let classes =
+                            "px-2 py-1 rounded-lg text-xs font-medium border ";
+
+                          switch (usuario.doc_compromiso) {
+                            case 0:
+                              text = "Pendiente";
+                              classes +=
+                                "text-yellow-600 bg-yellow-100 border-yellow-300";
+                              break;
+                            case 1:
+                              text = "Entregado";
+                              classes +=
+                                "text-green-600 border-green-600 bg-transparent";
+                              break;
+                            case 2:
+                              text = "Recibido";
+                              classes +=
+                                "text-white border-green-600 bg-green-600";
+                              break;
+                            default:
+                              text = "";
+                              classes = "";
+                          }
+
+                          return <span className={classes}>{text}</span>;
+                        })()}
+                      </TableCell>
+
+                      <TableCell className="text-center py-1 px-2">
+                        {usuario.curso}
+                      </TableCell>
+                    </TableRow>
+
+                    {isExpanded && (
+                      <Fragment>
+                        <TableRow className="bg-gray-100 font-semibold h-5">
+                          <TableCell className="py-1 px-2"></TableCell>
+                          <TableCell className="pl-10 py-1 px-2">
+                            Libro
+                          </TableCell>
+                          <TableCell className="text-center py-1 px-2">
+                            Entregado
+                          </TableCell>
+                          <TableCell className="text-center py-1 px-2">
+                            Devuelto
+                          </TableCell>
+                          <TableCell className="py-1 px-2"></TableCell>
+                        </TableRow>
+                        {usuario.prestamos.map((item) => (
+                          <TableRow
+                            key={item.id_item}
+                            className="bg-gray-50 h-5"
+                          >
+                            <TableCell className="py-1 px-2"></TableCell>
+                            <TableCell className="pl-10 py-1 px-2">
+                              {item.libro}
+                            </TableCell>
+
+                            <TableCell className="text-center py-1 px-2">
+                              {item.entregado ? (
+                                <Check className="text-green-600 w-3 h-3 mx-auto" />
+                              ) : (
+                                <X className="text-red-600 w-3 h-3 mx-auto" />
+                              )}
+                            </TableCell>
+
+                            <TableCell className="text-center py-1 px-2">
+                              {item.devuelto ? (
+                                <Check className="text-green-600 w-3 h-3 mx-auto" />
+                              ) : (
+                                <X className="text-red-600 w-3 h-3 mx-auto" />
+                              )}
+                            </TableCell>
+
+                            <TableCell className="py-1 px-2"></TableCell>
+                          </TableRow>
+                        ))}
+                      </Fragment>
+                    )}
+                  </Fragment>
+                );
+              })
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-12 text-center"
+                >
+                  No hay resultados.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="grid grid-cols-3 items-center py-6">
+        <div className="flex gap-2 justify-start">
+          {acciones &&
+            acciones(
+              selectedId ? data.find((u) => u.id_prestamo === selectedId) : null
+            )}
+        </div>
+
+        <div className="flex items-center justify-center space-x-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronsLeft className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <span className="text-xs text-muted-foreground px-2">
+            Página {currentPage} de {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronsRight className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <div className="flex justify-end text-xs text-muted-foreground">
+          Total de registros: {table.getFilteredRowModel().rows.length}
+        </div>
+      </div>
+    </div>
+  );
+}
+*/
+
+import { useState, Fragment, useEffect } from "react";
+import {
+  flexRender,
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+} from "@tanstack/react-table";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  ChevronsRight,
+  ChevronsLeft,
+  Check,
+  X,
+  Eraser,
+} from "lucide-react";
+
+export function TablaPrestamos({
+  columns,
+  data,
+  informes,
+  acciones,
+  onSelectUsuario,
+  onFilteredChange,
+}) {
+  const [sorting, setSorting] = useState([
+    { id: "nombreUsuario", desc: false },
+  ]);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [expandedRows, setExpandedRows] = useState({});
+  const [selectedId, setSelectedId] = useState(null);
+
+  const [filtroCurso, setFiltroCurso] = useState("");
+  const [filtroAlumno, setFiltroAlumno] = useState("");
+  const [filtroDocCompromiso, setFiltroDocCompromiso] = useState("");
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    state: { sorting, columnFilters },
+    enableRowSelection: true,
+    enableMultiRowSelection: false,
+    initialState: { pagination: { pageIndex: 0, pageSize: 15 } },
+  });
+
+  useEffect(() => {
+    const filtered = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
+    onFilteredChange?.(filtered);
+  }, [table.getFilteredRowModel().rows]);
+
+  const toggleRow = (id) =>
+    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+  const handleRowClick = (usuario) => {
+    setSelectedId(usuario.id_prestamo);
+    onSelectUsuario?.(usuario);
+  };
+  const toggleExpandClick = (id, e) => {
+    e.stopPropagation();
+    toggleRow(id);
+  };
+
+  const currentPage = table.getState().pagination.pageIndex + 1;
+  const totalPages = table.getPageCount();
+
+  const cursosUnicos = Array.from(
+    new Set(data.map((p) => p.curso).filter(Boolean))
+  ).sort();
+
+  const limpiarTodosLosFiltros = () => {
+    table.resetColumnFilters();
+    table.resetGlobalFilter();
+    table.resetSorting();
+    table.resetPagination();
+
+    setFiltroCurso("");
+    setFiltroAlumno("");
+    setFiltroDocCompromiso("");
+  };
+
+  return (
+    <div>
       {/* Filtros */}
       <div className="flex flex-wrap gap-4 py-2 text-sm text-muted-foreground items-end">
         <div className="space-y-1">
@@ -250,27 +637,29 @@ export function TablaPrestamos({
       {/* Tabla */}
       <div className="rounded-md border mt-4">
         <Table>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="h-6">
-              {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  className={`py-1 px-2 ${
-                    header.column.id === "nombreUsuario"
-                      ? "text-left"
-                      : "text-center"
-                  }`}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="h-6">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className={`py-1 px-2 ${
+                      header.column.id === "nombreUsuario"
+                        ? "text-left"
+                        : "text-center"
+                    }`}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
 
           <TableBody>
             {table.getRowModel().rows?.length ? (
@@ -286,10 +675,9 @@ export function TablaPrestamos({
                       } hover:bg-gray-200`}
                       onClick={() => handleRowClick(usuario)}
                     >
-                      {/* 1ª columna: expandir/colapsar */}
                       <TableCell
                         className="text-center py-1 px-0"
-                        style={{ width: "30px", maxWidth: "30px" }}
+                        style={{ width: 30 }}
                       >
                         <Button
                           variant="ghost"
@@ -307,12 +695,9 @@ export function TablaPrestamos({
                         </Button>
                       </TableCell>
 
-                      {/* 2ª columna: Alumno*/}
                       <TableCell className="py-1 px-2">
                         {usuario.nombreUsuario}
                       </TableCell>
-
-                      {/* 3ª columna: Doc compromiso */}
                       <TableCell className="text-center py-1 px-2">
                         {(() => {
                           let text = "";
@@ -344,17 +729,15 @@ export function TablaPrestamos({
                         })()}
                       </TableCell>
 
-                      {/* 4ª columna: Curso */}
                       <TableCell className="text-center py-1 px-2">
                         {usuario.curso}
                       </TableCell>
                     </TableRow>
 
-                    {/* Filas expandidas */}
                     {isExpanded && (
                       <Fragment>
                         <TableRow className="bg-gray-100 font-semibold h-5">
-                          <TableCell className="py-1 px-2"></TableCell>
+                          <TableCell></TableCell>
                           <TableCell className="pl-10 py-1 px-2">
                             Libro
                           </TableCell>
@@ -364,19 +747,18 @@ export function TablaPrestamos({
                           <TableCell className="text-center py-1 px-2">
                             Devuelto
                           </TableCell>
-                          <TableCell className="py-1 px-2"></TableCell>
+                          <TableCell></TableCell>
                         </TableRow>
+
                         {usuario.prestamos.map((item) => (
                           <TableRow
                             key={item.id_item}
                             className="bg-gray-50 h-5"
                           >
-                            <TableCell className="py-1 px-2"></TableCell>
+                            <TableCell></TableCell>
                             <TableCell className="pl-10 py-1 px-2">
                               {item.libro}
                             </TableCell>
-
-                            {/* Columna ENTREGADO */}
                             <TableCell className="text-center py-1 px-2">
                               {item.entregado ? (
                                 <Check className="text-green-600 w-3 h-3 mx-auto" />
@@ -384,8 +766,6 @@ export function TablaPrestamos({
                                 <X className="text-red-600 w-3 h-3 mx-auto" />
                               )}
                             </TableCell>
-
-                            {/* Columna DEVUELTO */}
                             <TableCell className="text-center py-1 px-2">
                               {item.devuelto ? (
                                 <Check className="text-green-600 w-3 h-3 mx-auto" />
@@ -393,8 +773,7 @@ export function TablaPrestamos({
                                 <X className="text-red-600 w-3 h-3 mx-auto" />
                               )}
                             </TableCell>
-
-                            <TableCell className="py-1 px-2"></TableCell>
+                            <TableCell></TableCell>
                           </TableRow>
                         ))}
                       </Fragment>
@@ -418,7 +797,6 @@ export function TablaPrestamos({
 
       {/* Acciones + Paginación + Total de registros */}
       <div className="grid grid-cols-3 items-center py-6">
-        {/* Acciones a la izquierda */}
         <div className="flex gap-2 justify-start">
           {acciones &&
             acciones(
@@ -426,7 +804,6 @@ export function TablaPrestamos({
             )}
         </div>
 
-        {/* Paginación centrada */}
         <div className="flex items-center justify-center space-x-2">
           <Button
             variant="outline"
@@ -465,7 +842,6 @@ export function TablaPrestamos({
           </Button>
         </div>
 
-        {/* Total de registros a la derecha */}
         <div className="flex justify-end text-xs text-muted-foreground">
           Total de registros: {table.getFilteredRowModel().rows.length}
         </div>

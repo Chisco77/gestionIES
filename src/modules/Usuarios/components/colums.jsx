@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Definición de las columnas de la tabla de usuarios (alumnos/profesores)
  * utilizada en el módulo de gestión de usuarios.
  *
@@ -37,17 +37,8 @@
  *
  */
 
-
 import { MoreHorizontal, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 // Filtro para apellidos (usa sn)
 const fuzzyTextFilter = (row, columnId, filterValue) => {
@@ -59,8 +50,25 @@ export const columns = [
   {
     id: "grupo",
     accessorFn: (row) => {
-      const grupo = Array.isArray(row.groups) ? row.groups[1] : "";
-      return grupo ?? "";
+      if (!Array.isArray(row.groups)) return "";
+      return row.groups.join(", ");
+    },
+    cell: ({ row }) => {
+      const groups = row.original.groups;
+
+      if (!Array.isArray(groups) || groups.length === 0) {
+        return "-";
+      }
+
+      return (
+        <div className="flex flex-wrap gap-1">
+          {groups.map((group, index) => (
+            <span key={index} className="px-2 py-1 text-xs rounded-md bg-muted">
+              {group}
+            </span>
+          ))}
+        </div>
+      );
     },
     header: ({ column }) => (
       <Button
@@ -73,7 +81,10 @@ export const columns = [
     ),
     filterFn: (row, columnId, filterValue) => {
       if (!filterValue || filterValue.length === 0) return true;
-      return filterValue.includes(row.getValue(columnId));
+
+      const groups = row.original.groups || [];
+
+      return groups.some((group) => filterValue.includes(group));
     },
   },
 
@@ -128,5 +139,4 @@ export const columns = [
       return value.includes(filterValue.toLowerCase());
     },
   },
-  
 ];

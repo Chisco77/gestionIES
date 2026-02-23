@@ -174,7 +174,7 @@ exports.buscarPorUid = (ldapSession, uid, callback) => {
 };
 
 // Obtener usuarios de LDAP (estudiantes, profesores o todos)
-exports.getLdapUsuarios = (req, res) => {
+/*exports.getLdapUsuarios = (req, res) => {
   const ldapSession = req.session.ldap;
   const tipo = req.query.tipo || "all";
   const grupoPermitido = ["students", "teachers"].includes(tipo) ? tipo : "all";
@@ -184,7 +184,6 @@ exports.getLdapUsuarios = (req, res) => {
     return res.status(401).json({ error: "No autenticado" });
   }
 
-  // Login externo o interno
   const LDAP_URL = ldapSession.external
     ? `ldap://${ldapSession.ldapHost}`
     : process.env.LDAP_URL;
@@ -318,7 +317,182 @@ exports.getLdapUsuarios = (req, res) => {
       });
     });
   });
+};*/
+
+exports.getLdapUsuarios = (req, res) => {
+  const ldapSession = req.session.ldap;
+  const tipo = req.query.tipo || "all";
+  const grupoPermitido = ["students", "teachers"].includes(tipo)
+    ? tipo
+    : "all";
+
+  if (!ldapSession) {
+    return res.status(401).json({ error: "No autenticado" });
+  }
+
+  const LDAP_URL = ldapSession.external
+    ? `ldap://${ldapSession.ldapHost}`
+    : process.env.LDAP_URL;
+
+  const client = ldap.createClient({ url: LDAP_URL });
+
+  client.bind(ldapSession.dn, ldapSession.password, async (err) => {
+    if (err) {
+      return res.status(401).json({
+        error: "LDAP bind fallido",
+        details: err.message,
+      });
+    }
+
+    const baseDN = "dc=instituto,dc=extremadura,dc=es";
+
+    try {
+      // ==========================
+      // 1️⃣ Obtener miembros del grupo principal (students/teachers)
+      // ==========================
+      let allowedUidSet = null;
+
+      if (grupoPermitido !== "all") {
+        const groupPrincipal = await searchLDAP(
+          client,
+          `ou=Group,${baseDN}`,
+          {
+            scope: "sub",
+            filter: `(&(cn=${grupoPermitido})(objectClass=lisAclGroup))`,
+            attributes: ["memberUid"],
+          }
+        );
+
+        const memberUids = groupPrincipal[0]?.memberUid || [];
+
+        allowedUidSet = new Set(
+          memberUids.filter(
+            (uid) => typeof uid === "string" && uid.trim() !== ""
+          )
+        );
+      }
+
+      // ==========================
+      // 2️⃣ Buscar TODOS los usuarios (sin OR gigante)
+      // ==========================
+      const people = await searchLDAP(client, `ou=People,${baseDN}`, {
+        scope: "sub",
+        filter: "(objectClass=inetOrgPerson)",
+        attributes: [
+          "uidNumber",
+          "givenName",
+          "sn",
+          "uid",
+          "gidNumber",
+          "employeeNumber",
+        ],
+      });
+
+      // ==========================
+      // 3️⃣ Buscar SOLO grupos permitidos por groupType
+      // ==========================
+      let groupTypeFilter = "(objectClass=lisAclGroup)";
+
+      if (grupoPermitido === "students") {
+        groupTypeFilter =
+          "(&(objectClass=lisAclGroup)(groupType=school_class))";
+      }
+
+      if (grupoPermitido === "teachers") {
+        groupTypeFilter =
+          "(&(objectClass=lisAclGroup)(groupType=school_department))";
+      }
+
+      const groups = await searchLDAP(client, `ou=Group,${baseDN}`, {
+        scope: "sub",
+        filter: groupTypeFilter,
+        attributes: ["cn", "memberUid"],
+      });
+
+      // ==========================
+      // 4️⃣ Construir mapa invertido uid → grupos
+      // ==========================
+      const userGroupsMap = {};
+
+      groups.forEach((group) => {
+        const groupName = group.cn?.[0];
+        const members = group.memberUid || [];
+
+        members.forEach((uid) => {
+          if (!userGroupsMap[uid]) {
+            userGroupsMap[uid] = [];
+          }
+          userGroupsMap[uid].push(groupName);
+        });
+      });
+
+      // ==========================
+      // 5️⃣ Construir resultado final (filtrado eficiente con Set)
+      // ==========================
+      const result = people
+        .filter((p) => {
+          if (!allowedUidSet) return true;
+          return allowedUidSet.has(p.uid?.[0]);
+        })
+        .map((p) => ({
+          id: p.uidNumber?.[0] || null,
+          givenName: p.givenName?.[0] || null,
+          sn: p.sn?.[0] || null,
+          uid: p.uid?.[0] || null,
+          gidNumber: p.gidNumber?.[0] || null,
+          employeeNumber: p.employeeNumber?.[0] || null,
+          groups: userGroupsMap[p.uid?.[0]] || [],
+        }));
+
+      // ==========================
+      // 6️⃣ Ordenación
+      // ==========================
+      result.sort((a, b) => {
+        const snA = a.sn?.toLowerCase() || "";
+        const snB = b.sn?.toLowerCase() || "";
+        const nameA = a.givenName?.toLowerCase() || "";
+        const nameB = b.givenName?.toLowerCase() || "";
+        return snA.localeCompare(snB) || nameA.localeCompare(nameB);
+      });
+
+      console.log(`LDAP → ${result.length} usuarios devueltos`);
+
+      client.unbind();
+      res.json(result);
+    } catch (error) {
+      console.error("🔥 ERROR REAL LDAP:", error);
+      client.unbind();
+      res.status(500).json({
+        error: "Error procesando LDAP",
+        details: error.message,
+      });
+    }
+  });
 };
+
+// ==========================
+// Helper promisificado
+// ==========================
+function searchLDAP(client, baseDN, options) {
+  return new Promise((resolve, reject) => {
+    const entries = [];
+
+    client.search(baseDN, options, (err, res) => {
+      if (err) return reject(err);
+
+      res.on("searchEntry", (entry) => {
+        const obj = {};
+        entry.attributes.forEach((attr) => {
+          obj[attr.type] = attr.vals;
+        });
+        entries.push(obj);
+      });
+
+      res.on("error", reject);
+      res.on("end", () => resolve(entries));
+    });
+  });
+}
 
 // Obtiene alumnos que pertenecen al grupo con el cn indicado en req.query.grupo
 exports.obtenerAlumnosPorGrupo = (req, res) => {

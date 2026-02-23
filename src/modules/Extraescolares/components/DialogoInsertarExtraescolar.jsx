@@ -243,9 +243,12 @@ export function DialogoInsertarExtraescolar({
 
     const result = schemaExtraescolar.safeParse(datos);
     if (!result.success) {
+      console.log("Errores Zod:", result.error.format());
+
       const nuevosErrores = {};
       result.error.errors.forEach((err) => {
-        nuevosErrores[err.path[0]] = err.message;
+        const path = err.path.join("."); // coords.lat, etc
+        nuevosErrores[path] = err.message;
       });
       setErrores(nuevosErrores);
       return;

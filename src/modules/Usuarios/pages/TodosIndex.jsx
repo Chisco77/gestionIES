@@ -63,19 +63,6 @@ export function TodosIndex() {
 
   const API_URL = import.meta.env.VITE_API_URL;
 
-  /*useEffect(() => {
-    fetch(`${API_URL}/ldap/usuarios?tipo=all`, {
-      credentials: "include",
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setData(data);
-        setAlumnosFiltrados(data); // al principio, sin filtros
-      })
-      .catch((error) => {
-        console.error("❌ Error al cargar usuarios:", error);
-      });
-  }, []);*/
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">

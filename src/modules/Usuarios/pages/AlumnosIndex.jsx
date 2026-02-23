@@ -34,11 +34,9 @@
  *
  */
 
-
 import { useState } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
-import { DialogoListadoCurso } from "../components/DialogoListadoCurso";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 import DialogoEditarUsuario from "../components/DialogoEditarUsuario";
 import { Button } from "@/components/ui/button";
@@ -51,6 +49,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAlumnosLdap } from "@/hooks/useAlumnosLdap";
 
+import { generarPdfListadoPorCurso } from "@/Informes/usuarios";
+
 const handleInsertar = () => alert("Inserción de alumno: No implementado");
 const handleEliminar = (seleccionado) => {
   if (!seleccionado) {
@@ -61,7 +61,6 @@ const handleEliminar = (seleccionado) => {
 };
 
 export function AlumnosIndex() {
-  const [abrirDialogoListadoCurso, setAbrirDialogoListadoCurso] = useState(false);
   const [abrirDialogoEtiquetas, setAbrirDialogoEtiquetas] = useState(false);
   const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);
@@ -101,11 +100,21 @@ export function AlumnosIndex() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setAbrirDialogoEtiquetas(true)}>
+                <DropdownMenuItem
+                  onClick={() => setAbrirDialogoEtiquetas(true)}
+                >
                   <Tag className="mr-2 h-4 w-4" />
                   Etiquetas para portátiles
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setAbrirDialogoListadoCurso(true)}>
+
+                <DropdownMenuItem
+                  onClick={() =>
+                    generarPdfListadoPorCurso(
+                      alumnosFiltrados,
+                      "alumnos_por_grupo"
+                    )
+                  }
+                >
                   <Users className="mr-2 h-4 w-4" />
                   Alumnos por grupo
                 </DropdownMenuItem>
@@ -137,12 +146,6 @@ export function AlumnosIndex() {
           )}
         />
       )}
-
-      <DialogoListadoCurso
-        alumnos={alumnosFiltrados}
-        open={abrirDialogoListadoCurso}
-        onOpenChange={setAbrirDialogoListadoCurso}
-      />
 
       <DialogoEtiquetas
         usuarios={alumnosFiltrados}

@@ -35,7 +35,6 @@ import { useState, useEffect } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
-//import { useEmpleados } from "@/hooks/useEmpleados";
 import { Loader, Plus, Pencil, Trash2, Users, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DialogoEditarUsuario from "../components/DialogoEditarUsuario";
@@ -90,20 +89,6 @@ export function ProfesoresIndex() {
     alert(`Eliminación de profesor ${profesor.uid}: No implementado`);
   };
 
-  /*const handleGenerarPdf = () => {
-    // Combinamos profesoresFiltrados con datos de empleados
-    const listadoCombinado = profesoresFiltrados.map((profesor) => {
-      const empleadoExtra = empleados.find((e) => e.uid === profesor.uid) || {};
-      return {
-        ...profesor,
-        dni: empleadoExtra.dni || "",
-        asuntos_propios: empleadoExtra.asuntos_propios || 0,
-        tipo_empleado: empleadoExtra.tipo_empleado || "",
-      };
-    });
-
-    generateListadoAPs(listadoCombinado);
-  };*/
 
   const handleGenerarPdf = () => {
     // Ahora los datos de empleado ya están en cada profesor

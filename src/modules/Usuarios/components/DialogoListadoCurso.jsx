@@ -47,13 +47,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -75,7 +69,7 @@ export function DialogoListadoCurso({ alumnos, open, onOpenChange }) {
 
     // Agrupar y ordenar alumnos por curso y por apellido
     const grupos = alumnos.reduce((acc, alumno) => {
-      const curso = alumno.groups?.[1] ?? "Sin curso";
+      const curso = alumno.groups?.[0] ?? "Sin curso";
       if (!acc[curso]) acc[curso] = [];
       acc[curso].push(alumno);
       return acc;

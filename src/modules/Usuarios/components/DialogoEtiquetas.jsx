@@ -221,7 +221,7 @@ export function DialogoEtiquetas({ usuarios, open, onOpenChange }) {
 
       doc.setFontSize(8);
       doc.text(
-        `Curso: ${usuario.groups[1]} - ${cursoSeleccionado}`,
+        `Curso: ${usuario.groups[0]} - ${cursoSeleccionado}`,
         centerX,
         y + 18,
         { align: "center" }
