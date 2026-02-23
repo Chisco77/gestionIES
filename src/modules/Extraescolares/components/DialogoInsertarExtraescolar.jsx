@@ -27,10 +27,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { es } from "date-fns/locale";
-
-import { TimePicker } from "@/components/ui/TimePicker";
 
 import {
   MapContainer,
@@ -49,7 +46,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
 import { useCursosLdap } from "@/hooks/useCursosLdap";
 import { format } from "date-fns";
-import { schemaExtraescolar } from "@/zod/extraescolares";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -169,8 +165,11 @@ export function DialogoInsertarExtraescolar({
       });
 
       const json = await resp.json();
-      if (!resp.ok || !json.ok)
-        throw new Error(json.error || "Error guardando actividad");
+      if (!resp.ok || !json.ok) {
+        const error = new Error("Error validación");
+        error.data = json;
+        throw error;
+      }
       return json.actividad;
     },
     onSuccess: (actividad) => {
@@ -181,70 +180,66 @@ export function DialogoInsertarExtraescolar({
       onClose();
     },
     onError: (err) => {
-      toast.error(err.message || "Error guardando actividad");
+      const data = err?.data;
+
+      if (data?.errores && Array.isArray(data.errores)) {
+        // Mostrar todos los errores en un solo toast, cada uno en renglón
+        toast.error(
+          <div className="flex flex-col">
+            {data.errores.map((e, i) => (
+              <span key={i}>• {e}</span>
+            ))}
+          </div>,
+          { duration: 5000 },
+        );
+      } else {
+        toast.error(data?.error || err.message || "Error guardando actividad");
+      }
     },
   });
 
   const handleGuardar = () => {
+    if (mutation.isLoading) return;
+
     const pad = (n) => String(n).padStart(2, "0");
+
     let fechaInicioStr, fechaFinStr;
+
+    const fInicio = new Date(fechaInicio);
+    const fFin = new Date(fechaFin);
 
     if (tipo === "extraescolar") {
       const [hIni, mIni] = horaInicio.split(":").map(Number);
       const [hFin, mFin] = horaFin.split(":").map(Number);
 
-      const fInicio = new Date(fechaInicio);
-      const fFin = new Date(fechaFin);
-
-      // Crear strings exactos para PostgreSQL
       fechaInicioStr = `${fInicio.getFullYear()}-${pad(fInicio.getMonth() + 1)}-${pad(fInicio.getDate())} ${pad(hIni)}:${pad(mIni)}:00`;
       fechaFinStr = `${fFin.getFullYear()}-${pad(fFin.getMonth() + 1)}-${pad(fFin.getDate())} ${pad(hFin)}:${pad(mFin)}:00`;
-
-      // Validación estricta
-      if (new Date(fechaFinStr) <= new Date(fechaInicioStr)) {
-        setErrores({
-          fecha_fin: "La fecha y hora de fin debe ser posterior a la de inicio",
-        });
-        return;
-      }
     } else {
-      const fInicio = new Date(fechaInicio);
-      const fFin = new Date(fechaFin);
       fechaInicioStr = `${fInicio.getFullYear()}-${pad(fInicio.getMonth() + 1)}-${pad(fInicio.getDate())} 00:00:00`;
       fechaFinStr = `${fFin.getFullYear()}-${pad(fFin.getMonth() + 1)}-${pad(fFin.getDate())} 00:00:00`;
     }
 
     const datos = {
-      titulo,
-      descripcion,
-      gidnumber: Number(departamento),
+      titulo: titulo.trim(),
+      descripcion: descripcion.trim(),
+      gidnumber: departamento ? Number(departamento) : null,
       tipo,
       fecha_inicio: fechaInicioStr,
       fecha_fin: fechaFinStr,
       idperiodo_inicio:
-        tipo === "complementaria" ? Number(periodoInicio) : undefined,
-      idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : undefined,
-      cursos_gids: cursosSeleccionados.length > 0 ? cursosSeleccionados : [],
-      responsables_uids: profesoresSeleccionados,
-      ubicacion,
+        tipo === "complementaria" && periodoInicio
+          ? Number(periodoInicio)
+          : null,
+      idperiodo_fin:
+        tipo === "complementaria" && periodoFin ? Number(periodoFin) : null,
+      cursos_gids: cursosSeleccionados ?? [],
+      responsables_uids: profesoresSeleccionados ?? [],
+      ubicacion: ubicacion.trim(),
       coords,
-      uid: user.username, // creador
-      updated_by: user.username, // última actualización
+      uid: user.username,
+      updated_by: user.username,
     };
 
-    const result = schemaExtraescolar.safeParse(datos);
-    if (!result.success) {
-      console.log("Errores Zod:", result.error.format());
-      const nuevosErrores = {};
-      result.error.errors.forEach((err) => {
-        const path = err.path.join(".");
-        nuevosErrores[path] = err.message;
-      });
-      setErrores(nuevosErrores);
-      return;
-    }
-
-    setErrores({});
     mutation.mutate(datos);
   };
 
@@ -283,7 +278,6 @@ export function DialogoInsertarExtraescolar({
                 <Input
                   value={titulo}
                   onChange={(e) => setTitulo(e.target.value)}
-                  className={errores.titulo && "border-red-500"}
                 />
                 {errores.titulo && <CampoError>{errores.titulo}</CampoError>}
               </div>
@@ -292,9 +286,7 @@ export function DialogoInsertarExtraescolar({
               <div className="space-y-1">
                 <Label>Departamento organizador</Label>
                 <Select value={departamento} onValueChange={setDepartamento}>
-                  <SelectTrigger
-                    className={errores.gidnumber && "border-red-500"}
-                  >
+                  <SelectTrigger>
                     <SelectValue placeholder="Seleccionar departamento" />
                   </SelectTrigger>
                   <SelectContent>
@@ -441,7 +433,6 @@ export function DialogoInsertarExtraescolar({
                 <Textarea
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
-                  className={errores.descripcion && "border-red-500"}
                 />
                 {errores.descripcion && (
                   <CampoError>{errores.descripcion}</CampoError>
@@ -452,7 +443,6 @@ export function DialogoInsertarExtraescolar({
                 <MultiSelectProfesores
                   value={profesoresSeleccionados}
                   onChange={setProfesoresSeleccionados}
-                  className={errores.responsables_uids && "border-red-500"}
                 />
 
                 {errores.responsables_uids && (
@@ -496,7 +486,6 @@ export function DialogoInsertarExtraescolar({
                     value: c.gid,
                     label: c.nombre,
                   }))}
-                  className={errores.cursos_gids && "border-red-500"}
                   placeholder={
                     cursosSeleccionados.length === 0
                       ? "No hay cursos seleccionados"
@@ -531,7 +520,6 @@ export function DialogoInsertarExtraescolar({
                     setUbicacion(lugar.label);
                     setCoords({ lat: lugar.lat, lng: lugar.lng });
                   }}
-                  className={errores.ubicacion && "border-red-500"}
                 />
 
                 {errores.ubicacion && (
