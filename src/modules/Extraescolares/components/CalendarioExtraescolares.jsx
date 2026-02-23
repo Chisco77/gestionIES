@@ -43,21 +43,22 @@ export function CalendarioExtraescolares({
     weeks.push(week);
   }
 
-  // Extraescolares por día (ahora considerando rango de fechas)
+  // Extraescolares por día (ahora considerando rango de fechas y estado = 1)
   const extraescolaresPorDia = {};
-  extraescolares.forEach((a) => {
-    const fechaInicio = new Date(a.fecha_inicio);
-    const fechaFin = new Date(a.fecha_fin);
+  (extraescolares || [])
+    .filter((a) => a.estado === 1) // <-- filtrar solo las activas
+    .forEach((a) => {
+      const fechaInicio = new Date(a.fecha_inicio);
+      const fechaFin = new Date(a.fecha_fin);
 
-    for (
+      // Iterar todos los días entre fechaInicio y fechaFin inclusivo
       let d = new Date(fechaInicio);
-      d <= fechaFin;
-      d.setDate(d.getDate() + 1)
-    ) {
-      const fecha = formatDateKey(d);
-      extraescolaresPorDia[fecha] = (extraescolaresPorDia[fecha] || 0) + 1;
-    }
-  });
+      while (formatDateKey(d) <= formatDateKey(fechaFin)) {
+        const fecha = formatDateKey(d);
+        extraescolaresPorDia[fecha] = (extraescolaresPorDia[fecha] || 0) + 1;
+        d.setDate(d.getDate() + 1);
+      }
+    });
 
   const handlePrevMonth = () => {
     if (currentMonth === 0) setCurrentYear((y) => y - 1);

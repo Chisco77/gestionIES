@@ -43,7 +43,6 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
   }
 
   // --- Extraescolares por día ---
-  // --- Extraescolares por día ---
   const extraescolaresPorDia = {};
   (extraescolares || [])
     .filter((a) => a.estado === 1) // <-- solo aceptadas

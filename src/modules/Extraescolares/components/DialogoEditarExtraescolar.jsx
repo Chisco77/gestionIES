@@ -151,15 +151,15 @@ export function DialogoEditarExtraescolar({
     }
 
     const depto = departamentos.find(
-      (d) => String(d.gidNumber) === String(actividad.gidnumber),
+      (d) => String(d.gidNumber) === String(actividad.gidnumber)
     );
     setDepartamento(depto ? String(depto.gidNumber) : "");
 
     const periodoIni = periodos.find(
-      (p) => String(p.id) === String(actividad.idperiodo_inicio),
+      (p) => String(p.id) === String(actividad.idperiodo_inicio)
     );
     const periodoFi = periodos.find(
-      (p) => String(p.id) === String(actividad.idperiodo_fin),
+      (p) => String(p.id) === String(actividad.idperiodo_fin)
     );
     setPeriodoInicio(periodoIni ? String(periodoIni.id) : "");
     setPeriodoFin(periodoFi ? String(periodoFi.id) : "");
@@ -212,43 +212,46 @@ export function DialogoEditarExtraescolar({
   // --- Guardar ---
   const handleGuardar = () => {
     const pad = (n) => String(n).padStart(2, "0");
+
+    let fechaInicioStr, fechaFinStr;
     const fInicio = new Date(fechaInicio);
     const fFin = new Date(fechaFin);
 
     if (tipo === "extraescolar") {
+      // parsear horas
       const [hIni, mIni] = horaInicio.split(":").map(Number);
       const [hFin, mFin] = horaFin.split(":").map(Number);
-      fInicio.setHours(hIni, mIni, 0, 0);
-      fFin.setHours(hFin, mFin, 0, 0);
-      if (fFin <= fInicio) {
+
+      // construir strings en formato 'YYYY-MM-DD HH:mm:ss'
+      fechaInicioStr = `${fInicio.getFullYear()}-${pad(fInicio.getMonth() + 1)}-${pad(fInicio.getDate())} ${pad(hIni)}:${pad(mIni)}:00`;
+      fechaFinStr = `${fFin.getFullYear()}-${pad(fFin.getMonth() + 1)}-${pad(fFin.getDate())} ${pad(hFin)}:${pad(mFin)}:00`;
+
+      // validación
+      const fechaInicioCheck = new Date(fechaInicioStr);
+      const fechaFinCheck = new Date(fechaFinStr);
+      if (fechaFinCheck <= fechaInicioCheck) {
         setErrores({
           fecha_fin: "La fecha y hora de fin debe ser posterior a la de inicio",
         });
         return;
       }
     } else {
-      fInicio.setHours(0, 0, 0, 0);
-      fFin.setHours(0, 0, 0, 0);
+      // actividades complementarias: solo fecha
+      fechaInicioStr = `${fInicio.getFullYear()}-${pad(fInicio.getMonth() + 1)}-${pad(fInicio.getDate())} 00:00:00`;
+      fechaFinStr = `${fFin.getFullYear()}-${pad(fFin.getMonth() + 1)}-${pad(fFin.getDate())} 00:00:00`;
     }
 
     const datos = {
-      // actualizamos el uid del usuario que actualiza el registro
-
-      updated_by: user.username, 
-
+      updated_by: user.username,
       titulo,
       descripcion,
       tipo,
       gidnumber: Number(departamento),
-
-      fecha_inicio: format(fInicio, "yyyy-MM-dd HH:mm:ss"),
-      fecha_fin: format(fFin, "yyyy-MM-dd HH:mm:ss"),
-
+      fecha_inicio: fechaInicioStr,
+      fecha_fin: fechaFinStr,
       idperiodo_inicio:
         tipo === "complementaria" ? Number(periodoInicio) : undefined,
-
       idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : undefined,
-
       cursos_gids: cursosSeleccionados,
       responsables_uids: profesoresSeleccionados,
       ubicacion,

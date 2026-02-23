@@ -45,14 +45,12 @@ export function CalendarioDirectiva({ onSelectDate, disableInsert = false }) {
     const fechaInicio = new Date(a.fecha_inicio);
     const fechaFin = new Date(a.fecha_fin);
 
-    // Iterar todos los días entre fechaInicio y fechaFin
-    for (
-      let d = new Date(fechaInicio);
-      d <= fechaFin;
-      d.setDate(d.getDate() + 1)
-    ) {
+    // Iterar todos los días entre fechaInicio y fechaFin inclusivo
+    let d = new Date(fechaInicio);
+    while (formatDateKey(d) <= formatDateKey(fechaFin)) {
       const fecha = formatDateKey(d);
       extraescolaresPorDia[fecha] = (extraescolaresPorDia[fecha] || 0) + 1;
+      d.setDate(d.getDate() + 1);
     }
   });
 

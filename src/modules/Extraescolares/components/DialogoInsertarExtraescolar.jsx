@@ -186,33 +186,32 @@ export function DialogoInsertarExtraescolar({
   });
 
   const handleGuardar = () => {
-    let fechaInicioCompleta, fechaFinCompleta;
+    const pad = (n) => String(n).padStart(2, "0");
+    let fechaInicioStr, fechaFinStr;
 
     if (tipo === "extraescolar") {
       const [hIni, mIni] = horaInicio.split(":").map(Number);
       const [hFin, mFin] = horaFin.split(":").map(Number);
 
-      fechaInicioCompleta = new Date(fechaInicio);
-      fechaInicioCompleta.setHours(hIni, mIni, 0, 0);
+      const fInicio = new Date(fechaInicio);
+      const fFin = new Date(fechaFin);
 
-      fechaFinCompleta = new Date(fechaFin);
-      fechaFinCompleta.setHours(hFin, mFin, 0, 0);
+      // Crear strings exactos para PostgreSQL
+      fechaInicioStr = `${fInicio.getFullYear()}-${pad(fInicio.getMonth() + 1)}-${pad(fInicio.getDate())} ${pad(hIni)}:${pad(mIni)}:00`;
+      fechaFinStr = `${fFin.getFullYear()}-${pad(fFin.getMonth() + 1)}-${pad(fFin.getDate())} ${pad(hFin)}:${pad(mFin)}:00`;
 
-      // Validación estricta extraescolar
-      if (fechaFinCompleta <= fechaInicioCompleta) {
+      // Validación estricta
+      if (new Date(fechaFinStr) <= new Date(fechaInicioStr)) {
         setErrores({
           fecha_fin: "La fecha y hora de fin debe ser posterior a la de inicio",
         });
         return;
       }
     } else {
-      // Complementaria: solo fecha, sin validar horas
-      fechaInicioCompleta = new Date(fechaInicio);
-      fechaFinCompleta = new Date(fechaFin);
-
-      // Ajustar horas a 00:00 local
-      fechaInicioCompleta.setHours(0, 0, 0, 0);
-      fechaFinCompleta.setHours(0, 0, 0, 0);
+      const fInicio = new Date(fechaInicio);
+      const fFin = new Date(fechaFin);
+      fechaInicioStr = `${fInicio.getFullYear()}-${pad(fInicio.getMonth() + 1)}-${pad(fInicio.getDate())} 00:00:00`;
+      fechaFinStr = `${fFin.getFullYear()}-${pad(fFin.getMonth() + 1)}-${pad(fFin.getDate())} 00:00:00`;
     }
 
     const datos = {
@@ -220,34 +219,25 @@ export function DialogoInsertarExtraescolar({
       descripcion,
       gidnumber: Number(departamento),
       tipo,
-
-      fecha_inicio: format(fechaInicioCompleta, "yyyy-MM-dd HH:mm:ss"),
-      fecha_fin: format(fechaFinCompleta, "yyyy-MM-dd HH:mm:ss"),
-
+      fecha_inicio: fechaInicioStr,
+      fecha_fin: fechaFinStr,
       idperiodo_inicio:
         tipo === "complementaria" ? Number(periodoInicio) : undefined,
-
       idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : undefined,
-
       cursos_gids: cursosSeleccionados.length > 0 ? cursosSeleccionados : [],
-
       responsables_uids: profesoresSeleccionados,
-
       ubicacion,
       coords,
-
-      // 👇 Auditoría
       uid: user.username, // creador
-      updated_by: user.username, // última actualización (inicialmente el mismo)
+      updated_by: user.username, // última actualización
     };
 
     const result = schemaExtraescolar.safeParse(datos);
     if (!result.success) {
       console.log("Errores Zod:", result.error.format());
-
       const nuevosErrores = {};
       result.error.errors.forEach((err) => {
-        const path = err.path.join("."); // coords.lat, etc
+        const path = err.path.join(".");
         nuevosErrores[path] = err.message;
       });
       setErrores(nuevosErrores);
