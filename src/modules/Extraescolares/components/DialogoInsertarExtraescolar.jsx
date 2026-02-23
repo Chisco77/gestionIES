@@ -365,7 +365,11 @@ export function DialogoInsertarExtraescolar({
                 {tipo === "extraescolar" && (
                   <div className="space-y-1">
                     <Label>Hora inicio</Label>
-                    <TimePicker value={horaInicio} onChange={setHoraInicio} />
+                    <Input
+                      type="time"
+                      value={horaInicio}
+                      onChange={(e) => setHoraInicio(e.target.value)}
+                    />
                   </div>
                 )}
               </div>
@@ -396,7 +400,11 @@ export function DialogoInsertarExtraescolar({
                 {tipo === "extraescolar" && (
                   <div className="space-y-1">
                     <Label>Hora fin</Label>
-                    <TimePicker value={horaFin} onChange={setHoraFin} />
+                    <Input
+                      type="time"
+                      value={horaFin}
+                      onChange={(e) => setHoraFin(e.target.value)}
+                    />
                   </div>
                 )}
               </div>

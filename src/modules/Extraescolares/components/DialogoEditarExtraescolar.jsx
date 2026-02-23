@@ -21,6 +21,7 @@ import { MultiSelect } from "@/components/ui/multiselect";
 import { MultiSelectProfesores } from "@/modules/Utilidades/components/MultiSelectProfesores";
 
 import { Calendar } from "@/components/ui/calendar";
+import { es } from "date-fns/locale";
 import {
   Popover,
   PopoverTrigger,
@@ -381,6 +382,7 @@ export function DialogoEditarExtraescolar({
                         mode="single"
                         selected={fechaInicio}
                         onSelect={setFechaInicio}
+                        locale={es}
                       />
                     </PopoverContent>
                   </Popover>
@@ -416,6 +418,7 @@ export function DialogoEditarExtraescolar({
                         mode="single"
                         selected={fechaFin}
                         onSelect={setFechaFin}
+                        locale={es}
                       />
                     </PopoverContent>
                   </Popover>

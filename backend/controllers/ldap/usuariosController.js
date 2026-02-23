@@ -455,7 +455,6 @@ exports.getLdapUsuarios = (req, res) => {
         return snA.localeCompare(snB) || nameA.localeCompare(nameB);
       });
 
-      console.log(`LDAP → ${result.length} usuarios devueltos`);
 
       client.unbind();
       res.json(result);
