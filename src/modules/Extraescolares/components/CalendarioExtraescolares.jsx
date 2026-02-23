@@ -1,3 +1,4 @@
+// src/components/extraescolares/CalendarioExtraescolares.jsx
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -28,7 +29,7 @@ export function CalendarioExtraescolares({
   const [dialogoInsertarAbierto, setDialogoInsertarAbierto] = useState(false);
   const [fechaInsertar, setFechaInsertar] = useState(null);
 
-  // Construir calendario
+  // --- Generar semanas del mes ---
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
   const startDay = (firstDay + 6) % 7; // lunes = 0
@@ -43,23 +44,26 @@ export function CalendarioExtraescolares({
     weeks.push(week);
   }
 
-  // Extraescolares por día (ahora considerando rango de fechas y estado = 1)
+  // --- Extraescolares por día considerando rango de fechas ---
   const extraescolaresPorDia = {};
   (extraescolares || [])
-    .filter((a) => a.estado === 1) // <-- filtrar solo las activas
+    .filter((a) => a.estado === 1) // solo activas
     .forEach((a) => {
       const fechaInicio = new Date(a.fecha_inicio);
       const fechaFin = new Date(a.fecha_fin);
+      fechaInicio.setHours(0, 0, 0, 0);
+      fechaFin.setHours(0, 0, 0, 0);
 
-      // Iterar todos los días entre fechaInicio y fechaFin inclusivo
       let d = new Date(fechaInicio);
-      while (formatDateKey(d) <= formatDateKey(fechaFin)) {
-        const fecha = formatDateKey(d);
-        extraescolaresPorDia[fecha] = (extraescolaresPorDia[fecha] || 0) + 1;
+      while (d <= fechaFin) {
+        const fechaKey = formatDateKey(d);
+        extraescolaresPorDia[fechaKey] =
+          (extraescolaresPorDia[fechaKey] || 0) + 1;
         d.setDate(d.getDate() + 1);
       }
     });
 
+  // --- Navegación entre meses ---
   const handlePrevMonth = () => {
     if (currentMonth === 0) setCurrentYear((y) => y - 1);
     setCurrentMonth((m) => (m === 0 ? 11 : m - 1));
@@ -69,17 +73,18 @@ export function CalendarioExtraescolares({
     setCurrentMonth((m) => (m === 11 ? 0 : m + 1));
   };
 
+  // --- Click en un día ---
   const handleDiaClick = (d) => {
     if (!d) return;
     const dateKey = formatDateKey(new Date(currentYear, currentMonth, d));
 
-    // Bloquear inserción en días pasados
-    if (dateKey < todayStr) return;
+    if (dateKey < todayStr) return; // bloquear días pasados
 
     if (!disableInsert) {
       setFechaInsertar(dateKey);
       setDialogoInsertarAbierto(true);
     }
+
     if (onSelectDate) onSelectDate(dateKey);
   };
 
@@ -117,19 +122,19 @@ export function CalendarioExtraescolares({
                 <tr key={i}>
                   {week.map((d, j) => {
                     if (!d) return <td key={j} className="p-2"></td>;
+
                     const dateObj = new Date(currentYear, currentMonth, d);
                     const dateKey = formatDateKey(dateObj);
                     const numExtra = extraescolaresPorDia[dateKey] || 0;
                     const esHoy = dateKey === todayStr;
-
-                    // Días pasados bloqueados para insertar
                     const isDisabled = dateKey < todayStr;
 
                     return (
                       <td
                         key={j}
                         onClick={() => !isDisabled && handleDiaClick(d)}
-                        className={`p-1 rounded-lg transition-all text-center
+                        className={`
+                          p-1 rounded-lg text-center transition-all
                           ${numExtra ? "bg-purple-100" : ""}
                           ${esHoy ? "border-2 border-purple-300" : "border border-transparent"}
                           ${isDisabled ? "text-gray-400 cursor-not-allowed" : "cursor-pointer hover:bg-purple-200"}

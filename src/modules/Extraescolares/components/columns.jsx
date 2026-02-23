@@ -1,61 +1,50 @@
 // src/components/extraescolares/columns.jsx
+import { parseISO, format } from "date-fns";
+
 export const columnsExtraescolares = (cursos, periodos) => [
   // <-- recibe cursosMap
 
-  /*{
-    accessorKey: "fecha_inicio",
-    header: "Inicio",
-    cell: ({ row }) => new Date(row.original.fecha_inicio).toLocaleDateString(),
-    filterFn: (row, columnId, filterValue) => {
-      if (!filterValue) return true;
-
-      const rowDate = new Date(row.original.fecha_inicio);
-      rowDate.setHours(0, 0, 0, 0);
-
-      const desde = filterValue.desde ? new Date(filterValue.desde) : null;
-      if (desde) desde.setHours(0, 0, 0, 0);
-
-      const hasta = filterValue.hasta ? new Date(filterValue.hasta) : null;
-      if (hasta) hasta.setHours(0, 0, 0, 0);
-
-      if (desde && rowDate < desde) return false;
-      if (hasta && rowDate > hasta) return false;
-      return true;
-    },
-  },*/
   {
     accessorKey: "fecha_inicio",
     header: "Inicio",
-    cell: ({ row }) => new Date(row.original.fecha_inicio).toLocaleDateString(),
+    cell: ({ row }) => {
+      const fechaStr = row.original.fecha_inicio?.split(" ")[0]; // solo YYYY-MM-DD
+      return fechaStr ? format(parseISO(fechaStr), "dd/MM/yyyy") : "-";
+    },
     filterFn: (row, columnId, filterValue) => {
-      // Si no hay filtro, mostramos todo
       if (!filterValue) return true;
 
-      // Rango de la actividad
-      const inicioAct = new Date(row.original.fecha_inicio);
-      const finAct = new Date(row.original.fecha_fin);
+      const inicioActStr = row.original.fecha_inicio?.split(" ")[0];
+      const finActStr = row.original.fecha_fin?.split(" ")[0];
+      if (!inicioActStr || !finActStr) return false;
+
+      // Convertimos a Date y normalizamos horas
+      const inicioAct = new Date(inicioActStr);
+      const finAct = new Date(finActStr);
       inicioAct.setHours(0, 0, 0, 0);
       finAct.setHours(0, 0, 0, 0);
 
-      // Rango del filtro
       const desde = filterValue.desde ? new Date(filterValue.desde) : null;
       const hasta = filterValue.hasta ? new Date(filterValue.hasta) : null;
       if (desde) desde.setHours(0, 0, 0, 0);
       if (hasta) hasta.setHours(0, 0, 0, 0);
 
-      // Lógica de solapamiento de rangos
-      // Se muestra si la actividad toca el rango del filtro
-      if (desde && finAct < desde) return false; // termina antes del inicio del filtro
+      // Solapamiento: mostramos si la actividad toca el rango del filtro
+      if (desde && finAct < desde) return false;  // termina antes del inicio del filtro
       if (hasta && inicioAct > hasta) return false; // empieza después del fin del filtro
 
       return true;
     },
   },
 
+  // --- FECHA FIN ---
   {
     accessorKey: "fecha_fin",
     header: "Fin",
-    cell: ({ row }) => new Date(row.original.fecha_fin).toLocaleDateString(),
+    cell: ({ row }) => {
+      const fechaStr = row.original.fecha_fin?.split(" ")[0];
+      return fechaStr ? format(parseISO(fechaStr), "dd/MM/yyyy") : "-";
+    },
   },
   {
     id: "periodo",

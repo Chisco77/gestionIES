@@ -1,4 +1,5 @@
 // Muestra en el calendario TODAS las actividades extraescolares y TODOS los asuntos propios de todos los profesores.
+// FILTRA las actividades extraescolares, MOSTRANDO EN EL CALENDARIO SOLO LAS QUE HAN SIDO ACEPTADAS, NO LAS PENDIENTES NI LAS RECHAZADAS.
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,12 +46,17 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
   // --- Extraescolares por día ---
   const extraescolaresPorDia = {};
   (extraescolares || [])
-    .filter((a) => a.estado === 1) // <-- solo aceptadas
+    .filter((a) => a.estado === 1) // solo aceptadas
     .forEach((a) => {
+      if (!a.fecha_inicio || !a.fecha_fin) return;
+
       const fechaInicio = new Date(a.fecha_inicio);
       const fechaFin = new Date(a.fecha_fin);
 
-      // Iterar todos los días entre fechaInicio y fechaFin
+      // Normalizar a 00:00:00 para evitar problemas de hora
+      fechaInicio.setHours(0, 0, 0, 0);
+      fechaFin.setHours(0, 0, 0, 0);
+
       for (
         let d = new Date(fechaInicio);
         d <= fechaFin;
@@ -132,7 +138,7 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
                     if (!d) return <td key={j} className="p-2"></td>;
 
                     const dateKey = formatDateKey(
-                      new Date(currentYear, currentMonth, d),
+                      new Date(currentYear, currentMonth, d)
                     );
 
                     const numExtra = extraescolaresPorDia[dateKey] || 0;

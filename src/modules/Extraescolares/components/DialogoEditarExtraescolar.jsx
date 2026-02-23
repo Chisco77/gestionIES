@@ -96,6 +96,7 @@ export function DialogoEditarExtraescolar({
   departamentos = [],
   cursos = [],
 }) {
+  
   const { user } = useAuth();
   const esDirectiva = user?.perfil === "directiva";
   const esExtraescolares = user?.perfil === "extraescolares";
@@ -140,14 +141,28 @@ export function DialogoEditarExtraescolar({
     setDescripcion(actividad.descripcion || "");
     setTipo(actividad.tipo || "complementaria");
 
-    const fInicio = new Date(actividad.fecha_inicio);
-    const fFin = new Date(actividad.fecha_fin);
-    setFechaInicio(fInicio);
-    setFechaFin(fFin);
+    if (actividad.fecha_inicio) {
+      const fechaIni = new Date(actividad.fecha_inicio); // parsea ISO directo
+      setFechaInicio(fechaIni);
+      if (actividad.tipo === "extraescolar") {
+        setHoraInicio(
+          `${String(fechaIni.getHours()).padStart(2, "0")}:${String(
+            fechaIni.getMinutes()
+          ).padStart(2, "0")}`
+        );
+      }
+    }
 
-    if (actividad.tipo === "extraescolar") {
-      setHoraInicio(format(fInicio, "HH:mm"));
-      setHoraFin(format(fFin, "HH:mm"));
+    if (actividad.fecha_fin) {
+      const fechaFi = new Date(actividad.fecha_fin);
+      setFechaFin(fechaFi);
+      if (actividad.tipo === "extraescolar") {
+        setHoraFin(
+          `${String(fechaFi.getHours()).padStart(2, "0")}:${String(
+            fechaFi.getMinutes()
+          ).padStart(2, "0")}`
+        );
+      }
     }
 
     const depto = departamentos.find(
