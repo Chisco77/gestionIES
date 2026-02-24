@@ -75,6 +75,10 @@ export function generatePermisosPdf({ empleado, permiso }) {
   const employeeNumber = empleado?.dni || "";
   const telefono = empleado?.telefono || "";
   const email = empleado?.email || "";
+  const grupo = empleado?.grupo || "";
+  const cuerpo = empleado?.cuerpo || "";
+
+  console.log("Grupo: ", grupo);
 
   // --- Cabecera ---
   doc.setFont("helvetica", "bold");
@@ -140,27 +144,41 @@ export function generatePermisosPdf({ empleado, permiso }) {
   doc.line(tableX, y, tableX + tableWidth, y);
 
   // Fila 4: Cuerpo, Grupo, Subgrupo
+  // Fila 4: Cuerpo, Grupo, Subgrupo
   const row4Height = 10;
   const col4_1Width = 70;
   const col4_2Width = 50;
+
+  // Fila 4 - Cuerpo
   doc.text(
-    "Cuerpo: Profesores de Secundaria",
+    `Cuerpo: ${cuerpo || "Profesores de Secundaria"}`,
     tableX + textPad,
     y + row4Height - 3
   );
   doc.line(tableX + col4_1Width, y, tableX + col4_1Width, y + row4Height);
+
+  // Grupo
   doc.text("Grupo:", tableX + col4_1Width + textPad, y + row4Height - 3);
+  doc.text(grupo || "", tableX + col4_1Width + 22, y + row4Height - 3);
   doc.line(
     tableX + col4_1Width + col4_2Width,
     y,
     tableX + col4_1Width + col4_2Width,
     y + row4Height
   );
+
+  // Subgrupo
   doc.text(
     "Subgrupo:",
     tableX + col4_1Width + col4_2Width + textPad,
     y + row4Height - 3
   );
+  doc.text(
+    empleado?.subgrupo || "",
+    tableX + col4_1Width + col4_2Width + 22,
+    y + row4Height - 3
+  );
+
   y += row4Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
