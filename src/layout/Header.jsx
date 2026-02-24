@@ -86,11 +86,9 @@ export default function Header() {
       credentials: "include",
     })
       .then((res) => {
-        console.log("[DEBUG] Respuesta fetch empleado:", res);
         return res.ok ? res.json() : null;
       })
       .then((data) => {
-        console.log("[DEBUG] Datos de empleado recibidos:", data);
         setEmpleadoPerfil(data);
       })
       .catch((err) => {

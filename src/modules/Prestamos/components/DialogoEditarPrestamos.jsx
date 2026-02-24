@@ -364,7 +364,6 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
   };
 
   const handleGuardarCompleto = async () => {
-    console.log("Uasuario: ", usuario);
     try {
       if (!usuario?.id_prestamo) {
         toast.error("No se encontró el préstamo");

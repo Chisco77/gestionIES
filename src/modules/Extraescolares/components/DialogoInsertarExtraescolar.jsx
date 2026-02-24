@@ -190,7 +190,7 @@ export function DialogoInsertarExtraescolar({
               <span key={i}>• {e}</span>
             ))}
           </div>,
-          { duration: 5000 },
+          { duration: 5000 }
         );
       } else {
         toast.error(data?.error || err.message || "Error guardando actividad");
@@ -201,22 +201,23 @@ export function DialogoInsertarExtraescolar({
   const handleGuardar = () => {
     if (mutation.isLoading) return;
 
-    const pad = (n) => String(n).padStart(2, "0");
-
     let fechaInicioStr, fechaFinStr;
 
-    const fInicio = new Date(fechaInicio);
-    const fFin = new Date(fechaFin);
+    const fechaInicioBase = format(fechaInicio, "yyyy-MM-dd");
+    const fechaFinBase = format(fechaFin, "yyyy-MM-dd");
 
     if (tipo === "extraescolar") {
-      const [hIni, mIni] = horaInicio.split(":").map(Number);
-      const [hFin, mFin] = horaFin.split(":").map(Number);
+      fechaInicioStr = `${fechaInicioBase} ${horaInicio}:00`;
+      fechaFinStr = `${fechaFinBase} ${horaFin}:00`;
 
-      fechaInicioStr = `${fInicio.getFullYear()}-${pad(fInicio.getMonth() + 1)}-${pad(fInicio.getDate())} ${pad(hIni)}:${pad(mIni)}:00`;
-      fechaFinStr = `${fFin.getFullYear()}-${pad(fFin.getMonth() + 1)}-${pad(fFin.getDate())} ${pad(hFin)}:${pad(mFin)}:00`;
+      // Validación segura sin Date
+      if (fechaFinStr <= fechaInicioStr) {
+        toast.error("La fecha y hora de fin debe ser posterior a la de inicio");
+        return;
+      }
     } else {
-      fechaInicioStr = `${fInicio.getFullYear()}-${pad(fInicio.getMonth() + 1)}-${pad(fInicio.getDate())} 00:00:00`;
-      fechaFinStr = `${fFin.getFullYear()}-${pad(fFin.getMonth() + 1)}-${pad(fFin.getDate())} 00:00:00`;
+      fechaInicioStr = `${fechaInicioBase} 00:00:00`;
+      fechaFinStr = `${fechaFinBase} 00:00:00`;
     }
 
     const datos = {

@@ -202,7 +202,6 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
     format: "a4",
   });
 
-  console.log ("Alumnos: ", alumnos);
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 

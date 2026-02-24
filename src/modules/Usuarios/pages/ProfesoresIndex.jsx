@@ -60,7 +60,6 @@ export function ProfesoresIndex() {
   } = useProfesoresLdap();
 
   //const { data: empleados = [], isLoading: loadingEmpleados } = useEmpleados();
-  console.log ("Profesores: ", profesores);
 
   const handleInsertar = () => {
     alert("Inserción de profesor: No implementado");

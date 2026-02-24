@@ -43,7 +43,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { schemaExtraescolar } from "@/zod/extraescolares";
 
 const provider = new OpenStreetMapProvider();
 
@@ -83,9 +82,6 @@ function SetViewOnChange({ coords }) {
   return null;
 }
 
-function CampoError({ children }) {
-  return <p className="text-red-600 text-sm mt-1">{children}</p>;
-}
 
 export function DialogoEditarExtraescolar({
   open,
@@ -96,7 +92,6 @@ export function DialogoEditarExtraescolar({
   departamentos = [],
   cursos = [],
 }) {
-  
   const { user } = useAuth();
   const esDirectiva = user?.perfil === "directiva";
   const esExtraescolares = user?.perfil === "extraescolares";
@@ -117,7 +112,6 @@ export function DialogoEditarExtraescolar({
   const [horaFin, setHoraFin] = useState("14:00");
   const [fechaInicio, setFechaInicio] = useState(new Date());
   const [fechaFin, setFechaFin] = useState(new Date());
-  const [errores, setErrores] = useState({});
 
   // --- Permisos ---
   const esPropietario = user.username === actividad?.uid;
@@ -142,26 +136,23 @@ export function DialogoEditarExtraescolar({
     setTipo(actividad.tipo || "complementaria");
 
     if (actividad.fecha_inicio) {
-      const fechaIni = new Date(actividad.fecha_inicio); // parsea ISO directo
-      setFechaInicio(fechaIni);
-      if (actividad.tipo === "extraescolar") {
-        setHoraInicio(
-          `${String(fechaIni.getHours()).padStart(2, "0")}:${String(
-            fechaIni.getMinutes()
-          ).padStart(2, "0")}`
-        );
+      const [fechaStr, horaStr] = actividad.fecha_inicio.split(" ");
+
+      // Solo fecha (sin hora)
+      setFechaInicio(new Date(fechaStr));
+
+      if (actividad.tipo === "extraescolar" && horaStr) {
+        setHoraInicio(horaStr.slice(0, 5)); // HH:mm
       }
     }
 
     if (actividad.fecha_fin) {
-      const fechaFi = new Date(actividad.fecha_fin);
-      setFechaFin(fechaFi);
-      if (actividad.tipo === "extraescolar") {
-        setHoraFin(
-          `${String(fechaFi.getHours()).padStart(2, "0")}:${String(
-            fechaFi.getMinutes()
-          ).padStart(2, "0")}`
-        );
+      const [fechaStr, horaStr] = actividad.fecha_fin.split(" ");
+
+      setFechaFin(new Date(fechaStr));
+
+      if (actividad.tipo === "extraescolar" && horaStr) {
+        setHoraFin(horaStr.slice(0, 5));
       }
     }
 
@@ -208,8 +199,13 @@ export function DialogoEditarExtraescolar({
         body: JSON.stringify(datos),
       });
       const json = await resp.json();
-      if (!resp.ok || !json.ok)
-        throw new Error(json.error || "Error actualizando actividad");
+
+      if (!resp.ok || !json.ok) {
+        const error = new Error("Error validación");
+        error.data = json;
+        throw error;
+      }
+
       return json.actividad;
     },
     onSuccess: (actividad) => {
@@ -220,7 +216,22 @@ export function DialogoEditarExtraescolar({
       onClose();
     },
     onError: (err) => {
-      toast.error(err.message || "Error actualizando actividad");
+      const data = err?.data;
+
+      if (data?.errores && Array.isArray(data.errores)) {
+        toast.error(
+          <div className="flex flex-col">
+            {data.errores.map((e, i) => (
+              <span key={i}>• {e}</span>
+            ))}
+          </div>,
+          { duration: 5000 }
+        );
+      } else {
+        toast.error(
+          data?.error || err.message || "Error actualizando actividad"
+        );
+      }
     },
   });
 
@@ -229,31 +240,24 @@ export function DialogoEditarExtraescolar({
     const pad = (n) => String(n).padStart(2, "0");
 
     let fechaInicioStr, fechaFinStr;
-    const fInicio = new Date(fechaInicio);
-    const fFin = new Date(fechaFin);
+
+    const fechaInicioBase = format(fechaInicio, "yyyy-MM-dd");
+    const fechaFinBase = format(fechaFin, "yyyy-MM-dd");
 
     if (tipo === "extraescolar") {
-      // parsear horas
-      const [hIni, mIni] = horaInicio.split(":").map(Number);
-      const [hFin, mFin] = horaFin.split(":").map(Number);
+      fechaInicioStr = `${fechaInicioBase} ${horaInicio}:00`;
+      fechaFinStr = `${fechaFinBase} ${horaFin}:00`;
 
-      // construir strings en formato 'YYYY-MM-DD HH:mm:ss'
-      fechaInicioStr = `${fInicio.getFullYear()}-${pad(fInicio.getMonth() + 1)}-${pad(fInicio.getDate())} ${pad(hIni)}:${pad(mIni)}:00`;
-      fechaFinStr = `${fFin.getFullYear()}-${pad(fFin.getMonth() + 1)}-${pad(fFin.getDate())} ${pad(hFin)}:${pad(mFin)}:00`;
-
-      // validación
-      const fechaInicioCheck = new Date(fechaInicioStr);
-      const fechaFinCheck = new Date(fechaFinStr);
-      if (fechaFinCheck <= fechaInicioCheck) {
+      // Validación sin usar Date con zona
+      if (fechaFinStr <= fechaInicioStr) {
         setErrores({
           fecha_fin: "La fecha y hora de fin debe ser posterior a la de inicio",
         });
         return;
       }
     } else {
-      // actividades complementarias: solo fecha
-      fechaInicioStr = `${fInicio.getFullYear()}-${pad(fInicio.getMonth() + 1)}-${pad(fInicio.getDate())} 00:00:00`;
-      fechaFinStr = `${fFin.getFullYear()}-${pad(fFin.getMonth() + 1)}-${pad(fFin.getDate())} 00:00:00`;
+      fechaInicioStr = `${fechaInicioBase} 00:00:00`;
+      fechaFinStr = `${fechaFinBase} 00:00:00`;
     }
 
     const datos = {
@@ -274,17 +278,6 @@ export function DialogoEditarExtraescolar({
       estado: actividad.estado,
     };
 
-    const result = schemaExtraescolar.safeParse(datos);
-    if (!result.success) {
-      const nuevosErrores = {};
-      result.error.errors.forEach((err) => {
-        nuevosErrores[err.path[0]] = err.message;
-      });
-      setErrores(nuevosErrores);
-      return;
-    }
-
-    setErrores({});
     mutation.mutate(datos);
   };
 
@@ -329,10 +322,8 @@ export function DialogoEditarExtraescolar({
                 <Input
                   value={titulo}
                   onChange={(e) => setTitulo(e.target.value)}
-                  className={errores.titulo && "border-red-500"}
                   disabled={!editableCamposBasicos}
                 />
-                {errores.titulo && <CampoError>{errores.titulo}</CampoError>}
               </div>
 
               {/* Departamento */}
@@ -344,7 +335,6 @@ export function DialogoEditarExtraescolar({
                   disabled={!editableCamposBasicos}
                 >
                   <SelectTrigger
-                    className={errores.gidnumber && "border-red-500"}
                   >
                     <SelectValue placeholder="Seleccionar departamento" />
                   </SelectTrigger>
@@ -356,9 +346,7 @@ export function DialogoEditarExtraescolar({
                     ))}
                   </SelectContent>
                 </Select>
-                {errores.gidnumber && (
-                  <CampoError>{errores.gidnumber}</CampoError>
-                )}
+
               </div>
 
               {/* Tipo */}
@@ -501,24 +489,18 @@ export function DialogoEditarExtraescolar({
                 <Textarea
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
-                  className={errores.descripcion && "border-red-500"}
                   disabled={!editableCamposBasicos}
                 />
-                {errores.descripcion && (
-                  <CampoError>{errores.descripcion}</CampoError>
-                )}
+
               </div>
 
               <div className="space-y-1">
                 <MultiSelectProfesores
                   value={profesoresSeleccionados}
                   onChange={setProfesoresSeleccionados}
-                  className={errores.responsables_uids && "border-red-500"}
                   disabled={!editableCamposBasicos}
                 />
-                {errores.responsables_uids && (
-                  <CampoError>{errores.responsables_uids}</CampoError>
-                )}
+
               </div>
 
               <div className="space-y-2">
@@ -539,7 +521,6 @@ export function DialogoEditarExtraescolar({
                     value: String(c.gid),
                     label: c.nombre,
                   }))}
-                  className={errores.cursos_gids && "border-red-500"}
                   disabled={!editableCamposBasicos}
                   placeholder={
                     cursosSeleccionados.length === 0
@@ -547,9 +528,6 @@ export function DialogoEditarExtraescolar({
                       : ""
                   }
                 />
-                {errores.cursos_gids && (
-                  <CampoError>{errores.cursos_gids}</CampoError>
-                )}
               </div>
             </TabsContent>
 
@@ -566,12 +544,8 @@ export function DialogoEditarExtraescolar({
                     setUbicacion(lugar.label);
                     setCoords({ lat: lugar.lat, lng: lugar.lng });
                   }}
-                  className={errores.ubicacion && "border-red-500"}
                   disabled={!editableCamposGenerales}
                 />
-                {errores.ubicacion && (
-                  <CampoError>{errores.ubicacion}</CampoError>
-                )}
               </div>
 
               <MapContainer
