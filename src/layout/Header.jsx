@@ -52,6 +52,9 @@ import {
 
 import DialogoEditarUsuario from "@/modules/Usuarios/components/DialogoEditarUsuario";
 
+import NotificacionesPopover from "@/modules/Notificaciones/components/NotificacionesPopover";
+import { useNotificaciones } from "@/hooks/useNotificaciones"; // tu hook
+
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
@@ -63,6 +66,38 @@ export default function Header() {
 
   const [abrirPerfil, setAbrirPerfil] = useState(false);
   const [empleadoPerfil, setEmpleadoPerfil] = useState(null);
+
+  const [notificaciones, setNotificaciones] = useState(null);
+  const [cargandoNotificaciones, setCargandoNotificaciones] = useState(true);
+
+  const esDirectiva = user?.perfil === "directiva";
+
+  // --- React Query hook para notificaciones ---
+  const { permisos, extraescolares, total, isLoading, isError, error } =
+    useNotificaciones();
+
+  /* useEffect(() => {
+    if (!esDirectiva) return;
+
+    const fetchNotificaciones = async () => {
+      try {
+        setCargandoNotificaciones(true);
+        const res = await fetch(`${API_BASE}/directiva/pendientes`, {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Error al obtener notificaciones");
+        const data = await res.json();
+        setNotificaciones(data);
+      } catch (err) {
+        console.error("[Header] Error cargando notificaciones:", err);
+        setNotificaciones(null);
+      } finally {
+        setCargandoNotificaciones(false);
+      }
+    };
+
+    fetchNotificaciones();
+  }, [user]);*/
 
   const handleClickLogout = () => {
     fetch(`${API_URL}/logout`, {
@@ -130,10 +165,25 @@ export default function Header() {
         <RelojPeriodo periodos={periodosDB} />
       </div>
       <div className="ml-auto flex items-center gap-4">
+        {/* Campana + notificaciones */}
+        {esDirectiva && (
+          <div className="mr-4">
+            <NotificacionesPopover
+              permisos={permisos}
+              extraescolares={extraescolares}
+              total={total}
+              onIrADashboard={() => navigate("/")}
+            />
+          </div>
+        )}
+
+        {/* Nombre de usuario */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">
             {user?.givenName} {user?.sn} ({user?.username})
           </span>
+
+          {/* Icono de editar perfil */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -149,7 +199,7 @@ export default function Header() {
           </TooltipProvider>
         </div>
 
-        {/* Tooltip en el icono de logout */}
+        {/* Icono de logout */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>

@@ -80,6 +80,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
       toast.success("Asunto propio insertado correctamente");
 
       queryClient.invalidateQueries(["panel", "permisos", user.username]);
+      queryClient.invalidateQueries(["notificacionesDirectiva"]);
 
       const month = new Date(fecha).getMonth();
       const year = new Date(fecha).getFullYear();

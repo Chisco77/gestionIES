@@ -41,6 +41,7 @@ export function DialogoEliminarExtraescolar({
       // Actualizar panel
       queryClient.invalidateQueries(["extraescolares", "uid", user.uid]);
       queryClient.invalidateQueries(["extraescolares", "all"]);
+      queryClient.invalidateQueries(["notificacionesDirectiva"]);
 
       // Actualizar calendario si procede
       const fechaObj = new Date(actividad.fecha_inicio);

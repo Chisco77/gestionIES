@@ -61,6 +61,7 @@ export function DialogoConfirmacionExtraescolar({
 
       queryClient.invalidateQueries(["extraescolares"]);
       queryClient.invalidateQueries(["extraescolaresMes"]);
+      queryClient.invalidateQueries(["notificacionesDirectiva"]);
 
       setOpen(false);
       onSuccess?.();

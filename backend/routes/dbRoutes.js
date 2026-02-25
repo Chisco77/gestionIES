@@ -347,5 +347,14 @@ router.post(
   simularReservaEstanciaRepeticion,
 );
 
+// --- Controlador de Notificaciones Directiva ---
+const {
+  getPendientesDirectiva,
+} = require("../controllers/db/notificacionesDirectivaController");
+
+// ================================================================
+//   Rutas de Notificaciones Directiva
+// ================================================================
+router.get("/directiva/pendientes", getPendientesDirectiva);
 
 module.exports = router;

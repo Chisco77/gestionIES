@@ -61,6 +61,8 @@ export function DialogoEliminarAsunto({ open, onOpenChange, asunto, onDeleteSucc
       const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
       queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
 
+      queryClient.invalidateQueries(["notificacionesDirectiva"]);
+
       onDeleteSuccess?.();
       onOpenChange(false);
     },

@@ -66,6 +66,7 @@ export function DialogoConfirmacion({
 
       queryClient.invalidateQueries(["asuntosPropios", "todos"]);
       queryClient.invalidateQueries(["asuntosPropios", user.uid]);
+      queryClient.invalidateQueries(["notificacionesDirectiva"]);
 
       const fechaObj = new Date(asunto.fecha);
       const month = fechaObj.getMonth();

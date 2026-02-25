@@ -72,6 +72,7 @@ export function DialogoInsertarPermiso({ open, onClose, fecha }) {
         0
       ).getDate()}`;
       queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
+      queryClient.invalidateQueries(["notificacionesDirectiva"]);
 
       setShowPdfDialog(true);
     },
