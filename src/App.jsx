@@ -35,15 +35,14 @@ import { PlanoPlanta } from "./modules/Llaves/pages/PlanoPlanta";
 import PlanoEstanciasEdicion from "./modules/Llaves/components/PlanoEstanciasEdicion";
 import { PerfilesUsuarioIndex } from "./modules/PerfilesUsuario/pages/PerfilesUsuarioIndex";
 import { EstanciasIndex } from "./modules/Estancias/pages/EstanciasIndex";
-import { DialogoAsuntosRestricciones } from "./modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
 import { SidebarProviderCustom } from "./context/SidebarContext";
 import { AsuntosPropiosIndex } from "./modules/AsuntosPropios/pages/AsuntosPropiosIndex";
 import { ReservasEstanciasIndex } from "./modules/ReservasEstancias/pages/ReservasEstanciasIndex";
-import { DialogoEtiquetasGenericas } from "./modules/Utilidades/components/DialogoEtiquetasGenericas";
 import { ExtraescolaresIndex } from "./modules/Extraescolares/pages/ExtraescolaresIndex";
 import { AvisosIndex } from "./modules/Avisos/pages/AvisosIndex";
 import { PeriodosHorariosIndex } from "./modules/PeriodosHorarios/pages/PeriodosHorariosIndex";
 import { PermisosIndex } from "./modules/Permisos/pages/PermisosIndex";
+import { useState } from "react"; // asegurarse de importar useState
 
 const queryClient = new QueryClient();
 
@@ -59,7 +58,7 @@ function DashboardSelector() {
     case "profesor":
       return <DashboardProfesor />;
     case "extraescolares":
-      return <DashboardProfesor />;      
+      return <DashboardProfesor />;
     case "administrador":
       return <DashboardAdmin />;
     case "educadora":
@@ -253,13 +252,18 @@ const router = createBrowserRouter(
 );
 
 function App() {
+  const [tabActivo, setTabActivo] = useState("permisos"); // estado global para tabs directiva
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TaskProvider>
           <SidebarProviderCustom>
             <Toaster richColors />
-            <RouterProvider router={router} />
+            <RouterProvider
+              router={router}
+              context={{ tabActivo, setTabActivo }} // React Router v6.14+ permite pasar contexto
+            />
           </SidebarProviderCustom>
         </TaskProvider>
         <ReactQueryDevtools initialIsOpen={false} />

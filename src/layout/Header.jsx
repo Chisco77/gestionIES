@@ -58,7 +58,7 @@ import { useNotificaciones } from "@/hooks/useNotificaciones"; // tu hook
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
-export default function Header() {
+export default function Header({ setTabActivo }) {
   const { tituloActivo } = useSidebarContext();
   const [periodosDB, setPeriodosDB] = useState([]);
   const { user, setUser } = useAuth();
@@ -168,11 +168,11 @@ export default function Header() {
         {/* Campana + notificaciones */}
         {esDirectiva && (
           <div className="mr-4">
-            <NotificacionesPopover
+           <NotificacionesPopover
               permisos={permisos}
               extraescolares={extraescolares}
               total={total}
-              onIrADashboard={() => navigate("/")}
+              setTabActivo={setTabActivo} // control de tab desde popover
             />
           </div>
         )}

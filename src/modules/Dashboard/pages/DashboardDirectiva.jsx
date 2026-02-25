@@ -23,6 +23,7 @@ import { PanelReservas } from "@/modules/Comunes/PanelReservas";
 import { useAuth } from "@/context/AuthContext";
 
 import { CalendarioDirectiva } from "../components/CalendarioDirectiva";
+import { useOutletContext } from "react-router-dom"; // ✅ IMPORT NECESARIO
 
 // Para evitar problemas con el tiempo UTC
 const formatDateKey = (date) => {
@@ -39,7 +40,6 @@ export function DashboardDirectiva() {
   const [fechaHora, setFechaHora] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(fechaHora.getMonth());
   const [currentYear, setCurrentYear] = useState(fechaHora.getFullYear());
-
 
   const { user } = useAuth();
   const uid = user?.username;
@@ -64,10 +64,10 @@ export function DashboardDirectiva() {
     weeks.push(week);
   }
 
-
   const [fechaSeleccionada, setFechaSeleccionada] = useState(
-    formatDateKey(new Date()),
+    formatDateKey(new Date())
   );
+  const { tabActivo, setTabActivo } = useOutletContext(); // ✅ aquí recibimos el estado compartido
 
   return (
     <div className="p-4">
@@ -87,7 +87,12 @@ export function DashboardDirectiva() {
       {/* Tablas de peticiones pendientes */}
       <div className="mt-2 space-y-8">
         {/* */}
-        <PanelReservasDirectiva user={user} fecha={fechaSeleccionada} />
+        <PanelReservasDirectiva
+          user={user}
+          fecha={fechaSeleccionada}
+          tabActivo={tabActivo}
+          setTabActivo={setTabActivo}
+        />
       </div>
     </div>
   );

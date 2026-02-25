@@ -53,6 +53,8 @@ export default function Layout(props) {
   const [openEtiquetas, setOpenEtiquetas] = useState(false);
   const [openRestricciones, setOpenRestricciones] = useState(false);
 
+  const [tabActivo, setTabActivo] = useState("permisos");
+
   const location = useLocation();
   const { setTituloActivo } = useSidebarContext();
 
@@ -94,8 +96,8 @@ export default function Layout(props) {
       />
 
       <SidebarInset>
-        <Header />
-        {!openEtiquetas && <Outlet />}
+        <Header setTabActivo={setTabActivo} />
+        {!openEtiquetas && <Outlet context={{ tabActivo, setTabActivo }} />}
         <DialogoAsuntosRestricciones
           open={openRestricciones}
           onOpenChange={setOpenRestricciones}
