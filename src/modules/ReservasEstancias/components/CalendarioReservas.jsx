@@ -11,7 +11,7 @@
  *
  * Componente de calendario mensual que permite seleccionar días
  * para visualizar o gestionar reservas de un usuario específico.
- * 
+ *
  * Características principales:
  * - Navegación entre meses con botones de anterior/siguiente.
  * - Destaca el día actual y el día seleccionado.
@@ -75,9 +75,7 @@ export function CalendarioReservas({ selectedDate, onSelectDate, uid }) {
   const handleDiaClick = (d) => {
     if (!d) return;
     const dateKey = formatDateKey(new Date(currentYear, currentMonth, d));
-    const isPast =
-      new Date(dateKey + "T00:00:00") < new Date(todayStr + "T00:00:00");
-    if (!isPast) onSelectDate?.(dateKey);
+    onSelectDate?.(dateKey);
   };
 
   return (
@@ -125,8 +123,13 @@ export function CalendarioReservas({ selectedDate, onSelectDate, uid }) {
                       <td
                         key={j}
                         className={`p-1 relative rounded-lg transition
-                          ${isPast ? "bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-blue-100"}
+                          ${
+                            isPast
+                              ? "bg-gray-100 text-gray-400 cursor-pointer hover:bg-gray-200"
+                              : "cursor-pointer hover:bg-blue-100"
+                          }
                           ${isToday ? "border-2 border-blue-400" : ""}
+                          ${isSelected && isPast ? "bg-gray-300" : ""}
                           ${isSelected && !isPast ? "bg-blue-100" : ""}`}
                         onClick={() => handleDiaClick(d)}
                       >
