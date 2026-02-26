@@ -73,7 +73,10 @@ import {
 import { generateListadoPermisosProfesores } from "@/Informes/permisos";
 import { MAPEO_TIPOS_PERMISOS } from "@/utils/mapeoTiposPermisos";
 
-export function TablaPermisosDirectiva({ fecha }) {
+export function TablaPermisosDirectiva({
+  fecha,
+  soloPendientesInicial = false,
+}) {
   const [sorting, setSorting] = useState([{ id: "fecha", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
@@ -103,7 +106,7 @@ export function TablaPermisosDirectiva({ fecha }) {
       toast.info("No hay permisos que coincidan con los filtros.");
       return;
     }
-    
+
     generateListadoPermisosProfesores(filasFiltradas);
   };
 
@@ -170,6 +173,13 @@ export function TablaPermisosDirectiva({ fecha }) {
     },
   });
 
+  // Para filtrar actividades pedientes
+  useEffect(() => {
+    if (soloPendientesInicial) {
+      table.getColumn("estado")?.setFilterValue(true);
+    }
+  }, [soloPendientesInicial, table]);
+  
   // Actualizamos el filtro de rango cuando cambia la prop fecha
   useEffect(() => {
     if (fecha) {

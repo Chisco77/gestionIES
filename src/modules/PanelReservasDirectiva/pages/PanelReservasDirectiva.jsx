@@ -99,7 +99,7 @@ export function PanelReservasDirectiva({ user, fecha, tabActivo, setTabActivo })
             </TabsContent>
 
             <TabsContent value="actividades" className="h-full overflow-y-auto pr-2">
-              <TablaExtraescolaresDirectiva user={user} fecha={fecha} />
+              <TablaExtraescolaresDirectiva fecha={fecha} />
             </TabsContent>
 
             <TabsContent value="periodicas" className="h-full overflow-y-auto pr-2">

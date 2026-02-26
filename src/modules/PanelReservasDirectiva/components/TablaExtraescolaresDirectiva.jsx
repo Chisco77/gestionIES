@@ -76,7 +76,10 @@ import { generateListadoExtraescolaresMensual } from "@/Informes/extraescolares"
 
 import { getCursoActual, ddmmyyyyToISO } from "@/utils/cursoAcademico";
 
-export function TablaExtraescolaresDirectiva({ user, fecha }) {
+export function TablaExtraescolaresDirectiva({
+  fecha,
+  soloPendientesInicial = false,
+}) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
@@ -96,7 +99,6 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
   const { data: cursos = [] } = useCursosLdap();
   const { data: periodos = [] } = usePeriodosHorarios();
   const { data: extraescolaresTodas = [] } = useExtraescolaresAll();
-
 
   const handleGenerarExcel = async (actividad) => {
     try {
@@ -259,48 +261,43 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
         cell: ({ row }) => (
           <div className="flex gap-2">
             {/* ACEPTAR */}
-            {(user.perfil === "administrador" ||
-              user.perfil === "directiva" ||
-              user.perfil === "extraescolares") && (
-              <>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-green-600"
-                        onClick={() => handleAccion(row.original, "aceptar")}
-                      >
-                        <Check size={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-green-500 text-white">
-                      <p>Aceptar actividad</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
 
-                {/* RECHAZAR */}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-red-600"
-                        onClick={() => handleAccion(row.original, "rechazar")}
-                      >
-                        <X size={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
-                      <p>Rechazar actividad</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </>
-            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-green-600"
+                    onClick={() => handleAccion(row.original, "aceptar")}
+                  >
+                    <Check size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-green-500 text-white">
+                  <p>Aceptar actividad</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* RECHAZAR */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-red-600"
+                    onClick={() => handleAccion(row.original, "rechazar")}
+                  >
+                    <X size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
+                  <p>Rechazar actividad</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {/* EDITAR */}
             <TooltipProvider>
@@ -353,6 +350,14 @@ export function TablaExtraescolaresDirectiva({ user, fecha }) {
     getPaginationRowModel: getPaginationRowModel(),
     initialState: { pagination: { pageIndex: 0, pageSize: 6 } },
   });
+
+  
+  // Para filtrar actividades pedientes
+  useEffect(() => {
+    if (soloPendientesInicial) {
+      table.getColumn("estado")?.setFilterValue(true);
+    }
+  }, [soloPendientesInicial, table]);
 
   // ----- Actualizamos el filtro de rango cuando cambia la prop fecha -----
   useEffect(() => {

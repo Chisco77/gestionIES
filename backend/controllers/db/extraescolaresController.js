@@ -232,6 +232,15 @@ async function updateEstadoExtraescolar(req, res) {
   try {
     const id = req.params.id;
     const { estado } = req.body; // 1 = Aceptado, 2 = Rechazado
+    const usuarioSesion = req.session?.user;
+    if (!usuarioSesion) {
+      return res.status(401).json({ ok: false, error: "No autenticado" });
+    }
+    const esDirectiva = usuarioSesion.perfil === "directiva";
+
+    if (!esDirectiva) {
+      return res.status(403).json({ ok: false, error: "No autorizado" });
+    }
 
     if (![1, 2].includes(estado))
       return res.status(400).json({ ok: false, error: "Estado inválido" });
@@ -692,7 +701,6 @@ function validarActividad(body) {
       body.idperiodo_inicio === null ||
       body.idperiodo_inicio === "" ||
       body.idperiodo_inicio === 0
-
     ) {
       errores.push(
         "Debe seleccionar un periodo de inicio para actividades complementarias"
@@ -702,7 +710,7 @@ function validarActividad(body) {
     if (
       body.idperiodo_fin === undefined ||
       body.idperiodo_fin === null ||
-      body.idperiodo_fin === "" || 
+      body.idperiodo_fin === "" ||
       body.idperiodo_fin === 0
     ) {
       errores.push(

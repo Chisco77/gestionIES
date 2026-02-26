@@ -82,7 +82,6 @@ function SetViewOnChange({ coords }) {
   return null;
 }
 
-
 export function DialogoEditarExtraescolar({
   open,
   onClose,
@@ -282,8 +281,11 @@ export function DialogoEditarExtraescolar({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose} modal>
-      <DialogContent className="p-0 overflow-visible rounded-lg max-w-5xl w-full">
+    <Dialog open={open} onOpenChange={onClose} modal={true}>
+      <DialogContent
+        className="p-0 overflow-visible rounded-lg max-w-5xl w-full"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex flex-col items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Editar Actividad
@@ -334,8 +336,7 @@ export function DialogoEditarExtraescolar({
                   onValueChange={setDepartamento}
                   disabled={!editableCamposBasicos}
                 >
-                  <SelectTrigger
-                  >
+                  <SelectTrigger>
                     <SelectValue placeholder="Seleccionar departamento" />
                   </SelectTrigger>
                   <SelectContent>
@@ -346,7 +347,6 @@ export function DialogoEditarExtraescolar({
                     ))}
                   </SelectContent>
                 </Select>
-
               </div>
 
               {/* Tipo */}
@@ -491,7 +491,6 @@ export function DialogoEditarExtraescolar({
                   onChange={(e) => setDescripcion(e.target.value)}
                   disabled={!editableCamposBasicos}
                 />
-
               </div>
 
               <div className="space-y-1">
@@ -500,7 +499,6 @@ export function DialogoEditarExtraescolar({
                   onChange={setProfesoresSeleccionados}
                   disabled={!editableCamposBasicos}
                 />
-
               </div>
 
               <div className="space-y-2">

@@ -4,160 +4,122 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 import NotificacionesBell from "./NotificacionesBell";
-import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 
-/*export default function NotificacionesPopover({
-  permisos,
-  extraescolares,
-  total,
-}) {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false); // Estado controlado del Popover
-
-  // ✅ ya son números, no objetos
-  const totalPermisos = permisos;
-  const totalExtraescolares = extraescolares;
-
-  const irADashboard = () => {
-    navigate("/"); // Navega al dashboard
-    setOpen(false); // Cierra el popover
-  };
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <div>
-          <NotificacionesBell total={total} />
-        </div>
-      </PopoverTrigger>
-
-      <PopoverContent className="w-72 bg-white">
-        <div className="space-y-3">
-          <h4 className="font-semibold text-sm">Notificaciones</h4>
-
-          {total === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No hay elementos pendientes
-            </p>
-          )}
-
-          {totalPermisos > 0 && (
-            <div className="flex justify-between items-center text-sm">
-              <span>Permisos pendientes</span>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-red-600">
-                  {totalPermisos}
-                </span>
-                <button
-                  onClick={irADashboard}
-                  className="p-1 rounded hover:bg-gray-100"
-                  title="Ir al dashboard"
-                >
-                  <ArrowRight className="h-4 w-4 text-blue-500" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {totalExtraescolares > 0 && (
-            <div className="flex justify-between items-center text-sm">
-              <span>Extraescolares pendientes</span>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-orange-600">
-                  {totalExtraescolares}
-                </span>
-                <button
-                  onClick={irADashboard}
-                  className="p-1 rounded hover:bg-gray-100"
-                  title="Ir al dashboard"
-                >
-                  <ArrowRight className="h-4 w-4 text-blue-500" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}*/
+import { TablaPermisosDirectiva } from "@/modules/PanelReservasDirectiva/components/TablaPermisosDirectiva";
+import { TablaExtraescolaresDirectiva } from "@/modules/PanelReservasDirectiva/components/TablaExtraescolaresDirectiva";
+import { Button } from "@/components/ui/button";
 
 export default function NotificacionesPopover({
   permisos,
   extraescolares,
   total,
-  setTabActivo,
 }) {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const [openPopover, setOpenPopover] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [tipoDialogo, setTipoDialogo] = useState(null);
 
-  const handleIrPermisos = () => {
-    setTabActivo?.("permisos"); // selecciona tab permisos
-    navigate("/");               // navega al dashboard
-    setOpen(false);              // cierra popover
+  const handleAbrirPermisos = () => {
+    setTipoDialogo("permisos");
+    setOpenDialog(true);
+    setOpenPopover(false);
   };
 
-  const handleIrExtraescolares = () => {
-    setTabActivo?.("actividades"); // selecciona tab extraescolares
-    navigate("/");                  // navega al dashboard
-    setOpen(false);
+  const handleAbrirExtraescolares = () => {
+    setTipoDialogo("extraescolares");
+    setOpenDialog(true);
+    setOpenPopover(false);
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <div>
-          <NotificacionesBell total={total} />
-        </div>
-      </PopoverTrigger>
+    <>
+      {/* POPOVER */}
+      <Popover open={openPopover} onOpenChange={setOpenPopover}>
+        <PopoverTrigger asChild>
+          <div>
+            <NotificacionesBell total={total} />
+          </div>
+        </PopoverTrigger>
 
-      <PopoverContent className="w-72 bg-white">
-        <div className="space-y-3">
-          <h4 className="font-semibold text-sm">Notificaciones</h4>
+        <PopoverContent className="w-72 bg-white">
+          <div className="space-y-3">
+            <h4 className="font-semibold text-sm">Notificaciones</h4>
 
-          {total === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No hay elementos pendientes
-            </p>
-          )}
+            {total === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No hay elementos pendientes
+              </p>
+            )}
 
-          {permisos > 0 && (
-            <div className="flex justify-between items-center text-sm">
-              <span>Permisos pendientes</span>
-              <div className="flex items-center gap-2">
+            {permisos > 0 && (
+              <div
+                onClick={handleAbrirPermisos}
+                className="flex justify-between items-center text-sm cursor-pointer hover:bg-muted p-2 rounded-md transition"
+              >
+                <span>Permisos pendientes</span>
                 <span className="font-semibold text-red-600">{permisos}</span>
-                <button
-                  onClick={handleIrPermisos}
-                  className="p-1 rounded hover:bg-gray-100"
-                  title="Ir al dashboard"
-                >
-                  <ArrowRight className="h-4 w-4 text-blue-500" />
-                </button>
               </div>
-            </div>
-          )}
+            )}
 
-          {extraescolares > 0 && (
-            <div className="flex justify-between items-center text-sm">
-              <span>Extraescolares pendientes</span>
-              <div className="flex items-center gap-2">
+            {extraescolares > 0 && (
+              <div
+                onClick={handleAbrirExtraescolares}
+                className="flex justify-between items-center text-sm cursor-pointer hover:bg-muted p-2 rounded-md transition"
+              >
+                <span>Extraescolares pendientes</span>
                 <span className="font-semibold text-orange-600">
                   {extraescolares}
                 </span>
-                <button
-                  onClick={handleIrExtraescolares}
-                  className="p-1 rounded hover:bg-gray-100"
-                  title="Ir al dashboard"
-                >
-                  <ArrowRight className="h-4 w-4 text-blue-500" />
-                </button>
               </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* DIALOG */}
+      <Dialog open={openDialog} onOpenChange={setOpenDialog} modal={true}>
+        <DialogContent
+          className="p-0 overflow-visible rounded-lg max-w-6xl w-full"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader className="bg-green-500 text-white rounded-t-lg flex flex-col items-center justify-center py-3 px-6">
+            <DialogTitle className="text-lg font-semibold text-center leading-snug">
+              {tipoDialogo === "permisos"
+                ? "Gestión de Permisos"
+                : "Gestión de Actividades Extraescolares"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-col max-h-[80vh]">
+            {/* CONTENIDO */}
+            <div className="p-4 overflow-y-auto">
+              {tipoDialogo === "permisos" && (
+                <TablaPermisosDirectiva soloPendientesInicial />
+              )}
+
+              {tipoDialogo === "extraescolares" && (
+                <TablaExtraescolaresDirectiva soloPendientesInicial />
+              )}
             </div>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
+
+            {/* FOOTER */}
+            <div className="flex justify-end border-t p-4 bg-muted/30">
+              <Button variant="outline" onClick={() => setOpenDialog(false)}>
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
