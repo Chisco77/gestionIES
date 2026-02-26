@@ -75,6 +75,7 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         items: [
           { title: "Alumnos", url: "/alumnos", icon: GraduationCap },
           { title: "Profesores", url: "/profesores", icon: UserCheck },
+          { title: "Personal no docente", url: "/staff", icon: UserCheck },
           //{ title: "Todos", url: "/todos", icon: User },
         ],
       },

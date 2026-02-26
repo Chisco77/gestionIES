@@ -43,6 +43,7 @@ import { AvisosIndex } from "./modules/Avisos/pages/AvisosIndex";
 import { PeriodosHorariosIndex } from "./modules/PeriodosHorarios/pages/PeriodosHorariosIndex";
 import { PermisosIndex } from "./modules/Permisos/pages/PermisosIndex";
 import { useState } from "react"; // asegurarse de importar useState
+import { StaffIndex } from "./modules/Usuarios/pages/StaffIndex";
 
 const queryClient = new QueryClient();
 
@@ -94,6 +95,15 @@ const router = createBrowserRouter(
             <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
               {" "}
               <ProfesoresIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "staff",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+              {" "}
+              <StaffIndex />{" "}
             </ProtectedRoute>
           ),
         },

@@ -63,6 +63,7 @@ export default function Layout(props) {
       "/": "Inicio",
       "/alumnos": "Alumnos",
       "/profesores": "Profesores",
+      "/staff": "Personal no docente",
       "/todos": "Todos",
       "/cursos": "Cursos",
       "/libros": "Libros",

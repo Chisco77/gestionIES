@@ -173,156 +173,11 @@ exports.buscarPorUid = (ldapSession, uid, callback) => {
   });
 };
 
-// Obtener usuarios de LDAP (estudiantes, profesores o todos)
-/*exports.getLdapUsuarios = (req, res) => {
-  const ldapSession = req.session.ldap;
-  const tipo = req.query.tipo || "all";
-  const grupoPermitido = ["students", "teachers"].includes(tipo) ? tipo : "all";
-
-  if (!ldapSession) {
-    console.warn("⚠️ No hay sesión LDAP en req.session");
-    return res.status(401).json({ error: "No autenticado" });
-  }
-
-  const LDAP_URL = ldapSession.external
-    ? `ldap://${ldapSession.ldapHost}`
-    : process.env.LDAP_URL;
-
-  const client = ldap.createClient({ url: LDAP_URL });
-
-  client.bind(ldapSession.dn, ldapSession.password, (err) => {
-    if (err) {
-      return res.status(401).json({
-        error: "LDAP bind fallido",
-        details: err.message,
-      });
-    }
-
-    const baseDN = "dc=instituto,dc=extremadura,dc=es";
-
-    const peopleOptions = {
-      scope: "sub",
-      filter: "(objectClass=inetOrgPerson)",
-      attributes: [
-        "uidNumber",
-        "givenName",
-        "sn",
-        "uid",
-        "gidNumber",
-        "employeeNumber",
-      ],
-    };
-
-    client.search(`ou=People,${baseDN}`, peopleOptions, (err, peopleRes) => {
-      if (err) {
-        return res.status(500).json({
-          error: "Error al buscar usuarios",
-          details: err.message,
-        });
-      }
-
-      const people = [];
-
-      peopleRes.on("searchEntry", (entry) => {
-        const attrs = {};
-        entry.attributes.forEach((attr) => {
-          attrs[attr.type] = attr.vals;
-        });
-
-        const uid = attrs.uid?.[0];
-        if (!uid) return;
-
-        people.push({
-          uidNumber: attrs.uidNumber?.[0] || null,
-          givenName: attrs.givenName?.[0] || null,
-          sn: attrs.sn?.[0] || null,
-          uid,
-          gidNumber: attrs.gidNumber?.[0] || null,
-          employeeNumber: attrs.employeeNumber?.[0] || null,
-        });
-      });
-
-      peopleRes.on("end", () => {
-        const groupBaseDN = `ou=Group,${baseDN}`;
-        const groupOptions = {
-          scope: "sub",
-          filter: "(objectClass=lisAclGroup)",
-          attributes: ["cn", "gidNumber", "memberUid"],
-        };
-
-        client.search(groupBaseDN, groupOptions, (err, groupRes) => {
-          if (err) {
-            return res.status(500).json({
-              error: "Error al buscar grupos",
-              details: err.message,
-            });
-          }
-
-          const groups = {};
-
-          groupRes.on("searchEntry", (entry) => {
-            const attrs = {};
-            entry.attributes.forEach((attr) => {
-              attrs[attr.type] = attr.vals;
-            });
-
-            const cn = attrs.cn?.[0];
-            const members = attrs.memberUid || [];
-
-            if (cn) {
-              groups[cn] = members;
-            }
-          });
-
-          groupRes.on("end", () => {
-            const result = people
-              .map((p) => {
-                let userGroups = Object.entries(groups)
-                  .filter(([_, uids]) => uids.includes(p.uid))
-                  .map(([name]) => name);
-
-                // Quitar 'lpadmin' si existe
-                userGroups = userGroups.filter(
-                  (g) => g.toLowerCase() !== "lpadmin"
-                );
-
-                return {
-                  id: p.uidNumber,
-                  givenName: p.givenName,
-                  sn: p.sn,
-                  uid: p.uid,
-                  gidNumber: p.gidNumber,
-                  employeeNumber: p.employeeNumber,
-                  groups: userGroups,
-                };
-              })
-              .filter(
-                (p) =>
-                  grupoPermitido === "all" || p.groups.includes(grupoPermitido)
-              );
-            // ORDENACIÓN DOBLE: 1º sn, 2º givenName
-            result.sort((a, b) => {
-              const snA = a.sn?.toLowerCase() || "";
-              const snB = b.sn?.toLowerCase() || "";
-              const nameA = a.givenName?.toLowerCase() || "";
-              const nameB = b.givenName?.toLowerCase() || "";
-
-              return snA.localeCompare(snB) || nameA.localeCompare(nameB);
-            });
-
-            client.unbind();
-            res.json(result);
-          });
-        });
-      });
-    });
-  });
-};*/
-
+// Obtener usuarios de LDAP (estudiantes, profesores, staff o todos)
 exports.getLdapUsuarios = (req, res) => {
   const ldapSession = req.session.ldap;
   const tipo = req.query.tipo || "all";
-  const grupoPermitido = ["students", "teachers"].includes(tipo)
+  const grupoPermitido = ["students", "teachers", "staff"].includes(tipo)
     ? tipo
     : "all";
 
@@ -348,22 +203,19 @@ exports.getLdapUsuarios = (req, res) => {
 
     try {
       // ==========================
-      // 1️⃣ Obtener miembros del grupo principal (students/teachers)
+      // 1️⃣ Obtener miembros del grupo principal (students/teachers/staff)
       // ==========================
       let allowedUidSet = null;
 
       if (grupoPermitido !== "all") {
-        const groupPrincipal = await searchLDAP(
-          client,
-          `ou=Group,${baseDN}`,
-          {
-            scope: "sub",
-            filter: `(&(cn=${grupoPermitido})(objectClass=lisAclGroup))`,
-            attributes: ["memberUid"],
-          }
-        );
+        const groupPrincipal = await searchLDAP(client, `ou=Group,${baseDN}`, {
+          scope: "sub",
+          filter: `(&(cn=${grupoPermitido})(objectClass=lisAclGroup))`,
+          attributes: ["memberUid"],
+        });
 
         const memberUids = groupPrincipal[0]?.memberUid || [];
+        console.log ("Miembros: ", memberUids);
 
         allowedUidSet = new Set(
           memberUids.filter(
@@ -401,6 +253,11 @@ exports.getLdapUsuarios = (req, res) => {
       if (grupoPermitido === "teachers") {
         groupTypeFilter =
           "(&(objectClass=lisAclGroup)(groupType=school_department))";
+      }
+
+      if (grupoPermitido === "staff") {
+        groupTypeFilter =
+          "(&(objectClass=lisAclGroup)(groupType=administration))";
       }
 
       const groups = await searchLDAP(client, `ou=Group,${baseDN}`, {
@@ -454,7 +311,6 @@ exports.getLdapUsuarios = (req, res) => {
         const nameB = b.givenName?.toLowerCase() || "";
         return snA.localeCompare(snB) || nameA.localeCompare(nameB);
       });
-
 
       client.unbind();
       res.json(result);

@@ -64,6 +64,8 @@ export function LoginForm({ className, ...props }) {
       // Limpiar cache de React Query
       queryClient.invalidateQueries(["alumnos-ldap"]);
       queryClient.invalidateQueries(["profesores-ldap"]);
+      queryClient.invalidateQueries(["staff-ldap"]);
+
       queryClient.invalidateQueries(["todos-ldap"]);
       queryClient.invalidateQueries(["prestamos"]);
       queryClient.invalidateQueries(["reservasPanel"]);
