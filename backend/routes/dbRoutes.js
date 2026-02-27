@@ -68,6 +68,14 @@ const {
   deleteCurso,
 } = require("../controllers/db/cursosController");
 
+// --- Controlador de materias ---
+const {
+  getMaterias,
+  insertMateria,
+  updateMateria,
+  deleteMateria,
+} = require("../controllers/db/materiasController");
+
 // --- Controlador de libros ---
 const {
   getLibros,
@@ -252,6 +260,14 @@ router.get("/cursos", getCursos);
 router.post("/cursos", insertCurso);
 router.put("/cursos/:id", updateCurso);
 router.delete("/cursos/:id", deleteCurso);
+
+// ================================================================
+//   Rutas de Materias
+// ================================================================
+router.get("/materias", getMaterias);
+router.post("/materias", insertMateria);
+router.put("/materias/:id", updateMateria);
+router.delete("/materias/:id", deleteMateria);
 
 // Rutas de libros
 // ================================================================

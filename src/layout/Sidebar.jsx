@@ -110,8 +110,9 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
         items: [
           { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
           //{ title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
-          { title: "Libros", url: "/libros", icon: BookMarked },
           { title: "Cursos", url: "/cursos", icon: BookOpen },
+          { title: "Materias", url: "/materias", icon: BookOpen },
+          { title: "Libros", url: "/libros", icon: BookMarked },
         ],
       },
       {

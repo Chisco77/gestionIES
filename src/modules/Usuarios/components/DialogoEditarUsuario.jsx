@@ -288,6 +288,7 @@ export default function DialogoEditarUsuario({
                       </SelectItem>
                       <SelectItem value="Maestros">Maestros</SelectItem>
                       <SelectItem value="Orientadores">Orientadores</SelectItem>
+                      <SelectItem value="Ordenanzas">Ordenanzas</SelectItem>
                       <SelectItem value="Profesores de Secundaria">
                         Profesores de Secundaria
                       </SelectItem>

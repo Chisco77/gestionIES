@@ -45,6 +45,7 @@ import { PermisosIndex } from "./modules/Permisos/pages/PermisosIndex";
 import { useState } from "react"; // asegurarse de importar useState
 import { StaffIndex } from "./modules/Usuarios/pages/StaffIndex";
 import { DashboardAdmministrativos } from "./modules/Dashboard/pages/DashboardAdministrativos";
+import { MateriasIndex } from "./modules/Materias/pages/MateriasIndex";
 
 const queryClient = new QueryClient();
 
@@ -132,6 +133,17 @@ const router = createBrowserRouter(
             </ProtectedRoute>
           ),
         },
+        {
+          path: "materias",
+          element: (
+            <ProtectedRoute
+              perfilesPermitidos={["administrador", "directiva", "educadora", "administrativo"]}
+            >
+              {" "}
+              <MateriasIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },        
         {
           path: "libros",
           element: (
