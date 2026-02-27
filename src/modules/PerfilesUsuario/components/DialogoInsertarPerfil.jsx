@@ -31,6 +31,7 @@ export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
     "extraescolares",
     "ordenanza",
     "profesor",
+    "administrativo"
   ];
 
   // Cargar usuarios desde LDAP al abrir el diálogo

@@ -32,6 +32,7 @@ export function DialogoEditarPerfil({
     "extraescolares",
     "ordenanza",
     "profesor",
+    "administrativo"
   ];
 
   useEffect(() => {

@@ -71,6 +71,7 @@ export default function DialogoEditarUsuario({
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [cuerpo, setCuerpo] = useState(""); // Nuevo select Cuerpo
+  const [personal, setPersonal] = useState("");
 
   // ----------------------------------------
   // Permisos
@@ -100,6 +101,7 @@ export default function DialogoEditarUsuario({
     setTelefono(usuarioSeleccionado.telefono || "");
     setCuerpo(usuarioSeleccionado.cuerpo || "");
     setGrupo(usuarioSeleccionado.grupo || ""); // <-- A1 o A2
+    setPersonal(usuarioSeleccionado.personal || "");
 
     setFotoUrl(null);
 
@@ -170,6 +172,12 @@ export default function DialogoEditarUsuario({
     }
 
     mutation.mutate(datos);
+  };
+
+  const getTextoPersonal = () => {
+    if (personal === "teachers") return "Personal DOCENTE";
+    if (personal === "staff") return "Personal NO DOCENTE";
+    return "";
   };
 
   // ----------------------------------------
@@ -256,6 +264,12 @@ export default function DialogoEditarUsuario({
             {!esAlumno && (
               <>
                 <div>
+                  <label className="block text-sm font-medium">
+                    Tipo de Personal
+                  </label>
+                  <Input value={getTextoPersonal()} disabled />
+                </div>
+                <div>
                   <label className="block text-sm font-medium">Cuerpo</label>
                   <Select
                     value={cuerpo}
@@ -266,10 +280,20 @@ export default function DialogoEditarUsuario({
                       <SelectValue placeholder="Selecciona cuerpo" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Administrativos">
+                        Administrativos
+                      </SelectItem>
+                      <SelectItem value="Educadores Sociales">
+                        Educadores Sociales
+                      </SelectItem>
+                      <SelectItem value="Maestros">Maestros</SelectItem>
+                      <SelectItem value="Orientadores">Orientadores</SelectItem>
                       <SelectItem value="Profesores de Secundaria">
                         Profesores de Secundaria
                       </SelectItem>
-                      <SelectItem value="Maestros">Maestros</SelectItem>
+                      <SelectItem value="Técnicos Informáticos">
+                        Técnicos Informáticos
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -287,6 +311,14 @@ export default function DialogoEditarUsuario({
                     <SelectContent>
                       <SelectItem value="A1">A1</SelectItem>
                       <SelectItem value="A2">A2</SelectItem>
+                      <SelectItem value="B">B</SelectItem>
+                      <SelectItem value="C1">C1</SelectItem>
+                      <SelectItem value="C2">C2</SelectItem>
+                      <SelectItem value="I">I</SelectItem>
+                      <SelectItem value="II">II</SelectItem>
+                      <SelectItem value="III">III</SelectItem>
+                      <SelectItem value="IV">IV</SelectItem>
+                      <SelectItem value="V">V</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

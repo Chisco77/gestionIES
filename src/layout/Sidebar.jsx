@@ -201,6 +201,36 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
       },
     ],
 
+    administrativo: [
+      {
+        title: "Inicio",
+        url: "/",
+        icon: Home,
+      },
+      {
+        title: "Usuarios",
+        url: "#",
+        icon: Users,
+        items: [
+          { title: "Alumnos", url: "/alumnos", icon: GraduationCap },
+          { title: "Profesores", url: "/profesores", icon: UserCheck },
+          { title: "Personal no docente", url: "/staff", icon: UserCheck },
+        ],
+      },
+
+      {
+        title: "Préstamo Libros",
+        url: "#",
+        icon: Library,
+        items: [
+          { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
+          // { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
+          { title: "Libros", url: "/libros", icon: BookMarked },
+          { title: "Cursos", url: "/cursos", icon: BookOpen },
+        ],
+      },
+    ],
+
     extraescolares: [
       {
         title: "Inicio",

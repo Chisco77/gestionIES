@@ -215,7 +215,6 @@ exports.getLdapUsuarios = (req, res) => {
         });
 
         const memberUids = groupPrincipal[0]?.memberUid || [];
-        console.log ("Miembros: ", memberUids);
 
         allowedUidSet = new Set(
           memberUids.filter(

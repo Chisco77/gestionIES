@@ -546,10 +546,7 @@ async function updatePermiso(req, res) {
     vals.push(tipo);
   }
 
-  console.log("fecha", fecha);
-  console.log("descripcion", descripcion);
-  console.log("tipo", tipo);
-  console.log("Sets: ", sets);
+
   if (!sets.length)
     return res.status(400).json({ ok: false, error: "Nada que actualizar" });
 

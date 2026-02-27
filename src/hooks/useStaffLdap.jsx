@@ -38,22 +38,21 @@ export function useStaffLdap() {
       if (!res.ok) throw new Error("Error al obtener personal no docente desde LDAP");
       const staffLDAP = await res.json();
 
-      // Para cada profesor, traemos los datos de empleados
+      // Para cada staff de LDAP, traemos los datos de empleados de postgresql
       const staffEnriquecidos = await Promise.all(
-        staffLDAP.map(async (empleado) => {
+        staffLDAP.map(async (staff) => {
           try {
-            const resEmp = await fetch(`${API_URL}/db/empleados/${empleado.uid}`, {
+            const resEmp = await fetch(`${API_URL}/db/empleados/${staff.uid}`, {
               credentials: "include",
             });
-            if (!resEmp.ok) return empleado; // si no existe, devolvemos solo LDAP
+            if (!resEmp.ok) return staff; // si no existe, devolvemos solo LDAP
             const empleado = await resEmp.json();
-            return { ...empleado, ...empleado };
+            return { ...staff, ...empleado };
           } catch {
-            return empleado; // en caso de error, devolvemos solo LDAP
+            return staff; // en caso de error, devolvemos solo LDAP
           }
         })
       );
-
       return staffEnriquecidos;
     },
     staleTime: 1000 * 60 * 5, // 5 minutos

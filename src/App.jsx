@@ -44,6 +44,7 @@ import { PeriodosHorariosIndex } from "./modules/PeriodosHorarios/pages/Periodos
 import { PermisosIndex } from "./modules/Permisos/pages/PermisosIndex";
 import { useState } from "react"; // asegurarse de importar useState
 import { StaffIndex } from "./modules/Usuarios/pages/StaffIndex";
+import { DashboardAdmministrativos } from "./modules/Dashboard/pages/DashboardAdministrativos";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,8 @@ function DashboardSelector() {
       return <DashboardAdmin />;
     case "educadora":
       return <DashboardEducadora />;
+    case "administrativo":
+      return <DashboardAdmministrativos />;
     default:
       return <div>Perfil no reconocido</div>;
   }
@@ -92,7 +95,7 @@ const router = createBrowserRouter(
         {
           path: "profesores",
           element: (
-            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva", "administrativo"]}>
               {" "}
               <ProfesoresIndex />{" "}
             </ProtectedRoute>
@@ -101,7 +104,7 @@ const router = createBrowserRouter(
         {
           path: "staff",
           element: (
-            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva", "administrativo"]}>
               {" "}
               <StaffIndex />{" "}
             </ProtectedRoute>
@@ -122,7 +125,7 @@ const router = createBrowserRouter(
           path: "cursos",
           element: (
             <ProtectedRoute
-              perfilesPermitidos={["administrador", "directiva", "educadora"]}
+              perfilesPermitidos={["administrador", "directiva", "educadora", "administrativo"]}
             >
               {" "}
               <CursosIndex />{" "}
@@ -133,7 +136,7 @@ const router = createBrowserRouter(
           path: "libros",
           element: (
             <ProtectedRoute
-              perfilesPermitidos={["administrador", "directiva", "educadora"]}
+              perfilesPermitidos={["administrador", "directiva", "educadora", "administrativo"]}
             >
               {" "}
               <LibrosIndex />{" "}
@@ -144,7 +147,7 @@ const router = createBrowserRouter(
           path: "prestamos",
           element: (
             <ProtectedRoute
-              perfilesPermitidos={["administrador", "directiva", "educadora"]}
+              perfilesPermitidos={["administrador", "directiva", "educadora", "administrativo"]}
             >
               {" "}
               <PrestamosAlumnosIndex />{" "}
@@ -155,7 +158,7 @@ const router = createBrowserRouter(
           path: "prestamosProfesores",
           element: (
             <ProtectedRoute
-              perfilesPermitidos={["administrador", "directiva", "educadora"]}
+              perfilesPermitidos={["administrador", "directiva", "educadora", "administrativo"]}
             >
               {" "}
               <PrestamosProfesoresIndex />{" "}

@@ -49,15 +49,16 @@ import { generateListadoAPs } from "../../../utils/Informes";
 
 export function StaffIndex() {
   const [staffFiltrados, setstaffFiltrados] = useState([]);
-  const [profesorSeleccionado, setStaffSeleccionado] = useState(null);
+  const [staffSeleccionado, setStaffSeleccionado] = useState(null);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
   const [abrirEditar, setAbrirEditar] = useState(false);
 
   const {
-    data: profesores,
-    isLoading: loadingProfesores,
-    error: errorProfesores,
+    data: staff,
+    isLoading: loadingStaff,
+    error: errorStaff,
   } = useStaffLdap();
+
 
   //const { data: empleados = [], isLoading: loadingEmpleados } = useEmpleados();
 
@@ -80,8 +81,8 @@ export function StaffIndex() {
     setAbrirEditar(true);
   };
 
-  const handleEliminar = (profesor) => {
-    if (!profesor) {
+  const handleEliminar = (staff) => {
+    if (!staff) {
       alert("Selecciona un profesor para eliminar.");
       return;
     }
@@ -91,31 +92,31 @@ export function StaffIndex() {
 
   const handleGenerarPdf = () => {
     // Ahora los datos de empleado ya están en cada profesor
-    const listadoCombinado = staffFiltrados.map((profesor) => ({
-      ...profesor,
-      dni: profesor.dni || "",
-      asuntos_propios: profesor.asuntos_propios || 0,
-      tipo_empleado: profesor.tipo_empleado || "",
+    const listadoCombinado = staffFiltrados.map((staff) => ({
+      ...staff,
+      dni: staff.dni || "",
+      asuntos_propios: staff.asuntos_propios || 0,
+      tipo_empleado: staff.tipo_empleado || "",
     }));
 
     generateListadoAPs(listadoCombinado);
   };
 
-  const isLoading = loadingProfesores;
+  const isLoading = loadingStaff;
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
       {isLoading ? (
         <div className="flex justify-center py-24">
           <Loader className="h-10 w-10 animate-spin text-primary" />
         </div>
-      ) : errorProfesores ? (
+      ) : errorStaff ? (
         <div className="text-red-500 text-center">
-          ❌ Error al cargar profesores: {errorProfesores.message}
+          ❌ Error al cargar profesores: {errorStaff.message}
         </div>
       ) : (
         <TablaUsuarios
           columns={columns}
-          data={profesores}
+          data={staff}
           onFilteredChange={(rows) => setstaffFiltrados(rows)}
           informes={
             <DropdownMenu>
@@ -127,7 +128,7 @@ export function StaffIndex() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleGenerarPdf}>
                   <Users className="mr-2 h-4 w-4" />
-                  Listado profesores
+                  Listado personal no docente
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -161,7 +162,7 @@ export function StaffIndex() {
       <DialogoEditarUsuario
         open={abrirEditar}
         onClose={() => setAbrirEditar(false)}
-        usuarioSeleccionado={profesorSeleccionado}
+        usuarioSeleccionado={staffSeleccionado}
         empleadoSeleccionado={empleadoSeleccionado}
         esAlumno={false} // muestra foto en la cabecera
       />

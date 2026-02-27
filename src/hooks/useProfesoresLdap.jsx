@@ -35,16 +35,20 @@ export function useProfesoresLdap() {
       const res = await fetch(`${API_URL}/ldap/usuarios?tipo=teachers`, {
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Error al obtener los profesores desde LDAP");
+      if (!res.ok)
+        throw new Error("Error al obtener los profesores desde LDAP");
       const profesoresLDAP = await res.json();
 
       // Para cada profesor, traemos los datos de empleados
       const profesoresEnriquecidos = await Promise.all(
         profesoresLDAP.map(async (profesor) => {
           try {
-            const resEmp = await fetch(`${API_URL}/db/empleados/${profesor.uid}`, {
-              credentials: "include",
-            });
+            const resEmp = await fetch(
+              `${API_URL}/db/empleados/${profesor.uid}`,
+              {
+                credentials: "include",
+              }
+            );
             if (!resEmp.ok) return profesor; // si no existe, devolvemos solo LDAP
             const empleado = await resEmp.json();
             return { ...profesor, ...empleado };
