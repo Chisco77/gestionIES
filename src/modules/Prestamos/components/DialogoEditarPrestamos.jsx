@@ -750,7 +750,10 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                             <Button
                               variant="ghost"
                               size="icon"
-                              disabled={usuario?.doc_compromiso != 0}
+                              disabled={
+                                usuarioEdit?.doc_compromiso !== 0 ||
+                                state.seleccionadosIzquierda.length === 0
+                              }
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
