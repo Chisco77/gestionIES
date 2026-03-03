@@ -27,24 +27,31 @@
  * ================================================================
  */
 
-
-
 const db = require("../../db");
 
 exports.getLibros = async (req, res) => {
   try {
-    const { curso } = req.query; // idcurso opcional
+    const { curso } = req.query;
 
-    // Construimos la consulta dinámicamente
-    let text = "SELECT id, idcurso, libro FROM libros";
+    let text = `
+      SELECT 
+        l.id,
+        l.idcurso,
+        l.idmateria,
+        m.nombre,
+        l.libro
+      FROM libros l
+      LEFT JOIN materias m ON l.idmateria = m.id
+    `;
+
     const params = [];
 
     if (curso) {
-      text += " WHERE idcurso = $1"; // filtro por idcurso
+      text += " WHERE l.idcurso = $1";
       params.push(curso);
     }
 
-    text += " ORDER BY id";
+    text += " ORDER BY l.id";
 
     const result = await db.query(text, params);
     res.json(result.rows);
@@ -56,19 +63,22 @@ exports.getLibros = async (req, res) => {
 
 // Insertar un nuevo libro
 exports.insertLibro = async (req, res) => {
-  const { idcurso, libro } = req.body;
+  const { idcurso, idmateria, libro } = req.body;
 
-  if (!idcurso || !libro) {
+  if (!idcurso || !idmateria || !libro) {
     return res.status(400).json({
-      message: 'Los campos "idcurso" y "libro" son obligatorios',
+      message: 'Los campos "idcurso", "idmateria" y "libro" son obligatorios',
     });
   }
 
   try {
     const result = await db.query(
-      "INSERT INTO libros (idcurso, libro) VALUES ($1, $2) RETURNING *",
-      [idcurso, libro]
+      `INSERT INTO libros (idcurso, idmateria, libro) 
+       VALUES ($1, $2, $3) 
+       RETURNING *`,
+      [idcurso, idmateria, libro]
     );
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error("❌ Error al insertar libro:", error);
@@ -79,22 +89,29 @@ exports.insertLibro = async (req, res) => {
 // Actualizar un libro
 exports.updateLibro = async (req, res) => {
   const { id } = req.params;
-  const { idcurso, libro } = req.body;
+  const { idcurso, idmateria, libro } = req.body;
 
-  if (!idcurso || !libro) {
+  if (!idcurso || !idmateria || !libro) {
     return res.status(400).json({
-      message: 'Los campos "idcurso" y "libro" son obligatorios',
+      message: 'Los campos "idcurso", "idmateria" y "libro" son obligatorios',
     });
   }
 
   try {
     const result = await db.query(
-      "UPDATE libros SET idcurso = $1, libro = $2 WHERE id = $3 RETURNING *",
-      [idcurso, libro, id]
+      `UPDATE libros 
+       SET idcurso = $1, 
+           idmateria = $2, 
+           libro = $3 
+       WHERE id = $4 
+       RETURNING *`,
+      [idcurso, idmateria, libro, id]
     );
+
     if (result.rowCount === 0) {
       return res.status(404).json({ message: "Libro no encontrado" });
     }
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error("❌ Error al modificar libro:", error);
@@ -140,8 +157,14 @@ exports.getLibrosDisponibles = async (req, res) => {
 
   try {
     const query = `
-      SELECT l.*
+      SELECT 
+        l.id,
+        l.idcurso,
+        l.idmateria,
+        m.nombre,
+        l.libro
       FROM libros l
+      LEFT JOIN materias m ON l.idmateria = m.id
       WHERE l.idcurso = $1
       AND NOT EXISTS (
         SELECT 1
@@ -154,7 +177,6 @@ exports.getLibrosDisponibles = async (req, res) => {
     `;
 
     const result = await db.query(query, [curso, uid]);
-
     res.json(result.rows);
   } catch (error) {
     console.error("❌ Error al obtener libros disponibles:", error);

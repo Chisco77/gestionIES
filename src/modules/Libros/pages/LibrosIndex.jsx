@@ -83,6 +83,7 @@ export function LibrosIndex() {
   const [librosFiltrados, setLibrosFiltrados] = useState([]);
   const [libros, setLibros] = useState([]);
   const [cursos, setCursos] = useState([]);
+  const [materias, setMaterias] = useState([]);
   const [libroSeleccionado, setLibroSeleccionado] = useState(null);
   const [abrirInsertar, setAbrirInsertar] = useState(false);
   const [abrirEditar, setAbrirEditar] = useState(false);
@@ -95,7 +96,7 @@ export function LibrosIndex() {
         credentials: "include",
       });
       const data = await res.json();
-
+      console.log ("Libros: ", data);
       // Enriquecer los libros con el nombre del curso
       const librosConCurso = data.map((libro) => {
         const curso = cursos.find((c) => c.id === libro.idcurso);
@@ -109,6 +110,25 @@ export function LibrosIndex() {
     } catch (error) {
       console.error("❌ Error al obtener libros:", error);
       setLibros([]);
+    }
+  };
+
+  const fetchMaterias = async () => {
+    try {
+      const res = await fetch(`${API_URL}/db/materias`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      console.log ("Data materias: ", data);
+
+      const materiasOrdenadas = data.sort((a, b) =>
+        a.nombre.localeCompare(b.nombre)
+      );
+
+      setMaterias(materiasOrdenadas);
+    } catch (error) {
+      console.error("❌ Error al obtener materias:", error);
+      setMaterias([]);
     }
   };
 
@@ -133,6 +153,8 @@ export function LibrosIndex() {
 
   useEffect(() => {
     fetchCursos();
+    fetchMaterias();
+    console.log ("Materias ", materias);
   }, []);
 
   useEffect(() => {
@@ -172,7 +194,8 @@ export function LibrosIndex() {
       <TablaLibros
         columns={columns}
         data={libros}
-        cursos={cursos} //
+        cursos={cursos}
+        materias={materias}
         onFilteredChange={(filtrados) => setLibrosFiltrados(filtrados)}
         acciones={(seleccionado) => (
           <div className="flex items-center space-x-2">
@@ -258,6 +281,7 @@ export function LibrosIndex() {
         open={abrirInsertar}
         onClose={() => setAbrirInsertar(false)}
         cursos={cursos}
+        materias={materias} 
         onSuccess={onSuccess}
       />
 
@@ -266,6 +290,7 @@ export function LibrosIndex() {
         onClose={() => setAbrirEditar(false)}
         libroSeleccionado={libroSeleccionado}
         cursos={cursos}
+        materias={materias} 
         onSuccess={onSuccess}
       />
 

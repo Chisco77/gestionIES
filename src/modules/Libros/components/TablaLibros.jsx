@@ -49,7 +49,6 @@
  *
  */
 
-
 import {
   flexRender,
   getCoreRowModel,
@@ -82,6 +81,7 @@ export function TablaLibros({
   columns,
   data,
   cursos,
+  materias,
   onFilteredChange,
   informes,
   acciones,
@@ -90,6 +90,7 @@ export function TablaLibros({
   const [columnFilters, setColumnFilters] = useState([]);
   const [textoFiltro, setTextoFiltro] = useState("");
   const [filtroCurso, setFiltroCurso] = useState("");
+  const [filtroMateria, setFiltroMateria] = useState("");
   const [selectedId, setSelectedId] = useState(null);
 
   const table = useReactTable({
@@ -117,6 +118,10 @@ export function TablaLibros({
   useEffect(() => {
     table.getColumn("idcurso")?.setFilterValue(filtroCurso || undefined);
   }, [filtroCurso]);
+
+  useEffect(() => {
+    table.getColumn("idmateria")?.setFilterValue(filtroMateria || undefined);
+  }, [filtroMateria]);
 
   // Callback al padre
   useEffect(() => {
@@ -147,6 +152,22 @@ export function TablaLibros({
             {cursos.map((curso) => (
               <option key={curso.id} value={curso.id}>
                 {curso.curso}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="block font-medium text-xs">Materia</label>
+          <select
+            className="border p-2 rounded text-sm"
+            value={filtroMateria}
+            onChange={(e) => setFiltroMateria(e.target.value)}
+          >
+            <option value="">Todas</option>
+            {materias.map((materia) => (
+              <option key={materia.id} value={materia.id}>
+                {materia.materia}
               </option>
             ))}
           </select>
@@ -194,7 +215,7 @@ export function TablaLibros({
                   } hover:bg-gray-100 transition-colors`}
                   onClick={() => {
                     row.toggleSelected(); // para notificar al padre y habilitar/desabilitar editar y eliminar
-                    setSelectedId(row.original.id); 
+                    setSelectedId(row.original.id);
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (

@@ -8,7 +8,7 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * ------------------------------------------------------------
  * Autor: Francisco Damian Mendez Palma
  * Email: adminies.franciscodeorellana@educarex.es
@@ -41,7 +41,6 @@
  *
  */
 
-
 import { useState } from "react";
 import {
   Dialog,
@@ -53,18 +52,42 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-export function DialogoInsertarLibro({ open, onClose, cursos, onSuccess }) {
+export function DialogoInsertarLibro({
+  open,
+  onClose,
+  cursos,
+  materias,
+  onSuccess,
+}) {
   const [libro, setLibro] = useState("");
   const [idcurso, setIdcurso] = useState("");
+  const [idmateria, setIdmateria] = useState("");
+
   const API_URL = import.meta.env.VITE_API_URL;
+
   const handleGuardar = async () => {
+    if (!libro || !idcurso || !idmateria) {
+      toast.error("Todos los campos son obligatorios");
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/db/libros`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ libro, idcurso }),
+        body: JSON.stringify({
+          libro,
+          idcurso: Number(idcurso),
+          idmateria: Number(idmateria),
+        }),
       });
 
       if (!res.ok) throw new Error("Error al insertar");
@@ -72,6 +95,7 @@ export function DialogoInsertarLibro({ open, onClose, cursos, onSuccess }) {
       toast.success("Libro insertado correctamente");
       setLibro("");
       setIdcurso("");
+      setIdmateria("");
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -86,18 +110,30 @@ export function DialogoInsertarLibro({ open, onClose, cursos, onSuccess }) {
         <DialogHeader>
           <DialogTitle>Insertar libro</DialogTitle>
         </DialogHeader>
-        <select
-          value={idcurso}
-          onChange={(e) => setIdcurso(e.target.value)}
-          className="border p-2 rounded w-full text-sm"
-        >
-          <option value="">Seleccionar curso</option>
-          {cursos.map((curso) => (
-            <option key={curso.id} value={curso.id}>
-              {curso.curso}
-            </option>
-          ))}
-        </select>
+        <Select value={idcurso} onValueChange={setIdcurso}>
+          <SelectTrigger>
+            <SelectValue placeholder="Seleccionar curso" />
+          </SelectTrigger>
+          <SelectContent>
+            {cursos.map((curso) => (
+              <SelectItem key={curso.id} value={String(curso.id)}>
+                {curso.curso}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={idmateria} onValueChange={setIdmateria}>
+          <SelectTrigger>
+            <SelectValue placeholder="Seleccionar materia" />
+          </SelectTrigger>
+          <SelectContent>
+            {materias.map((materia) => (
+              <SelectItem key={materia.id} value={String(materia.id)}>
+                {materia.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Input
           placeholder="Nombre del libro"
           value={libro}

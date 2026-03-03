@@ -31,11 +31,25 @@
  *
  */
 
-
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const columns = [
+  {
+    accessorKey: "nombre",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Materia
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    enableSorting: true,
+    sortingFn: "alphanumeric",
+  },
+
   {
     accessorKey: "libro",
     header: ({ column }) => (
@@ -53,6 +67,7 @@ export const columns = [
       return value?.toLowerCase().includes(filterValue.toLowerCase());
     },
   },
+
   {
     accessorKey: "curso",
     header: ({ column }) => (
@@ -68,9 +83,24 @@ export const columns = [
     sortingFn: "alphanumeric",
   },
 
+  // 🔹 idcurso oculto (para filtro interno)
   {
-    accessorKey: "idcurso", // este campo servirá para el filtro
-    header: () => null, // oculto
+    accessorKey: "idcurso",
+    header: () => null,
+    cell: () => null,
+    enableSorting: false,
+    enableHiding: true,
+    enableColumnFilter: true,
+    filterFn: (row, columnId, filterValue) => {
+      if (!filterValue) return true;
+      return row.getValue(columnId) === filterValue;
+    },
+  },
+
+  // 🔹 idmateria oculto (para posible filtro futuro)
+  {
+    accessorKey: "idmateria",
+    header: () => null,
     cell: () => null,
     enableSorting: false,
     enableHiding: true,
