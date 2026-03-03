@@ -25,6 +25,46 @@
  * ================================================================
  */
 
+// ==========================
+// 🔐 ANONIMIZADOR
+// ==========================
+
+const ANONIMIZAR = process.env.ANONIMIZAR_USUARIOS === "true";
+
+const nombresFake = [
+  "Lucas", "Daniel", "Mateo", "Alejandro", "Pablo",
+  "Sofía", "Lucía", "Martina", "Valeria", "Emma"
+];
+
+const apellidosFake = [
+  "García López", "Fernández Ruiz", "Martínez Gómez",
+  "Sánchez Pérez", "Romero Díaz", "Torres Moreno"
+];
+
+// Hash simple y determinista basado en uid
+function hashString(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash);
+}
+
+function anonimizarUsuario(usuario) {
+  if (!ANONIMIZAR || !usuario.uid) return usuario;
+
+  const hash = hashString(usuario.uid);
+
+  const nombre = nombresFake[hash % nombresFake.length];
+  const apellido = apellidosFake[hash % apellidosFake.length];
+
+  return {
+    ...usuario,
+    givenName: nombre,
+    sn: apellido
+  };
+}
+
 const ldap = require("ldapjs");
 
 //const LDAP_URL = process.env.LDAP_URL;
@@ -160,10 +200,17 @@ exports.buscarPorUid = (ldapSession, uid, callback) => {
         };
       });
 
-      res.on("end", () => {
+      /*res.on("end", () => { anonimizar
         client.unbind();
         callback(null, alumno);
-      });
+      });*/
+      res.on("end", () => {
+  client.unbind();
+
+  const alumnoFinal = alumno ? anonimizarUsuario(alumno) : null;
+
+  callback(null, alumnoFinal);
+});
 
       res.on("error", (err) => {
         client.unbind();
@@ -312,7 +359,9 @@ exports.getLdapUsuarios = (req, res) => {
       });
 
       client.unbind();
-      res.json(result);
+      //res.json(result); anonimizar
+      const resultadoFinal = result.map(anonimizarUsuario);
+res.json(resultadoFinal);
     } catch (error) {
       console.error("🔥 ERROR REAL LDAP:", error);
       client.unbind();
@@ -474,7 +523,9 @@ exports.obtenerAlumnosPorGrupo = (req, res) => {
 
             peopleRes.on("end", () => {
               client.unbind();
-              res.json(alumnos);
+              //res.json(alumnos); anonimizar
+              const alumnosAnonimizados = alumnos.map(anonimizarUsuario);
+res.json(alumnosAnonimizados);
             });
           }
         );
