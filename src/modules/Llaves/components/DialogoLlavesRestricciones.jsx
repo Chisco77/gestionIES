@@ -128,7 +128,8 @@ export function DialogoLlavesRestricciones({ open, onOpenChange }) {
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   Si está activado, la llave únicamente podrá entregarse a la
-                  persona que tenga una reserva activa del aula.
+                  persona que tenga una reserva activa del aula, desde 15
+                  minutos antes del inicio de la reserva
                 </p>
               </div>
 

@@ -187,27 +187,26 @@ async function prestarLlave(req, res) {
     if (!uid || !idestancia)
       return res.status(400).json({ error: "Datos incompletos" });
 
-
     // --- CONTROL DE RESERVA PREVIA SOLO SI LA RESTRICCIÓN ESTÁ ACTIVA Y LA ESTANCIA ES RESERVABLE ---
     if (aplicarControlReserva) {
       const { rowCount } = await pool.query(
         `
-        SELECT 1
-        FROM reservas_estancias r
-        JOIN periodos_horarios p_inicio ON p_inicio.id = r.idperiodo_inicio
-        JOIN periodos_horarios p_fin ON p_fin.id = r.idperiodo_fin
-        WHERE r.uid = $1
-          AND r.idestancia = $2
-          AND r.fecha = $3
-          AND $4::time BETWEEN p_inicio.inicio AND p_fin.fin
-      `,
+    SELECT 1
+    FROM reservas_estancias r
+    JOIN periodos_horarios p_inicio ON p_inicio.id = r.idperiodo_inicio
+    JOIN periodos_horarios p_fin ON p_fin.id = r.idperiodo_fin
+    WHERE r.uid = $1
+      AND r.idestancia = $2
+      AND r.fecha = $3
+      AND $4::time BETWEEN (p_inicio.inicio - interval '15 minutes') AND p_fin.fin
+  `,
         [uid, idestancia, fechaHoy, horaActual]
       );
 
       if (rowCount === 0) {
         return res.status(400).json({
           error:
-            "No se puede prestar la llave: el profesor no ha reservado el aula",
+            "No se puede prestar la llave: el profesor no ha reservado el aula o aún no es hora",
         });
       }
     }
