@@ -183,12 +183,10 @@ async function prestarLlave(req, res) {
       unidades = 1,
       aplicarControlReserva = false,
     } = req.body;
-    
+
     if (!uid || !idestancia)
       return res.status(400).json({ error: "Datos incompletos" });
-    console.log ("Aplicar control reserva: ", aplicarControlReserva);
-    console.log ("Fecha hoy: ", fechaHoy);
-    console.log ("Hora Actual: ", horaActual);
+
 
     // --- CONTROL DE RESERVA PREVIA SOLO SI LA RESTRICCIÓN ESTÁ ACTIVA Y LA ESTANCIA ES RESERVABLE ---
     if (aplicarControlReserva) {
@@ -209,7 +207,7 @@ async function prestarLlave(req, res) {
       if (rowCount === 0) {
         return res.status(400).json({
           error:
-            "No se puede prestar la llave: el profesor no tiene reserva activa",
+            "No se puede prestar la llave: el profesor no ha reservado el aula",
         });
       }
     }

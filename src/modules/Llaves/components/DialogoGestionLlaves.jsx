@@ -75,6 +75,17 @@ import { toast } from "sonner";
 
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+
 const API_URL = import.meta.env.VITE_API_URL || "";
 
 export function DialogoGestionLlaves({
@@ -88,8 +99,9 @@ export function DialogoGestionLlaves({
   const [filtroProfesor, setFiltroProfesor] = useState("");
   const [seleccionados, setSeleccionados] = useState([]);
   const [controlReservaActiva, setControlReservaActiva] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMensaje, setAlertMensaje] = useState("");
 
-  
   // React query para obtener profesores
   const {
     data: profesores = [],
@@ -182,15 +194,19 @@ export function DialogoGestionLlaves({
   };*/
 
   const handlePrestar = async () => {
-    if (!profesorSeleccionado) return toast.error("Selecciona un profesor");
-    if (!estancia?.id) return toast.error("Estancia no definida");
+    if (!profesorSeleccionado) {
+      toast.error("Selecciona un profesor");
+      return;
+    }
+    if (!estancia?.id) {
+      toast.error("Estancia no definida");
+      return;
+    }
 
     try {
-      // --- Determinar si hay que aplicar control de reserva previa ---
       const aplicarControlReserva =
         controlReservaActiva && estancia?.reservable === true;
 
-      // --- Realizar préstamo al backend ---
       const res = await fetch(`${API_URL}/db/prestamos-llaves/prestar`, {
         method: "POST",
         credentials: "include",
@@ -199,19 +215,29 @@ export function DialogoGestionLlaves({
           uid: profesorSeleccionado,
           idestancia: estancia.id,
           unidades: 1,
-          aplicarControlReserva, // Le indicamos al backend si debe validar la reserva
+          aplicarControlReserva,
         }),
       });
 
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data?.error || "Error al prestar llave");
+      if (!res.ok) {
+        // Aquí mostramos tanto toast como alerta
+        const msg = data?.error || "No se puede prestar la llave";
+        toast.error(msg);
+        setAlertMensaje(msg);
+        setAlertOpen(true);
+        return;
+      }
 
       toast.success("Llave prestada correctamente");
       onSuccess?.();
       onClose();
     } catch (err) {
-      toast.error(err.message || "Error al prestar llave");
+      const msg = err.message || "Error al prestar llave";
+      toast.error(msg);
+      setAlertMensaje(msg);
+      setAlertOpen(true);
     }
   };
 
@@ -244,162 +270,179 @@ export function DialogoGestionLlaves({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent
-        onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 rounded-lg h-[610px] flex flex-col"
-      >
-        {/* CABECERA */}
-        <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
-          <div>
-            <DialogTitle className="text-lg font-semibold text-center leading-snug">
-              Gestión de llaves · {estancia.descripcion}
-              <p>
-                {estancia?.codigollave || estancia?.armario ? (
-                  <>
-                    {estancia?.codigollave && (
-                      <>
-                        Número de llave: <strong>{estancia.codigollave}</strong>
-                      </>
-                    )}
-                    {estancia?.codigollave && estancia?.armario && " · "}
-                    {estancia?.armario && (
-                      <>
-                        Armario: <strong>{estancia.armario}</strong>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-gray-200 italic">
-                    Sin información de ubicación.
-                  </span>
-                )}
-              </p>
-            </DialogTitle>
-          </div>
-        </DialogHeader>
-
-        {/* CUERPO CON TABS */}
-        <Tabs
-          defaultValue="prestar"
-          className="flex flex-col flex-1 px-6 pb-4 overflow-hidden"
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent
+          onInteractOutside={(e) => e.preventDefault()}
+          className="p-0 rounded-lg h-[610px] flex flex-col"
         >
-          <TabsList className="mb-4 justify-start">
-            <TabsTrigger value="prestar">Entregar llave</TabsTrigger>
-            <TabsTrigger value="devolver">Pendientes devolver</TabsTrigger>
-          </TabsList>
-
-          {/* --- TAB PRESTAR --- */}
-          <TabsContent className="flex flex-col pb-2" value="prestar">
-            {disponibles <= 0 ? (
-              <p className="text-gray-500 text-sm mt-4">
-                No hay llaves disponibles.
-              </p>
-            ) : (
-              <>
-                <Input
-                  placeholder="Buscar profesor"
-                  value={filtroProfesor}
-                  onChange={(e) => setFiltroProfesor(e.target.value)}
-                  className="mb-3"
-                />
-
-                {/* Lista de altura fija con scroll */}
-                <div
-                  className="overflow-auto border rounded p-3 shadow-sm"
-                  style={{ height: 350 }}
-                >
-                  {isLoading && <p className="text-sm">Cargando...</p>}
-                  {isError && (
-                    <p className="text-sm text-red-500">
-                      Error al cargar profesores.{" "}
-                      <button className="underline" onClick={() => refetch()}>
-                        Reintentar
-                      </button>
-                    </p>
+          {/* CABECERA */}
+          <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+            <div>
+              <DialogTitle className="text-lg font-semibold text-center leading-snug">
+                Gestión de llaves · {estancia.descripcion}
+                <p>
+                  {estancia?.codigollave || estancia?.armario ? (
+                    <>
+                      {estancia?.codigollave && (
+                        <>
+                          Número de llave:{" "}
+                          <strong>{estancia.codigollave}</strong>
+                        </>
+                      )}
+                      {estancia?.codigollave && estancia?.armario && " · "}
+                      {estancia?.armario && (
+                        <>
+                          Armario: <strong>{estancia.armario}</strong>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-gray-200 italic">
+                      Sin información de ubicación.
+                    </span>
                   )}
+                </p>
+              </DialogTitle>
+            </div>
+          </DialogHeader>
 
-                  {!isLoading && profesoresFiltrados.length === 0 && (
-                    <p className="text-xs italic text-gray-500">
-                      No hay profesores
-                    </p>
-                  )}
+          {/* CUERPO CON TABS */}
+          <Tabs
+            defaultValue="prestar"
+            className="flex flex-col flex-1 px-6 pb-4 overflow-hidden"
+          >
+            <TabsList className="mb-4 justify-start">
+              <TabsTrigger value="prestar">Entregar llave</TabsTrigger>
+              <TabsTrigger value="devolver">Pendientes devolver</TabsTrigger>
+            </TabsList>
 
-                  {profesoresFiltrados.map((p) => (
-                    <div
-                      key={p.uid}
-                      onClick={() => setProfesorSeleccionado(p.uid)}
-                      className={`cursor-pointer p-2 rounded mb-1 ${
-                        profesorSeleccionado === p.uid
-                          ? "bg-green-200"
-                          : "hover:bg-gray-100"
-                      }`}
-                    >
-                      {p.sn}, {p.givenName} ({p.uid})
-                    </div>
-                  ))}
-                </div>
+            {/* --- TAB PRESTAR --- */}
+            <TabsContent className="flex flex-col pb-2" value="prestar">
+              {disponibles <= 0 ? (
+                <p className="text-gray-500 text-sm mt-4">
+                  No hay llaves disponibles.
+                </p>
+              ) : (
+                <>
+                  <Input
+                    placeholder="Buscar profesor"
+                    value={filtroProfesor}
+                    onChange={(e) => setFiltroProfesor(e.target.value)}
+                    className="mb-3"
+                  />
 
-                {/* Footer */}
-                <DialogFooter className="mt-3 flex justify-end gap-2 shrink-0 justify-end">
-                  <Button variant="outline" onClick={onClose}>
-                    Cancelar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handlePrestar}
-                    disabled={!profesorSeleccionado}
+                  {/* Lista de altura fija con scroll */}
+                  <div
+                    className="overflow-auto border rounded p-3 shadow-sm"
+                    style={{ height: 350 }}
                   >
-                    Prestar llave
-                  </Button>
-                </DialogFooter>
-              </>
-            )}
-          </TabsContent>
+                    {isLoading && <p className="text-sm">Cargando...</p>}
+                    {isError && (
+                      <p className="text-sm text-red-500">
+                        Error al cargar profesores.{" "}
+                        <button className="underline" onClick={() => refetch()}>
+                          Reintentar
+                        </button>
+                      </p>
+                    )}
 
-          {/* --- TAB DEVOLVER --- */}
-          <TabsContent className="flex flex-col pb-2" value="devolver">
-            {!hayPrestamos ? (
-              <p className="text-gray-500 text-sm mt-4">
-                No hay préstamos activos.
-              </p>
-            ) : (
-              <>
-                {/* Lista de llaves con altura fija */}
-                <div className="h-[380px] overflow-auto border rounded p-3 shadow-sm">
-                  {prestamosActivos.map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => toggleSeleccion(p.id)}
-                      className={`cursor-pointer p-2 rounded mb-1 ${
-                        seleccionados.includes(p.id)
-                          ? "bg-red-200"
-                          : "hover:bg-gray-100"
-                      }`}
+                    {!isLoading && profesoresFiltrados.length === 0 && (
+                      <p className="text-xs italic text-gray-500">
+                        No hay profesores
+                      </p>
+                    )}
+
+                    {profesoresFiltrados.map((p) => (
+                      <div
+                        key={p.uid}
+                        onClick={() => setProfesorSeleccionado(p.uid)}
+                        className={`cursor-pointer p-2 rounded mb-1 ${
+                          profesorSeleccionado === p.uid
+                            ? "bg-green-200"
+                            : "hover:bg-gray-100"
+                        }`}
+                      >
+                        {p.sn}, {p.givenName} ({p.uid})
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer */}
+                  <DialogFooter className="mt-3 flex justify-end gap-2 shrink-0 justify-end">
+                    <Button variant="outline" onClick={onClose}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handlePrestar}
+                      disabled={!profesorSeleccionado}
                     >
-                      {p.nombre} · {p.unidades} llave(s)
-                    </div>
-                  ))}
-                </div>
+                      Prestar llave
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+            </TabsContent>
 
-                {/* Footer siempre visible */}
-                <DialogFooter className="mt-3 flex gap-2 shrink-0 justify-end bg-gray-50">
-                  <Button variant="outline" onClick={onClose}>
-                    Cancelar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleDevolver}
-                    disabled={!seleccionados.length}
-                  >
-                    Devolver llave
-                  </Button>
-                </DialogFooter>
-              </>
-            )}
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+            {/* --- TAB DEVOLVER --- */}
+            <TabsContent className="flex flex-col pb-2" value="devolver">
+              {!hayPrestamos ? (
+                <p className="text-gray-500 text-sm mt-4">
+                  No hay préstamos activos.
+                </p>
+              ) : (
+                <>
+                  {/* Lista de llaves con altura fija */}
+                  <div className="h-[380px] overflow-auto border rounded p-3 shadow-sm">
+                    {prestamosActivos.map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => toggleSeleccion(p.id)}
+                        className={`cursor-pointer p-2 rounded mb-1 ${
+                          seleccionados.includes(p.id)
+                            ? "bg-red-200"
+                            : "hover:bg-gray-100"
+                        }`}
+                      >
+                        {p.nombre} · {p.unidades} llave(s)
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer siempre visible */}
+                  <DialogFooter className="mt-3 flex gap-2 shrink-0 justify-end bg-gray-50">
+                    <Button variant="outline" onClick={onClose}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleDevolver}
+                      disabled={!seleccionados.length}
+                    >
+                      Devolver llave
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+      {/* AlertDialog de ShadCN */}
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Error al prestar llave</AlertDialogTitle>
+            <AlertDialogDescription>{alertMensaje}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setAlertOpen(false)}>
+              Cerrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
