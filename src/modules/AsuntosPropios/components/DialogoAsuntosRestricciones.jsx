@@ -278,7 +278,10 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
-      <DialogContent className="p-0 rounded-lg h-[700px] w-[900px] flex flex-col">
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="p-0 rounded-lg h-[700px] w-[900px] flex flex-col"
+      >
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Restricciones de Asuntos Propios
@@ -408,19 +411,6 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                 </div>
 
                 <Separator />
-
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="ofuscar" className="text-sm font-medium">
-                    Ofuscar nombres en el calendario
-                  </Label>
-                  <Switch
-                    id="ofuscar"
-                    checked={restricciones.ofuscar}
-                    onCheckedChange={(checked) =>
-                      handleChange("ofuscar", checked)
-                    }
-                  />
-                </div>
               </TabsContent>
 
               {/* --- Tab: Rangos bloqueados --- */}
@@ -443,10 +433,10 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                   ) : (
                     rangos.map((r, i) => {
                       const inicioStr = new Date(r.inicio).toLocaleDateString(
-                        "es-ES",
+                        "es-ES"
                       );
                       const finStr = new Date(r.fin).toLocaleDateString(
-                        "es-ES",
+                        "es-ES"
                       );
 
                       return (
@@ -608,7 +598,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                   ) : (
                     asuntosPermitidos.map((p) => {
                       const profesor = profesores.find(
-                        (prof) => prof.uid === p.uid,
+                        (prof) => prof.uid === p.uid
                       );
                       const nombreCompleto = profesor
                         ? `${profesor.givenName} ${profesor.sn}`
@@ -676,7 +666,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
           autorizacionSeleccionada
             ? (() => {
                 const prof = profesores.find(
-                  (p) => p.uid === autorizacionSeleccionada.uid,
+                  (p) => p.uid === autorizacionSeleccionada.uid
                 );
                 return prof
                   ? `${prof.givenName} ${prof.sn}`

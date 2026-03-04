@@ -96,7 +96,6 @@ export function LibrosIndex() {
         credentials: "include",
       });
       const data = await res.json();
-      console.log ("Libros: ", data);
       // Enriquecer los libros con el nombre del curso
       const librosConCurso = data.map((libro) => {
         const curso = cursos.find((c) => c.id === libro.idcurso);
@@ -119,7 +118,6 @@ export function LibrosIndex() {
         credentials: "include",
       });
       const data = await res.json();
-      console.log ("Data materias: ", data);
 
       const materiasOrdenadas = data.sort((a, b) =>
         a.nombre.localeCompare(b.nombre)
@@ -154,7 +152,6 @@ export function LibrosIndex() {
   useEffect(() => {
     fetchCursos();
     fetchMaterias();
-    console.log ("Materias ", materias);
   }, []);
 
   useEffect(() => {

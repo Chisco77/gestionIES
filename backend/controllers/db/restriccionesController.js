@@ -368,6 +368,142 @@ async function deleteRangoBloqueado(req, res) {
   }
 }
 
+
+
+/*
+*
+*    RESTRICCIONES PARA CONTROL DE ENTREGA DE LLAVES
+*
+*    (se usa para forzar que se entregue solo llave a quien ha reservado el aula)
+*
+*
+*
+*/
+
+/**
+ * Obtener restricción de entrega de llaves (reserva previa)
+ */
+async function getRestriccionLlaves(req, res) {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, tipo, restriccion, descripcion, valor_num, valor_bool
+       FROM restricciones
+       WHERE tipo = 'llaves'
+         AND restriccion = 'llaves'
+         AND descripcion = 'reserva_previa'
+       LIMIT 1`
+    );
+
+    if (rows.length === 0) {
+      return res.json(null); // No existe todavía
+    }
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("❌ Error al obtener restricción de llaves:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+}
+
+/**
+ * Crear restricción de entrega de llaves (reserva previa)
+ */
+async function createRestriccionLlaves(req, res) {
+  const { activa = false } = req.body;
+
+  try {
+    // Comprobar si ya existe
+    const { rows } = await db.query(
+      `SELECT id FROM restricciones
+       WHERE tipo = 'llaves'
+         AND restriccion = 'llaves'
+         AND descripcion = 'reserva_previa'
+       LIMIT 1`
+    );
+
+    if (rows.length > 0) {
+      return res.status(400).json({
+        message: "La restricción de llaves ya existe",
+      });
+    }
+
+    const { rows: inserted } = await db.query(
+      `INSERT INTO restricciones (tipo, restriccion, descripcion, valor_num, valor_bool)
+       VALUES ('llaves', 'llaves', 'reserva_previa', 0, $1)
+       RETURNING *`,
+      [activa]
+    );
+
+    res.status(201).json(inserted[0]);
+  } catch (error) {
+    console.error("❌ Error al crear restricción de llaves:", error);
+    res.status(500).json({ message: "Error interno al crear restricción" });
+  }
+}
+
+
+/**
+ * Actualizar restricción de entrega de llaves
+ */
+async function updateRestriccionLlaves(req, res) {
+  const { activa } = req.body;
+
+  if (activa === undefined) {
+    return res
+      .status(400)
+      .json({ message: "Debe especificar si la restricción está activa o no" });
+  }
+
+  try {
+    const result = await db.query(
+      `UPDATE restricciones
+       SET valor_bool = $1
+       WHERE tipo = 'llaves'
+         AND restriccion = 'llaves'
+         AND descripcion = 'reserva_previa'
+       RETURNING *`,
+      [activa]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        message: "Restricción de llaves no encontrada",
+      });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("❌ Error al actualizar restricción de llaves:", error);
+    res.status(500).json({ message: "Error interno al actualizar" });
+  }
+}
+
+/**
+ * Eliminar restricción de entrega de llaves
+ */
+async function deleteRestriccionLlaves(req, res) {
+  try {
+    const result = await db.query(
+      `DELETE FROM restricciones
+       WHERE tipo = 'llaves'
+         AND restriccion = 'llaves'
+         AND descripcion = 'reserva_previa'`
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        message: "Restricción de llaves no encontrada",
+      });
+    }
+
+    res.sendStatus(204);
+  } catch (error) {
+    console.error("❌ Error al eliminar restricción de llaves:", error);
+    res.status(500).json({ message: "Error interno al eliminar" });
+  }
+}
+
+
 module.exports = {
   getRestricciones,
   getRestriccionesAsuntos,
@@ -377,4 +513,9 @@ module.exports = {
   getRangosBloqueados,
   addRangoBloqueado,
   deleteRangoBloqueado,
+  // Llaves
+  getRestriccionLlaves,
+  createRestriccionLlaves,
+  updateRestriccionLlaves,
+  deleteRestriccionLlaves,
 };

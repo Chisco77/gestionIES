@@ -70,11 +70,17 @@ export function generatePermisosPdf({ empleado, permiso }) {
   const textPad = 3;
   let y = marginTop;
 
-  const apellidoUsuario = empleado?.sn || "";
+  /*anonimizar const apellidoUsuario = empleado?.sn || "";
   const nombreUsuario = empleado?.givenName || "";
   const employeeNumber = empleado?.dni || "";
   const telefono = empleado?.telefono || "";
-  const email = empleado?.email || "";
+  const email = empleado?.email || "";*/
+  const apellidoUsuario = "Apllido1 Apellido2";
+  const nombreUsuario = "Nombre";
+  const employeeNumber = "123456A";
+  const telefono = "600600600";
+  const email = "profe@gmail.com";
+
   const grupo = empleado?.grupo || "";
   const cuerpo = empleado?.cuerpo || "";
 

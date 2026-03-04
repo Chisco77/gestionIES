@@ -87,7 +87,9 @@ export function DialogoGestionLlaves({
   const [profesorSeleccionado, setProfesorSeleccionado] = useState("");
   const [filtroProfesor, setFiltroProfesor] = useState("");
   const [seleccionados, setSeleccionados] = useState([]);
+  const [controlReservaActiva, setControlReservaActiva] = useState(false);
 
+  
   // React query para obtener profesores
   const {
     data: profesores = [],
@@ -116,6 +118,26 @@ export function DialogoGestionLlaves({
     }
   }, [open, refetch]);
 
+  // comporobar si está activa la restricción de reserva previa
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchRestriccion = async () => {
+      try {
+        const res = await fetch(`${API_URL}/db/restricciones/llaves`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+        setControlReservaActiva(data?.valor_bool ?? false);
+      } catch (err) {
+        console.error("Error al obtener restricción de llaves:", err);
+        setControlReservaActiva(false);
+      }
+    };
+
+    fetchRestriccion();
+  }, [open]);
+
   // Ordenar profesores
   const profesoresOrdenados = [...profesores].sort((a, b) => {
     if (a.sn === b.sn) return a.givenName.localeCompare(b.givenName);
@@ -133,7 +155,7 @@ export function DialogoGestionLlaves({
   });
 
   // --- acciones ---
-  const handlePrestar = async () => {
+  /*const handlePrestar = async () => {
     if (!profesorSeleccionado) return toast.error("Selecciona un profesor");
     if (!estancia?.id) return toast.error("Estancia no definida");
 
@@ -150,6 +172,40 @@ export function DialogoGestionLlaves({
       });
 
       if (!res.ok) throw new Error((await res.json())?.error);
+
+      toast.success("Llave prestada correctamente");
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      toast.error(err.message || "Error al prestar llave");
+    }
+  };*/
+
+  const handlePrestar = async () => {
+    if (!profesorSeleccionado) return toast.error("Selecciona un profesor");
+    if (!estancia?.id) return toast.error("Estancia no definida");
+
+    try {
+      // --- Determinar si hay que aplicar control de reserva previa ---
+      const aplicarControlReserva =
+        controlReservaActiva && estancia?.reservable === true;
+
+      // --- Realizar préstamo al backend ---
+      const res = await fetch(`${API_URL}/db/prestamos-llaves/prestar`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: profesorSeleccionado,
+          idestancia: estancia.id,
+          unidades: 1,
+          aplicarControlReserva, // Le indicamos al backend si debe validar la reserva
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data?.error || "Error al prestar llave");
 
       toast.success("Llave prestada correctamente");
       onSuccess?.();

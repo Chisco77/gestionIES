@@ -56,7 +56,7 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
+function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, onOpenLlavesRestricciones, ...props }) {
   const navigate = useNavigate();
   const { user, setUser, loading } = useAuth();
 
@@ -150,6 +150,12 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, ...props }) {
             title: "Asuntos Propios",
             url: "#",
             onClick: () => onOpenRestricciones(),
+            icon: Wrench,
+          },
+          {
+            title: "Llaves",
+            url: "#",
+            onClick: () => onOpenLlavesRestricciones(),
             icon: Wrench,
           },
           { title: "Avisos", url: "/avisos", icon: Info },

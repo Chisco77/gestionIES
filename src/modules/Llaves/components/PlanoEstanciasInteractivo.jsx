@@ -123,6 +123,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
           coordenadas: r.coordenadas || r.coordenadas_json || [],
           armario: r.armario,
           codigollave: r.codigollave,
+          reservable: r.reservable,
         }));
         if (!cancelado) setEstancias(normal);
         const dataPrestamos = await apiListarPrestamosLlaves();

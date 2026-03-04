@@ -99,7 +99,7 @@ async function getPrestamosLlavesAgrupados(req, res) {
 }
 
 // Inserta un nuevo préstamo de llave para un profesor
-async function prestarLlave(req, res) {
+/*async function prestarLlave(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) return res.status(401).json({ error: "No autenticado" });
@@ -136,6 +136,111 @@ async function prestarLlave(req, res) {
 
     const fechaentrega = new Date();
 
+    const {
+      rows: [nuevoPrestamo],
+    } = await pool.query(
+      `
+      INSERT INTO prestamos_llaves (idestancia, uid, unidades, fechaentrega, devuelta)
+      VALUES ($1, $2, $3, $4, false)
+      RETURNING *
+    `,
+      [idestancia, uid, unidades, fechaentrega]
+    );
+
+    res.json({ success: true, prestamo: nuevoPrestamo });
+  } catch (error) {
+    console.error("❌ Error al prestar llave:", error.message);
+    res.status(500).json({ error: "Error al prestar llave" });
+  }
+}*/
+
+async function prestarLlave(req, res) {
+  const ahora = new Date();
+
+  // Fecha local YYYY-MM-DD
+  const fechaHoy =
+    ahora.getFullYear() +
+    "-" +
+    String(ahora.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(ahora.getDate()).padStart(2, "0");
+
+  // Hora local HH:MM:SS
+  const horaActual =
+    String(ahora.getHours()).padStart(2, "0") +
+    ":" +
+    String(ahora.getMinutes()).padStart(2, "0") +
+    ":" +
+    String(ahora.getSeconds()).padStart(2, "0");
+
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession) return res.status(401).json({ error: "No autenticado" });
+
+    const {
+      uid,
+      idestancia,
+      unidades = 1,
+      aplicarControlReserva = false,
+    } = req.body;
+    
+    if (!uid || !idestancia)
+      return res.status(400).json({ error: "Datos incompletos" });
+    console.log ("Aplicar control reserva: ", aplicarControlReserva);
+    console.log ("Fecha hoy: ", fechaHoy);
+    console.log ("Hora Actual: ", horaActual);
+
+    // --- CONTROL DE RESERVA PREVIA SOLO SI LA RESTRICCIÓN ESTÁ ACTIVA Y LA ESTANCIA ES RESERVABLE ---
+    if (aplicarControlReserva) {
+      const { rowCount } = await pool.query(
+        `
+        SELECT 1
+        FROM reservas_estancias r
+        JOIN periodos_horarios p_inicio ON p_inicio.id = r.idperiodo_inicio
+        JOIN periodos_horarios p_fin ON p_fin.id = r.idperiodo_fin
+        WHERE r.uid = $1
+          AND r.idestancia = $2
+          AND r.fecha = $3
+          AND $4::time BETWEEN p_inicio.inicio AND p_fin.fin
+      `,
+        [uid, idestancia, fechaHoy, horaActual]
+      );
+
+      if (rowCount === 0) {
+        return res.status(400).json({
+          error:
+            "No se puede prestar la llave: el profesor no tiene reserva activa",
+        });
+      }
+    }
+
+    // --- Comprobar llaves disponibles ---
+    const [{ total_prestadas }] = (
+      await pool.query(
+        `
+        SELECT COALESCE(SUM(unidades),0) AS total_prestadas
+        FROM prestamos_llaves
+        WHERE idestancia = $1 AND (fechadevolucion IS NULL)
+      `,
+        [idestancia]
+      )
+    ).rows;
+
+    const { totalllaves } = (
+      await pool.query(
+        `SELECT totalllaves, reservable FROM estancias WHERE id = $1`,
+        [idestancia]
+      )
+    ).rows[0];
+
+    if (unidades > totalllaves - total_prestadas)
+      return res
+        .status(400)
+        .json({ error: "No hay suficientes llaves disponibles" });
+
+    const fechaentrega = new Date();
+
+    // --- Insertar préstamo ---
     const {
       rows: [nuevoPrestamo],
     } = await pool.query(

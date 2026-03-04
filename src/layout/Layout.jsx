@@ -48,10 +48,12 @@ import { DialogoEtiquetasGenericas } from "@/modules/Utilidades/components/Dialo
 import { useSidebarContext } from "@/context/SidebarContext";
 
 import { DialogoAsuntosRestricciones } from "../modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
+import { DialogoLlavesRestricciones } from "@/modules/Llaves/components/DialogoLlavesRestricciones";
 
 export default function Layout(props) {
   const [openEtiquetas, setOpenEtiquetas] = useState(false);
   const [openRestricciones, setOpenRestricciones] = useState(false);
+  const [openLlavesRestricciones, setOpenLlavesRestricciones] = useState(false);
 
   const [tabActivo, setTabActivo] = useState("permisos");
 
@@ -95,6 +97,7 @@ export default function Layout(props) {
       <Sidebar
         onOpenRestricciones={() => setOpenRestricciones(true)}
         onOpenEtiquetas={() => setOpenEtiquetas(true)}
+        onOpenLlavesRestricciones={() => setOpenLlavesRestricciones(true)}
       />
 
       <SidebarInset>
@@ -103,6 +106,11 @@ export default function Layout(props) {
         <DialogoAsuntosRestricciones
           open={openRestricciones}
           onOpenChange={setOpenRestricciones}
+        />
+
+        <DialogoLlavesRestricciones
+          open={openLlavesRestricciones}
+          onOpenChange={setOpenLlavesRestricciones}
         />
 
         <DialogoEtiquetasGenericas

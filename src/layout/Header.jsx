@@ -180,7 +180,8 @@ export default function Header({ setTabActivo }) {
         {/* Nombre de usuario */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">
-           {user?.givenName} {user?.sn} ({user?.username})
+           {/*{user?.givenName} {user?.sn} ({user?.username})*/}
+           Usuario logueado
           </span>
 
           {/* Icono de editar perfil */}

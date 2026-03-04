@@ -138,6 +138,12 @@ const {
   getRangosBloqueados,
   addRangoBloqueado,
   deleteRangoBloqueado,
+
+  // Restricción entrega de llaves
+  getRestriccionLlaves,
+  createRestriccionLlaves,
+  updateRestriccionLlaves,
+  deleteRestriccionLlaves,
 } = require("../controllers/db/restriccionesController");
 
 // --- Controlador de asuntos propios unificado ---
@@ -205,9 +211,15 @@ router.delete("/perfiles/:uid", deletePerfilUsuario);
 // ================================================================
 router.get("/restricciones", getRestricciones);
 router.post("/restricciones/asuntos", insertRestriccionesAsuntos);
+router.put("/restricciones/llaves", updateRestriccionLlaves);
 router.put("/restricciones/:id", updateRestriccion);
 router.delete("/restricciones/:id", deleteRestriccion);
 router.get("/restricciones/asuntos", getRestriccionesAsuntos);
+
+// Restricción entrega de llaves
+router.get("/restricciones/llaves", getRestriccionLlaves);
+router.post("/restricciones/llaves", createRestriccionLlaves);
+router.delete("/restricciones/llaves", deleteRestriccionLlaves);
 
 // ================================================================
 //   Rutas de Rangos de Asuntos Propios (bloqueos)
