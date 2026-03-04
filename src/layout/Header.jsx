@@ -168,7 +168,7 @@ export default function Header({ setTabActivo }) {
         {/* Campana + notificaciones */}
         {esDirectiva && (
           <div className="mr-4">
-           <NotificacionesPopover
+            <NotificacionesPopover
               permisos={permisos}
               extraescolares={extraescolares}
               total={total}
@@ -180,8 +180,7 @@ export default function Header({ setTabActivo }) {
         {/* Nombre de usuario */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">
-           {/*{user?.givenName} {user?.sn} ({user?.username})*/}
-           Usuario logueado
+            {user?.givenName} {user?.sn} ({user?.username})
           </span>
 
           {/* Icono de editar perfil */}
