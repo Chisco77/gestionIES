@@ -155,20 +155,6 @@ async function getPrestamosLlavesAgrupados(req, res) {
 }*/
 
 async function prestarLlave(req, res) {
-  const ahora = new Date();
-  const fechaHoy =
-    ahora.getFullYear() +
-    "-" +
-    String(ahora.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(ahora.getDate()).padStart(2, "0");
-  const horaActual =
-    String(ahora.getHours()).padStart(2, "0") +
-    ":" +
-    String(ahora.getMinutes()).padStart(2, "0") +
-    ":" +
-    String(ahora.getSeconds()).padStart(2, "0");
-
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) return res.status(401).json({ error: "No autenticado" });
@@ -182,8 +168,9 @@ async function prestarLlave(req, res) {
     if (!uid || !idestancia)
       return res.status(400).json({ error: "Datos incompletos" });
 
-    // --- CONTROL DE RESERVA PREVIA ---
     let esExcepcion = false;
+
+    // --- CONTROL DE RESERVA PREVIA SOLO SI APLICA Y LA ESTANCIA ES RESERVABLE ---
     if (aplicarControlReserva) {
       // Obtener la restricción 'reserva_previa' tipo llaves
       const { rows } = await pool.query(
@@ -192,7 +179,7 @@ async function prestarLlave(req, res) {
         FROM restricciones
         WHERE tipo='llaves' AND restriccion='llaves' AND descripcion='reserva_previa'
         LIMIT 1
-      `
+        `
       );
 
       if (rows.length > 0 && rows[0].rangos_bloqueados_json) {
@@ -201,8 +188,16 @@ async function prestarLlave(req, res) {
         esExcepcion = usuarios.includes(uid);
       }
 
-      // Si NO es excepción, comprobamos reserva previa
+      // Si NO es excepción, comprobamos reserva previa usando hora de Madrid
       if (!esExcepcion) {
+        const fechaHoy = new Date();
+        const fechaHoyStr =
+          fechaHoy.getFullYear() +
+          "-" +
+          String(fechaHoy.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(fechaHoy.getDate()).padStart(2, "0");
+
         const { rowCount } = await pool.query(
           `
           SELECT 1
@@ -212,9 +207,10 @@ async function prestarLlave(req, res) {
           WHERE r.uid = $1
             AND r.idestancia = $2
             AND r.fecha = $3
-            AND $4::time BETWEEN (p_inicio.inicio - interval '15 minutes') AND p_fin.fin
+            AND current_time at time zone 'Europe/Madrid'
+                BETWEEN (p_inicio.inicio - interval '15 minutes') AND p_fin.fin
         `,
-          [uid, idestancia, fechaHoy, horaActual]
+          [uid, idestancia, fechaHoyStr]
         );
 
         if (rowCount === 0) {
