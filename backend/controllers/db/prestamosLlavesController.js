@@ -190,27 +190,28 @@ async function prestarLlave(req, res) {
 
       // Si NO es excepción, comprobamos reserva previa usando hora de Madrid
       if (!esExcepcion) {
-        const fechaHoy = new Date();
-        const fechaHoyStr =
-          fechaHoy.getFullYear() +
-          "-" +
-          String(fechaHoy.getMonth() + 1).padStart(2, "0") +
-          "-" +
-          String(fechaHoy.getDate()).padStart(2, "0");
+        const ahora = new Date();
+        const fechaHoy = ahora.toISOString().slice(0, 10); // YYYY-MM-DD
+        const horaMadrid = ahora.toLocaleTimeString("en-GB", {
+          timeZone: "Europe/Madrid",
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
 
         const { rowCount } = await pool.query(
           `
-          SELECT 1
-          FROM reservas_estancias r
-          JOIN periodos_horarios p_inicio ON p_inicio.id = r.idperiodo_inicio
-          JOIN periodos_horarios p_fin ON p_fin.id = r.idperiodo_fin
-          WHERE r.uid = $1
-            AND r.idestancia = $2
-            AND r.fecha = $3
-            AND current_time at time zone 'Europe/Madrid'
-                BETWEEN (p_inicio.inicio - interval '15 minutes') AND p_fin.fin
-        `,
-          [uid, idestancia, fechaHoyStr]
+    SELECT 1
+    FROM reservas_estancias r
+    JOIN periodos_horarios p_inicio ON p_inicio.id = r.idperiodo_inicio
+    JOIN periodos_horarios p_fin ON p_fin.id = r.idperiodo_fin
+    WHERE r.uid = $1
+      AND r.idestancia = $2
+      AND r.fecha = $3
+      AND $4::time BETWEEN (p_inicio.inicio - interval '15 minutes') AND p_fin.fin
+  `,
+          [uid, idestancia, fechaHoy, horaMadrid]
         );
 
         if (rowCount === 0) {
