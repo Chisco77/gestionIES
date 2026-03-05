@@ -56,7 +56,12 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, onOpenLlavesRestricciones, ...props }) {
+function SidebarComponent({
+  onOpenRestricciones,
+  onOpenEtiquetas,
+  onOpenLlavesRestricciones,
+  ...props
+}) {
   const navigate = useNavigate();
   const { user, setUser, loading } = useAuth();
 
@@ -318,64 +323,7 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, onOpenLlavesRe
           { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
         ],
       },
-      {
-        title: "Reservas",
-        url: "#",
-        icon: CalendarCheck,
-        items: [
-          { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
 
-          {
-            title: "Extraescolares",
-            url: "/extraescolares",
-            icon: CalendarCheck,
-          },
-          {
-            title: "Asuntos Propios",
-            url: "/asuntos",
-            icon: ListChecks,
-          },
-          {
-            title: "Permisos",
-            url: "/permisos",
-            icon: ListChecks,
-          },
-        ],
-      },
-      {
-        title: "Préstamo Libros",
-        url: "#",
-        icon: Library,
-        items: [
-          { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
-          //{ title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
-          { title: "Libros", url: "/libros", icon: BookMarked },
-          { title: "Cursos", url: "/cursos", icon: BookOpen },
-        ],
-      },
-      {
-        title: "Préstamo Llaves",
-        url: "#",
-        icon: KeySquare,
-        items: [
-          {
-            title: "Llaves prestadas",
-            url: "/llavesPrestadas",
-            icon: KeyRound,
-          },
-          { title: "Planta BAJA", url: "/llavesPlantaBaja", icon: KeySquare },
-          {
-            title: "Planta PRIMERA",
-            url: "/llavesPlantaPrimera",
-            icon: KeySquare,
-          },
-          {
-            title: "Planta SEGUNDA",
-            url: "/llavesPlantaSegunda",
-            icon: KeySquare,
-          },
-        ],
-      },
       {
         title: "Utilidades",
         url: "#",
@@ -394,12 +342,6 @@ function SidebarComponent({ onOpenRestricciones, onOpenEtiquetas, onOpenLlavesRe
         url: "#",
         icon: ShieldCheck,
         items: [
-          {
-            title: "Asuntos Propios",
-            url: "#",
-            onClick: () => onOpenRestricciones(),
-            icon: Wrench,
-          },
           { title: "Avisos", url: "/avisos", icon: Info },
           { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
           { title: "Estancias", url: "/estancias", icon: Building2 },

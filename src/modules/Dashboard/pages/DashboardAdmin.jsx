@@ -79,20 +79,9 @@ export function DashboardAdmin() {
       {/* Grid con calendario y detalles */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Calendario */}
-        <CalendarioDirectiva
-          selectedDate={fechaSeleccionada}
-          onSelectDate={(dateKey) => setFechaSeleccionada(dateKey)}
-          disableInsert={true}
-        />
+       
 
-        {/* Detalles del día. Si detecto cambio dentro del PanelReservas, notifico para recargar PanelReservasDirectiva y tener datos actualizados.*/}
-        <PanelReservas uid={uid} />
-      </div>
-
-      {/* Tablas de peticiones pendientes */}
-      <div className="mt-2 space-y-8">
-        {/* */}
-        <PanelReservasDirectiva user={user} fecha={fechaSeleccionada} />
+        
       </div>
     </div>
   );
