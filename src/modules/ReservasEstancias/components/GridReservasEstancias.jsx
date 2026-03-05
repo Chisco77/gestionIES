@@ -516,6 +516,7 @@ export function GridReservasEstancias({
         periodos={periodosDB}
         inicioSeleccionado={celdaSeleccionada?.inicioId}
         finSeleccionado={celdaSeleccionada?.finId}
+        estancias={estancias}
       />
 
       <DialogoPlanoEstancia

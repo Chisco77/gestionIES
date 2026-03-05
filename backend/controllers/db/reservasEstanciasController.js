@@ -37,7 +37,6 @@ function formatearFecha(reservas) {
   }));
 }
 
-
 async function getReservasEstancias(req, res) {
   const { fecha, idestancia, fechaDesde, fechaHasta } = req.query;
 
@@ -89,7 +88,6 @@ async function getReservasEstancias(req, res) {
 }
 
 // Inserta una nueva reserva
-// Inserta una nueva reserva (versión depurada)
 async function insertReservaEstancia(req, res) {
   const {
     idestancia,
@@ -127,6 +125,38 @@ async function insertReservaEstancia(req, res) {
           .map((e) => `[${e.idperiodo_inicio}-${e.idperiodo_fin}]`)
           .join(", ")}`,
       });
+    }
+
+    //
+    //  HARDCODE con variable de entorno
+    //
+    const CONTROL_OPTATIVA4 = process.env.CONTROL_OPTATIVA4 === "true";
+    const { confirmar = false } = req.body;
+
+    // 🔹 CONTROL OPTATIVA 4 (solo si está activado)
+    if (CONTROL_OPTATIVA4 && idestancia === 47 && !confirmar) {
+      const otrasEstancias = [41, 43, 45];
+
+      const { rows: libres } = await pool.query(
+        `SELECT id
+     FROM estancias
+     WHERE id = ANY($1::int[])
+     AND id NOT IN (
+        SELECT idestancia
+        FROM reservas_estancias
+        WHERE fecha = $2
+        AND NOT (idperiodo_fin < $3 OR idperiodo_inicio > $4)
+     )`,
+        [otrasEstancias, fecha, idperiodo_inicio, idperiodo_fin]
+      );
+
+      if (libres.length > 0) {
+        return res.json({
+          ok: true,
+          requiereConfirmacion: true,
+          estanciasLibres: libres.map((e) => e.id),
+        });
+      }
     }
 
     // 2️⃣ Insertar reserva
