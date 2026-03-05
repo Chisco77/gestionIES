@@ -144,6 +144,9 @@ const {
   createRestriccionLlaves,
   updateRestriccionLlaves,
   deleteRestriccionLlaves,
+  getExcepcionesLlaves,
+  addExcepcionLlaves,
+  deleteExcepcionLlaves,
 } = require("../controllers/db/restriccionesController");
 
 // --- Controlador de asuntos propios unificado ---
@@ -220,6 +223,9 @@ router.get("/restricciones/asuntos", getRestriccionesAsuntos);
 router.get("/restricciones/llaves", getRestriccionLlaves);
 router.post("/restricciones/llaves", createRestriccionLlaves);
 router.delete("/restricciones/llaves", deleteRestriccionLlaves);
+router.get("/restricciones/llaves/excepciones", getExcepcionesLlaves);
+router.post("/restricciones/llaves/excepciones", addExcepcionLlaves);
+router.delete("/restricciones/llaves/excepciones", deleteExcepcionLlaves);
 
 // ================================================================
 //   Rutas de Rangos de Asuntos Propios (bloqueos)
@@ -359,20 +365,20 @@ router.get("/reservas-estancias/repeticion", getReservasEstanciasRepeticion);
 router.post("/reservas-estancias/repeticion", insertReservaEstanciaRepeticion);
 router.put(
   "/reservas-estancias/repeticion/:id",
-  updateReservaEstanciaRepeticion,
+  updateReservaEstanciaRepeticion
 );
 router.delete(
   "/reservas-estancias/repeticion/:id",
-  deleteReservaEstanciaRepeticion,
+  deleteReservaEstanciaRepeticion
 );
 router.get(
   "/reservas-estancias/repeticiones/enriquecidas",
-  getReservasEstanciasRepeticionEnriquecidas,
+  getReservasEstanciasRepeticionEnriquecidas
 );
 
 router.post(
   "/reservas-estancias/repeticion/simular",
-  simularReservaEstanciaRepeticion,
+  simularReservaEstanciaRepeticion
 );
 
 // --- Controlador de Notificaciones Directiva ---

@@ -156,16 +156,12 @@ async function getPrestamosLlavesAgrupados(req, res) {
 
 async function prestarLlave(req, res) {
   const ahora = new Date();
-
-  // Fecha local YYYY-MM-DD
   const fechaHoy =
     ahora.getFullYear() +
     "-" +
     String(ahora.getMonth() + 1).padStart(2, "0") +
     "-" +
     String(ahora.getDate()).padStart(2, "0");
-
-  // Hora local HH:MM:SS
   const horaActual =
     String(ahora.getHours()).padStart(2, "0") +
     ":" +
@@ -183,31 +179,50 @@ async function prestarLlave(req, res) {
       unidades = 1,
       aplicarControlReserva = false,
     } = req.body;
-
     if (!uid || !idestancia)
       return res.status(400).json({ error: "Datos incompletos" });
 
-    // --- CONTROL DE RESERVA PREVIA SOLO SI LA RESTRICCIÓN ESTÁ ACTIVA Y LA ESTANCIA ES RESERVABLE ---
+    // --- CONTROL DE RESERVA PREVIA ---
+    let esExcepcion = false;
     if (aplicarControlReserva) {
-      const { rowCount } = await pool.query(
+      // Obtener la restricción 'reserva_previa' tipo llaves
+      const { rows } = await pool.query(
         `
-    SELECT 1
-    FROM reservas_estancias r
-    JOIN periodos_horarios p_inicio ON p_inicio.id = r.idperiodo_inicio
-    JOIN periodos_horarios p_fin ON p_fin.id = r.idperiodo_fin
-    WHERE r.uid = $1
-      AND r.idestancia = $2
-      AND r.fecha = $3
-      AND $4::time BETWEEN (p_inicio.inicio - interval '15 minutes') AND p_fin.fin
-  `,
-        [uid, idestancia, fechaHoy, horaActual]
+        SELECT rangos_bloqueados_json
+        FROM restricciones
+        WHERE tipo='llaves' AND restriccion='llaves' AND descripcion='reserva_previa'
+        LIMIT 1
+      `
       );
 
-      if (rowCount === 0) {
-        return res.status(400).json({
-          error:
-            "No se puede prestar la llave: el profesor no ha reservado el aula o aún no es hora",
-        });
+      if (rows.length > 0 && rows[0].rangos_bloqueados_json) {
+        const json = rows[0].rangos_bloqueados_json;
+        const usuarios = json.usuarios || [];
+        esExcepcion = usuarios.includes(uid);
+      }
+
+      // Si NO es excepción, comprobamos reserva previa
+      if (!esExcepcion) {
+        const { rowCount } = await pool.query(
+          `
+          SELECT 1
+          FROM reservas_estancias r
+          JOIN periodos_horarios p_inicio ON p_inicio.id = r.idperiodo_inicio
+          JOIN periodos_horarios p_fin ON p_fin.id = r.idperiodo_fin
+          WHERE r.uid = $1
+            AND r.idestancia = $2
+            AND r.fecha = $3
+            AND $4::time BETWEEN (p_inicio.inicio - interval '15 minutes') AND p_fin.fin
+        `,
+          [uid, idestancia, fechaHoy, horaActual]
+        );
+
+        if (rowCount === 0) {
+          return res.status(400).json({
+            error:
+              "No se puede prestar la llave: el profesor no ha reservado el aula o aún no es hora",
+          });
+        }
       }
     }
 

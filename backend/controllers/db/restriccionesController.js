@@ -368,17 +368,15 @@ async function deleteRangoBloqueado(req, res) {
   }
 }
 
-
-
 /*
-*
-*    RESTRICCIONES PARA CONTROL DE ENTREGA DE LLAVES
-*
-*    (se usa para forzar que se entregue solo llave a quien ha reservado el aula)
-*
-*
-*
-*/
+ *
+ *    RESTRICCIONES PARA CONTROL DE ENTREGA DE LLAVES
+ *
+ *    (se usa para forzar que se entregue solo llave a quien ha reservado el aula)
+ *
+ *
+ *
+ */
 
 /**
  * Obtener restricción de entrega de llaves (reserva previa)
@@ -441,7 +439,6 @@ async function createRestriccionLlaves(req, res) {
   }
 }
 
-
 /**
  * Actualizar restricción de entrega de llaves
  */
@@ -503,6 +500,98 @@ async function deleteRestriccionLlaves(req, res) {
   }
 }
 
+async function getExcepcionesLlaves(req, res) {
+  try {
+    const { rows } = await db.query(
+      `SELECT rangos_bloqueados_json
+       FROM restricciones
+       WHERE tipo = 'llaves'
+         AND restriccion = 'llaves'
+         AND descripcion = 'reserva_previa'
+       LIMIT 1`
+    );
+
+    const excepciones = rows[0]?.rangos_bloqueados_json?.usuarios || [];
+    res.json({ excepciones });
+  } catch (error) {
+    console.error("❌ Error al obtener excepciones de llaves:", error);
+    res.status(500).json({ message: "Error interno al obtener excepciones" });
+  }
+}
+
+async function addExcepcionLlaves(req, res) {
+  try {
+    const { uid } = req.body;
+    if (!uid) return res.status(400).json({ message: "Debe especificar uid" });
+
+    // Traer restricción existente
+    const { rows } = await db.query(
+      `SELECT id, rangos_bloqueados_json
+       FROM restricciones
+       WHERE tipo = 'llaves'
+         AND restriccion = 'llaves'
+         AND descripcion = 'reserva_previa'
+       LIMIT 1`
+    );
+
+    if (rows.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Restricción de llaves no encontrada" });
+    }
+
+    let json = rows[0].rangos_bloqueados_json || { usuarios: [] };
+    if (!json.usuarios.includes(uid)) {
+      json.usuarios.push(uid);
+    }
+
+    await db.query(
+      `UPDATE restricciones
+       SET rangos_bloqueados_json = $1
+       WHERE id = $2`,
+      [JSON.stringify(json), rows[0].id]
+    );
+
+    res.json({ message: "Excepción añadida", usuarios: json.usuarios });
+  } catch (error) {
+    console.error("❌ Error al añadir excepción de llaves:", error);
+    res.status(500).json({ message: "Error interno al añadir excepción" });
+  }
+}
+
+async function deleteExcepcionLlaves(req, res) {
+  try {
+    const { uid } = req.body;
+    if (!uid) return res.status(400).json({ message: "Debe especificar uid" });
+
+    const { rows } = await db.query(
+      `SELECT id, rangos_bloqueados_json
+       FROM restricciones
+       WHERE tipo = 'llaves'
+         AND restriccion = 'llaves'
+         AND descripcion = 'reserva_previa'
+       LIMIT 1`
+    );
+
+    if (rows.length === 0)
+      return res.status(404).json({ message: "Restricción no encontrada" });
+
+    let json = rows[0].rangos_bloqueados_json || { usuarios: [] };
+    json.usuarios = json.usuarios.filter((u) => u !== uid);
+
+    await db.query(
+      `UPDATE restricciones
+       SET rangos_bloqueados_json = $1
+       WHERE id = $2`,
+      [JSON.stringify(json), rows[0].id]
+    );
+
+    res.json({ message: "Excepción eliminada", usuarios: json.usuarios });
+  } catch (error) {
+    console.error("❌ Error al eliminar excepción de llaves:", error);
+    res.status(500).json({ message: "Error interno al eliminar excepción" });
+  }
+}
 
 module.exports = {
   getRestricciones,
@@ -518,4 +607,7 @@ module.exports = {
   createRestriccionLlaves,
   updateRestriccionLlaves,
   deleteRestriccionLlaves,
+  getExcepcionesLlaves,
+  addExcepcionLlaves,
+  deleteExcepcionLlaves,
 };
