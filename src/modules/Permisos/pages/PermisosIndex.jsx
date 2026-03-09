@@ -150,6 +150,7 @@ export function PermisosIndex() {
           onClose={() => setAbrirDialogo(false)}
           fecha={selectedDate}
           onSuccess={onSuccess}
+          periodos_horarios={periodos}
         />
       )}
       {abrirDialogoEdicion && asuntoSeleccionado && (
@@ -158,6 +159,7 @@ export function PermisosIndex() {
           onClose={() => setAbrirDialogoEdicion(false)}
           permiso={asuntoSeleccionado}
           onSuccess={onSuccess}
+          periodos_horarios={periodos}
         />
       )}
     </div>

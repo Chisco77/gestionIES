@@ -194,6 +194,7 @@ export function PanelReservas({ uid, loading = false }) {
       await generatePermisosPdf({
         empleado,
         permiso: asunto,
+        periodos,
       });
     } catch (err) {
       console.error("Error generando PDF:", err);
@@ -318,6 +319,22 @@ export function PanelReservas({ uid, loading = false }) {
       2: { text: "Rechazado", color: "text-red-600 bg-red-100" },
     };
 
+    // Función auxiliar para el texto de periodo
+    const textoPeriodo = (permiso) => {
+      if (permiso.dia_completo) return "Día completo";
+
+      const inicio = periodos.find(
+        (p) => p.id === permiso.idperiodo_inicio
+      );
+      const fin = periodos.find((p) => p.id === permiso.idperiodo_fin);
+
+      if (!inicio || !fin) return "";
+
+      return inicio.id === fin.id
+        ? inicio.nombre
+        : `Desde ${inicio.nombre} hasta ${fin.nombre}`;
+    };
+
     return permisos.map((a, i) => {
       const fechaStr = new Date(a.fecha).toLocaleDateString("es-ES", {
         day: "numeric",
@@ -326,6 +343,7 @@ export function PanelReservas({ uid, loading = false }) {
       });
 
       const estado = estadoMap[a.estado] ?? { text: "—", color: "" };
+
       return (
         <Card
           key={i}
@@ -361,10 +379,13 @@ export function PanelReservas({ uid, loading = false }) {
             </button>
           </div>
 
-          {/* Pie: fecha, estado y PDF a la derecha */}
+          {/* Pie: fecha, periodo, estado y PDF a la derecha */}
           <div className="flex items-center justify-between mt-1">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-0.5">
               <p className="text-gray-500">{fechaStr}</p>
+              <p className="text-gray-500 text-sm">{textoPeriodo(a)}</p>
+            </div>
+            <div className="flex items-center gap-2">
               <span
                 className={
                   "px-2 py-1 rounded-lg text-xs font-medium " + estado.color
@@ -372,8 +393,7 @@ export function PanelReservas({ uid, loading = false }) {
               >
                 {estado.text}
               </span>
-            </div>
-            <div className="flex items-center gap-1">
+
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -709,6 +729,7 @@ export function PanelReservas({ uid, loading = false }) {
         <DialogoEditarPermiso
           permiso={permisoSeleccionado}
           open={dialogoEditarPermisoAbierto}
+          periodos_horarios={periodos}
           onClose={() => setDialogoEditarPermisoAbierto(false)}
         />
       )}

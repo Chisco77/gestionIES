@@ -68,10 +68,19 @@ async function getPermisos(req, res) {
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
 
     const { rows } = await db.query(
-      `SELECT id, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion, estado, tipo
-       FROM permisos
-       ${where}
-       ORDER BY fecha ASC`,
+      `SELECT 
+     id,
+     uid,
+     TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha,
+     descripcion,
+     estado,
+     tipo,
+     idperiodo_inicio,
+     idperiodo_fin,
+     dia_completo
+   FROM permisos
+   ${where}
+   ORDER BY fecha ASC`,
       vals
     );
 
@@ -110,13 +119,16 @@ async function getPermisosEnriquecidos(req, res) {
     // 1️⃣ Obtener permisos filtrados con created_at
     const { rows: permisos } = await db.query(
       `SELECT 
-         ap.id, 
-         ap.uid, 
-         TO_CHAR(ap.fecha, 'YYYY-MM-DD') AS fecha, 
-         ap.descripcion, 
-         ap.estado, 
-         ap.tipo,
-         ap.created_at
+  ap.id, 
+  ap.uid, 
+  TO_CHAR(ap.fecha, 'YYYY-MM-DD') AS fecha, 
+  ap.descripcion, 
+  ap.estado, 
+  ap.tipo,
+  ap.idperiodo_inicio,
+  ap.idperiodo_fin,
+  ap.dia_completo,
+  ap.created_at
        FROM permisos ap
        ${where}`,
       vals
@@ -178,14 +190,45 @@ async function getPermisosEnriquecidos(req, res) {
       }, {});
     }
 
-    // Enriquecer permisos
+    // 6️⃣ Obtener todos los periodos de inicio y fin necesarios
+    const periodosIds = [
+      ...new Set(
+        permisos.flatMap((p) =>
+          [p.idperiodo_inicio, p.idperiodo_fin].filter(Boolean)
+        )
+      ),
+    ];
+
+    let periodosMap = {};
+    if (periodosIds.length > 0) {
+      const { rows: periodos } = await db.query(
+        `SELECT id, nombre, inicio, fin FROM periodos_horarios WHERE id = ANY($1)`,
+        [periodosIds]
+      );
+      periodosMap = periodos.reduce((acc, p) => {
+        acc[p.id] = p;
+        return acc;
+      }, {});
+    }
+
+    // 7️⃣ Enriquecer permisos
     let asuntosEnriquecidos = permisos.map((permiso) => {
       const empleado = empleadosMap[permiso.uid]; // <-- CORRECTO
+
+      const periodo_inicio = permiso.idperiodo_inicio
+        ? periodosMap[permiso.idperiodo_inicio]
+        : null;
+      const periodo_fin = permiso.idperiodo_fin
+        ? periodosMap[permiso.idperiodo_fin]
+        : null;
+
       return {
         ...permiso,
         nombreProfesor: nombreMap[permiso.uid],
         dias_disfrutados: diasMap[permiso.uid] ?? 0,
-        ap_total: empleado?.asuntos_propios ?? 0, // ahora sí
+        ap_total: empleado?.asuntos_propios ?? 0,
+        periodo_inicio,
+        periodo_fin,
       };
     });
 
@@ -211,6 +254,9 @@ async function getPermisosEnriquecidos(req, res) {
  */
 async function insertAsuntoPropio(req, res) {
   const { uid, fecha, descripcion, tipo } = req.body || {};
+  const dia_completo = true;
+  const idperiodo_inicio = null;
+  const idperiodo_fin = null;
 
   if (!uid || !fecha || !descripcion || tipo === undefined)
     return res.status(400).json({
@@ -363,10 +409,19 @@ async function insertAsuntoPropio(req, res) {
 
     // --- Insertar asunto propio ---
     const { rows } = await db.query(
-      `INSERT INTO permisos (uid, fecha, descripcion, tipo)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, uid, fecha, descripcion, tipo`,
-      [uid, fecha, descripcion, tipo]
+      `INSERT INTO permisos 
+   (uid, fecha, descripcion, tipo, idperiodo_inicio, idperiodo_fin, dia_completo)
+   VALUES ($1, $2, $3, $4, $5, $6, $7)
+   RETURNING id, uid, fecha, descripcion, tipo, idperiodo_inicio, idperiodo_fin, dia_completo`,
+      [
+        uid,
+        fecha,
+        descripcion,
+        tipo,
+        idperiodo_inicio,
+        idperiodo_fin,
+        dia_completo,
+      ]
     );
 
     // Responder antes de enviar email
@@ -439,13 +494,28 @@ async function insertAsuntoPropio(req, res) {
  *
  * /*/
 async function insertPermiso(req, res) {
-  const { uid, fecha, descripcion, tipo } = req.body || {};
+  const {
+    uid,
+    fecha,
+    descripcion,
+    tipo,
+    idperiodo_inicio,
+    idperiodo_fin,
+    dia_completo,
+  } = req.body || {};
 
   // Validación mínima
   if (!uid || !fecha || !descripcion || tipo === null || tipo === undefined) {
     return res.status(400).json({
       ok: false,
       error: "UID, fecha, descripción y tipo son obligatorios",
+    });
+  }
+
+  if (!dia_completo && (idperiodo_inicio == null || idperiodo_fin == null)) {
+    return res.status(400).json({
+      ok: false,
+      error: "Debe indicar periodo inicio y fin si no es día completo",
     });
   }
 
@@ -458,10 +528,19 @@ async function insertPermiso(req, res) {
     });
 
     const { rows } = await db.query(
-      `INSERT INTO permisos (uid, fecha, descripcion, tipo)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, uid, fecha, descripcion, tipo`,
-      [uid, fecha, descripcion, tipo]
+      `INSERT INTO permisos 
+   (uid, fecha, descripcion, tipo, idperiodo_inicio, idperiodo_fin, dia_completo)
+   VALUES ($1, $2, $3, $4, $5, $6, $7)
+   RETURNING id, uid, fecha, descripcion, tipo, idperiodo_inicio, idperiodo_fin, dia_completo`,
+      [
+        uid,
+        fecha,
+        descripcion,
+        tipo,
+        idperiodo_inicio,
+        idperiodo_fin,
+        dia_completo,
+      ]
     );
 
     // Respuesta inmediata
@@ -534,38 +613,87 @@ async function insertPermiso(req, res) {
  */
 async function updatePermiso(req, res) {
   const id = req.params.id;
-  const { fecha, descripcion, tipo } = req.body || {};
+
+  const {
+    fecha,
+    descripcion,
+    tipo,
+    idperiodo_inicio,
+    idperiodo_fin,
+    dia_completo,
+  } = req.body || {};
 
   const sets = [];
   const vals = [];
   let i = 0;
-  if (fecha) sets.push(`fecha = $${++i}`) && vals.push(fecha);
-  if (descripcion) sets.push(`descripcion = $${++i}`) && vals.push(descripcion);
+
+  if (fecha !== undefined) {
+    sets.push(`fecha = $${++i}`);
+    vals.push(fecha);
+  }
+
+  if (descripcion !== undefined) {
+    sets.push(`descripcion = $${++i}`);
+    vals.push(descripcion);
+  }
+
   if (tipo !== undefined) {
     sets.push(`tipo = $${++i}`);
     vals.push(tipo);
   }
 
+  if (idperiodo_inicio !== undefined) {
+    sets.push(`idperiodo_inicio = $${++i}`);
+    vals.push(idperiodo_inicio);
+  }
+
+  if (idperiodo_fin !== undefined) {
+    sets.push(`idperiodo_fin = $${++i}`);
+    vals.push(idperiodo_fin);
+  }
+
+  if (dia_completo !== undefined) {
+    sets.push(`dia_completo = $${++i}`);
+    vals.push(dia_completo);
+  }
 
   if (!sets.length)
     return res.status(400).json({ ok: false, error: "Nada que actualizar" });
 
   try {
-    const query = `UPDATE permisos SET ${sets.join(", ")} WHERE id = $${++i} RETURNING id, uid, fecha, descripcion, tipo`;
-    vals.push(id);
-    const { rows } = await db.query(query, vals);
-    if (!rows[0])
-      return res
-        .status(404)
-        .json({ ok: false, error: "Permiso no encontrado" });
+    // Añadimos la condición de seguridad: solo actualizar si estado = 0
+    const query = `
+      UPDATE permisos
+      SET ${sets.join(", ")}
+      WHERE id = $${++i} AND estado = 0
+      RETURNING
+        id,
+        uid,
+        fecha,
+        descripcion,
+        tipo,
+        idperiodo_inicio,
+        idperiodo_fin,
+        dia_completo,
+        estado
+    `;
 
-    res.json({ ok: true, asunto: rows[0] });
+    vals.push(id);
+
+    const { rows } = await db.query(query, vals);
+
+    if (!rows[0])
+      return res.status(403).json({
+        ok: false,
+        error: "No se puede actualizar este permiso (ya aprobado/rechazado)",
+      });
+
+    res.json({ ok: true, permiso: rows[0] });
   } catch (err) {
     console.error("[updatePermiso] Error:", err);
     res.status(500).json({ ok: false, error: "Error actualizando permiso" });
   }
 }
-
 /**
  * Eliminar un asunto propio
  */
@@ -652,7 +780,7 @@ async function updateEstadoPermiso(req, res) {
       }
     }
 
-    const query = `UPDATE permisos SET estado = $1 WHERE id = $2 RETURNING id, uid, fecha, descripcion, estado, tipo`;
+    const query = `UPDATE permisos SET estado = $1 WHERE id = $2 RETURNING id, uid, fecha, descripcion, estado, tipo, idperiodo_inicio, idperiodo_fin, dia_completo`;
     const { rows } = await db.query(query, [estado, id]);
     if (!rows[0])
       return res

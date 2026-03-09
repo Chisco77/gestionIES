@@ -60,7 +60,7 @@ const getDescripcionTipoPermiso = (tipo) =>
  *
  */
 
-export function generatePermisosPdf({ empleado, permiso }) {
+export function generatePermisosPdf({ empleado, permiso, periodos }) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = 210;
   const marginLeft = 20;
@@ -83,8 +83,6 @@ export function generatePermisosPdf({ empleado, permiso }) {
 
   const grupo = empleado?.grupo || "";
   const cuerpo = empleado?.cuerpo || "";
-
-  console.log("Grupo: ", grupo);
 
   // --- Cabecera ---
   doc.setFont("helvetica", "bold");
@@ -149,7 +147,6 @@ export function generatePermisosPdf({ empleado, permiso }) {
   y += row3Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
-  // Fila 4: Cuerpo, Grupo, Subgrupo
   // Fila 4: Cuerpo, Grupo, Subgrupo
   const row4Height = 10;
   const col4_1Width = 70;
@@ -255,13 +252,42 @@ export function generatePermisosPdf({ empleado, permiso }) {
   const completaX = tableX + 95;
   const parcialX = marginLeft + 125;
   const yJornada = y + row6Height - 7;
+
+  // marcar casillas
   doc.rect(completaX, yJornada, 3.5, 3.5);
   doc.text("Completa", completaX + 5, y + row6Height - 3);
+
   doc.rect(parcialX, yJornada, 3.5, 3.5);
-  doc.text("Parcial", parcialX + 5, y + row6Height - 3);
-  if (empleado.jornada === 0) doc.text("X", completaX + 0.3, yJornada + 2.8);
-  else if (empleado.jornada === 1)
+
+  // calcular texto de jornada parcial usando periodos
+  let textoParcial = "Parcial";
+  if (!permiso.dia_completo && periodos?.length) {
+    const periodoInicio = periodos.find(
+      (p) => p.id === permiso.idperiodo_inicio
+    );
+    const periodoFin = periodos.find((p) => p.id === permiso.idperiodo_fin);
+
+    if (periodoInicio && periodoFin) {
+      // quitar segundos
+      const inicio = periodoInicio.inicio.slice(0, 5); // "HH:MM"
+      const fin = periodoFin.fin.slice(0, 5); // "HH:MM"
+
+      if (permiso.idperiodo_inicio === permiso.idperiodo_fin) {
+        textoParcial += ` (${inicio} - ${fin})`;
+      } else {
+        textoParcial += ` (${inicio} - ${fin})`;
+      }
+    }
+  }
+
+  doc.text(textoParcial, parcialX + 5, y + row6Height - 3);
+
+  // marcar X según dia_completo
+  if (permiso.dia_completo) {
+    doc.text("X", completaX + 0.3, yJornada + 2.8);
+  } else {
     doc.text("X", parcialX + 0.3, yJornada + 2.8);
+  }
 
   y += row6Height;
   doc.rect(tableX, startY, tableWidth, y - startY);

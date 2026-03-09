@@ -33,6 +33,7 @@ import { generatePermisosPdf } from "@/Informes/permisos";
 import { ResumenAsuntosDia } from "./ResumenAsuntosDia";
 
 import { useRestriccionesAsuntos } from "@/hooks/useRestricciones";
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 
 export function DialogoInsertarAsunto({ open, onClose, fecha }) {
   const [descripcion, setDescripcion] = useState("");
@@ -42,6 +43,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
   const queryClient = useQueryClient();
   const [asuntoCreado, setAsuntoCreado] = useState(null);
   const { data: restricciones, isLoading } = useRestriccionesAsuntos();
+  const { data: periodos = [] } = usePeriodosHorarios();
 
   useEffect(() => {
     if (open) {
@@ -68,11 +70,15 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
       return data.asunto;
     },
     onSuccess: (asuntoInsertado, variables) => {
+      // Para asuntos propios la jornada siempre es completa
       const nuevoAsunto = {
         uid: variables.uid,
         fecha: variables.fecha,
         descripcion: variables.descripcion,
         tipo: variables.tipo,
+        dia_completo: true,
+        idperiodo_inicio: null,
+        idperiodo_fin: null,
       };
 
       setAsuntoCreado(nuevoAsunto);
@@ -114,7 +120,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
         nombre_completo: `${user.givenName} ${user.sn}`,
       };
 
-      await generatePermisosPdf({ empleado, permiso: asuntoCreado });
+      await generatePermisosPdf({ empleado, permiso: asuntoCreado, periodos });
 
       setShowPdfDialog(false);
       onClose();

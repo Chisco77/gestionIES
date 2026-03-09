@@ -82,7 +82,6 @@ export function DialogoLlavesRestricciones({ open, onOpenChange }) {
       );
       if (!res.ok) throw new Error("Error al obtener excepciones");
       const data = await res.json();
-      console.log ("Excepciones: ", data);
       setExcepciones(data.excepciones || []);
     } catch (err) {
       console.error(err);

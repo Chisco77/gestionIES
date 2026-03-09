@@ -16,9 +16,27 @@ import { Label } from "@/components/ui/label";
 
 import { MAPEO_TIPOS_PERMISOS } from "@/utils/mapeoTiposPermisos";
 
-export function DialogoEditarPermiso({ open, onClose, permiso, onSuccess }) {
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+
+export function DialogoEditarPermiso({
+  open,
+  onClose,
+  permiso,
+  periodos_horarios,
+  onSuccess,
+}) {
   const [descripcion, setDescripcion] = useState("");
   const [tipo, setTipo] = useState(null);
+  const [diaCompleto, setDiaCompleto] = useState(true);
+  const [periodoInicio, setPeriodoInicio] = useState(null);
+  const [periodoFin, setPeriodoFin] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
@@ -27,7 +45,17 @@ export function DialogoEditarPermiso({ open, onClose, permiso, onSuccess }) {
   useEffect(() => {
     if (open && permiso) {
       setDescripcion(permiso.descripcion || "");
-      setTipo(permiso.tipo?.toString() || null); // tipo como string para RadioGroup
+      setTipo(permiso.tipo?.toString() || null);
+
+      const esDiaCompleto = permiso.dia_completo ?? true;
+
+      setDiaCompleto(esDiaCompleto);
+      setPeriodoInicio(
+        permiso.idperiodo_inicio ? String(permiso.idperiodo_inicio) : null
+      );
+      setPeriodoFin(
+        permiso.idperiodo_fin ? String(permiso.idperiodo_fin) : null
+      );
     }
   }, [open, permiso]);
 
@@ -73,11 +101,32 @@ export function DialogoEditarPermiso({ open, onClose, permiso, onSuccess }) {
       toast.error("La descripción no puede estar vacía");
       return;
     }
+
     if (!tipo) {
       toast.error("Debe seleccionar un tipo de permiso");
       return;
     }
-    mutation.mutate({ descripcion, tipo: Number(tipo), uid: user.username });
+
+    if (!diaCompleto) {
+      if (!periodoInicio || !periodoFin) {
+        toast.error("Debe seleccionar periodo inicio y fin");
+        return;
+      }
+
+      if (Number(periodoInicio) > Number(periodoFin)) {
+        toast.error("El periodo inicio no puede ser mayor que el fin");
+        return;
+      }
+    }
+
+    mutation.mutate({
+      descripcion,
+      tipo: Number(tipo),
+      uid: user.username,
+      dia_completo: diaCompleto,
+      idperiodo_inicio: diaCompleto ? null : Number(periodoInicio),
+      idperiodo_fin: diaCompleto ? null : Number(periodoFin),
+    });
   };
 
   return (
@@ -111,6 +160,69 @@ export function DialogoEditarPermiso({ open, onClose, permiso, onSuccess }) {
               onChange={(e) => setDescripcion(e.target.value)}
             />
           </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="diaCompleto"
+              checked={diaCompleto}
+              onCheckedChange={(value) => setDiaCompleto(!!value)}
+            />
+            <Label htmlFor="diaCompleto" className="text-sm cursor-pointer">
+              Permiso de día completo
+            </Label>
+          </div>
+
+          {!diaCompleto && (
+            <div className="grid grid-cols-2 gap-4">
+              {/* Periodo inicio */}
+              <div>
+                <Label className="mb-2 block text-sm font-medium">
+                  Desde ...
+                </Label>
+
+                <Select
+                  value={periodoInicio}
+                  onValueChange={(v) => setPeriodoInicio(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Inicio" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {periodos_horarios.map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        {p.nombre} - {p.inicio}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Periodo fin */}
+              <div>
+                <Label className="mb-2 block text-sm font-medium">
+                  ... hasta (inclusive)
+                </Label>
+
+                <Select
+                  value={periodoFin}
+                  onValueChange={(v) => setPeriodoFin(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Fin" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {periodos_horarios.map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        {p.nombre} - {p.fin}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
 
           {/* Tipo de permiso */}
           <div>
