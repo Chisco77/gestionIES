@@ -75,7 +75,8 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   const employeeNumber = empleado?.dni || "";
   const telefono = empleado?.telefono || "";
   const email = empleado?.email || "";
-  /*anonimizar const apellidoUsuario = "Apllido1 Apellido2";
+  //anonimizar 
+  /*const apellidoUsuario = "Apllido1 Apellido2";
   const nombreUsuario = "Nombre";
   const employeeNumber = "123456A";
   const telefono = "600600600";
