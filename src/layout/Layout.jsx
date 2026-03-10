@@ -49,11 +49,13 @@ import { useSidebarContext } from "@/context/SidebarContext";
 
 import { DialogoAsuntosRestricciones } from "../modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
 import { DialogoLlavesRestricciones } from "@/modules/Llaves/components/DialogoLlavesRestricciones";
+import { DialogoImportarHorariosUNTIS } from "@/modules/Configuracion/components/DialogoImportarHorariosUNTIS";
 
 export default function Layout(props) {
   const [openEtiquetas, setOpenEtiquetas] = useState(false);
   const [openRestricciones, setOpenRestricciones] = useState(false);
   const [openLlavesRestricciones, setOpenLlavesRestricciones] = useState(false);
+  const [openImportarHorariosUNTIS, setOpenImportarHorariosUNTIS] = useState(false);
 
   const [tabActivo, setTabActivo] = useState("permisos");
 
@@ -98,6 +100,7 @@ export default function Layout(props) {
         onOpenRestricciones={() => setOpenRestricciones(true)}
         onOpenEtiquetas={() => setOpenEtiquetas(true)}
         onOpenLlavesRestricciones={() => setOpenLlavesRestricciones(true)}
+        onOpenImportarHorariosUNTIS={() => setOpenImportarHorariosUNTIS(true)}
       />
 
       <SidebarInset>
@@ -116,6 +119,10 @@ export default function Layout(props) {
         <DialogoEtiquetasGenericas
           open={openEtiquetas}
           onOpenChange={setOpenEtiquetas}
+        />
+        <DialogoImportarHorariosUNTIS
+          open={openImportarHorariosUNTIS}
+          onOpenChange={setOpenImportarHorariosUNTIS}
         />
       </SidebarInset>
     </SidebarProvider>

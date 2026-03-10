@@ -60,6 +60,7 @@ function SidebarComponent({
   onOpenRestricciones,
   onOpenEtiquetas,
   onOpenLlavesRestricciones,
+  onOpenImportarHorariosUNTIS,
   ...props
 }) {
   const navigate = useNavigate();
@@ -345,7 +346,12 @@ function SidebarComponent({
           { title: "Avisos", url: "/avisos", icon: Info },
           { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
           { title: "Estancias", url: "/estancias", icon: Building2 },
-
+          {
+            title: "Horarios UNTIS",
+            url: "#",
+            onClick: () => onOpenImportarHorariosUNTIS(),
+            icon: Wrench,
+          },
           { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
           {
             title: "Periodos Horarios",
