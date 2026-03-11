@@ -52,6 +52,7 @@ import {
   Power,
   User,
   Info,
+  Calendar,
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -109,6 +110,12 @@ function SidebarComponent({
           },
         ],
       },
+      /*{
+        title: "Guardias",
+        url: "#",
+        icon: CalendarCheck,
+        items: [{ title: "Horarios", url: "/horarios", icon: Calendar }],
+      },*/
       {
         title: "Préstamo Libros",
         url: "#",

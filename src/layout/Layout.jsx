@@ -49,13 +49,14 @@ import { useSidebarContext } from "@/context/SidebarContext";
 
 import { DialogoAsuntosRestricciones } from "../modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
 import { DialogoLlavesRestricciones } from "@/modules/Llaves/components/DialogoLlavesRestricciones";
-import { DialogoImportarHorariosUNTIS } from "@/modules/Configuracion/components/DialogoImportarHorariosUNTIS";
+import { DialogoImportarHorariosUNTIS } from "@/modules/Guardias/components/DialogoImportarHorariosUNTIS";
 
 export default function Layout(props) {
   const [openEtiquetas, setOpenEtiquetas] = useState(false);
   const [openRestricciones, setOpenRestricciones] = useState(false);
   const [openLlavesRestricciones, setOpenLlavesRestricciones] = useState(false);
-  const [openImportarHorariosUNTIS, setOpenImportarHorariosUNTIS] = useState(false);
+  const [openImportarHorariosUNTIS, setOpenImportarHorariosUNTIS] =
+    useState(false);
 
   const [tabActivo, setTabActivo] = useState("permisos");
 
@@ -86,6 +87,7 @@ export default function Layout(props) {
       "/estancias": "Estancias",
       "/perfiles": "Perfiles de Usuario",
       "/periodos-horarios": "Periodos Horarios",
+      "/horarios": "Horarios de Profesores",
     };
 
     const titulo = pathToTitleMap[location.pathname];

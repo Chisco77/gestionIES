@@ -76,6 +76,15 @@ const {
   deleteMateria,
 } = require("../controllers/db/materiasController");
 
+// --- Controlador de horario del profesorado
+const {
+  getHorarioProfesoradoEnriquecido,
+  insertHorarioProfesorado,
+  updateHorarioProfesorado,
+  deleteHorarioProfesorado,
+} = require("../controllers/db/horarioProfesoradoController");
+
+
 // --- Controlador de libros ---
 const {
   getLibros,
@@ -272,6 +281,15 @@ router.delete("/reservas-estancias/:id", deleteReservaEstancia);
 router.get("/reservas-estancias/dia", getReservasEstanciasPorDia);
 router.put("/reservas-estancias/:id", updateReservaEstancia);
 router.post("/reservas-estancias/periodicas", insertReservaEstanciaPeriodica);
+
+
+// ================================================================
+//   Rutas de Horarios del profesorado
+// ================================================================
+router.get("/horario-profesorado/enriquecido", getHorarioProfesoradoEnriquecido);
+router.post("/horario-profesorado", insertHorarioProfesorado);
+router.put("/horario-profesorado/:id", updateHorarioProfesorado);
+router.delete("/horario-profesorado/:id", deleteHorarioProfesorado);
 
 // Rutas de cursos
 router.get("/cursos", getCursos);
