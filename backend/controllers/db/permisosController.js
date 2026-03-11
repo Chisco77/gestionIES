@@ -327,7 +327,7 @@ async function insertAsuntoPropio(req, res) {
     const { rows: hoyRows } = await db.query(
       `SELECT TO_CHAR(NOW() AT TIME ZONE 'Europe/Madrid', 'YYYY-MM-DD') AS hoy_pg`
     );
-    const hoyPG = hoyRows[0].hoy_pg; 
+    const hoyPG = hoyRows[0].hoy_pg;
     console.log("Fecha hoy servidor (Postgres, Madrid):", hoyPG);
 
     console.log("Fecha solicitada (Date JS):", fechaSolicitada);
@@ -433,7 +433,20 @@ async function insertAsuntoPropio(req, res) {
           error: `No puedes solicitar más de ${consecutivos} días consecutivos de asuntos propios.`,
         });
     }
+    // --- Comprobar duplicados antes de insertar ---
+    const { rows: duplicados } = await db.query(
+      `SELECT id, estado FROM permisos WHERE uid = $1 AND fecha = $2 AND tipo = $3`,
+      [uid, fecha, tipo]
+    );
 
+    if (duplicados.length) {
+      // Si el registro existente está rechazado, informamos que hay que borrarlo antes
+      return res.status(400).json({
+        ok: false,
+        error:
+          "Ya existe un asunto propio solicitado para este día. Si fue rechazado, elimínalo antes de volver a solicitarlo.",
+      });
+    }
     // --- Insertar asunto propio ---
     const { rows } = await db.query(
       `INSERT INTO permisos 

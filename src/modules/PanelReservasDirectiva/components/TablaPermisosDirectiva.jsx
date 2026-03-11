@@ -401,7 +401,7 @@ export function TablaPermisosDirectiva({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleGenerarPdf}>
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  PDF
+                  Listado de permisos por profesor
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
