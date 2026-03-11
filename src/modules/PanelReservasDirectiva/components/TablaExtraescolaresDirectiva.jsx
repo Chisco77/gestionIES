@@ -351,7 +351,6 @@ export function TablaExtraescolaresDirectiva({
     initialState: { pagination: { pageIndex: 0, pageSize: 6 } },
   });
 
-  
   // Para filtrar actividades pedientes
   useEffect(() => {
     if (soloPendientesInicial) {
@@ -432,13 +431,18 @@ export function TablaExtraescolaresDirectiva({
   return (
     <div className="space-y-2">
       {/* FILTROS */}
-      <div className="p-2 border rounded-md space-y-3 bg-muted/40">
-        <div className="flex flex-wrap gap-4 items-end text-sm">
-          <div>
-            <label className="text-xs font-medium">Profesor</label>
+      <div className="p-2 border rounded-md bg-muted/40 mb-4">
+        <div className="flex items-end gap-2 w-full flex-nowrap">
+          {" "}
+          {/* flex-nowrap evita el salto de línea */}
+          {/* Filtro Profesor */}
+          <div className="flex-1 min-w-[120px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-muted-foreground">
+              Profesor
+            </label>
             <Input
-              className="h-8 text-sm"
-              placeholder="Buscar..."
+              className="h-8 w-full text-xs"
+              placeholder="Profesor..."
               value={table.getColumn("actualizadaPor")?.getFilterValue() ?? ""}
               onChange={(e) =>
                 table
@@ -447,41 +451,44 @@ export function TablaExtraescolaresDirectiva({
               }
             />
           </div>
-
-          <div>
-            <label className="text-xs font-medium">Título</label>
+          {/* Filtro Título */}
+          <div className="flex-1 min-w-[120px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-muted-foreground">
+              Título actividad
+            </label>
             <Input
-              className="h-8 text-sm"
-              placeholder="Buscar..."
+              className="h-8 w-full text-xs"
+              placeholder="Título..."
               value={table.getColumn("titulo")?.getFilterValue() ?? ""}
               onChange={(e) =>
                 table.getColumn("titulo")?.setFilterValue(e.target.value)
               }
             />
           </div>
-
-          {/* Rango fechas */}
-          <div>
-            <label className="text-xs font-medium">Rango fechas</label>
-            <div className="flex items-center gap-2">
+          {/* Filtro Rango fechas */}
+          <div className="flex-none space-y-1">
+            <label className="text-[10px] uppercase font-bold text-muted-foreground">
+              Rango fechas
+            </label>
+            <div className="flex gap-1">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "h-8 w-[240px] justify-start text-left text-sm",
+                      "h-8 w-[200px] justify-start text-left text-[11px] font-normal",
                       !fechaDesde && !fechaHasta && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {fechaDesde && fechaHasta
-                      ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(
-                          fechaHasta
-                        ).toLocaleDateString()}`
-                      : "Seleccionar rango"}
+                    <CalendarIcon className="mr-1 h-3 w-3 shrink-0" />
+                    <span className="truncate">
+                      {fechaDesde && fechaHasta
+                        ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(fechaHasta).toLocaleDateString()}`
+                        : "Seleccionar fechas"}
+                    </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="p-0">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="range"
                     numberOfMonths={2}
@@ -501,21 +508,23 @@ export function TablaExtraescolaresDirectiva({
               </Popover>
 
               <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 text-xs flex items-center gap-2"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
                 onClick={limpiarTodosLosFiltros}
+                title="Limpiar filtros"
               >
                 <Eraser className="w-4 h-4" />
-                Limpiar filtros
               </Button>
             </div>
           </div>
-
-          <div className="flex items-center gap-3 ml-auto">
-            {/* Switch estado */}
-            <div className="flex items-center gap-2">
+          {/* SECCIÓN FINAL (Switch e Impresora) */}
+          <div className="flex items-center gap-3 ml-auto pl-2 border-l h-8">
+            {/* Switch Estado */}
+            <div className="flex items-center gap-2 whitespace-nowrap">
               <Switch
+                id="pendientes-ext"
+                className="scale-75"
                 checked={table.getColumn("estado")?.getFilterValue() === true}
                 onCheckedChange={(checked) =>
                   table
@@ -523,42 +532,46 @@ export function TablaExtraescolaresDirectiva({
                     ?.setFilterValue(checked ? true : null)
                 }
               />
-              <span className="text-sm text-muted-foreground">
-                Solo pendientes
-              </span>
+              <label
+                htmlFor="pendientes-ext"
+                className="text-[11px] font-medium cursor-pointer"
+              >
+                Pendientes
+              </label>
             </div>
 
-            {/* Menú informes */}
+            {/* Menú Informes */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                >
                   <Printer className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={handleGenerarExtraescolaresMensual}>
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Agenda extraescolares mensual
+                  Agenda mensual
                 </DropdownMenuItem>
-
                 <DropdownMenuItem onClick={handleGenerarExtraescolaresProfesor}>
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Agenda extraescolares por profesor
+                  Por profesor
                 </DropdownMenuItem>
-
                 <DropdownMenuItem
                   onClick={handleGenerarExtraescolaresDepartamento}
                 >
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Agenda extraescolares por departamento
+                  Por departamento (PDF)
                 </DropdownMenuItem>
-
                 <DropdownMenuItem
                   onClick={handleGenerarExtraescolaresDepartamentoXLS}
                 >
                   <Grid className="mr-2 h-4 w-4 text-green-500" />
-                  Agenda extraescolares por departamento (XLS)
+                  Por departamento (XLS)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

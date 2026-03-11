@@ -99,7 +99,7 @@ export default function NotificacionesPopover({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col max-h-[80vh]">
+          <div className="flex flex-col max-h-[120vh]">
             {/* CONTENIDO */}
             <div className="p-4 overflow-y-auto">
               {tipoDialogo === "permisos" && (

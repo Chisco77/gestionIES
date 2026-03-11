@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { pool } = require("../db"); // tu conexión a PostgreSQL
+const { pool } = require("../../db"); // tu conexión a PostgreSQL
 const csv = require("csv-parser");
 
 async function importarHorariosProfesores(req, res) {

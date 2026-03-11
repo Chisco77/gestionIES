@@ -14,7 +14,7 @@ const upload = multer({ storage });
 // Controlador
 const {
   importarHorariosProfesores,
-} = require("../controllers/importHorariosController");
+} = require("../controllers/db/importHorariosProfesores");
 
 // Ruta POST
 router.post(

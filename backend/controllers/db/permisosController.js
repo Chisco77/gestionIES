@@ -389,9 +389,9 @@ async function insertAsuntoPropio(req, res) {
           error: `No puedes solicitar el asunto propio con más de ${antelacion_max} días de antelación.`,
         });
 
-      // Concurrencia
+      // Concurrencia - Excluir del recuento los que han sido rechazados, que no ocupan slot
       const { rows: concurrencia } = await db.query(
-        `SELECT COUNT(*)::int AS total FROM permisos WHERE fecha = $1 AND tipo = 13`,
+        `SELECT COUNT(*)::int AS total FROM permisos WHERE fecha = $1 AND tipo = 13 and estado <> 2`,
         [fecha]
       );
 

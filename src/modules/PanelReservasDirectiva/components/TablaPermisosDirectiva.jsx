@@ -179,7 +179,7 @@ export function TablaPermisosDirectiva({
       table.getColumn("estado")?.setFilterValue(true);
     }
   }, [soloPendientesInicial, table]);
-  
+
   // Actualizamos el filtro de rango cuando cambia la prop fecha
   useEffect(() => {
     if (fecha) {
@@ -267,16 +267,18 @@ export function TablaPermisosDirectiva({
   return (
     <div className="space-y-2">
       {/* FILTROS */}
-      <div className="p-2 border rounded-md space-y-3 bg-muted/40">
-        <div className="flex flex-wrap gap-4 items-end text-sm">
+      <div className="p-2 border rounded-md bg-muted/40 mb-4">
+        <div className="flex items-end gap-2 w-full flex-nowrap">
+          {" "}
+          {/* flex-nowrap es la clave */}
           {/* Filtro profesor */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
+          <div className="flex-1 min-w-[120px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-muted-foreground">
               Profesor
             </label>
             <Input
-              className="h-8 w-[180px] text-sm"
-              placeholder="Buscar profesor..."
+              className="h-8 w-full text-xs"
+              placeholder="Profesor..."
               value={table.getColumn("nombreProfesor")?.getFilterValue() ?? ""}
               onChange={(e) =>
                 table
@@ -285,25 +287,23 @@ export function TablaPermisosDirectiva({
               }
             />
           </div>
-
           {/* Filtro descripción */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
+          <div className="flex-1 min-w-[120px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-muted-foreground">
               Descripción
             </label>
             <Input
-              className="h-8 w-[180px] text-sm"
-              placeholder="Buscar descripción..."
+              className="h-8 w-full text-xs"
+              placeholder="Descripción..."
               value={table.getColumn("descripcion")?.getFilterValue() ?? ""}
               onChange={(e) =>
                 table.getColumn("descripcion")?.setFilterValue(e.target.value)
               }
             />
           </div>
-
           {/* Filtro tipo */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
+          <div className="flex-[1.5] min-w-[150px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-muted-foreground">
               Tipo
             </label>
             <Select
@@ -316,11 +316,11 @@ export function TablaPermisosDirectiva({
                   ?.setFilterValue(value === "ALL" ? "" : Number(value))
               }
             >
-              <SelectTrigger className="h-8 w-[260px] text-sm">
-                <SelectValue placeholder="Todos los tipos" />
+              <SelectTrigger className="h-8 w-full text-xs">
+                <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todos</SelectItem>
+                <SelectItem value="ALL">Todos los tipos</SelectItem>
                 {Object.entries(MAPEO_TIPOS_PERMISOS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}
@@ -329,29 +329,27 @@ export function TablaPermisosDirectiva({
               </SelectContent>
             </Select>
           </div>
-
-          {/* Filtro rango de fechas */}
-          <div className="flex flex-col space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Fecha (rango)
+          {/* Filtro Rango - Un poco más pequeño */}
+          <div className="flex-none space-y-1">
+            <label className="text-[10px] uppercase font-bold text-muted-foreground">
+              Rango Fechas
             </label>
-            <div className="flex items-center space-x-2">
+            <div className="flex gap-1">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className={cn(
-                      "w-[260px] justify-start text-left font-normal h-8 text-sm",
-                      !fechaDesde && !fechaHasta && "text-muted-foreground"
-                    )}
+                    className="w-[190px] justify-start text-left font-normal h-8 text-[11px]"
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {fechaDesde && fechaHasta
-                      ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(fechaHasta).toLocaleDateString()}`
-                      : "Seleccionar rango"}
+                    <CalendarIcon className="mr-1 h-3 w-3 shrink-0" />
+                    <span className="truncate">
+                      {fechaDesde && fechaHasta
+                        ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(fechaHasta).toLocaleDateString()}`
+                        : "Seleccionar rango"}
+                    </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="end">
                   <Calendar
                     mode="range"
                     numberOfMonths={2}
@@ -369,23 +367,21 @@ export function TablaPermisosDirectiva({
                   />
                 </PopoverContent>
               </Popover>
-
               <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 text-xs flex items-center gap-2"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
                 onClick={limpiarTodosLosFiltros}
               >
-                <Eraser className="w-4 h-4" />
-                Limpiar filtros
+                <Eraser className="h-4 w-4" />
               </Button>
             </div>
           </div>
-
-          {/* Switch estado y menú informes */}
-          <div className="flex items-center gap-3 ml-auto">
-            <div className="flex items-center gap-2">
+          {/* SECCIÓN FINAL (Switch e Impresora) */}
+          <div className="flex items-center gap-3 ml-auto pl-2 border-l h-8">
+            <div className="flex items-center gap-2 whitespace-nowrap">
               <Switch
+                className="scale-75" // Un poco más pequeño para ahorrar espacio
                 checked={table.getColumn("estado")?.getFilterValue() === true}
                 onCheckedChange={(checked) =>
                   table
@@ -393,9 +389,7 @@ export function TablaPermisosDirectiva({
                     ?.setFilterValue(checked ? true : null)
                 }
               />
-              <span className="text-sm text-muted-foreground">
-                Solo pendientes
-              </span>
+              <span className="text-[11px] font-medium">Pendientes</span>
             </div>
 
             <DropdownMenu>
@@ -407,7 +401,7 @@ export function TablaPermisosDirectiva({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleGenerarPdf}>
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Listado permisos por profesor
+                  PDF
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
