@@ -47,6 +47,7 @@ import { StaffIndex } from "./modules/Usuarios/pages/StaffIndex";
 import { DashboardAdmministrativos } from "./modules/Dashboard/pages/DashboardAdministrativos";
 import { MateriasIndex } from "./modules/Materias/pages/MateriasIndex";
 import { HorariosIndex } from "./modules/Guardias/pages/HorariosIndex";
+import { CuadranteGuardiasIndex } from "./modules/Guardias/pages/CuadranteGuardiasIndex";
 
 const queryClient = new QueryClient();
 
@@ -309,14 +310,18 @@ const router = createBrowserRouter(
         {
           path: "horarios",
           element: (
-            <ProtectedRoute
-              perfilesPermitidos={[
-                "administrador",
-                "directiva",
-              ]}
-            >
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
               {" "}
               <HorariosIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "cuadrante-guardias",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+              {" "}
+              <CuadranteGuardiasIndex />{" "}
             </ProtectedRoute>
           ),
         },

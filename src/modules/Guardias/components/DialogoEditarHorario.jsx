@@ -87,7 +87,7 @@ export function DialogoEditarHorario({
           );
           if (!res.ok) throw new Error("Error obteniendo horario del profesor");
           const data = await res.json();
-          console.log("Horario: ", data);
+          console.log ("Horario: ", data);
 
           // Llenamos la tabla
           const tabla = periodos.map((periodo) => {
@@ -200,7 +200,6 @@ export function DialogoEditarHorario({
                     ? "bg-blue-100 text-blue-800"
                     : ""
               }`}
-                            title={fila[dia] || ""}
                           >
                             {fila[dia] ? (
                               <div className="flex flex-col">
@@ -218,7 +217,7 @@ export function DialogoEditarHorario({
                                           setOpenPlano(true);
                                         }}
                                         className="inline-flex items-center justify-center gap-1 rounded-full bg-blue-100 hover:bg-blue-200 p-1"
-                                        title={`Ver plano de ${estancia.descripcion}`}
+                                        title={`Ver ubicación de ${estancia.descripcion}`}
                                       >
                                         <MapPin className="w-4 h-4 text-blue-600" />
                                         <span className="text-sm truncate">

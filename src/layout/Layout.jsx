@@ -88,6 +88,7 @@ export default function Layout(props) {
       "/perfiles": "Perfiles de Usuario",
       "/periodos-horarios": "Periodos Horarios",
       "/horarios": "Horarios de Profesores",
+      "/cuadrante-guardias": "Horario de Guardias",
     };
 
     const titulo = pathToTitleMap[location.pathname];

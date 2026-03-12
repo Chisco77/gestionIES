@@ -119,7 +119,10 @@ function SidebarComponent({
               title: "Guardias",
               url: "#",
               icon: CalendarCheck,
-              items: [{ title: "Horarios", url: "/horarios", icon: Calendar }],
+              items: [
+                { title: "Horarios profesores", url: "/horarios", icon: Calendar },
+                { title: "Cuadrante guardias", url: "/cuadrante-guardias", icon: Calendar },
+              ],
             },
           ]
         : []),
