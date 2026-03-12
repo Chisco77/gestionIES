@@ -38,3 +38,42 @@ export function ddmmyyyyToISO(fecha) {
   const [dd, mm, yyyy] = fecha.split("/")
   return `${yyyy}-${mm}-${dd}`
 }
+
+export function getHoraActualMadrid() {
+  const formatter = new Intl.DateTimeFormat("es-ES", {
+    timeZone: "Europe/Madrid",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(new Date());
+
+  const h = parts.find((p) => p.type === "hour").value;
+  const m = parts.find((p) => p.type === "minute").value;
+  const s = parts.find((p) => p.type === "second").value;
+
+  return `${h}:${m}:${s}`;
+}
+
+export function getDiaSemanaMadrid() {
+  const formatter = new Intl.DateTimeFormat("es-ES", {
+    timeZone: "Europe/Madrid",
+    weekday: "long",
+  });
+
+  const dia = formatter.format(new Date());
+
+  const mapa = {
+    lunes: "Lunes",
+    martes: "Martes",
+    miércoles: "Miércoles",
+    jueves: "Jueves",
+    viernes: "Viernes",
+    sábado: null,
+    domingo: null,
+  };
+
+  return mapa[dia.toLowerCase()];
+}

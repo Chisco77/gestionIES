@@ -75,7 +75,7 @@ import { generateListadoExtraescolaresPorDepartamento } from "@/Informes/extraes
 import { generateListadoExtraescolaresPorDepartamentoXLS } from "@/Informes/extraescolares";
 import { generateListadoExtraescolaresMensual } from "@/Informes/extraescolares";
 
-import { getCursoActual, ddmmyyyyToISO } from "@/utils/cursoAcademico";
+import { getCursoActual, ddmmyyyyToISO } from "@/utils/fechasHoras";
 
 export function TablaExtraescolares({ user, fecha }) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);

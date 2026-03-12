@@ -74,7 +74,7 @@ import { generateListadoExtraescolaresPorDepartamento } from "@/Informes/extraes
 import { generateListadoExtraescolaresPorDepartamentoXLS } from "@/Informes/extraescolares";
 import { generateListadoExtraescolaresMensual } from "@/Informes/extraescolares";
 
-import { getCursoActual, ddmmyyyyToISO } from "@/utils/cursoAcademico";
+import { getCursoActual, ddmmyyyyToISO } from "@/utils/fechasHoras";
 
 export function TablaExtraescolaresDirectiva({
   fecha,

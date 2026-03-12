@@ -27,7 +27,7 @@ import PlanoEstanciaResaltada from "@/modules/Utilidades/components/PlanoEstanci
 export function DialogoPlanoEstancia({ open, onClose, estancia }) {
   if (!estancia) return null;
 
-  
+  console.log ("Estancia: ", estancia);
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent

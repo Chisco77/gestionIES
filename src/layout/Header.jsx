@@ -32,8 +32,7 @@
  * - La altura está fijada en h-16 con borde inferior.
  * - Se emplea flexbox con gap para distribuir los elementos horizontalmente.
  */
-// Updated Header.jsx with ShadCN tooltip for logout icon
-// (only the relevant part modified)
+
 
 import React, { useState, useEffect } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -41,7 +40,7 @@ import { Separator } from "@/components/ui/separator";
 import { useSidebarContext } from "@/context/SidebarContext";
 import { RelojPeriodo } from "@/modules/Utilidades/components/RelojPeriodo";
 import { useAuth } from "@/context/AuthContext";
-import { Power, User } from "lucide-react";
+import { Power, User, CalendarClock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Tooltip,
@@ -53,7 +52,8 @@ import {
 import DialogoEditarUsuario from "@/modules/Usuarios/components/DialogoEditarUsuario";
 
 import NotificacionesPopover from "@/modules/Notificaciones/components/NotificacionesPopover";
-import { useNotificaciones } from "@/hooks/useNotificaciones"; // tu hook
+import { useNotificaciones } from "@/hooks/useNotificaciones";
+import { DialogoEditarHorario } from "@/modules/Guardias/components/DialogoEditarHorario";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -72,32 +72,15 @@ export default function Header({ setTabActivo }) {
 
   const esDirectiva = user?.perfil === "directiva";
 
+  const [abrirHorario, setAbrirHorario] = useState(false);
+
+  const MODULO_HORARIO =
+    (import.meta.env.VITE_MODULO_GUARDIAS ?? "false") === "true";
+
   // --- React Query hook para notificaciones ---
   const { permisos, extraescolares, total, isLoading, isError, error } =
     useNotificaciones();
 
-  /* useEffect(() => {
-    if (!esDirectiva) return;
-
-    const fetchNotificaciones = async () => {
-      try {
-        setCargandoNotificaciones(true);
-        const res = await fetch(`${API_BASE}/directiva/pendientes`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Error al obtener notificaciones");
-        const data = await res.json();
-        setNotificaciones(data);
-      } catch (err) {
-        console.error("[Header] Error cargando notificaciones:", err);
-        setNotificaciones(null);
-      } finally {
-        setCargandoNotificaciones(false);
-      }
-    };
-
-    fetchNotificaciones();
-  }, [user]);*/
 
   const handleClickLogout = () => {
     fetch(`${API_URL}/logout`, {
@@ -161,8 +144,26 @@ export default function Header({ setTabActivo }) {
         <Separator orientation="vertical" className="h-5 border-white/50" />
         <h1 className="text-lg font-semibold">{tituloActivo}</h1>
       </div>
-      <div className="absolute left-1/2 transform -translate-x-1/2">
-        <RelojPeriodo periodos={periodosDB} />
+      <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-4">
+        <div className="inline-flex">
+          <RelojPeriodo periodos={periodosDB} />
+        </div>
+
+        {MODULO_HORARIO && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <CalendarClock
+                  className="h-5 w-5 text-white cursor-pointer"
+                  onClick={() => setAbrirHorario(true)}
+                />
+              </TooltipTrigger>
+              <TooltipContent className="bg-blue-500 text-white">
+                Ver mi horario
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
       <div className="ml-auto flex items-center gap-4">
         {/* Campana + notificaciones */}
@@ -215,6 +216,15 @@ export default function Header({ setTabActivo }) {
           </Tooltip>
         </TooltipProvider>
       </div>
+      {/* Dialogo horario */}
+      {MODULO_HORARIO && (
+        <DialogoEditarHorario
+          open={abrirHorario}
+          onClose={() => setAbrirHorario(false)}
+          usuarioSeleccionado={user ? { ...user, uid: user.username } : null}
+          esAlumno={false}
+        />
+      )}
       <DialogoEditarUsuario
         open={abrirPerfil}
         onClose={() => setAbrirPerfil(false)}

@@ -18,6 +18,13 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { Loader } from "lucide-react";
+import { getHoraActualMadrid } from "@/utils/fechasHoras";
+import { getDiaSemanaMadrid } from "@/utils/fechasHoras";
+import { MapPin } from "lucide-react";
+import { DialogoPlanoEstancia } from "@/modules/ReservasEstancias/components/DialogoPlanoEstancia";
+import { useEstancias } from "@/hooks/Estancias/useEstancias";
+
+
 
 export function DialogoEditarHorario({
   open,
@@ -27,6 +34,16 @@ export function DialogoEditarHorario({
   esAlumno = false,
 }) {
   const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+  const [horaActual, setHoraActual] = useState(getHoraActualMadrid());
+  const [diaActual, setDiaActual] = useState(getDiaSemanaMadrid());
+  const [openPlano, setOpenPlano] = useState(false);
+  const [estanciaSeleccionada, setEstanciaSeleccionada] = useState(null);
+
+  function esPeriodoActual(periodo) {
+    if (!horaActual) return false;
+
+    return horaActual >= periodo.inicio && horaActual <= periodo.fin;
+  }
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -34,8 +51,21 @@ export function DialogoEditarHorario({
   const { data: periodos = [], isLoading: loadingPeriodos } =
     usePeriodosHorarios();
 
+  // Importar estancias del hook
+  const { data: estancias = [] } = useEstancias();
+
   // Horario del profesor
   const [horario, setHorario] = useState([]);
+
+  // Actualizar día y hora
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHoraActual(getHoraActualMadrid());
+      setDiaActual(getDiaSemanaMadrid());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (open && usuarioSeleccionado && periodos.length > 0) {
@@ -57,6 +87,7 @@ export function DialogoEditarHorario({
           );
           if (!res.ok) throw new Error("Error obteniendo horario del profesor");
           const data = await res.json();
+          console.log("Horario: ", data);
 
           // Llenamos la tabla
           const tabla = periodos.map((periodo) => {
@@ -68,8 +99,17 @@ export function DialogoEditarHorario({
                   Number(h.idperiodo) === Number(periodo.id) &&
                   Number(h.dia_semana) === index + 1
               );
+              // Guardamos materia, grupo y estancia en los datos de la celda
               fila[dia] = celdaData
-                ? `${celdaData.materia_nombre}\n${celdaData.grupo}`
+                ? {
+                    materia: celdaData.materia_nombre,
+                    grupo: celdaData.grupo,
+                    // buscamos el objeto estancia completo por descripción
+                    estancia:
+                      estancias.find(
+                        (e) => e.descripcion === celdaData.estancia
+                      ) || null,
+                  }
                 : null;
             });
             return fila;
@@ -128,41 +168,74 @@ export function DialogoEditarHorario({
                 </tr>
               </thead>
               <tbody>
-                {horario.map((fila, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-2 py-1 font-semibold w-24 truncate rounded-l-md">
-                      {fila.periodo}
-                    </td>
-                    {dias.map((dia, diaIdx) => {
-                      const [materia, grupo] = fila[dia]?.split("\n") || [
-                        "",
-                        "",
-                      ];
-                      return (
-                        <td
-                          key={dia}
-                          className={`border border-gray-300 px-2 py-1 max-w-[160px] w-1/5 rounded-md ${
-                            fila[dia] ? "bg-blue-100 text-blue-800" : ""
-                          }`}
-                          title={fila[dia] || ""}
-                        >
-                          {fila[dia] ? (
-                            <div className="flex flex-col">
-                              {materia && (
-                                <div className="line-clamp-2">{materia}</div>
-                              )}
-                              {grupo && (
-                                <div className="font-semibold text-sm truncate">
-                                  {grupo}
-                                </div>
-                              )}
-                            </div>
-                          ) : null}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                {horario.map((fila, idx) => {
+                  const periodoActual = periodos.find(
+                    (p) => p.nombre === fila.periodo
+                  );
+
+                  return (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-2 py-1 font-semibold w-24 truncate rounded-l-md">
+                        {fila.periodo}
+                      </td>
+
+                      {dias.map((dia, diaIdx) => {
+                        const esActual =
+                          periodoActual &&
+                          esPeriodoActual(periodoActual) &&
+                          diaActual === dia;
+
+                        const materia = fila[dia]?.materia || "";
+                        const grupo = fila[dia]?.grupo || "";
+                        const estancia = fila[dia]?.estancia || null;
+
+                        return (
+                          <td
+                            key={dia}
+                            className={`border border-gray-300 px-2 py-1 max-w-[160px] w-1/5 rounded-md
+              ${
+                esActual
+                  ? "bg-yellow-200 animate-pulse border-2 border-yellow-500"
+                  : fila[dia]
+                    ? "bg-blue-100 text-blue-800"
+                    : ""
+              }`}
+                            title={fila[dia] || ""}
+                          >
+                            {fila[dia] ? (
+                              <div className="flex flex-col">
+                                {materia && (
+                                  <div className="line-clamp-2">{materia}</div>
+                                )}
+                                {grupo && (
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    {/* Mostrar botón de estancia solo con MapPin y descripción dentro */}
+                                    {estancia && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEstanciaSeleccionada(estancia);
+                                          setOpenPlano(true);
+                                        }}
+                                        className="inline-flex items-center justify-center gap-1 rounded-full bg-blue-100 hover:bg-blue-200 p-1"
+                                        title={`Ver plano de ${estancia.descripcion}`}
+                                      >
+                                        <MapPin className="w-4 h-4 text-blue-600" />
+                                        <span className="text-sm truncate">
+                                          {estancia.descripcion}
+                                        </span>
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ) : null}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -175,6 +248,12 @@ export function DialogoEditarHorario({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <DialogoPlanoEstancia
+        open={openPlano}
+        onClose={() => setOpenPlano(false)}
+        estancia={estanciaSeleccionada}
+      />
     </Dialog>
   );
 }

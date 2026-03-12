@@ -57,6 +57,9 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+const MODULO_GUARDIAS =
+  (import.meta.env.VITE_MODULO_GUARDIAS ?? "false") === "true";
+
 function SidebarComponent({
   onOpenRestricciones,
   onOpenEtiquetas,
@@ -110,12 +113,16 @@ function SidebarComponent({
           },
         ],
       },
-      /*{
-        title: "Guardias",
-        url: "#",
-        icon: CalendarCheck,
-        items: [{ title: "Horarios", url: "/horarios", icon: Calendar }],
-      },*/
+      ...(MODULO_GUARDIAS
+        ? [
+            {
+              title: "Guardias",
+              url: "#",
+              icon: CalendarCheck,
+              items: [{ title: "Horarios", url: "/horarios", icon: Calendar }],
+            },
+          ]
+        : []),
       {
         title: "Préstamo Libros",
         url: "#",

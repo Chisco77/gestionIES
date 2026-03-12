@@ -7,7 +7,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { PLANOS } from "@/config/planos";
 
-
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
@@ -136,18 +135,15 @@ export default function PlanoEstanciaResaltada({ estancia }) {
             );
             const isSelected = s.id === idEstancia;
 
-            const strokeColor = isSelected ? "#15803d" : "#94a3b8";
-            const strokeWidth = isSelected ? 3 : 1;
-
             return (
               <path
                 key={s.id}
                 d={polyToPath(absPts)}
                 fill={
-                  isSelected ? "rgba(34,197,94,0.5)" : "rgba(148,163,184,0.25)"
-                }
-                stroke={strokeColor}
-                strokeWidth={strokeWidth}
+                  isSelected ? "rgba(253,224,71,0.5)" : "rgba(148,163,184,0.25)"
+                } // amarillo si seleccionado
+                stroke={isSelected ? "#facc15" : "#94a3b8"} // borde amarillo
+                strokeWidth={isSelected ? 2 : 1}
               >
                 {isSelected && (
                   <animate

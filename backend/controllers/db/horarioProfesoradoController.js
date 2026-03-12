@@ -8,6 +8,7 @@ const db = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
 const { obtenerGruposPorTipo } = require("../ldap/gruposController");
 
+
 /**
  * Obtener horario del profesorado enriquecido
  * ================================================================

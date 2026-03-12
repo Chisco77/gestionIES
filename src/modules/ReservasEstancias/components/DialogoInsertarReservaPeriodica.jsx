@@ -56,7 +56,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getCursoActual, ddmmyyyyToISO } from "@/utils/cursoAcademico";
+import { getCursoActual, ddmmyyyyToISO } from "@/utils/fechasHoras";
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 
 import { DialogoConfirmacionReservaPeriodica } from "./DialogoConfirmacionReservaPeriodica";
