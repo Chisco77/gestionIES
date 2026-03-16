@@ -35,7 +35,15 @@ import { useState, useEffect } from "react";
 import { columns } from "../../Usuarios/components/colums";
 import { TablaUsuarios } from "../../Usuarios/components/TablaUsuarios";
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
-import { Loader, Plus, Pencil, Trash2, Users, Printer } from "lucide-react";
+import {
+  Loader,
+  Plus,
+  Pencil,
+  Trash2,
+  Users,
+  Printer,
+  Copy,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -46,12 +54,14 @@ import {
 
 import { generateListadoAPs } from "../../../utils/Informes";
 import { DialogoEditarHorario } from "../components/DialogoEditarHorario";
+import { DialogoAsignarHorario } from "../components/DialogoAsignarHorario";
 
 export function HorariosIndex() {
   const [profesoresFiltrados, setProfesoresFiltrados] = useState([]);
   const [profesorSeleccionado, setProfesorSeleccionado] = useState(null);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
   const [abrirEditar, setAbrirEditar] = useState(false);
+  const [abrirAsignarHorario, setAbrirAsignarHorario] = useState(false);
 
   const {
     data: profesores,
@@ -64,7 +74,6 @@ export function HorariosIndex() {
   const handleInsertar = () => {
     alert("Inserción de profesor: No implementado");
   };
-
 
   const handleEliminar = (profesor) => {
     if (!profesor) {
@@ -89,7 +98,6 @@ export function HorariosIndex() {
     // Abrimos el diálogo
     setAbrirEditar(true);
   };
-
 
   const handleGenerarPdf = () => {
     // Ahora los datos de empleado ya están en cada profesor
@@ -139,14 +147,23 @@ export function HorariosIndex() {
               <Button variant="outline" size="icon" disabled={true}>
                 <Plus className="w-4 h-4" />
               </Button>
+
+              {/* Botón Editar horario */}
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => handleEditarHorario(seleccionado)}
+                onClick={() => {
+                  if (!seleccionado) return;
+                  setProfesorSeleccionado(seleccionado); // Guardamos profesor
+                  setEmpleadoSeleccionado(seleccionado); // Si quieres usar empleado
+                  setAbrirEditar(true); // Abrimos diálogo editar
+                }}
                 disabled={!seleccionado}
               >
                 <Pencil className="w-4 h-4" />
               </Button>
+
+              {/* Botón Eliminar */}
               <Button
                 variant="outline"
                 size="icon"
@@ -155,17 +172,39 @@ export function HorariosIndex() {
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
+
+              {/* Botón Duplicar horario */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  if (!seleccionado) return;
+                  setProfesorSeleccionado(seleccionado); // Guardamos profesor de la fila
+                  setAbrirAsignarHorario(true); // Abrimos diálogo duplicar
+                }}
+                disabled={!seleccionado}
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
             </>
           )}
         />
       )}
 
+      {/* Diálogo Editar horario */}
       <DialogoEditarHorario
         open={abrirEditar}
         onClose={() => setAbrirEditar(false)}
         usuarioSeleccionado={profesorSeleccionado}
         empleadoSeleccionado={empleadoSeleccionado}
-        esAlumno={false} // muestra foto en la cabecera
+        esAlumno={false}
+      />
+
+      {/* Diálogo Asignar/Duplicar horario */}
+      <DialogoAsignarHorario
+        profesorOrigen={profesorSeleccionado}
+        open={abrirAsignarHorario}
+        onOpenChange={setAbrirAsignarHorario}
       />
     </div>
   );

@@ -82,6 +82,7 @@ const {
   insertHorarioProfesorado,
   updateHorarioProfesorado,
   deleteHorarioProfesorado,
+  duplicarHorarioProfesorado,
 } = require("../controllers/db/horarioProfesoradoController");
 
 
@@ -289,6 +290,7 @@ router.post("/reservas-estancias/periodicas", insertReservaEstanciaPeriodica);
 router.get("/horario-profesorado/enriquecido", getHorarioProfesoradoEnriquecido);
 router.post("/horario-profesorado", insertHorarioProfesorado);
 router.put("/horario-profesorado/:id", updateHorarioProfesorado);
+router.post("/horario-profesorado/duplicar", duplicarHorarioProfesorado);
 router.delete("/horario-profesorado/:id", deleteHorarioProfesorado);
 
 // Rutas de cursos

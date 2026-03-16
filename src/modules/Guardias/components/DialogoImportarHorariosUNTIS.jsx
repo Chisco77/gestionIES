@@ -32,6 +32,18 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
+// Alert Dialog previo a importacion
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+
 export function DialogoImportarHorariosUNTIS({ open, onOpenChange }) {
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -40,6 +52,8 @@ export function DialogoImportarHorariosUNTIS({ open, onOpenChange }) {
   const [cargando, setCargando] = useState(false);
   const [progreso, setProgreso] = useState(0);
   const [resumen, setResumen] = useState(null);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Referencia al input para poder resetearlo manualmente
   const fileInputRef = useRef(null);
@@ -81,7 +95,7 @@ export function DialogoImportarHorariosUNTIS({ open, onOpenChange }) {
   // ---------------------------------------------------
   const handleImportar = async () => {
     if (!archivo) return;
-    
+
     setCargando(true);
     setProgreso(0);
     setResumen(null);
@@ -118,7 +132,7 @@ export function DialogoImportarHorariosUNTIS({ open, onOpenChange }) {
             setResumen(info);
             setProgreso(100);
             setCargando(false);
-            setArchivo(null); 
+            setArchivo(null);
             // Opcional: limpiar input file tras éxito
             if (fileInputRef.current) fileInputRef.current.value = "";
 
@@ -131,7 +145,9 @@ export function DialogoImportarHorariosUNTIS({ open, onOpenChange }) {
             try {
               const data = JSON.parse(part.replace("data: ", ""));
               if (data.totalFilas > 0) {
-                const perc = Math.round((data.procesadas / data.totalFilas) * 100);
+                const perc = Math.round(
+                  (data.procesadas / data.totalFilas) * 100
+                );
                 setProgreso(perc);
               }
             } catch (e) {
@@ -149,7 +165,10 @@ export function DialogoImportarHorariosUNTIS({ open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange} modal>
-      <DialogContent className="p-0 rounded-lg w-[500px] flex flex-col overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent
+        className="p-0 rounded-lg w-[500px] flex flex-col overflow-hidden"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         {/* Header */}
         <DialogHeader className="bg-blue-600 text-white flex items-center justify-center py-4 px-6">
           <DialogTitle className="text-lg font-semibold text-center">
@@ -164,15 +183,15 @@ export function DialogoImportarHorariosUNTIS({ open, onOpenChange }) {
               <Label className="text-sm font-medium">
                 Archivo UNTIS (.csv)
               </Label>
-              <Input 
+              <Input
                 ref={fileInputRef}
-                type="file" 
-                accept=".csv" 
+                type="file"
+                accept=".csv"
                 onChange={handleFileChange}
                 disabled={cargando}
                 className="cursor-pointer"
               />
-              
+
               {cargando && (
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs mb-1">
@@ -192,17 +211,26 @@ export function DialogoImportarHorariosUNTIS({ open, onOpenChange }) {
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-white p-2 rounded border border-blue-100">
-                    <p className="text-[10px] uppercase text-gray-500 font-bold">Total filas</p>
-                    <p className="text-lg font-semibold text-blue-700">{resumen.total}</p>
+                    <p className="text-[10px] uppercase text-gray-500 font-bold">
+                      Total filas
+                    </p>
+                    <p className="text-lg font-semibold text-blue-700">
+                      {resumen.total}
+                    </p>
                   </div>
                   <div className="bg-white p-2 rounded border border-blue-100">
-                    <p className="text-[10px] uppercase text-gray-500 font-bold">Insertadas</p>
-                    <p className="text-lg font-semibold text-green-600">{resumen.insertadas}</p>
+                    <p className="text-[10px] uppercase text-gray-500 font-bold">
+                      Insertadas
+                    </p>
+                    <p className="text-lg font-semibold text-green-600">
+                      {resumen.insertadas}
+                    </p>
                   </div>
                 </div>
                 {resumen.errores > 0 && (
                   <p className="mt-2 text-xs text-red-600 font-medium">
-                    ⚠️ Se omitieron {resumen.errores} filas por errores de validación.
+                    ⚠️ Se omitieron {resumen.errores} filas por errores de
+                    validación.
                   </p>
                 )}
               </div>
@@ -220,12 +248,55 @@ export function DialogoImportarHorariosUNTIS({ open, onOpenChange }) {
             {resumen ? "Cerrar" : "Cancelar"}
           </Button>
           {!resumen && (
-            <Button onClick={handleImportar} disabled={cargando || !archivo}>
+            <Button
+              onClick={() => setConfirmOpen(true)}
+              disabled={cargando || !archivo}
+            >
               {cargando ? "Importando..." : "Comenzar Importación"}
             </Button>
           )}
         </DialogFooter>
       </DialogContent>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ⚠️ Confirmar importación de horarios
+            </AlertDialogTitle>
+
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Se importarán todos los horarios contenidos en el archivo
+                seleccionado.
+              </p>
+
+              <p className="font-semibold text-red-600">
+                Esta acción eliminará previamente todos los horarios existentes
+                en la aplicación.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Archivo: <strong>{archivo?.name}</strong>
+              </p>
+
+              <p>¿Deseas continuar con la importación?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cargando}>Cancelar</AlertDialogCancel>
+
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmOpen(false);
+                handleImportar();
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Sí, importar horarios
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

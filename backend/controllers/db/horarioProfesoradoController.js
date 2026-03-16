@@ -8,7 +8,6 @@ const db = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
 const { obtenerGruposPorTipo } = require("../ldap/gruposController");
 
-
 /**
  * Obtener horario del profesorado enriquecido
  * ================================================================
@@ -213,6 +212,73 @@ async function updateHorarioProfesorado(req, res) {
 }
 
 /**
+ * Duplicar horario de un profesor a otro
+ */
+async function duplicarHorarioProfesorado(req, res) {
+  try {
+    const usuarioSesion = req.session?.user;
+    if (!usuarioSesion)
+      return res.status(401).json({ ok: false, error: "No autenticado" });
+
+    const { uidOrigen, uidDestino, curso_academico } = req.body;
+
+    if (!uidOrigen || !uidDestino)
+      return res
+        .status(400)
+        .json({ ok: false, error: "uidOrigen y uidDestino son obligatorios" });
+
+    const filtros = ["uid = $1"];
+    const vals = [uidOrigen];
+    if (curso_academico) {
+      filtros.push("curso_academico = $2");
+      vals.push(curso_academico);
+    }
+
+    const { rows: filasOrigen } = await db.query(
+      `SELECT * FROM horario_profesorado WHERE ${filtros.join(" AND ")}`,
+      vals
+    );
+
+    if (!filasOrigen.length)
+      return res
+        .status(404)
+        .json({ ok: false, error: "No hay horario para el profesor origen" });
+
+    const insertPromises = filasOrigen.map((f) =>
+      db.query(
+        `INSERT INTO horario_profesorado
+         (uid, dia_semana, idperiodo, tipo, gidnumber, idmateria, idestancia, curso_academico)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         RETURNING *`,
+        [
+          uidDestino,
+          f.dia_semana,
+          f.idperiodo,
+          f.tipo,
+          f.gidnumber,
+          f.idmateria,
+          f.idestancia,
+          f.curso_academico,
+        ]
+      )
+    );
+
+    const filasDuplicadas = await Promise.all(insertPromises);
+
+    res.status(201).json({
+      ok: true,
+      duplicadas: filasDuplicadas.map((r) => r.rows?.[0] || null),
+      total: filasDuplicadas.length,
+    });
+  } catch (err) {
+    console.error("[duplicarHorarioProfesorado] Error:", err);
+    res
+      .status(500)
+      .json({ ok: false, error: "Error duplicando horario del profesorado" });
+  }
+}
+
+/**
  * Borrar fila de horario
  */
 async function deleteHorarioProfesorado(req, res) {
@@ -248,4 +314,5 @@ module.exports = {
   insertHorarioProfesorado,
   updateHorarioProfesorado,
   deleteHorarioProfesorado,
+  duplicarHorarioProfesorado,
 };

@@ -802,7 +802,7 @@ async function updateEstadoPermiso(req, res) {
         if (!maxDias || maxDias <= 0)
           return res.status(400).json({
             ok: false,
-            error: "No está configurado el número máximo de asuntos propios",
+            error: "No está configurado el número máximo de asuntos propios del empleado",
           });
 
         const { rows: concedidos } = await db.query(

@@ -25,7 +25,6 @@
 import { useQuery } from "@tanstack/react-query";
 
 const API_URL = import.meta.env.VITE_API_URL;
-// Login externo o interno
 
 export function useProfesoresLdap() {
   return useQuery({
@@ -45,9 +44,7 @@ export function useProfesoresLdap() {
           try {
             const resEmp = await fetch(
               `${API_URL}/db/empleados/${profesor.uid}`,
-              {
-                credentials: "include",
-              }
+              { credentials: "include" }
             );
             if (!resEmp.ok) return profesor; // si no existe, devolvemos solo LDAP
             const empleado = await resEmp.json();
@@ -57,6 +54,15 @@ export function useProfesoresLdap() {
           }
         })
       );
+
+      // Ordenamos alfabéticamente por apellido (sn)
+      profesoresEnriquecidos.sort((a, b) => {
+        const apellidoA = (a.sn ?? "").toLowerCase();
+        const apellidoB = (b.sn ?? "").toLowerCase();
+        if (apellidoA < apellidoB) return -1;
+        if (apellidoA > apellidoB) return 1;
+        return 0;
+      });
 
       return profesoresEnriquecidos;
     },
