@@ -7,13 +7,16 @@
  * que no están de baja.
  */
 
+import { useMemo } from "react";
 import { useProfesoresLdap } from "./useProfesoresLdap";
 
 export function useProfesoresActivos() {
   const { data: profesores, ...rest } = useProfesoresLdap();
 
-  // Filtramos solo los que no están de baja
-  const activos = profesores?.filter((p) => !p.baja);
+  // Memoizamos para que la referencia solo cambie si profesores cambia
+  const activos = useMemo(() => {
+    return profesores?.filter((p) => !p.baja) ?? [];
+  }, [profesores]);
 
   return { data: activos, ...rest };
 }

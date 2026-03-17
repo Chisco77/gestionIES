@@ -35,6 +35,7 @@ import { useState, useEffect } from "react";
 import { columns } from "../../Usuarios/components/colums";
 import { TablaUsuarios } from "../../Usuarios/components/TablaUsuarios";
 import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
+//import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 import {
   Loader,
   Plus,
@@ -69,8 +70,7 @@ export function HorariosIndex() {
     error: errorProfesores,
   } = useProfesoresActivos();
 
-  //const { data: empleados = [], isLoading: loadingEmpleados } = useEmpleados();
-
+  
   const handleInsertar = () => {
     alert("Inserción de profesor: No implementado");
   };
