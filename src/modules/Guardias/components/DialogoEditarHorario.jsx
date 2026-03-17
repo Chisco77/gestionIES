@@ -24,7 +24,19 @@ import { MapPin } from "lucide-react";
 import { DialogoPlanoEstancia } from "@/modules/ReservasEstancias/components/DialogoPlanoEstancia";
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
 
+import { useAuth } from "@/context/AuthContext";
+import { useMaterias } from "@/hooks/useMaterias";
+import { useCursosLdap } from "@/hooks/useCursosLdap";
+import { DialogoEditarCeldaHorario } from "./DialogoEditarCeldaHorario";
 
+import { Pencil, Trash2 } from "lucide-react";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function DialogoEditarHorario({
   open,
@@ -38,6 +50,15 @@ export function DialogoEditarHorario({
   const [diaActual, setDiaActual] = useState(getDiaSemanaMadrid());
   const [openPlano, setOpenPlano] = useState(false);
   const [estanciaSeleccionada, setEstanciaSeleccionada] = useState(null);
+
+  const { user } = useAuth();
+  const { data: materias = [] } = useMaterias();
+  const { data: cursos = [] } = useCursosLdap();
+
+  const [celdaSeleccionada, setCeldaSeleccionada] = useState(null);
+  const [openCelda, setOpenCelda] = useState(false);
+  const [diaSeleccionado, setDiaSeleccionado] = useState(null);
+  const [periodoSeleccionado, setPeriodoSeleccionado] = useState(null);
 
   function esPeriodoActual(periodo) {
     if (!horaActual) return false;
@@ -87,7 +108,7 @@ export function DialogoEditarHorario({
           );
           if (!res.ok) throw new Error("Error obteniendo horario del profesor");
           const data = await res.json();
-          console.log ("Horario: ", data);
+          console.log("Horario: ", data);
 
           // Llenamos la tabla
           const tabla = periodos.map((periodo) => {
@@ -102,9 +123,9 @@ export function DialogoEditarHorario({
               // Guardamos materia, grupo y estancia en los datos de la celda
               fila[dia] = celdaData
                 ? {
+                    ...celdaData, // 🔥 IMPORTANTE: mantener toda la info original
                     materia: celdaData.materia_nombre,
                     grupo: celdaData.grupo,
-                    // buscamos el objeto estancia completo por descripción
                     estancia:
                       estancias.find(
                         (e) => e.descripcion === celdaData.estancia
@@ -192,43 +213,79 @@ export function DialogoEditarHorario({
                         return (
                           <td
                             key={dia}
-                            className={`border border-gray-300 px-2 py-1 max-w-[160px] w-1/5 rounded-md
-              ${
-                esActual
-                  ? "bg-yellow-200 animate-pulse border-2 border-yellow-500"
-                  : fila[dia]
-                    ? "bg-blue-100 text-blue-800"
-                    : ""
-              }`}
+                            className={`border border-gray-300 px-2 py-1 max-w-[160px] w-1/5 rounded-md relative
+    ${
+      esActual
+        ? "bg-yellow-200 animate-pulse border-2 border-yellow-500"
+        : fila[dia]
+          ? "bg-blue-100 text-blue-800"
+          : ""
+    }`}
                           >
-                            {fila[dia] ? (
+                            {/* Menú de tres puntitos solo para admin/directiva */}
+                            {(user.perfil === "directiva" ||
+                              user.perfil === "admin") && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute bottom-1 right-1 p-1"
+                                  >
+                                    …
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setCeldaSeleccionada(fila[dia]);
+                                      setDiaSeleccionado(dia);
+                                      setPeriodoSeleccionado(fila.periodo);
+                                      setOpenCelda(true);
+                                    }}
+                                  >
+                                    <Pencil className="w-4 h-4 mr-2" /> Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      console.log("Eliminar acción pendiente");
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" /> Eliminar
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+
+                            {/* Contenido de la celda */}
+                            {fila[dia] && (
                               <div className="flex flex-col">
                                 {materia && (
                                   <div className="line-clamp-2">{materia}</div>
                                 )}
                                 {grupo && (
                                   <div className="flex flex-col items-center justify-center gap-1">
-                                    {/* Mostrar botón de estancia solo con MapPin y descripción dentro */}
                                     {estancia && (
-                                      <button
-                                        type="button"
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="inline-flex items-center justify-center gap-1 p-1"
                                         onClick={() => {
                                           setEstanciaSeleccionada(estancia);
                                           setOpenPlano(true);
                                         }}
-                                        className="inline-flex items-center justify-center gap-1 rounded-full bg-blue-100 hover:bg-blue-200 p-1"
                                         title={`Ver ubicación de ${estancia.descripcion}`}
                                       >
                                         <MapPin className="w-4 h-4 text-blue-600" />
                                         <span className="text-sm truncate">
                                           {estancia.descripcion}
                                         </span>
-                                      </button>
+                                      </Button>
                                     )}
                                   </div>
                                 )}
                               </div>
-                            ) : null}
+                            )}
                           </td>
                         );
                       })}
@@ -248,11 +305,44 @@ export function DialogoEditarHorario({
         </DialogFooter>
       </DialogContent>
 
-      <DialogoPlanoEstancia
-        open={openPlano}
-        onClose={() => setOpenPlano(false)}
-        estancia={estanciaSeleccionada}
-      />
+      {openPlano && (
+        <DialogoPlanoEstancia
+          open={openPlano}
+          onClose={() => setOpenPlano(false)}
+          estancia={estanciaSeleccionada}
+        />
+      )}
+
+      {openCelda && (
+        <DialogoEditarCeldaHorario
+          open={openCelda}
+          onClose={() => setOpenCelda(false)}
+          celdaActual={celdaSeleccionada}
+          periodo={periodoSeleccionado}
+          dia={diaSeleccionado}
+          estancias={estancias}
+          cursos={cursos}
+          materias={materias}
+          onGuardar={(nuevaCelda) => {
+            setHorario((prev) =>
+              prev.map((fila) => {
+                if (fila.periodo === periodoSeleccionado) {
+                  return {
+                    ...fila,
+                    [diaSeleccionado]: {
+                      ...fila[diaSeleccionado], // 🔥 mantener datos originales
+                      materia: nuevaCelda.materia,
+                      grupo: nuevaCelda.grupo,
+                      estancia: nuevaCelda.estancia,
+                    },
+                  };
+                }
+                return fila;
+              })
+            );
+          }}
+        />
+      )}
     </Dialog>
   );
 }

@@ -396,7 +396,7 @@ export default function DialogoEditarUsuario({
                       disabled={!puedeEditarAvanzados}
                     />
                     <label htmlFor="baja" className="text-sm font-medium">
-                      Profesor de baja
+                      Perfil no activo
                     </label>
                   </div>
                 )}

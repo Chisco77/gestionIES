@@ -37,19 +37,15 @@ export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
   ];
 
   // Usamos hook para obtener profesores y staff activos
-  const {
-    data: usuarios = [],
-    isLoading,
-    error,
-    refetch,
-  } = useProfesoresStaff();
+  const { data: usuarios = [], isLoading, error, refetch } = useProfesoresStaff();
 
   // Filtrado por búsqueda, memoizado para rendimiento
   const usuariosFiltrados = useMemo(() => {
     if (!usuarios.length) return [];
     const q = busqueda.toLowerCase();
-    return usuarios.filter((u) =>
-      `${u.givenName ?? ""} ${u.sn ?? ""} ${u.uid}`.toLowerCase().includes(q)
+    return usuarios.filter(
+      (u) =>
+        `${u.givenName ?? ""} ${u.sn ?? ""} ${u.uid}`.toLowerCase().includes(q)
     );
   }, [usuarios, busqueda]);
 
