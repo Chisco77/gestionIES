@@ -16,7 +16,7 @@
  * tipo "teachers" desde el backend LDAP y mantenerlos en cache.
  *
  * Uso:
- * const { data: profesores, isLoading, error } = useProfesoresLdap();
+ * const { data: profesores, isLoading, error } = useStaffLdap();
  *
  * Dependencias:
  * - @tanstack/react-query

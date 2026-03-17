@@ -73,7 +73,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 
 import {
   AlertDialog,
@@ -108,7 +108,7 @@ export function DialogoGestionLlaves({
     isLoading,
     isError,
     refetch,
-  } = useProfesoresLdap();
+  } = useProfesoresActivos();
 
   if (!estancia) return null;
 

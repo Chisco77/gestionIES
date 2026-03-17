@@ -12,7 +12,7 @@
  * Componente principal para visualizar y gestionar profesores desde LDAP.
  *
  * Funcionalidades:
- * - Obtiene profesores mediante el hook `useProfesoresLdap` (React Query)
+ * - Obtiene profesores mediante el hook `useProfesoresActivos` (React Query)
  * - Muestra los profesores en `TablaUsuarios` con:
  *     • Filtrado por grupo, apellidos y usuario
  *     • Ordenación y paginación
@@ -25,7 +25,7 @@
  * - TablaUsuarios: tabla con filtros, ordenación y paginación
  * - Componentes UI: Button (interno en TablaUsuarios)
  * - Iconos: lucide-react
- * - Hook: useProfesoresLdap
+ * - Hook: useProfesoresActivos
  *
  */
 /*
@@ -34,7 +34,7 @@
 import { useState, useEffect } from "react";
 import { columns } from "../../Usuarios/components/colums";
 import { TablaUsuarios } from "../../Usuarios/components/TablaUsuarios";
-import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 import {
   Loader,
   Plus,
@@ -67,7 +67,7 @@ export function HorariosIndex() {
     data: profesores,
     isLoading: loadingProfesores,
     error: errorProfesores,
-  } = useProfesoresLdap();
+  } = useProfesoresActivos();
 
   //const { data: empleados = [], isLoading: loadingEmpleados } = useEmpleados();
 

@@ -41,6 +41,8 @@ import { useAuth } from "@/context/AuthContext";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
+import { Switch } from "@/components/ui/switch";
+
 export default function DialogoEditarUsuario({
   open,
   onClose,
@@ -72,6 +74,8 @@ export default function DialogoEditarUsuario({
   const [telefono, setTelefono] = useState("");
   const [cuerpo, setCuerpo] = useState(""); // Nuevo select Cuerpo
   const [personal, setPersonal] = useState("");
+  // Estado para baja
+  const [baja, setBaja] = useState(false);
 
   // ----------------------------------------
   // Permisos
@@ -102,6 +106,7 @@ export default function DialogoEditarUsuario({
     setCuerpo(usuarioSeleccionado.cuerpo || "");
     setGrupo(usuarioSeleccionado.grupo || ""); // <-- A1 o A2
     setPersonal(usuarioSeleccionado.personal || "");
+    setBaja(usuarioSeleccionado.baja ?? false);
 
     setFotoUrl(null);
 
@@ -169,6 +174,7 @@ export default function DialogoEditarUsuario({
       datos.jornada = jornada;
       datos.cuerpo = cuerpo;
       datos.grupo = grupo;
+      datos.baja = baja;
     }
 
     mutation.mutate(datos);
@@ -380,6 +386,20 @@ export default function DialogoEditarUsuario({
                     disabled={!puedeEditarAvanzados}
                   />
                 </div>
+
+                {!esAlumno && puedeEditarAvanzados && (
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="baja"
+                      checked={baja}
+                      onCheckedChange={setBaja}
+                      disabled={!puedeEditarAvanzados}
+                    />
+                    <label htmlFor="baja" className="text-sm font-medium">
+                      Profesor de baja
+                    </label>
+                  </div>
+                )}
               </>
             )}
           </TabsContent>

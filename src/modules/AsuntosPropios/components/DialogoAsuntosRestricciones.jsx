@@ -36,7 +36,7 @@ import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 
 import {
   Select,
@@ -63,7 +63,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     mostrarPeticionesDia: false, // ✅ nueva
   });
 
-  const { data: profesores = [], isLoading, error } = useProfesoresLdap();
+  const { data: profesores = [], isLoading, error } = useProfesoresActivos();
 
   const [busquedaProfesor, setBusquedaProfesor] = useState("");
   const profesoresFiltrados = profesores.filter((p) => {

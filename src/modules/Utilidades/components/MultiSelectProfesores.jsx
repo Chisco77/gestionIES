@@ -1,10 +1,10 @@
 // src/components/forms/MultiSelectProfesores.jsx
 import { MultiSelect } from "@/components/ui/multiselect";
 import { Label } from "@/components/ui/label";
-import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 
 export function MultiSelectProfesores({ value, onChange }) {
-  const { data, isLoading } = useProfesoresLdap();
+  const { data, isLoading } = useProfesoresActivos();
 
   const opciones = (data || []).map((p) => ({
     value: p.uid,

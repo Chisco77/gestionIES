@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -27,10 +27,16 @@ import { cn } from "@/lib/utils";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { Button } from "@/components/ui/button";
 
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+
 const dias = ["L", "M", "X", "J", "V"];
 
 export function CuadranteGuardiasIndex() {
-  const { data: profesores = [], isLoading } = useProfesoresLdap();
+  const { data: profesores = [], isLoading } = useProfesoresActivos();
   const { data: periodos = [], isLoading: loadingPeriodos } =
     usePeriodosHorarios();
 
@@ -41,6 +47,8 @@ export function CuadranteGuardiasIndex() {
   const [numPorHora, setNumPorHora] = useState(3);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
+  const [numPorCelda, setNumPorCelda] = useState({});
+  const [autoDialogOpen, setAutoDialogOpen] = useState(false);
 
   const profesoresFiltrados = useMemo(() => {
     return profesores.filter((p) =>
@@ -83,10 +91,24 @@ export function CuadranteGuardiasIndex() {
     setGuardias({});
   }
 
-  function asignacionAutomaticaCustom(cantidad) {
+  function getNumGuardiasCelda(clave) {
+    return numPorCelda[clave] ?? numPorHora;
+  }
+
+  //
+  //Evitar que el mismo profesor esté dos horas consecutivas.
+  //
+  //Evitar que el mismo profesor se repita en el mismo día.
+  //
+  function asignacionAutomaticaCustom() {
+    if (!profesores.length) {
+      console.warn("⚠️ No hay profesores cargados");
+      return;
+    }
+
     const nuevo = {};
 
-    // Copia y mezcla aleatoria de profesores
+    // Mezcla aleatoria de profesores
     const profesoresAleatorios = [...profesores];
     for (let i = profesoresAleatorios.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -96,19 +118,59 @@ export function CuadranteGuardiasIndex() {
       ];
     }
 
-    let indiceProfesor = 0;
+    dias.forEach((_, dIndex) => {
+      const usadosEnDia = new Set(); // Profesores ya asignados en este día
+      const ultimoAsignadoHora = {}; // Para evitar consecutivas
 
-    periodos.forEach((_, hIndex) => {
-      dias.forEach((_, dIndex) => {
+      periodos.forEach((_, hIndex) => {
         const clave = claveCelda(hIndex, dIndex);
+        const cantidad = Math.max(0, getNumGuardiasCelda(clave));
+
+        console.log(`📍 Celda ${clave} → necesita ${cantidad}`);
+
         const asignados = [];
 
         for (let i = 0; i < cantidad; i++) {
-          const profesor =
-            profesoresAleatorios[indiceProfesor % profesoresAleatorios.length];
-          asignados.push(profesor);
-          indiceProfesor++;
+          let intentos = 0;
+          let profesor = null;
+
+          while (intentos < profesoresAleatorios.length) {
+            const candidato =
+              profesoresAleatorios[
+                (i + hIndex + dIndex + intentos) % profesoresAleatorios.length
+              ];
+
+            // 👉 No repetir en el mismo día y no en hora consecutiva
+            if (
+              !usadosEnDia.has(candidato.uid) &&
+              ultimoAsignadoHora[hIndex - 1] !== candidato.uid
+            ) {
+              profesor = candidato;
+              break;
+            }
+
+            intentos++;
+          }
+
+          // fallback si no hay disponible
+          if (!profesor) {
+            profesor =
+              profesoresAleatorios[
+                (i + hIndex + dIndex) % profesoresAleatorios.length
+              ];
+          }
+
+          if (profesor) {
+            asignados.push(profesor);
+            usadosEnDia.add(profesor.uid);
+            ultimoAsignadoHora[hIndex] = profesor.uid;
+          }
         }
+
+        console.log(
+          `✅ Celda ${clave} asignados:`,
+          asignados.map((p) => nombreProfesor(p))
+        );
 
         nuevo[clave] = asignados;
       });
@@ -165,43 +227,61 @@ export function CuadranteGuardiasIndex() {
             <CardTitle>Cuadrante de guardias</CardTitle>
 
             {/* BOTONES ARRIBA A LA DERECHA */}
-            <div className="flex gap-2">
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="flex-1 flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              {/* INPUT GLOBAL */}
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">Guardias/hora</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={numPorHora}
+                  onChange={(e) => setNumPorHora(Number(e.target.value))}
+                  className="w-20"
+                />
+              </div>
+
+              {/* BOTÓN ASIGNAR */}
+              <AlertDialog
+                open={autoDialogOpen}
+                onOpenChange={setAutoDialogOpen}
+              >
+                {" "}
+                <AlertDialogTrigger asChild>
+                  <Button
+                    className="flex items-center gap-2"
+                    onClick={() => setAutoDialogOpen(true)}
+                  >
                     <Wand2 className="h-4 w-4" />
                     Asignar automático
                   </Button>
-                </DialogTrigger>
-                <DialogContent
-                  className="sm:max-w-[400px]"
-                  onInteractOutside={(e) => e.preventDefault()}
-                >
-                  <DialogHeader>
-                    <DialogTitle>Asignación automática</DialogTitle>
-                  </DialogHeader>
-                  <div className="grid gap-2 py-2">
-                    <Label htmlFor="numPorHora">Profesores por hora</Label>
-                    <Input
-                      id="numPorHora"
-                      type="number"
-                      min={1}
-                      value={numPorHora}
-                      onChange={(e) => setNumPorHora(Number(e.target.value))}
-                    />
+                </AlertDialogTrigger>
+                <AlertDialogContent className="sm:max-w-[400px]">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Asignación automática</AlertDialogTitle>
+                  </AlertDialogHeader>
+
+                  <div className="py-2 text-sm">
+                    Se realizará una asignación automática de guardias usando:
+                    <ul className="list-disc ml-4 mt-2">
+                      <li>Número global: {numPorHora}</li>
+                      <li>Configuraciones personalizadas por celda</li>
+                      <li>Distribución aleatoria de profesores</li>
+                    </ul>
                   </div>
-                  <DialogFooter>
+
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <Button
                       onClick={() => {
-                        asignacionAutomaticaCustom(numPorHora);
-                        setDialogOpen(false);
+                        asignacionAutomaticaCustom();
+                        setAutoDialogOpen(false); // 👈 cerrar automáticamente
                       }}
                     >
-                      Asignar
+                      Confirmar
                     </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               {/* Botón Limpiar con AlertDialog */}
               <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
                 <AlertDialogTrigger asChild>
@@ -280,22 +360,91 @@ export function CuadranteGuardiasIndex() {
                           celdaHover === clave && "bg-blue-100 border-blue-500"
                         )}
                       >
-                        <div className="flex flex-col gap-1">
-                          {profesoresCelda.map((p) => (
-                            <div
-                              key={p.uid}
-                              className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm"
-                            >
-                              {nombreProfesor(p)}
-                              <X
-                                className="h-3 w-3 cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  eliminarProfesor(clave, p.uid);
-                                }}
-                              />
-                            </div>
-                          ))}
+                        <div
+                          key={clave}
+                          onClick={() => setCeldaSeleccionada(clave)}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setCeldaHover(clave);
+                          }}
+                          onDragLeave={() => setCeldaHover(null)}
+                          onDrop={(e) => handleDrop(e, hIndex, dIndex)}
+                          className={cn(
+                            "border min-h-[100px] p-2 cursor-pointer transition flex flex-col",
+                            seleccionada && "bg-blue-50 border-blue-400",
+                            celdaHover === clave &&
+                              "bg-blue-100 border-blue-500"
+                          )}
+                        >
+                          {/* HEADER CELDA */}
+                          <div className="flex justify-between items-start">
+                            <span className="text-xs text-muted-foreground">
+                              {profesoresCelda.length}/
+                              {getNumGuardiasCelda(clave)}
+                            </span>
+
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 shrink-0"
+                                >
+                                  ⚙️
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-40">
+                                <div className="space-y-2">
+                                  <Label>Nº guardias</Label>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    value={getNumGuardiasCelda(clave)}
+                                    onChange={(e) =>
+                                      setNumPorCelda((prev) => ({
+                                        ...prev,
+                                        [clave]: Number(e.target.value),
+                                      }))
+                                    }
+                                  />
+
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={() =>
+                                      setNumPorCelda((prev) => {
+                                        const copy = { ...prev };
+                                        delete copy[clave];
+                                        return copy;
+                                      })
+                                    }
+                                  >
+                                    Usar global
+                                  </Button>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+
+                          {/* LISTA PROFESORES */}
+                          <div className="flex flex-col gap-1 mt-2">
+                            {profesoresCelda.map((p) => (
+                              <div
+                                key={p.uid}
+                                className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm"
+                              >
+                                {nombreProfesor(p)}
+                                <X
+                                  className="h-3 w-3 cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    eliminarProfesor(clave, p.uid);
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     );

@@ -49,7 +49,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 
 import { DialogoConfirmacionReservaPeriodica } from "./DialogoConfirmacionReservaPeriodica";
 import { DialogoResumenReservaPeriodica } from "./DialogoResumenReservaPeriodica";
@@ -89,7 +89,7 @@ export function DialogoEditarReservaPeriodica({
     data: profesores = [],
     isLoading: loadingProfesores,
     error: errorProfesores,
-  } = useProfesoresLdap();
+  } = useProfesoresActivos();
 
   // Inicializar estados al abrir con los datos de la reserva
   useEffect(() => {

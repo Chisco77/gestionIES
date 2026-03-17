@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import { getCursoActual } from "@/utils/fechasHoras";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function DialogoAsignarHorario({ profesorOrigen, open, onOpenChange }) {
-  const { data: profesores = [] } = useProfesoresLdap();
+  const { data: profesores = [] } = useProfesoresActivos();
   const [profesorDestinoUid, setProfesorDestinoUid] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [cursoAcademico, setCursoAcademico] = useState(getCursoActual().label);

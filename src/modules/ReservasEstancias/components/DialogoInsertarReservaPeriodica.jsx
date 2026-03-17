@@ -57,7 +57,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCursoActual, ddmmyyyyToISO } from "@/utils/fechasHoras";
-import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 
 import { DialogoConfirmacionReservaPeriodica } from "./DialogoConfirmacionReservaPeriodica";
 import { DialogoResumenReservaPeriodica } from "./DialogoResumenReservaPeriodica";
@@ -100,7 +100,7 @@ export function DialogoInsertarReservaPeriodica({
     data: profesores = [],
     isLoading: loadingProfesores,
     error: errorProfesores,
-  } = useProfesoresLdap();
+  } = useProfesoresActivos();
 
   // Reset al abrir
   useEffect(() => {
