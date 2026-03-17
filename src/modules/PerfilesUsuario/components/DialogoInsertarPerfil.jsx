@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+// DialogoInsertarPerfil.jsx
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,12 +17,13 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useProfesoresStaff } from "@/hooks/useProfesoresStaff";
 
 export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
-  const [usuarios, setUsuarios] = useState([]);
   const [uidsSeleccionados, setUidsSeleccionados] = useState([]);
   const [perfil, setPerfil] = useState("");
   const [busqueda, setBusqueda] = useState("");
+
   const API_URL = import.meta.env.VITE_API_URL;
 
   const opcionesPerfiles = [
@@ -31,29 +33,25 @@ export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
     "extraescolares",
     "ordenanza",
     "profesor",
-    "administrativo"
+    "administrativo",
   ];
 
-  // Cargar usuarios desde LDAP al abrir el diálogo
-  useEffect(() => {
-    if (!open) return;
+  // Usamos hook para obtener profesores y staff activos
+  const {
+    data: usuarios = [],
+    isLoading,
+    error,
+    refetch,
+  } = useProfesoresStaff();
 
-    const fetchUsuarios = async () => {
-      try {
-        const res = await fetch(`${API_URL}/ldap/usuarios?tipo=all`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Error al cargar usuarios LDAP");
-        const data = await res.json();
-        setUsuarios(data);
-      } catch (err) {
-        console.error(err);
-        toast.error("No se pudieron cargar los usuarios");
-      }
-    };
-
-    fetchUsuarios();
-  }, [open, API_URL]);
+  // Filtrado por búsqueda, memoizado para rendimiento
+  const usuariosFiltrados = useMemo(() => {
+    if (!usuarios.length) return [];
+    const q = busqueda.toLowerCase();
+    return usuarios.filter((u) =>
+      `${u.givenName ?? ""} ${u.sn ?? ""} ${u.uid}`.toLowerCase().includes(q)
+    );
+  }, [usuarios, busqueda]);
 
   const handleToggleUid = (uid) => {
     setUidsSeleccionados((prev) =>
@@ -89,13 +87,6 @@ export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
     }
   };
 
-  // Filtrado por nombre y apellidos
-  const usuariosFiltrados = usuarios.filter((u) => {
-    const nombreCompleto =
-      `${u.givenName ?? ""} ${u.sn ?? ""} ${u.uid}`.toLowerCase();
-    return nombreCompleto.includes(busqueda.toLowerCase());
-  });
-
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
@@ -107,8 +98,8 @@ export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
             Asignar perfil a usuario
           </DialogTitle>
         </DialogHeader>
+
         <div className="flex flex-col space-y-4 p-6">
-          {/* Campo de búsqueda */}
           <Input
             placeholder="Buscar por nombre, apellidos o UID"
             value={busqueda}
@@ -116,8 +107,17 @@ export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
             className="mb-2"
           />
 
-          {/* Listado de usuarios con checkboxes */}
           <div className="max-h-64 overflow-y-auto border p-2 rounded mb-2">
+            {isLoading && <p className="text-sm">Cargando usuarios...</p>}
+            {error && (
+              <p className="text-sm text-red-500">
+                Error al cargar usuarios.{" "}
+                <button className="underline" onClick={() => refetch()}>
+                  Reintentar
+                </button>
+              </p>
+            )}
+
             {usuariosFiltrados.map((u) => (
               <label
                 key={u.uid}
@@ -133,14 +133,14 @@ export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
                 </span>
               </label>
             ))}
-            {usuariosFiltrados.length === 0 && (
+
+            {!isLoading && usuariosFiltrados.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 No se encontraron usuarios
               </p>
             )}
           </div>
 
-          {/* Selección de perfil */}
           <Select value={perfil} onValueChange={setPerfil}>
             <SelectTrigger className="w-full mb-2">
               <SelectValue placeholder="Selecciona un perfil" />

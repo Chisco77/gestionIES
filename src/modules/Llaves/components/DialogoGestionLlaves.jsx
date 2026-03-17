@@ -59,7 +59,8 @@
  * Notas:
  * - Se calculan llaves disponibles en tiempo real restando las prestadas del total.
  */
-import { useState, useEffect } from "react";
+
+/*import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -73,7 +74,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
+//import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
+import { useProfesoresStaff } from "@/hooks/useProfesoresStaff";
 
 import {
   AlertDialog,
@@ -108,7 +110,7 @@ export function DialogoGestionLlaves({
     isLoading,
     isError,
     refetch,
-  } = useProfesoresActivos();
+  } = useProfesoresStaff();
 
   if (!estancia) return null;
 
@@ -193,7 +195,7 @@ export function DialogoGestionLlaves({
     }
   };*/
 
-  const handlePrestar = async () => {
+/*const handlePrestar = async () => {
     if (!profesorSeleccionado) {
       toast.error("Selecciona un profesor");
       return;
@@ -276,7 +278,6 @@ export function DialogoGestionLlaves({
           onInteractOutside={(e) => e.preventDefault()}
           className="p-0 rounded-lg h-[610px] flex flex-col"
         >
-          {/* CABECERA */}
           <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
             <div>
               <DialogTitle className="text-lg font-semibold text-center leading-snug">
@@ -307,7 +308,6 @@ export function DialogoGestionLlaves({
             </div>
           </DialogHeader>
 
-          {/* CUERPO CON TABS */}
           <Tabs
             defaultValue="prestar"
             className="flex flex-col flex-1 px-6 pb-4 overflow-hidden"
@@ -317,7 +317,6 @@ export function DialogoGestionLlaves({
               <TabsTrigger value="devolver">Pendientes devolver</TabsTrigger>
             </TabsList>
 
-            {/* --- TAB PRESTAR --- */}
             <TabsContent className="flex flex-col pb-2" value="prestar">
               {disponibles <= 0 ? (
                 <p className="text-gray-500 text-sm mt-4">
@@ -332,7 +331,6 @@ export function DialogoGestionLlaves({
                     className="mb-3"
                   />
 
-                  {/* Lista de altura fija con scroll */}
                   <div
                     className="overflow-auto border rounded p-3 shadow-sm"
                     style={{ height: 350 }}
@@ -368,7 +366,6 @@ export function DialogoGestionLlaves({
                     ))}
                   </div>
 
-                  {/* Footer */}
                   <DialogFooter className="mt-3 flex justify-end gap-2 shrink-0 justify-end">
                     <Button variant="outline" onClick={onClose}>
                       Cancelar
@@ -385,7 +382,6 @@ export function DialogoGestionLlaves({
               )}
             </TabsContent>
 
-            {/* --- TAB DEVOLVER --- */}
             <TabsContent className="flex flex-col pb-2" value="devolver">
               {!hayPrestamos ? (
                 <p className="text-gray-500 text-sm mt-4">
@@ -393,7 +389,6 @@ export function DialogoGestionLlaves({
                 </p>
               ) : (
                 <>
-                  {/* Lista de llaves con altura fija */}
                   <div className="h-[380px] overflow-auto border rounded p-3 shadow-sm">
                     {prestamosActivos.map((p) => (
                       <div
@@ -410,7 +405,6 @@ export function DialogoGestionLlaves({
                     ))}
                   </div>
 
-                  {/* Footer siempre visible */}
                   <DialogFooter className="mt-3 flex gap-2 shrink-0 justify-end bg-gray-50">
                     <Button variant="outline" onClick={onClose}>
                       Cancelar
@@ -429,7 +423,352 @@ export function DialogoGestionLlaves({
           </Tabs>
         </DialogContent>
       </Dialog>
-      {/* AlertDialog de ShadCN */}
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Error al prestar llave</AlertDialogTitle>
+            <AlertDialogDescription>{alertMensaje}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setAlertOpen(false)}>
+              Cerrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+*/
+
+// DialogoGestionLlaves.jsx
+import { useState, useEffect, useMemo } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+
+import { useProfesoresStaff } from "@/hooks/useProfesoresStaff";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+
+const API_URL = import.meta.env.VITE_API_URL || "";
+
+export function DialogoGestionLlaves({
+  open,
+  estancia,
+  prestamosActivos,
+  onClose,
+  onSuccess,
+}) {
+  const [profesorSeleccionado, setProfesorSeleccionado] = useState("");
+  const [filtroProfesor, setFiltroProfesor] = useState("");
+  const [seleccionados, setSeleccionados] = useState([]);
+  const [controlReservaActiva, setControlReservaActiva] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMensaje, setAlertMensaje] = useState("");
+
+  // React Query para obtener profesores y staff activos
+  const { data: profesores = [], isLoading, isError } = useProfesoresStaff();
+
+  if (!estancia) return null;
+
+  // Calculamos llaves disponibles
+  const disponibles = Math.max(
+    0,
+    (estancia.totalllaves || 0) -
+      (prestamosActivos?.reduce((acc, p) => acc + p.unidades, 0) || 0)
+  );
+
+  const hayPrestamos = prestamosActivos?.length > 0;
+
+  // Resetear estados al abrir el diálogo
+  useEffect(() => {
+    if (open) {
+      setProfesorSeleccionado("");
+      setFiltroProfesor("");
+      setSeleccionados([]);
+    }
+  }, [open]);
+
+  // Comprobar control de reserva activa
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchRestriccion = async () => {
+      try {
+        const res = await fetch(`${API_URL}/db/restricciones/llaves`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+        setControlReservaActiva(data?.valor_bool ?? false);
+      } catch (err) {
+        console.error("Error al obtener restricción de llaves:", err);
+        setControlReservaActiva(false);
+      }
+    };
+
+    fetchRestriccion();
+  }, [open]);
+
+  // Memoizamos profesores ordenados y filtrados
+  const profesoresFiltrados = useMemo(() => {
+    if (!profesores || profesores.length === 0) return [];
+
+    const ordenados = [...profesores].sort((a, b) => {
+      if (a.sn === b.sn) return a.givenName.localeCompare(b.givenName);
+      return a.sn.localeCompare(b.sn);
+    });
+
+    const q = filtroProfesor.toLowerCase();
+    return ordenados.filter(
+      (p) =>
+        p.sn.toLowerCase().includes(q) ||
+        p.givenName.toLowerCase().includes(q) ||
+        p.uid.toLowerCase().includes(q)
+    );
+  }, [profesores, filtroProfesor]);
+
+  // --- acciones ---
+  const handlePrestar = async () => {
+    if (!profesorSeleccionado) return toast.error("Selecciona un profesor");
+    if (!estancia?.id) return toast.error("Estancia no definida");
+
+    try {
+      const aplicarControlReserva =
+        controlReservaActiva && estancia?.reservable === true;
+
+      const res = await fetch(`${API_URL}/db/prestamos-llaves/prestar`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: profesorSeleccionado,
+          idestancia: estancia.id,
+          unidades: 1,
+          aplicarControlReserva,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const msg = data?.error || "No se puede prestar la llave";
+        toast.error(msg);
+        setAlertMensaje(msg);
+        setAlertOpen(true);
+        return;
+      }
+
+      toast.success("Llave prestada correctamente");
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      const msg = err.message || "Error al prestar llave";
+      toast.error(msg);
+      setAlertMensaje(msg);
+      setAlertOpen(true);
+    }
+  };
+
+  const handleDevolver = async () => {
+    if (!seleccionados.length)
+      return toast.error("Selecciona al menos una llave");
+
+    try {
+      const res = await fetch(`${API_URL}/db/prestamos-llaves/devolver`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: seleccionados }),
+      });
+
+      if (!res.ok) throw new Error((await res.json())?.error);
+
+      toast.success("Llaves devueltas correctamente");
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      toast.error(err.message || "Error al devolver llave");
+    }
+  };
+
+  const toggleSeleccion = (id) => {
+    setSeleccionados((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent
+          onInteractOutside={(e) => e.preventDefault()}
+          className="p-0 rounded-lg h-[610px] flex flex-col"
+        >
+          {/* CABECERA */}
+          <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+            <DialogTitle className="text-lg font-semibold text-center leading-snug">
+              Gestión de llaves · {estancia.descripcion}
+              <p>
+                {estancia?.codigollave || estancia?.armario ? (
+                  <>
+                    {estancia?.codigollave && (
+                      <>
+                        Número de llave: <strong>{estancia.codigollave}</strong>
+                      </>
+                    )}
+                    {estancia?.codigollave && estancia?.armario && " · "}
+                    {estancia?.armario && (
+                      <>
+                        Armario: <strong>{estancia.armario}</strong>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-gray-200 italic">
+                    Sin información de ubicación.
+                  </span>
+                )}
+              </p>
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* CUERPO CON TABS */}
+          <Tabs
+            defaultValue="prestar"
+            className="flex flex-col flex-1 px-6 pb-4 overflow-hidden"
+          >
+            <TabsList className="mb-4 justify-start">
+              <TabsTrigger value="prestar">Entregar llave</TabsTrigger>
+              <TabsTrigger value="devolver">Pendientes devolver</TabsTrigger>
+            </TabsList>
+
+            {/* TAB PRESTAR */}
+            <TabsContent className="flex flex-col pb-2" value="prestar">
+              {disponibles <= 0 ? (
+                <p className="text-gray-500 text-sm mt-4">
+                  No hay llaves disponibles.
+                </p>
+              ) : (
+                <>
+                  <Input
+                    placeholder="Buscar profesor"
+                    value={filtroProfesor}
+                    onChange={(e) => setFiltroProfesor(e.target.value)}
+                    className="mb-3"
+                  />
+
+                  <div
+                    className="overflow-auto border rounded p-3 shadow-sm"
+                    style={{ height: 350 }}
+                  >
+                    {isLoading && <p className="text-sm">Cargando...</p>}
+                    {isError && (
+                      <p className="text-sm text-red-500">
+                        Error al cargar profesores.{" "}
+                        <button className="underline" onClick={() => {}}>
+                          Reintentar
+                        </button>
+                      </p>
+                    )}
+
+                    {!isLoading && profesoresFiltrados.length === 0 && (
+                      <p className="text-xs italic text-gray-500">
+                        No hay profesores
+                      </p>
+                    )}
+
+                    {profesoresFiltrados.map((p) => (
+                      <div
+                        key={p.uid}
+                        onClick={() => setProfesorSeleccionado(p.uid)}
+                        className={`cursor-pointer p-2 rounded mb-1 ${
+                          profesorSeleccionado === p.uid
+                            ? "bg-green-200"
+                            : "hover:bg-gray-100"
+                        }`}
+                      >
+                        {p.sn}, {p.givenName} ({p.uid})
+                      </div>
+                    ))}
+                  </div>
+
+                  <DialogFooter className="mt-3 flex justify-end gap-2 shrink-0">
+                    <Button variant="outline" onClick={onClose}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handlePrestar}
+                      disabled={!profesorSeleccionado}
+                    >
+                      Prestar llave
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+            </TabsContent>
+
+            {/* TAB DEVOLVER */}
+            <TabsContent className="flex flex-col pb-2" value="devolver">
+              {!hayPrestamos ? (
+                <p className="text-gray-500 text-sm mt-4">
+                  No hay préstamos activos.
+                </p>
+              ) : (
+                <>
+                  <div className="h-[380px] overflow-auto border rounded p-3 shadow-sm">
+                    {prestamosActivos.map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => toggleSeleccion(p.id)}
+                        className={`cursor-pointer p-2 rounded mb-1 ${
+                          seleccionados.includes(p.id)
+                            ? "bg-red-200"
+                            : "hover:bg-gray-100"
+                        }`}
+                      >
+                        {p.nombre} · {p.unidades} llave(s)
+                      </div>
+                    ))}
+                  </div>
+
+                  <DialogFooter className="mt-3 flex gap-2 shrink-0 justify-end bg-gray-50">
+                    <Button variant="outline" onClick={onClose}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleDevolver}
+                      disabled={!seleccionados.length}
+                    >
+                      Devolver llave
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* AlertDialog */}
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
