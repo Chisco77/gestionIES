@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +20,6 @@ import {
 
 import { toast } from "sonner";
 import { SelectorField } from "@/modules/Comunes/SelectorField";
-
 import { getCursoActual } from "@/utils/fechasHoras";
 
 export function DialogoInsertarCeldaHorario({
@@ -35,11 +36,11 @@ export function DialogoInsertarCeldaHorario({
 }) {
   const [tipo, setTipo] = useState("");
   const [materia, setMateria] = useState(null);
-  const [grupo, setGrupo] = useState(null);
+  // --- CAMBIO: Ahora es un array ---
+  const [gruposSeleccionados, setGruposSeleccionados] = useState([]);
   const [estancia, setEstancia] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
-
   const periodoObj = periodos.find((p) => p.nombre === periodo);
 
   const diasMap = {
@@ -53,9 +54,28 @@ export function DialogoInsertarCeldaHorario({
   const esLibre =
     tipo === "guardia" || tipo === "tutores" || tipo === "departamento";
 
+  // --- LÓGICA MULTI-GRUPO ---
+  const agregarGrupo = (grupo) => {
+    if (!grupo) return;
+    if (gruposSeleccionados.find((g) => g.id === grupo.id)) {
+      toast.info("El grupo ya está en la lista");
+      return;
+    }
+    setGruposSeleccionados([...gruposSeleccionados, grupo]);
+  };
+
+  const eliminarGrupo = (id) => {
+    setGruposSeleccionados(gruposSeleccionados.filter((g) => g.id !== id));
+  };
+
   const handleGuardar = async () => {
     try {
       if (!tipo) return toast.error("Debes seleccionar un tipo");
+
+      // Validación: si es lectiva, debe haber al menos un grupo
+      if (!esLibre && gruposSeleccionados.length === 0) {
+        return toast.error("Debes seleccionar al menos un grupo");
+      }
 
       const cursoActual = getCursoActual();
 
@@ -64,12 +84,14 @@ export function DialogoInsertarCeldaHorario({
         dia_semana: diasMap[dia],
         idperiodo: periodoObj?.id,
         tipo,
-        gidnumber: esLibre ? null : grupo?.id || null,
+        // 🔥 Enviamos el ARRAY de IDs de los grupos seleccionados
+        gidnumber: esLibre ? null : gruposSeleccionados.map((g) => g.id),
         idmateria: esLibre ? null : materia?.id || null,
         idestancia: esLibre ? null : estancia?.id || null,
         curso_academico: cursoActual.label,
       };
 
+      // ✅ USAMOS TU RUTA ORIGINAL
       const res = await fetch(`${API_URL}/db/horario-profesorado`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -83,20 +105,23 @@ export function DialogoInsertarCeldaHorario({
 
       toast.success("Celda insertada");
 
-      // Accedemos a data.fila que es donde el backend envía el objeto recién creado
+      // Enviamos la información al padre para actualizar la tabla sin recargar
       onGuardar?.({
-        id: data.fila.id, // 🔥 CAMBIO AQUÍ: antes era data.id
+        id: data.fila.id,
         tipo,
-        materia:
-          tipo === "tutores"
+        idmateria: esLibre ? null : materia?.id, // 🔥 Añadimos esto
+        materia: esLibre
+          ? tipo === "tutores"
             ? "Reunión de Tutores"
             : tipo === "departamento"
               ? "Reunión de Departamento"
-              : tipo === "guardia"
-                ? "Guardia"
-                : materia?.label || "",
-        grupo: esLibre ? "" : grupo?.label || "",
-        estancia: esLibre ? null : estancia?.raw || null,
+              : "Guardia"
+          : materia?.label || "",
+        grupo: esLibre
+          ? ""
+          : gruposSeleccionados.map((g) => g.label).join(", "),
+        gidnumber: esLibre ? null : gruposSeleccionados.map((g) => g.id),
+        estancia: esLibre ? null : estancia?.raw || null, // Enviamos el objeto raw del aula
       });
 
       onClose();
@@ -120,14 +145,12 @@ export function DialogoInsertarCeldaHorario({
         </DialogHeader>
 
         <div className="p-6 flex flex-col gap-6">
-          {/* 🔥 SELECT TIPO */}
           <div className="flex flex-col gap-2">
             <label className="text-xs font-semibold uppercase text-muted-foreground">
               Tipo
             </label>
             <Select value={tipo} onValueChange={setTipo}>
-              <SelectTrigger className="w-[180px]">
-                {" "}
+              <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Seleccionar tipo..." />
               </SelectTrigger>
               <SelectContent>
@@ -141,33 +164,48 @@ export function DialogoInsertarCeldaHorario({
             </Select>
           </div>
 
-          {/* 🔥 CAMPOS */}
-          <div className="flex flex-col md:flex-row gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             <SelectorField
               label="Materia"
               value={materia}
-              options={materias.map((m) => ({
-                id: m.id,
-                label: m.nombre,
-              }))}
+              options={materias.map((m) => ({ id: m.id, label: m.nombre }))}
               onSelect={setMateria}
-              placeholder="Seleccionar materia..."
-              emptyText="No se encontró"
               disabled={esLibre}
             />
 
-            <SelectorField
-              label="Grupo"
-              value={grupo}
-              options={cursos.map((c) => ({
-                id: c.gid,
-                label: c.nombre,
-              }))}
-              onSelect={setGrupo}
-              placeholder="Seleccionar grupo..."
-              emptyText="No se encontró"
-              disabled={esLibre}
-            />
+            {/* SECCIÓN MULTI-GRUPO */}
+            <div className="flex flex-col gap-2">
+              <SelectorField
+                label="Añadir Grupo"
+                value={null}
+                options={cursos.map((c) => ({ id: c.gid, label: c.nombre }))}
+                onSelect={agregarGrupo}
+                disabled={esLibre}
+                placeholder="Buscar y añadir..."
+              />
+              <div className="flex flex-wrap gap-2 mt-1 min-h-[42px] p-2 border rounded-md bg-slate-50">
+                {gruposSeleccionados.length === 0 && (
+                  <span className="text-xs text-muted-foreground italic">
+                    Ningún grupo seleccionado
+                  </span>
+                )}
+                {gruposSeleccionados.map((g) => (
+                  <Badge
+                    key={g.id}
+                    variant="secondary"
+                    className="pl-2 pr-1 py-1 flex items-center gap-1 bg-blue-100 text-blue-800 border-blue-200"
+                  >
+                    {g.label}
+                    <button
+                      onClick={() => eliminarGrupo(g.id)}
+                      className="hover:bg-blue-200 rounded-full p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </div>
 
             <SelectorField
               label="Aula"
@@ -178,8 +216,6 @@ export function DialogoInsertarCeldaHorario({
                 raw: e,
               }))}
               onSelect={setEstancia}
-              placeholder="Seleccionar aula..."
-              emptyText="No se encontró"
               disabled={esLibre}
             />
           </div>

@@ -347,8 +347,22 @@ export function DialogoEditarHorario({
                                   </div>
                                 )}
 
-                                {grupo && (
+                                {celda?.grupo && (
                                   <div className="flex flex-col items-center justify-center gap-1">
+                                    {Array.isArray(celda.grupo) ? (
+                                      celda.grupo.map((g, i) => (
+                                        <span
+                                          key={i}
+                                          className="text-sm truncate"
+                                        >
+                                          {g}
+                                        </span>
+                                      ))
+                                    ) : (
+                                      <span className="text-sm truncate">
+                                        {celda.grupo}
+                                      </span>
+                                    )}
                                     {estancia && (
                                       <Button
                                         variant="ghost"
@@ -405,7 +419,6 @@ export function DialogoEditarHorario({
           </Button>
         </DialogFooter>
       </DialogContent>
-
       {openPlano && (
         <DialogoPlanoEstancia
           open={openPlano}
@@ -413,9 +426,53 @@ export function DialogoEditarHorario({
           estancia={estanciaSeleccionada}
         />
       )}
+      {/* --- BUSCA ESTE BLOQUE EN DialogoEditarHorario.jsx --- */}
+      {/* DialogoEditarHorario.jsx */}
+      {(nuevaCelda) => {
+        setHorario((prev) =>
+          prev.map((fila) => {
+            if (fila.periodo === periodoSeleccionado) {
+              const diasMap = {
+                Lunes: 1,
+                Martes: 2,
+                Miércoles: 3,
+                Jueves: 4,
+                Viernes: 5,
+              };
+              const periodoObj = periodos.find(
+                (p) => p.nombre === periodoSeleccionado
+              );
 
-      {openCelda && (
+              return {
+                ...fila,
+                [diaSeleccionado]: {
+                  id: nuevaCelda.id,
+                  uid: usuarioSeleccionado.uid,
+                  dia_semana: diasMap[diaSeleccionado],
+                  idperiodo: periodoObj?.id,
+                  tipo: nuevaCelda.tipo,
+
+                  // 🔥 CLAVE: Guardar el ID de la materia para que el selector lo encuentre
+                  idmateria: nuevaCelda.idmateria,
+                  materia: nuevaCelda.materia, // Nombre para la tabla
+
+                  grupo: nuevaCelda.grupo || "",
+                  gidnumber: nuevaCelda.gidnumber,
+
+                  // 🔥 CLAVE: Guardar el objeto estancia completo
+                  estancia: nuevaCelda.estancia || null,
+                },
+              };
+            }
+            return fila;
+          })
+        );
+      }}
+      {/* --- DIÁLOGOS DE ACCIÓN --- */}
+      {/* 1. DIÁLOGO DE EDICIÓN (Este es el que te faltaba/estaba roto) */}
+      {openCelda && celdaSeleccionada && (
         <DialogoEditarCeldaHorario
+          key={`${celdaSeleccionada.id}-${celdaSeleccionada.gidnumber?.join?.(",")}`}
           open={openCelda}
           onClose={() => setOpenCelda(false)}
           celdaActual={celdaSeleccionada}
@@ -425,28 +482,24 @@ export function DialogoEditarHorario({
           cursos={cursos}
           materias={materias}
           onGuardar={(nuevaCelda) => {
+            const celdaActualizada = {
+              ...celdaSeleccionada,
+              ...nuevaCelda,
+            };
+
             setHorario((prev) =>
               prev.map((fila) => {
                 if (fila.periodo === periodoSeleccionado) {
-                  return {
-                    ...fila,
-                    [diaSeleccionado]: {
-                      ...fila[diaSeleccionado], // Copiamos lo que había (como uid, idperiodo, etc)
-                      id: nuevaCelda.id, // Aseguramos que el ID se mantiene
-                      tipo: nuevaCelda.tipo, // 🔥 IMPORTANTE: Si cambia de Guardia a Lectiva, esto actualiza el color
-                      materia: nuevaCelda.materia,
-                      grupo: nuevaCelda.grupo,
-                      estancia: nuevaCelda.estancia,
-                    },
-                  };
+                  return { ...fila, [diaSeleccionado]: celdaActualizada };
                 }
                 return fila;
               })
             );
+            setCeldaSeleccionada(celdaActualizada);
           }}
         />
       )}
-
+      {/* 2. DIÁLOGO DE INSERCIÓN (Corregido con idmateria y estancia objeto) */}
       {openCeldaInsertar && (
         <DialogoInsertarCeldaHorario
           open={openCeldaInsertar}
@@ -462,14 +515,30 @@ export function DialogoEditarHorario({
             setHorario((prev) =>
               prev.map((fila) => {
                 if (fila.periodo === periodoSeleccionado) {
+                  const diasMap = {
+                    Lunes: 1,
+                    Martes: 2,
+                    Miércoles: 3,
+                    Jueves: 4,
+                    Viernes: 5,
+                  };
+                  const periodoObj = periodos.find(
+                    (p) => p.nombre === periodoSeleccionado
+                  );
+
                   return {
                     ...fila,
                     [diaSeleccionado]: {
-                      id: nuevaCelda.id, // 🔥 Guardamos el ID
-                      tipo: nuevaCelda.tipo, // 🔥 Guardamos tipo
-                      materia: nuevaCelda.materia, // 🔥 Texto fijo para guardia/tutores/depto
+                      id: nuevaCelda.id,
+                      uid: usuarioSeleccionado.uid,
+                      dia_semana: diasMap[diaSeleccionado],
+                      idperiodo: periodoObj?.id,
+                      tipo: nuevaCelda.tipo,
+                      idmateria: nuevaCelda.idmateria, // 🔥 Importante para el editor
+                      materia: nuevaCelda.materia,
                       grupo: nuevaCelda.grupo || "",
-                      estancia: nuevaCelda.estancia || null,
+                      gidnumber: nuevaCelda.gidnumber,
+                      estancia: nuevaCelda.estancia || null, // 🔥 Objeto completo
                     },
                   };
                 }
@@ -479,7 +548,7 @@ export function DialogoEditarHorario({
           }}
         />
       )}
-
+      {/* 3. DIÁLOGO ELIMINAR */}
       {openEliminar && (
         <DialogoEliminarCeldaHorario
           open={openEliminar}
@@ -489,10 +558,7 @@ export function DialogoEditarHorario({
             setHorario((prev) =>
               prev.map((fila) => {
                 if (fila.periodo === periodoSeleccionado) {
-                  return {
-                    ...fila,
-                    [diaSeleccionado]: null, // 🔥 limpiar celda
-                  };
+                  return { ...fila, [diaSeleccionado]: null };
                 }
                 return fila;
               })

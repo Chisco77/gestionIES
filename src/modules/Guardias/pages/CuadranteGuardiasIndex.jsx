@@ -26,12 +26,9 @@ import { Search, X, Wand2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { Button } from "@/components/ui/button";
+import { getCursoActual } from "@/utils/fechasHoras";
 
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
+import { useEffect } from "react";
 
 const dias = ["L", "M", "X", "J", "V"];
 
@@ -39,16 +36,23 @@ export function CuadranteGuardiasIndex() {
   const { data: profesores = [], isLoading } = useProfesoresActivos();
   const { data: periodos = [], isLoading: loadingPeriodos } =
     usePeriodosHorarios();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const [busqueda, setBusqueda] = useState("");
   const [celdaSeleccionada, setCeldaSeleccionada] = useState(null);
   const [celdaHover, setCeldaHover] = useState(null);
   const [guardias, setGuardias] = useState({});
+  const [guardiasTotales, setGuardiasTotales] = useState({});
+
   const [numPorHora, setNumPorHora] = useState(3);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [numPorCelda, setNumPorCelda] = useState({});
   const [autoDialogOpen, setAutoDialogOpen] = useState(false);
+  const [cargandoCuadrante, setCargandoCuadrante] = useState(true);
+
+  const [horarioProfesores, setHorarioProfesores] = useState([]);
+  const [disponibilidad, setDisponibilidad] = useState({});
 
   const profesoresFiltrados = useMemo(() => {
     return profesores.filter((p) =>
@@ -58,18 +62,92 @@ export function CuadranteGuardiasIndex() {
     );
   }, [busqueda, profesores]);
 
+  useEffect(() => {
+    async function cargarCuadrante() {
+      try {
+        const curso = getCursoActual().label;
+        const resp = await fetch(
+          `${API_URL}/db/horario-profesorado/enriquecido?curso_academico=${curso}`
+        );
+        const data = await resp.json();
+        if (!data.ok) throw new Error(data.error || "Error desconocido");
+
+        // Filtrar solo guardias
+        const guardiasFiltradas = data.horario.filter(
+          (r) => r.tipo === "guardia"
+        );
+
+        // Mapear a la estructura { "idperiodo-dia": [profesor,...] }
+        const nuevoGuardias = {};
+        guardiasFiltradas.forEach((g) => {
+          const clave = `${g.idperiodo}-${g.dia_semana - 1}`;
+          if (!nuevoGuardias[clave]) nuevoGuardias[clave] = [];
+          nuevoGuardias[clave].push({
+            uid: g.uid,
+            givenName: g.nombreProfesor.split(", ")[1] || "",
+            sn: g.nombreProfesor.split(", ")[0] || "",
+          });
+        });
+
+        setGuardias(nuevoGuardias);
+      } catch (err) {
+        console.error("Error cargando cuadrante:", err);
+        alert("❌ No se pudo cargar el cuadrante actual: " + err.message);
+      } finally {
+        setCargandoCuadrante(false);
+      }
+    }
+
+    cargarCuadrante();
+  }, []);
+
+  useEffect(() => {
+    const fetchHorario = async () => {
+      try {
+        const curso = getCursoActual().label;
+        const resp = await fetch(
+          `${API_URL}/db/horario-profesorado/enriquecido?curso_academico=${curso}`
+        );
+        const data = await resp.json();
+        if (!data.ok) throw new Error(data.error || "Error obteniendo horario");
+
+        // Filtramos solo guardias
+        const guardias = data.horario.filter((h) => h.tipo === "guardia");
+        setHorarioProfesores(guardias);
+
+        // Construimos disponibilidad
+        const dispo = {};
+        guardias.forEach((h) => {
+          const key = `${h.idperiodo}-${h.dia_semana}`;
+          if (!dispo[h.uid]) dispo[h.uid] = new Set();
+          dispo[h.uid].add(key);
+        });
+        setDisponibilidad(dispo);
+      } catch (err) {
+        console.error("Error cargando horario profesores:", err);
+      }
+    };
+    fetchHorario();
+  }, []);
+
   function nombreProfesor(p) {
     return `${p.givenName ?? ""} ${p.sn ?? ""}`.trim();
   }
 
-  function claveCelda(hIndex, dIndex) {
-    return `${hIndex}-${dIndex}`;
+  function claveCelda(idperiodo, dIndex) {
+    return `${idperiodo}-${dIndex}`;
   }
 
   function handleDrop(e, hIndex, dIndex) {
     e.preventDefault();
     const profesor = JSON.parse(e.dataTransfer.getData("profesor"));
-    const clave = claveCelda(hIndex, dIndex);
+    const clave = `${hIndex}-${dIndex}`;
+
+    // comprobar disponibilidad
+    if (disponibilidad[profesor.uid]?.has(clave)) {
+      alert(`${nombreProfesor(profesor)} ya tiene guardia en esta hora.`);
+      return;
+    }
 
     setGuardias((prev) => {
       const lista = prev[clave] || [];
@@ -95,21 +173,14 @@ export function CuadranteGuardiasIndex() {
     return numPorCelda[clave] ?? numPorHora;
   }
 
-  //
-  //Evitar que el mismo profesor esté dos horas consecutivas.
-  //
-  //Evitar que el mismo profesor se repita en el mismo día.
-  //
-  function asignacionAutomaticaCustom() {
-    if (!profesores.length) {
-      console.warn("⚠️ No hay profesores cargados");
-      return;
-    }
+  // Asignación automática
+  async function asignacionAutomaticaCustom() {
+    if (!profesores.length || !periodos.length) return;
 
     const nuevo = {};
-
-    // Mezcla aleatoria de profesores
     const profesoresAleatorios = [...profesores];
+
+    // Mezcla inicial aleatoria de todos los profesores
     for (let i = profesoresAleatorios.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [profesoresAleatorios[i], profesoresAleatorios[j]] = [
@@ -118,73 +189,107 @@ export function CuadranteGuardiasIndex() {
       ];
     }
 
+    // 1️⃣ Obtener disponibilidad desde el backend
+    let disponibilidad = {};
+    try {
+      const curso = getCursoActual().label;
+      const resp = await fetch(
+        `${API_URL}/db/horario-profesorado/enriquecido?curso_academico=${curso}`
+      );
+      const data = await resp.json();
+      if (data.ok) {
+        disponibilidad = {};
+        data.horario
+          .filter((r) => r.tipo === "guardia")
+          .forEach((h) => {
+            // Ojo: días backend empiezan en 1, restamos 1 para índices locales
+            const clave = `${h.idperiodo}-${h.dia_semana - 1}`;
+            if (!disponibilidad[h.uid]) disponibilidad[h.uid] = new Set();
+            disponibilidad[h.uid].add(clave);
+          });
+      }
+    } catch (err) {
+      console.error("Error cargando disponibilidad:", err);
+      // Si falla, asumimos que todos los profesores están libres
+      disponibilidad = {};
+    }
+
+    // Contador global de guardias por profesor (para el circulito)
+    const contadorGuardias = {};
+
+    // Recorremos días y periodos
     dias.forEach((_, dIndex) => {
-      const usadosEnDia = new Set(); // Profesores ya asignados en este día
-      const ultimoAsignadoHora = {}; // Para evitar consecutivas
+      const usadosEnDia = new Set();
+      const ultimoAsignadoHora = {};
 
-      periodos.forEach((_, hIndex) => {
-        const clave = claveCelda(hIndex, dIndex);
+      periodos.forEach((periodo) => {
+        const idperiodo = periodo.id;
+        const clave = `${idperiodo}-${dIndex}`;
         const cantidad = Math.max(0, getNumGuardiasCelda(clave));
-
-        console.log(`📍 Celda ${clave} → necesita ${cantidad}`);
 
         const asignados = [];
 
-        for (let i = 0; i < cantidad; i++) {
-          let intentos = 0;
-          let profesor = null;
+        for (let j = 0; j < cantidad; j++) {
+          // Copia de todos los profesores para barajar cada vez
+          const candidatos = [...profesoresAleatorios];
 
-          while (intentos < profesoresAleatorios.length) {
-            const candidato =
-              profesoresAleatorios[
-                (i + hIndex + dIndex + intentos) % profesoresAleatorios.length
-              ];
-
-            // 👉 No repetir en el mismo día y no en hora consecutiva
-            if (
-              !usadosEnDia.has(candidato.uid) &&
-              ultimoAsignadoHora[hIndex - 1] !== candidato.uid
-            ) {
-              profesor = candidato;
-              break;
-            }
-
-            intentos++;
+          // Barajar candidatos
+          for (let k = candidatos.length - 1; k > 0; k--) {
+            const l = Math.floor(Math.random() * (k + 1));
+            [candidatos[k], candidatos[l]] = [candidatos[l], candidatos[k]];
           }
 
-          // fallback si no hay disponible
+          // Elegir el primer candidato válido
+          let profesor = candidatos.find(
+            (c) =>
+              !usadosEnDia.has(c.uid) &&
+              ultimoAsignadoHora[idperiodo - 1] !== c.uid &&
+              !disponibilidad[c.uid]?.has(clave)
+          );
+
+          // fallback: cualquiera libre para esta hora
           if (!profesor) {
-            profesor =
-              profesoresAleatorios[
-                (i + hIndex + dIndex) % profesoresAleatorios.length
-              ];
+            profesor = candidatos.find(
+              (c) => !disponibilidad[c.uid]?.has(clave)
+            );
           }
 
           if (profesor) {
             asignados.push(profesor);
             usadosEnDia.add(profesor.uid);
-            ultimoAsignadoHora[hIndex] = profesor.uid;
+            ultimoAsignadoHora[idperiodo] = profesor.uid;
+
+            // Contador de guardias totales
+            contadorGuardias[profesor.uid] =
+              (contadorGuardias[profesor.uid] || 0) + 1;
           }
         }
-
-        console.log(
-          `✅ Celda ${clave} asignados:`,
-          asignados.map((p) => nombreProfesor(p))
-        );
 
         nuevo[clave] = asignados;
       });
     });
 
     setGuardias(nuevo);
+    setGuardiasTotales(contadorGuardias); // Para mostrar circulitos
   }
 
-  if (isLoading || loadingPeriodos) return <div>Cargando datos...</div>;
+  const totalesPorProfesor = useMemo(() => {
+    const totales = {};
+    Object.values(guardias).forEach((profesoresEnCelda) => {
+      profesoresEnCelda.forEach((p) => {
+        totales[p.uid] = (totales[p.uid] || 0) + 1;
+      });
+    });
+    return totales;
+  }, [guardias]);
+
+  if (isLoading || loadingPeriodos || cargandoCuadrante)
+    return <div>Cargando datos...</div>;
 
   return (
     <div className="container mx-auto py-10 p-12">
       <div className="grid grid-cols-[350px_1fr] gap-6">
-        {/* PANEL IZQUIERDO: PROFESORES */}
+        {/* Panel Profesores */}
         <Card>
           <CardHeader>
             <CardTitle>Profesores</CardTitle>
@@ -221,14 +326,11 @@ export function CuadranteGuardiasIndex() {
           </CardContent>
         </Card>
 
-        {/* PANEL DERECHO: CUADRANTE + BOTONES ARRIBA */}
+        {/* Panel Cuadrante */}
         <Card className="flex flex-col">
           <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
             <CardTitle>Cuadrante de guardias</CardTitle>
-
-            {/* BOTONES ARRIBA A LA DERECHA */}
             <div className="flex items-center gap-2">
-              {/* INPUT GLOBAL */}
               <div className="flex items-center gap-2">
                 <Label className="text-sm">Guardias/hora</Label>
                 <Input
@@ -240,26 +342,23 @@ export function CuadranteGuardiasIndex() {
                 />
               </div>
 
-              {/* BOTÓN ASIGNAR */}
+              {/* Botón Asignar */}
               <AlertDialog
                 open={autoDialogOpen}
                 onOpenChange={setAutoDialogOpen}
               >
-                {" "}
                 <AlertDialogTrigger asChild>
                   <Button
                     className="flex items-center gap-2"
                     onClick={() => setAutoDialogOpen(true)}
                   >
-                    <Wand2 className="h-4 w-4" />
-                    Asignar automático
+                    <Wand2 className="h-4 w-4" /> Asignar automático
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="sm:max-w-[400px]">
                   <AlertDialogHeader>
                     <AlertDialogTitle>Asignación automática</AlertDialogTitle>
                   </AlertDialogHeader>
-
                   <div className="py-2 text-sm">
                     Se realizará una asignación automática de guardias usando:
                     <ul className="list-disc ml-4 mt-2">
@@ -268,13 +367,12 @@ export function CuadranteGuardiasIndex() {
                       <li>Distribución aleatoria de profesores</li>
                     </ul>
                   </div>
-
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <Button
                       onClick={() => {
                         asignacionAutomaticaCustom();
-                        setAutoDialogOpen(false); // 👈 cerrar automáticamente
+                        setAutoDialogOpen(false);
                       }}
                     >
                       Confirmar
@@ -282,18 +380,73 @@ export function CuadranteGuardiasIndex() {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-              {/* Botón Limpiar con AlertDialog */}
+
+              {/* Botón Guardar Cuadrante */}
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center gap-2 bg-green-600 hover:bg-green-700">
+                    Guardar Cuadrante
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[400px]">
+                  <DialogHeader>
+                    <DialogTitle>Guardar cuadrante de guardias</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-2 text-sm">
+                    Se guardará el cuadrante de guardias, sobreescribiendo
+                    cualquier registro anterior del curso actual.
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setDialogOpen(false)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const curso = getCursoActual().label;
+                          const resp = await fetch(
+                            `${API_URL}/db/horario-profesorado/insertCuadranteGuardias`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                cuadrante: guardias,
+                                curso_academico: curso,
+                              }),
+                            }
+                          );
+                          const data = await resp.json();
+                          if (!data.ok)
+                            throw new Error(data.error || "Error desconocido");
+                          setDialogOpen(false);
+                          alert(
+                            `✅ Guardado ${data.total} registros de guardias`
+                          );
+                        } catch (err) {
+                          console.error(err);
+                          alert("❌ Error guardando cuadrante: " + err.message);
+                        }
+                      }}
+                    >
+                      Guardar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Botón Limpiar */}
               <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
                 <AlertDialogTrigger asChild>
                   <Button
                     variant="destructive"
                     className="flex-1 flex items-center gap-2 bg-red-600 hover:bg-red-700"
                   >
-                    <Trash2 className="h-4 w-4" />
-                    Limpiar
+                    <Trash2 className="h-4 w-4" /> Limpiar
                   </Button>
                 </AlertDialogTrigger>
-
                 <AlertDialogContent className="sm:max-w-[400px]">
                   <AlertDialogHeader>
                     <AlertDialogTitle>Confirmar limpieza</AlertDialogTitle>
@@ -330,7 +483,7 @@ export function CuadranteGuardiasIndex() {
                 </div>
               ))}
 
-              {periodos.map((periodo, hIndex) => (
+              {periodos.map((periodo) => (
                 <div key={periodo.id} className="contents">
                   <div className="border text-center py-3 font-medium bg-muted text-sm">
                     <div>{periodo.nombre}</div>
@@ -339,8 +492,8 @@ export function CuadranteGuardiasIndex() {
                     </div>
                   </div>
 
-                  {dias.map((dia, dIndex) => {
-                    const clave = claveCelda(hIndex, dIndex);
+                  {dias.map((_, dIndex) => {
+                    const clave = claveCelda(periodo.id, dIndex);
                     const profesoresCelda = guardias[clave] || [];
                     const seleccionada = celdaSeleccionada === clave;
 
@@ -353,88 +506,35 @@ export function CuadranteGuardiasIndex() {
                           setCeldaHover(clave);
                         }}
                         onDragLeave={() => setCeldaHover(null)}
-                        onDrop={(e) => handleDrop(e, hIndex, dIndex)}
+                        onDrop={(e) => handleDrop(e, periodo.id, dIndex)}
                         className={cn(
                           "border min-h-[100px] p-2 cursor-pointer transition",
                           seleccionada && "bg-blue-50 border-blue-400",
                           celdaHover === clave && "bg-blue-100 border-blue-500"
                         )}
                       >
-                        <div
-                          key={clave}
-                          onClick={() => setCeldaSeleccionada(clave)}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            setCeldaHover(clave);
-                          }}
-                          onDragLeave={() => setCeldaHover(null)}
-                          onDrop={(e) => handleDrop(e, hIndex, dIndex)}
-                          className={cn(
-                            "border min-h-[100px] p-2 cursor-pointer transition flex flex-col",
-                            seleccionada && "bg-blue-50 border-blue-400",
-                            celdaHover === clave &&
-                              "bg-blue-100 border-blue-500"
-                          )}
-                        >
-                          {/* HEADER CELDA */}
+                        <div className="flex flex-col">
                           <div className="flex justify-between items-start">
                             <span className="text-xs text-muted-foreground">
                               {profesoresCelda.length}/
                               {getNumGuardiasCelda(clave)}
                             </span>
-
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 shrink-0"
-                                >
-                                  ⚙️
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-40">
-                                <div className="space-y-2">
-                                  <Label>Nº guardias</Label>
-                                  <Input
-                                    type="number"
-                                    min={0}
-                                    value={getNumGuardiasCelda(clave)}
-                                    onChange={(e) =>
-                                      setNumPorCelda((prev) => ({
-                                        ...prev,
-                                        [clave]: Number(e.target.value),
-                                      }))
-                                    }
-                                  />
-
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    className="w-full"
-                                    onClick={() =>
-                                      setNumPorCelda((prev) => {
-                                        const copy = { ...prev };
-                                        delete copy[clave];
-                                        return copy;
-                                      })
-                                    }
-                                  >
-                                    Usar global
-                                  </Button>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
                           </div>
 
-                          {/* LISTA PROFESORES */}
                           <div className="flex flex-col gap-1 mt-2">
                             {profesoresCelda.map((p) => (
                               <div
                                 key={p.uid}
                                 className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm"
                               >
-                                {nombreProfesor(p)}
+                                <div className="flex items-center gap-2">
+                                  <span>{nombreProfesor(p)}</span>
+                                  {/* Circulito con total de guardias */}
+                                  <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-white text-blue-600 rounded-full">
+                                    {totalesPorProfesor[p.uid] || 0}
+                                  </span>
+                                </div>
+
                                 <X
                                   className="h-3 w-3 cursor-pointer"
                                   onClick={(e) => {

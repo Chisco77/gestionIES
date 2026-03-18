@@ -1,11 +1,7 @@
-// backend/controllers/db/importHorariosProfesores.js
 const fs = require("fs");
 const csv = require("csv-parser");
 const db = require("../../db");
 
-/**
- * Valida una fila del CSV y devuelve un array con errores
- */
 function validarFila(fila) {
   const errores = [];
   if (!fila.uid) errores.push("uid vacío");
@@ -18,36 +14,67 @@ function validarFila(fila) {
   return errores;
 }
 
-/**
- * Importar horarios de profesores con SSE
- */
 exports.importarHorariosProfesores = async (req, res) => {
   try {
-    if (!req.file) {
+    if (!req.file)
       return res
         .status(400)
         .json({ message: "No se ha subido ningún archivo" });
-    }
 
     const filePath = req.file.path;
-    console.log("📥 Inicio importación horarios:", filePath);
+    const resultadosRaw = [];
 
-    const resultados = [];
-
+    // 1. LEER CSV
     fs.createReadStream(filePath)
       .pipe(csv({ headers: false }))
       .on("data", (row) => {
-        resultados.push(row);
+        resultadosRaw.push(row);
       })
       .on("end", async () => {
-        console.log("📄 CSV leído completamente. Filas:", resultados.length);
+        const mapaHorario = new Map();
+        const hoy = new Date();
+        const year = hoy.getFullYear();
+        const month = hoy.getMonth() + 1;
+        const cursoDefault =
+          month >= 9 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
 
-        const totalFilas = resultados.length;
+        // 2. AGRUPAR (Aquí es donde convertimos múltiples filas en arrays de gidnumber)
+        resultadosRaw.forEach((r) => {
+          const filaCSV = Object.values(r);
+          const uid = filaCSV[10];
+          const dia = filaCSV[6] ? parseInt(filaCSV[6]) : null;
+          const periodo = filaCSV[7] ? parseInt(filaCSV[7]) : null;
+
+          if (!uid || !dia || !periodo) return;
+
+          const clave = `${uid}-${dia}-${periodo}-${cursoDefault}`;
+
+          if (!mapaHorario.has(clave)) {
+            mapaHorario.set(clave, {
+              uid,
+              dia_semana: dia,
+              idperiodo: periodo,
+              tipo: filaCSV[1] ? "lectiva" : "tutores",
+              gidnumbers: filaCSV[11] ? [parseInt(filaCSV[11])] : [],
+              idmateria: filaCSV[12] ? parseInt(filaCSV[12]) : null,
+              idestancia: filaCSV[1] ? parseInt(filaCSV[2]) : null,
+              curso_academico: cursoDefault,
+            });
+          } else {
+            const existente = mapaHorario.get(clave);
+            if (filaCSV[11]) {
+              const gid = parseInt(filaCSV[11]);
+              if (!existente.gidnumbers.includes(gid))
+                existente.gidnumbers.push(gid);
+            }
+          }
+        });
+
+        const datosFinales = Array.from(mapaHorario.values());
+        const total = datosFinales.length;
         let insertadas = 0;
-        let erroresCount = 0;
-        const filasConErrores = [];
 
-        // 1. Configuración de cabeceras SSE
+        // 3. RESPUESTA SSE
         res.writeHead(200, {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
@@ -56,150 +83,53 @@ exports.importarHorariosProfesores = async (req, res) => {
         });
 
         try {
-          console.log("🧹 Truncando tabla horario_profesorado...");
-          await db.query("TRUNCATE horario_profesorado");
-          console.log("✅ Tabla truncada");
+          await db.query("TRUNCATE horario_profesorado RESTART IDENTITY");
 
-          // 2. Procesamos fila a fila
-          for (let index = 0; index < totalFilas; index++) {
-            const r = resultados[index];
-            const filaCSV = Object.values(r);
+          for (let i = 0; i < total; i++) {
+            const f = datosFinales[i];
+            const errores = validarFila(f);
 
-            console.log("➡️ Procesando fila", index + 1);
-
-            let uid,
-              dia_semana,
-              idperiodo,
-              gidnumber,
-              idmateria,
-              idestancia,
-              curso_academico,
-              tipo;
-
-            const hoy = new Date();
-            const year = hoy.getFullYear();
-            const month = hoy.getMonth() + 1;
-            const cursoDefault =
-              month >= 9 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
-
-            if (filaCSV[1]) {
-              curso_academico = cursoDefault;
-              idestancia = parseInt(filaCSV[2]);
-              uid = filaCSV[10];
-              gidnumber = filaCSV[11] ? parseInt(filaCSV[11]) : null;
-              idmateria = filaCSV[12] ? parseInt(filaCSV[12]) : null;
-              dia_semana = filaCSV[6] ? parseInt(filaCSV[6]) : null;
-              idperiodo = filaCSV[7] ? parseInt(filaCSV[7]) : null;
-              tipo = "lectiva";
-            } else {
-              curso_academico = cursoDefault;
-              idestancia = null;
-              uid = filaCSV[10]; // ← AQUÍ estaba el fallo
-              gidnumber = null;
-              idmateria = filaCSV[12] ? parseInt(filaCSV[12]) : null;
-              dia_semana = filaCSV[6] ? parseInt(filaCSV[6]) : null;
-              idperiodo = filaCSV[7] ? parseInt(filaCSV[7]) : null;
-              tipo = "tutores";
+            if (errores.length === 0) {
+              await db.query(
+                `INSERT INTO horario_profesorado 
+                 (uid, dia_semana, idperiodo, tipo, gidnumber, idmateria, idestancia, curso_academico)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+                [
+                  f.uid,
+                  f.dia_semana,
+                  f.idperiodo,
+                  f.tipo,
+                  f.gidnumbers,
+                  f.idmateria,
+                  f.idestancia,
+                  f.curso_academico,
+                ]
+              );
+              insertadas++;
             }
 
-            const filaObj = {
-              uid,
-              dia_semana,
-              idperiodo,
-              tipo,
-              gidnumber,
-              idmateria,
-              idestancia,
-              curso_academico,
-            };
-
-            console.log("🔎 Datos interpretados:", filaObj);
-
-            const erroresFila = validarFila(filaObj);
-
-            if (erroresFila.length > 0) {
-              console.log("⚠️ Error validación fila", index + 1, erroresFila);
-
-              erroresCount++;
-              filasConErrores.push({ fila: index + 1, errores: erroresFila });
-            } else {
-              try {
-                console.log("📝 Insertando fila", index + 1);
-
-                await db.query(
-                  `INSERT INTO horario_profesorado 
-           (uid, dia_semana, idperiodo, tipo, gidnumber, idmateria, idestancia, curso_academico)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-                  [
-                    filaObj.uid,
-                    filaObj.dia_semana,
-                    filaObj.idperiodo,
-                    filaObj.tipo,
-                    filaObj.gidnumber,
-                    filaObj.idmateria,
-                    filaObj.idestancia,
-                    filaObj.curso_academico,
-                  ]
-                );
-
-                insertadas++;
-                console.log("✅ Insertada fila", index + 1);
-              } catch (err) {
-                console.error(
-                  "❌ Error insertando fila",
-                  index + 1,
-                  err.message
-                );
-                throw err;
-              }
-            }
-
-            // 3. ENVIAR PROGRESO
-            if (index % 10 === 0 || index === totalFilas - 1) {
-              console.log(`📡 Enviando progreso: ${index + 1}/${totalFilas}`);
-
+            if (i % 10 === 0 || i === total - 1) {
               res.write(
-                `data: ${JSON.stringify({
-                  procesadas: index + 1,
-                  totalFilas,
-                })}\n\n`
+                `data: ${JSON.stringify({ procesadas: i + 1, totalFilas: total })}\n\n`
               );
             }
           }
 
-          // 4. FIN DEL STREAM
-          const resumen = {
-            insertadas,
-            errores: erroresCount,
-            total: totalFilas,
-          };
-
-          console.log("🏁 Importación finalizada:", resumen);
-
-          res.write(`event: end\ndata: ${JSON.stringify(resumen)}\n\n`);
+          res.write(
+            `event: end\ndata: ${JSON.stringify({ insertadas, total })}\n\n`
+          );
           res.end();
         } catch (err) {
-          console.error("❌ Error en el bucle de inserción:", err);
-
           res.write(
-            `data: ${JSON.stringify({ error: "Error insertando datos" })}\n\n`
+            `data: ${JSON.stringify({ error: "Error en base de datos" })}\n\n`
           );
           res.end();
         } finally {
-          if (fs.existsSync(filePath)) {
-            console.log("🗑️ Eliminando archivo temporal:", filePath);
-            fs.unlinkSync(filePath);
-          }
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         }
       });
   } catch (error) {
-    console.error("❌ Error importando horarios:", error);
-
     if (req.file?.path) fs.unlinkSync(req.file.path);
-
-    res.status(500).json({
-      message: "Error interno al procesar el archivo",
-      error: error.message,
-    });
+    res.status(500).json({ ok: false, error: error.message });
   }
 };
