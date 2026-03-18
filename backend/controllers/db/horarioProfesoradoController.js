@@ -126,8 +126,64 @@ async function insertHorarioProfesorado(req, res) {
       curso_academico,
     } = req.body;
 
-    if (!uid) {
-      return res.status(400).json({ ok: false, error: "uid es obligatorio" });
+    // 🔒 Validaciones básicas
+    if (!uid || !dia_semana || !idperiodo) {
+      return res.status(400).json({
+        ok: false,
+        error: "uid, dia_semana e idperiodo son obligatorios",
+      });
+    }
+
+    if (dia_semana < 1 || dia_semana > 5) {
+      return res.status(400).json({
+        ok: false,
+        error: "dia_semana debe estar entre 1 y 5",
+      });
+    }
+
+    //  VALIDACIÓN CLAVE: evitar duplicados
+    const { rows: existentes } = await db.query(
+      `SELECT id FROM horario_profesorado
+       WHERE uid=$1 AND dia_semana=$2 AND idperiodo=$3`,
+      [uid, dia_semana, idperiodo]
+    );
+
+    if (existentes.length > 0) {
+      return res.status(409).json({
+        ok: false,
+        error: "Ya existe una sesión en ese día y periodo",
+      });
+    }
+
+    // validar tipo
+    const TIPOS_VALIDOS = ["lectiva", "tutores", "guardia", "departamento"];
+
+    if (!tipo || !TIPOS_VALIDOS.includes(tipo)) {
+      return res.status(400).json({
+        ok: false,
+        error: "Tipo inválido",
+      });
+    }
+
+    // normalización según tipo
+    let gid = gidnumber || null;
+    let mat = idmateria || null;
+    let est = idestancia || null;
+
+    if (tipo === "tutores" || tipo === "guardia" || tipo === "departamento") {
+      gid = null;
+      mat = null;
+      est = null;
+    }
+
+    //  validación tipo lectiva
+    if (tipo === "lectiva") {
+      if (!gid || !mat) {
+        return res.status(400).json({
+          ok: false,
+          error: "Las sesiones lectivas requieren grupo y materia",
+        });
+      }
     }
 
     const { rows } = await db.query(
@@ -135,16 +191,7 @@ async function insertHorarioProfesorado(req, res) {
         uid, dia_semana, idperiodo, tipo, gidnumber, idmateria, idestancia, curso_academico
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING *`,
-      [
-        uid,
-        dia_semana,
-        idperiodo,
-        tipo,
-        gidnumber,
-        idmateria,
-        idestancia,
-        curso_academico,
-      ]
+      [uid, dia_semana, idperiodo, tipo, gid, mat, est, curso_academico]
     );
 
     res.status(201).json({ ok: true, fila: rows[0] });
@@ -163,6 +210,7 @@ async function updateHorarioProfesorado(req, res) {
   try {
     const id = req.params.id;
     const usuarioSesion = req.session?.user;
+
     if (!usuarioSesion)
       return res.status(401).json({ ok: false, error: "No autenticado" });
 
@@ -177,8 +225,66 @@ async function updateHorarioProfesorado(req, res) {
       curso_academico,
     } = req.body;
 
-    if (!uid) {
-      return res.status(400).json({ ok: false, error: "uid es obligatorio" });
+    if (!uid || !dia_semana || !idperiodo) {
+      return res.status(400).json({
+        ok: false,
+        error: "uid, dia_semana e idperiodo son obligatorios",
+      });
+    }
+
+    //  comprobar que la fila existe
+    const { rows: filaActual } = await db.query(
+      `SELECT * FROM horario_profesorado WHERE id=$1`,
+      [id]
+    );
+
+    if (!filaActual[0]) {
+      return res.status(404).json({
+        ok: false,
+        error: "Fila no encontrada",
+      });
+    }
+
+    //  evitar duplicado (excepto a sí misma)
+    const { rows: duplicados } = await db.query(
+      `SELECT id FROM horario_profesorado
+       WHERE uid=$1 AND dia_semana=$2 AND idperiodo=$3 AND id<>$4`,
+      [uid, dia_semana, idperiodo, id]
+    );
+
+    if (duplicados.length > 0) {
+      return res.status(409).json({
+        ok: false,
+        error: "Ya existe otra sesión en ese día y periodo",
+      });
+    }
+
+    const TIPOS_VALIDOS = ["lectiva", "tutores", "guardia", "departamento"];
+
+    if (!tipo || !TIPOS_VALIDOS.includes(tipo)) {
+      return res.status(400).json({
+        ok: false,
+        error: "Tipo inválido",
+      });
+    }
+
+    let gid = gidnumber || null;
+    let mat = idmateria || null;
+    let est = idestancia || null;
+
+    if (tipo === "tutores" || tipo === "guardia" || tipo === "departamento") {
+      gid = null;
+      mat = null;
+      est = null;
+    }
+
+    if (tipo === "lectiva") {
+      if (!gid || !mat) {
+        return res.status(400).json({
+          ok: false,
+          error: "Las sesiones lectivas requieren grupo y materia",
+        });
+      }
     }
 
     const { rows } = await db.query(
@@ -186,21 +292,8 @@ async function updateHorarioProfesorado(req, res) {
        SET uid=$1, dia_semana=$2, idperiodo=$3, tipo=$4, gidnumber=$5, idmateria=$6, idestancia=$7, curso_academico=$8
        WHERE id=$9
        RETURNING *`,
-      [
-        uid,
-        dia_semana,
-        idperiodo,
-        tipo,
-        gidnumber,
-        idmateria,
-        idestancia,
-        curso_academico,
-        id,
-      ]
+      [uid, dia_semana, idperiodo, tipo, gid, mat, est, curso_academico, id]
     );
-
-    if (!rows[0])
-      return res.status(404).json({ ok: false, error: "Fila no encontrada" });
 
     res.json({ ok: true, fila: rows[0] });
   } catch (err) {
@@ -284,21 +377,25 @@ async function duplicarHorarioProfesorado(req, res) {
 async function deleteHorarioProfesorado(req, res) {
   try {
     const id = req.params.id;
-    const { uid } = req.query;
+    const usuarioSesion = req.session?.user;
 
-    if (!uid) {
-      return res
-        .status(400)
-        .json({ ok: false, error: "uid es obligatorio para borrar" });
-    }
+    if (!usuarioSesion)
+      return res.status(401).json({ ok: false, error: "No autenticado" });
 
-    const { rowCount } = await db.query(
-      `DELETE FROM horario_profesorado WHERE id=$1 AND uid=$2`,
-      [id, uid]
+    // 🔍 comprobar existencia previa
+    const { rows } = await db.query(
+      `SELECT * FROM horario_profesorado WHERE id=$1`,
+      [id]
     );
 
-    if (rowCount === 0)
-      return res.status(404).json({ ok: false, error: "Fila no encontrada" });
+    if (!rows[0]) {
+      return res.status(404).json({
+        ok: false,
+        error: "Fila no encontrada",
+      });
+    }
+
+    await db.query(`DELETE FROM horario_profesorado WHERE id=$1`, [id]);
 
     res.json({ ok: true });
   } catch (err) {
