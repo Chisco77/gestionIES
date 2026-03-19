@@ -40,12 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function DialogoEditarHorario({
-  open,
-  onClose,
-  usuarioSeleccionado,
-
-}) {
+export function DialogoEditarHorario({ open, onClose, usuarioSeleccionado }) {
   const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
   const [horaActual, setHoraActual] = useState(getHoraActualMadrid());
   const [diaActual, setDiaActual] = useState(getDiaSemanaMadrid());
@@ -126,7 +121,7 @@ export function DialogoEditarHorario({
               // Guardamos materia, grupo y estancia en los datos de la celda
               fila[dia] = celdaData
                 ? {
-                    ...celdaData, // 🔥 IMPORTANTE: mantener toda la info original
+                    ...celdaData, //  IMPORTANTE: mantener toda la info original
                     materia: celdaData.materia_nombre,
                     grupo: celdaData.grupo,
                     estancia:
@@ -150,7 +145,6 @@ export function DialogoEditarHorario({
     }
   }, [open, usuarioSeleccionado, periodos]);
 
-  // --- OPTIMIZACIÓN PUNTO 2: MEMOIZE DE LA TABLA ---
   const horarioProcesado = useMemo(() => {
     return horario.map((fila) => {
       // Buscamos el objeto periodo una sola vez por fila
@@ -171,7 +165,7 @@ export function DialogoEditarHorario({
       };
     });
   }, [horario, periodos, horaActual]);
-  // 👆 Solo se recalcula si cambian los datos del horario o la hora del reloj
+  // Solo se recalcula si cambian los datos del horario o la hora del reloj
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
@@ -215,179 +209,161 @@ export function DialogoEditarHorario({
                 </tr>
               </thead>
               <tbody>
-                {horarioProcesado.map((fila, idx) => {
-                  return (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-2 py-1 font-semibold w-24 truncate rounded-l-md">
-                        {fila.periodo}
-                      </td>
+                {horarioProcesado.map((fila, idx) => (
+                  <tr key={idx} className="hover:bg-gray-50">
+                    <td className="border border-gray-300 px-2 py-1 font-semibold w-24 truncate rounded-l-md">
+                      {fila.periodo}
+                    </td>
 
-                      {dias.map((dia) => {
-                        // Usamos el cálculo optimizado del meta
-                        const esActual =
-                          fila.meta.esFilaActiva && diaActual === dia;
-                        const celda = fila[dia];
+                    {dias.map((dia) => {
+                      const esActual =
+                        fila.meta.esFilaActiva && diaActual === dia;
+                      const celda = fila[dia];
 
-                        // Definir colores según tipo
-                        let bgColor = "";
-                        let textColor = "";
+                      // Colores según tipo
+                      let bgColor = "";
+                      let textColor = "";
 
-                        if (esActual) {
-                          bgColor =
-                            "bg-yellow-200 animate-pulse border-2 border-yellow-500";
-                        } else if (celda) {
-                          switch (celda.tipo) {
-                            case "tutores":
-                            case "departamento":
-                              bgColor = "bg-green-100";
-                              textColor = "text-green-800";
-                              break;
-                            case "guardia":
-                              bgColor = "bg-gray-200";
-                              textColor = "text-gray-700";
-                              break;
-                            case "lectiva":
-                            default:
-                              bgColor = "bg-blue-100";
-                              textColor = "text-blue-800";
-                              break;
-                          }
+                      if (esActual) {
+                        bgColor =
+                          "bg-yellow-200 animate-pulse border-2 border-yellow-500";
+                      } else if (celda) {
+                        switch (celda.tipo) {
+                          case "tutores":
+                          case "departamento":
+                            bgColor = "bg-green-100";
+                            textColor = "text-green-800";
+                            break;
+                          case "guardia":
+                            bgColor = "bg-gray-200";
+                            textColor = "text-gray-700";
+                            break;
+                          case "lectiva":
+                          default:
+                            bgColor = "bg-blue-100";
+                            textColor = "text-blue-800";
+                            break;
                         }
+                      }
 
-                        const materia = celda?.materia || "";
-                        const grupo = celda?.grupo || "";
-                        const estancia = celda?.estancia || null;
+                      const materia = celda?.materia || "";
+                      const grupo = celda?.grupo || "";
+                      const estancia = celda?.estancia || null;
 
-                        return (
-                          <td
-                            key={dia}
-                            className={`border border-gray-300 px-2 py-1 max-w-[160px] w-1/5 rounded-md relative ${bgColor} ${textColor}`}
-                          >
-                            {/* Menú de tres puntitos */}
-                            {(user.perfil === "directiva" ||
-                              user.perfil === "admin") && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute bottom-1 right-1 p-1"
+                      return (
+                        <td
+                          key={dia}
+                          className={`border border-gray-300 px-2 py-1 max-w-[160px] w-1/5 rounded-md relative ${bgColor} ${textColor}`}
+                        >
+                          {/* Menú de acción */}
+                          {(user.perfil === "directiva" ||
+                            user.perfil === "admin") && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute bottom-1 right-1 p-1"
+                                >
+                                  …
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {!celda ? (
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setCeldaSeleccionada(null);
+                                      setDiaSeleccionado(dia);
+                                      setPeriodoSeleccionado(fila.periodo);
+                                      setOpenCeldaInsertar(true);
+                                    }}
                                   >
-                                    …
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {!celda ? (
+                                    <Plus className="w-4 h-4 mr-2" /> Insertar
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <>
                                     <DropdownMenuItem
                                       onClick={() => {
-                                        setCeldaSeleccionada(null);
+                                        setCeldaSeleccionada(celda);
                                         setDiaSeleccionado(dia);
                                         setPeriodoSeleccionado(fila.periodo);
-                                        setOpenCeldaInsertar(true);
+                                        setOpenCelda(true);
                                       }}
                                     >
-                                      <Plus className="w-4 h-4 mr-2" /> Insertar
+                                      <Pencil className="w-4 h-4 mr-2" /> Editar
                                     </DropdownMenuItem>
-                                  ) : (
-                                    <>
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          setCeldaSeleccionada(celda);
-                                          setDiaSeleccionado(dia);
-                                          setPeriodoSeleccionado(fila.periodo);
-                                          setOpenCelda(true);
-                                        }}
-                                      >
-                                        <Pencil className="w-4 h-4 mr-2" />{" "}
-                                        Editar
-                                      </DropdownMenuItem>
 
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          setCeldaSeleccionada(celda);
-                                          setDiaSeleccionado(dia);
-                                          setPeriodoSeleccionado(fila.periodo);
-                                          setOpenEliminar(true);
-                                        }}
-                                        className="text-red-600 focus:text-red-600"
-                                      >
-                                        <Trash2 className="w-4 h-4 mr-2" />{" "}
-                                        Eliminar
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-
-                            {/* Contenido de la celda */}
-                            {celda && (
-                              <div className="flex flex-col items-center justify-center h-full">
-                                {celda.tipo === "lectiva" && materia && (
-                                  <div className="line-clamp-2">{materia}</div>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setCeldaSeleccionada(celda);
+                                        setDiaSeleccionado(dia);
+                                        setPeriodoSeleccionado(fila.periodo);
+                                        setOpenEliminar(true);
+                                      }}
+                                      className="text-red-600 focus:text-red-600"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />{" "}
+                                      Eliminar
+                                    </DropdownMenuItem>
+                                  </>
                                 )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
 
-                                {celda.tipo === "tutores" && (
-                                  <div className="line-clamp-2 font-semibold text-center">
-                                    Reunión de Tutores
-                                  </div>
-                                )}
+                          {/* Contenido de la celda */}
+                          {celda && (
+                            <div className="flex flex-col items-center justify-center h-full gap-1">
+                              {/* Tipo de sesión */}
+                              {celda.tipo === "lectiva" && materia && (
+                                <div className="line-clamp-2">{materia}</div>
+                              )}
+                              {celda.tipo === "tutores" && (
+                                <div className="line-clamp-2 font-semibold text-center">
+                                  Reunión de Tutores
+                                </div>
+                              )}
+                              {celda.tipo === "departamento" && (
+                                <div className="line-clamp-2 font-semibold text-center">
+                                  Reunión de Departamento
+                                </div>
+                              )}
+                              {celda.tipo === "guardia" && (
+                                <div className="line-clamp-2 font-semibold text-center">
+                                  Guardia
+                                </div>
+                              )}
 
-                                {celda.tipo === "departamento" && (
-                                  <div className="line-clamp-2 font-semibold text-center">
-                                    Reunión de Departamento
-                                  </div>
-                                )}
+                              {/* Grupo si existe */}
+                              {grupo && (
+                                <div className="text-sm truncate">{grupo}</div>
+                              )}
 
-                                {celda.tipo === "guardia" && (
-                                  <div className="line-clamp-2 font-semibold text-center">
-                                    Guardia
-                                  </div>
-                                )}
-
-                                {celda?.grupo && (
-                                  <div className="flex flex-col items-center justify-center gap-1">
-                                    {Array.isArray(celda.grupo) ? (
-                                      celda.grupo.map((g, i) => (
-                                        <span
-                                          key={i}
-                                          className="text-sm truncate"
-                                        >
-                                          {g}
-                                        </span>
-                                      ))
-                                    ) : (
-                                      <span className="text-sm truncate">
-                                        {celda.grupo}
-                                      </span>
-                                    )}
-                                    {estancia && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="inline-flex items-center justify-center gap-1 p-1"
-                                        onClick={() => {
-                                          setEstanciaSeleccionada(estancia);
-                                          setOpenPlano(true);
-                                        }}
-                                        title={`Ver ubicación de ${estancia.descripcion}`}
-                                      >
-                                        <MapPin className="w-4 h-4 text-blue-600" />
-                                        <span className="text-sm truncate">
-                                          {estancia.descripcion}
-                                        </span>
-                                      </Button>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
+                              {/* Estancia: siempre que exista */}
+                              {estancia && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="inline-flex items-center justify-center gap-1 p-1"
+                                  onClick={() => {
+                                    setEstanciaSeleccionada(estancia);
+                                    setOpenPlano(true);
+                                  }}
+                                  title={`Ver ubicación de ${estancia.descripcion}`}
+                                >
+                                  <MapPin className="w-4 h-4 text-blue-600" />
+                                  <span className="text-sm truncate">
+                                    {estancia.descripcion}
+                                  </span>
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
               </tbody>
             </table>
           )}
@@ -424,8 +400,6 @@ export function DialogoEditarHorario({
           estancia={estanciaSeleccionada}
         />
       )}
-      {/* --- BUSCA ESTE BLOQUE EN DialogoEditarHorario.jsx --- */}
-      {/* DialogoEditarHorario.jsx */}
       {(nuevaCelda) => {
         setHorario((prev) =>
           prev.map((fila) => {
@@ -450,14 +424,14 @@ export function DialogoEditarHorario({
                   idperiodo: periodoObj?.id,
                   tipo: nuevaCelda.tipo,
 
-                  // 🔥 CLAVE: Guardar el ID de la materia para que el selector lo encuentre
+                  //  Guardar el ID de la materia para que el selector lo encuentre
                   idmateria: nuevaCelda.idmateria,
                   materia: nuevaCelda.materia, // Nombre para la tabla
 
                   grupo: nuevaCelda.grupo || "",
                   gidnumber: nuevaCelda.gidnumber,
 
-                  // 🔥 CLAVE: Guardar el objeto estancia completo
+                  //  CLAVE: Guardar el objeto estancia completo
                   estancia: nuevaCelda.estancia || null,
                 },
               };
@@ -467,7 +441,7 @@ export function DialogoEditarHorario({
         );
       }}
       {/* --- DIÁLOGOS DE ACCIÓN --- */}
-      {/* 1. DIÁLOGO DE EDICIÓN (Este es el que te faltaba/estaba roto) */}
+      {/* 1. DIÁLOGO DE EDICIÓN */}
       {openCelda && celdaSeleccionada && (
         <DialogoEditarCeldaHorario
           key={`${celdaSeleccionada.id}-${celdaSeleccionada.gidnumber?.join?.(",")}`}
@@ -497,7 +471,7 @@ export function DialogoEditarHorario({
           }}
         />
       )}
-      {/* 2. DIÁLOGO DE INSERCIÓN (Corregido con idmateria y estancia objeto) */}
+      {/* 2. DIÁLOGO DE INSERCIÓN  */}
       {openCeldaInsertar && (
         <DialogoInsertarCeldaHorario
           open={openCeldaInsertar}
@@ -532,11 +506,11 @@ export function DialogoEditarHorario({
                       dia_semana: diasMap[diaSeleccionado],
                       idperiodo: periodoObj?.id,
                       tipo: nuevaCelda.tipo,
-                      idmateria: nuevaCelda.idmateria, // 🔥 Importante para el editor
+                      idmateria: nuevaCelda.idmateria, 
                       materia: nuevaCelda.materia,
                       grupo: nuevaCelda.grupo || "",
                       gidnumber: nuevaCelda.gidnumber,
-                      estancia: nuevaCelda.estancia || null, // 🔥 Objeto completo
+                      estancia: nuevaCelda.estancia || null, 
                     },
                   };
                 }

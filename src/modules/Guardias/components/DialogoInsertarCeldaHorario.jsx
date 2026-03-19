@@ -36,7 +36,7 @@ export function DialogoInsertarCeldaHorario({
 }) {
   const [tipo, setTipo] = useState("");
   const [materia, setMateria] = useState(null);
-  // --- CAMBIO: Ahora es un array ---
+  // --- CAMBIO: Ahora es un array --- un profe puede dar a dos grupos a la vez (en una misma ubicación, claro está ...)
   const [gruposSeleccionados, setGruposSeleccionados] = useState([]);
   const [estancia, setEstancia] = useState(null);
 
@@ -84,14 +84,13 @@ export function DialogoInsertarCeldaHorario({
         dia_semana: diasMap[dia],
         idperiodo: periodoObj?.id,
         tipo,
-        // 🔥 Enviamos el ARRAY de IDs de los grupos seleccionados
+        //  Enviamos el ARRAY de IDs de los grupos seleccionados
         gidnumber: esLibre ? null : gruposSeleccionados.map((g) => g.id),
         idmateria: esLibre ? null : materia?.id || null,
         idestancia: esLibre ? null : estancia?.id || null,
         curso_academico: cursoActual.label,
       };
 
-      // ✅ USAMOS TU RUTA ORIGINAL
       const res = await fetch(`${API_URL}/db/horario-profesorado`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -109,7 +108,7 @@ export function DialogoInsertarCeldaHorario({
       onGuardar?.({
         id: data.fila.id,
         tipo,
-        idmateria: esLibre ? null : materia?.id, // 🔥 Añadimos esto
+        idmateria: esLibre ? null : materia?.id, 
         materia: esLibre
           ? tipo === "tutores"
             ? "Reunión de Tutores"
@@ -208,7 +207,7 @@ export function DialogoInsertarCeldaHorario({
             </div>
 
             <SelectorField
-              label="Aula"
+              label="Aula/Ubicación"
               value={estancia}
               options={estancias.map((e) => ({
                 id: e.id,
@@ -216,7 +215,7 @@ export function DialogoInsertarCeldaHorario({
                 raw: e,
               }))}
               onSelect={setEstancia}
-              disabled={esLibre}
+              disabled={false}
             />
           </div>
         </div>

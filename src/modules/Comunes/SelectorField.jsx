@@ -45,19 +45,21 @@ export function SelectorField({
               {value?.label ? (
                 value.label
               ) : (
-                <span className="text-muted-foreground">
-                  {placeholder}
-                </span>
+                <span className="text-muted-foreground">{placeholder}</span>
               )}
             </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
           </Button>
         </PopoverTrigger>
 
-        <PopoverContent className="w-[300px] p-0">
+        <PopoverContent
+          className="w-[300px] p-0"
+          onWheel={(e) => e.stopPropagation()}
+        >
           <Command>
             <CommandInput placeholder={`Buscar ${label?.toLowerCase()}...`} />
-            <CommandList>
+            {/* Aplicamos el scroll y la altura máxima  */}
+            <CommandList className="max-h-60 overflow-y-auto overflow-x-hidden">
               <CommandEmpty>{emptyText}</CommandEmpty>
               <CommandGroup>
                 {options.map((opt) => (

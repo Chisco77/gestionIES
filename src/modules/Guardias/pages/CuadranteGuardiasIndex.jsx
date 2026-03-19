@@ -274,6 +274,21 @@ export function CuadranteGuardiasIndex() {
     setGuardias(nuevo);
     setGuardiasTotales(contadorGuardias);
   }*/
+
+  /**
+   * Realiza la asignación automática de guardias siguiendo criterios de carga horaria y contigüidad.
+   * * CRITERIOS DE ASIGNACIÓN (en orden de prioridad):
+   * 1. DISPONIBILIDAD REAL: El profesor no debe tener clases u otras actividades registradas en esa hora.
+   * 2. EXCLUSIÓN DE DÍA LIBRE: Solo se asignan guardias a profesores que tengan actividad (clases) el mismo día.
+   * 3. LÍMITE SEMANAL: No se superará el máximo de guardias definido por 'maxGuardiasSemana'.
+   * 4. REGLA DE NO REPETICIÓN: Se evita asignar una guardia a un profesor que ya tenga una guardia ese mismo día.
+   * 5. EVITAR DOBLE HORA: Se intenta no asignar una guardia inmediatamente después de otra guardia (descanso entre guardias).
+   * * PRIORIZACIÓN (Ordenación de candidatos):
+   * - Menor Carga: Se eligen primero los profesores con menos guardias acumuladas en la semana.
+   * - Contigüidad: A igualdad de carga, se prioriza a profesores que ya tengan una hora adyacente ocupada
+   * (anterior o posterior), para compactar su horario y evitar horas "huecas".
+   * - Azar: Empate final resuelto de forma aleatoria.
+   */
   async function asignacionAutomaticaCustom() {
     if (!profesores.length || !periodos.length) return;
 
@@ -326,7 +341,7 @@ export function CuadranteGuardiasIndex() {
         const asignados = [];
 
         for (let j = 0; j < cantidad; j++) {
-          // 🔥 1. FILTRADO: Ahora usamos 'profesConActividadHoy' en lugar de 'profesores'
+          //  1. FILTRADO:  usamos 'profesConActividadHoy'
           let candidatos = profesConActividadHoy.filter(
             (c) =>
               !usadosEnDia.has(c.uid) &&
@@ -346,7 +361,7 @@ export function CuadranteGuardiasIndex() {
 
           if (candidatos.length === 0) continue;
 
-          // 🔥 2. ORDENACIÓN (Carga + Contigüidad)
+          //  2. ORDENACIÓN (Carga + Contigüidad)
           candidatos.sort((a, b) => {
             const diffCarga = contadorGuardias[a.uid] - contadorGuardias[b.uid];
             if (diffCarga !== 0) return diffCarga;
@@ -415,9 +430,7 @@ export function CuadranteGuardiasIndex() {
               />
             </div>
             <ScrollArea className="flex-1 pr-3">
-              {/* AÑADIMOS: w-[250px] (o el ancho aproximado del interior del card)
-     Esto es el "ancla" para que el truncate sepa dónde ponerse.
-  */}
+
               <div className="space-y-2 w-full max-w-[240px]">
                 {profesoresFiltrados.map((profesor) => (
                   <div
@@ -429,10 +442,7 @@ export function CuadranteGuardiasIndex() {
                         JSON.stringify(profesor)
                       )
                     }
-                    /* CAMBIO CLAVE: 
-           - flex-nowrap: evita que intente saltar de línea
-           - shrink: permite que el botón se encoja
-        */
+
                     className="cursor-grab rounded-lg bg-blue-400 text-white px-3 py-2 text-sm shadow-sm hover:bg-blue-600 transition w-full flex flex-nowrap items-center overflow-hidden"
                   >
                     <span className="truncate min-w-0 flex-1 block">
@@ -660,7 +670,6 @@ export function CuadranteGuardiasIndex() {
                                 className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm w-full overflow-hidden"
                               >
                                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                                  {/* min-w-0 y flex-1 son CRUCIALES para que el truncado funcione dentro de un flexbox */}
                                   <span className="truncate">
                                     {nombreProfesor(p)}
                                   </span>

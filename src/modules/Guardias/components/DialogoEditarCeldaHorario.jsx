@@ -71,7 +71,6 @@ export function DialogoEditarCeldaHorario({
         : null
     );
 
-    // ⚠️ IMPORTANTE: No pongas dependencias que cambien dentro de este efecto
   }, [open, celdaActual.id]); // Solo dependemos del ID de la celda
 
   const esLibre =
@@ -94,15 +93,23 @@ export function DialogoEditarCeldaHorario({
 
   const handleGuardar = async () => {
     try {
+      // Creamos el body a enviar al backend
       const body = {
         uid: celdaActual.uid,
         dia_semana: celdaActual.dia_semana,
         idperiodo: celdaActual.idperiodo,
         tipo,
-        // Enviamos el array de enteros al backend
-        gidnumber: esLibre ? null : gruposSeleccionados.map((g) => g.id),
-        idmateria: esLibre ? null : materia?.id || null,
-        idestancia: esLibre ? null : estancia?.id || null,
+        // Grupos y materia según si es reunión o no
+        gidnumber:
+          tipo === "tutores" || tipo === "departamento"
+            ? null
+            : gruposSeleccionados.map((g) => g.id),
+        idmateria:
+          tipo === "tutores" || tipo === "departamento"
+            ? null
+            : materia?.id || null,
+        // Estancia siempre se envía si hay
+        idestancia: estancia?.id || null,
         curso_academico: celdaActual.curso_academico || null,
       };
 
@@ -122,20 +129,26 @@ export function DialogoEditarCeldaHorario({
 
       toast.success("Celda actualizada");
 
+      // Actualizamos localmente la celda
       onGuardar?.({
         ...celdaActual,
         tipo,
-        materia: esLibre
-          ? tipo === "tutores"
+        materia:
+          tipo === "tutores"
             ? "Reunión de Tutores"
-            : "Guardia"
-          : materia?.label || "",
-        // Mostramos los grupos unidos por comas en la tabla
-        grupo: esLibre
-          ? ""
-          : gruposSeleccionados.map((g) => g.label).join(", "),
-        gidnumber: esLibre ? null : gruposSeleccionados.map((g) => g.id),
-        estancia: esLibre ? null : estancia?.raw || null,
+            : tipo === "departamento"
+              ? "Reunión de Departamento"
+              : materia?.label || "",
+        grupo:
+          tipo === "tutores" || tipo === "departamento"
+            ? ""
+            : gruposSeleccionados.map((g) => g.label).join(", "),
+        gidnumber:
+          tipo === "tutores" || tipo === "departamento"
+            ? null
+            : gruposSeleccionados.map((g) => g.id),
+        // Siempre reflejamos la estancia seleccionada
+        estancia: estancia?.raw || null,
       });
 
       onClose();
@@ -217,7 +230,7 @@ export function DialogoEditarCeldaHorario({
             </div>
 
             <SelectorField
-              label="Aula"
+              label="Aula/Ubicación"
               value={estancia}
               options={estancias.map((e) => ({
                 id: e.id,
@@ -225,7 +238,7 @@ export function DialogoEditarCeldaHorario({
                 raw: e,
               }))}
               onSelect={setEstancia}
-              disabled={esLibre}
+              disabled={false}
             />
           </div>
         </div>
