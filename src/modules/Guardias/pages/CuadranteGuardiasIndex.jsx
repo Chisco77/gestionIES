@@ -54,6 +54,8 @@ export function CuadranteGuardiasIndex() {
   const [horarioProfesores, setHorarioProfesores] = useState([]);
   const [disponibilidad, setDisponibilidad] = useState({});
 
+  const [maxGuardiasSemana, setMaxGuardiasSemana] = useState(5);
+
   const profesoresFiltrados = useMemo(() => {
     return profesores.filter((p) =>
       `${p.givenName ?? ""} ${p.sn ?? ""}`
@@ -72,7 +74,8 @@ export function CuadranteGuardiasIndex() {
         const data = await resp.json();
         if (!data.ok) throw new Error(data.error || "Error desconocido");
 
-        // Filtrar solo guardias
+        // Mapear a la estructura { "idperiodo-dia": [profesor,...] }
+        // Filtrar solo guardias (esto SÍ es correcto aquí)
         const guardiasFiltradas = data.horario.filter(
           (r) => r.tipo === "guardia"
         );
@@ -111,22 +114,24 @@ export function CuadranteGuardiasIndex() {
         const data = await resp.json();
         if (!data.ok) throw new Error(data.error || "Error obteniendo horario");
 
-        // Filtramos solo guardias
-        const guardias = data.horario.filter((h) => h.tipo === "guardia");
-        setHorarioProfesores(guardias);
+        // ✔️ Guardamos TODO el horario
+        setHorarioProfesores(data.horario);
 
-        // Construimos disponibilidad
+        // ✔️ Construimos disponibilidad REAL (no solo guardias)
         const dispo = {};
-        guardias.forEach((h) => {
-          const key = `${h.idperiodo}-${h.dia_semana}`;
+        data.horario.forEach((h) => {
+          const key = `${h.idperiodo}-${h.dia_semana - 1}`;
+
           if (!dispo[h.uid]) dispo[h.uid] = new Set();
           dispo[h.uid].add(key);
         });
+
         setDisponibilidad(dispo);
       } catch (err) {
         console.error("Error cargando horario profesores:", err);
       }
     };
+
     fetchHorario();
   }, []);
 
@@ -173,23 +178,12 @@ export function CuadranteGuardiasIndex() {
     return numPorCelda[clave] ?? numPorHora;
   }
 
-  // Asignación automática
-  async function asignacionAutomaticaCustom() {
+  /*async function asignacionAutomaticaCustom() {
     if (!profesores.length || !periodos.length) return;
 
     const nuevo = {};
-    const profesoresAleatorios = [...profesores];
 
-    // Mezcla inicial aleatoria de todos los profesores
-    for (let i = profesoresAleatorios.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [profesoresAleatorios[i], profesoresAleatorios[j]] = [
-        profesoresAleatorios[j],
-        profesoresAleatorios[i],
-      ];
-    }
-
-    // 1️⃣ Obtener disponibilidad desde el backend
+    // 1️⃣ Disponibilidad real (NO solo guardias)
     let disponibilidad = {};
     try {
       const curso = getCursoActual().label;
@@ -199,25 +193,26 @@ export function CuadranteGuardiasIndex() {
       const data = await resp.json();
       if (data.ok) {
         disponibilidad = {};
-        data.horario
-          .filter((r) => r.tipo === "guardia")
-          .forEach((h) => {
-            // Ojo: días backend empiezan en 1, restamos 1 para índices locales
-            const clave = `${h.idperiodo}-${h.dia_semana - 1}`;
-            if (!disponibilidad[h.uid]) disponibilidad[h.uid] = new Set();
-            disponibilidad[h.uid].add(clave);
-          });
+        data.horario.forEach((h) => {
+          const clave = `${h.idperiodo}-${h.dia_semana - 1}`;
+          if (!disponibilidad[h.uid]) disponibilidad[h.uid] = new Set();
+          disponibilidad[h.uid].add(clave);
+        });
       }
     } catch (err) {
       console.error("Error cargando disponibilidad:", err);
-      // Si falla, asumimos que todos los profesores están libres
       disponibilidad = {};
     }
 
-    // Contador global de guardias por profesor (para el circulito)
+    // 2️⃣ Contador global
     const contadorGuardias = {};
 
-    // Recorremos días y periodos
+    // Inicializar a 0
+    profesores.forEach((p) => {
+      contadorGuardias[p.uid] = 0;
+    });
+
+    // 3️⃣ Recorrido
     dias.forEach((_, dIndex) => {
       const usadosEnDia = new Set();
       const ultimoAsignadoHora = {};
@@ -230,47 +225,162 @@ export function CuadranteGuardiasIndex() {
         const asignados = [];
 
         for (let j = 0; j < cantidad; j++) {
-          // Copia de todos los profesores para barajar cada vez
-          const candidatos = [...profesoresAleatorios];
-
-          // Barajar candidatos
-          for (let k = candidatos.length - 1; k > 0; k--) {
-            const l = Math.floor(Math.random() * (k + 1));
-            [candidatos[k], candidatos[l]] = [candidatos[l], candidatos[k]];
-          }
-
-          // Elegir el primer candidato válido
-          let profesor = candidatos.find(
+          // 🔥 1. Filtrar candidatos válidos
+          let candidatos = profesores.filter(
             (c) =>
               !usadosEnDia.has(c.uid) &&
               ultimoAsignadoHora[idperiodo - 1] !== c.uid &&
-              !disponibilidad[c.uid]?.has(clave)
+              !disponibilidad[c.uid]?.has(clave) &&
+              contadorGuardias[c.uid] < maxGuardiasSemana
           );
 
-          // fallback: cualquiera libre para esta hora
-          if (!profesor) {
-            profesor = candidatos.find(
-              (c) => !disponibilidad[c.uid]?.has(clave)
+          // 🔁 fallback más flexible
+          if (candidatos.length === 0) {
+            candidatos = profesores.filter(
+              (c) =>
+                !disponibilidad[c.uid]?.has(clave) &&
+                contadorGuardias[c.uid] < maxGuardiasSemana
             );
           }
 
-          if (profesor) {
-            asignados.push(profesor);
-            usadosEnDia.add(profesor.uid);
-            ultimoAsignadoHora[idperiodo] = profesor.uid;
+          if (candidatos.length === 0) continue;
 
-            // Contador de guardias totales
-            contadorGuardias[profesor.uid] =
-              (contadorGuardias[profesor.uid] || 0) + 1;
-          }
+          // 🔥 2. ORDENAR POR MENOS CARGA
+          candidatos.sort((a, b) => {
+            const diff = contadorGuardias[a.uid] - contadorGuardias[b.uid];
+
+            // desempate aleatorio para evitar patrones rígidos
+            if (diff === 0) return Math.random() - 0.5;
+
+            return diff;
+          });
+
+          const profesor = candidatos[0];
+
+          // 3. Asignar
+          asignados.push(profesor);
+          usadosEnDia.add(profesor.uid);
+          ultimoAsignadoHora[idperiodo] = profesor.uid;
+
+          contadorGuardias[profesor.uid]++;
         }
 
         nuevo[clave] = asignados;
       });
     });
 
+    console.log("Distribución final:", contadorGuardias);
+
     setGuardias(nuevo);
-    setGuardiasTotales(contadorGuardias); // Para mostrar circulitos
+    setGuardiasTotales(contadorGuardias);
+  }*/
+  async function asignacionAutomaticaCustom() {
+    if (!profesores.length || !periodos.length) return;
+
+    const nuevo = {};
+    let disponibilidad = {};
+
+    // 1️⃣ Obtención de disponibilidad real
+    try {
+      const curso = getCursoActual().label;
+      const resp = await fetch(
+        `${API_URL}/db/horario-profesorado/enriquecido?curso_academico=${curso}`
+      );
+      const data = await resp.json();
+      if (data.ok) {
+        data.horario.forEach((h) => {
+          const key = `${h.idperiodo}-${h.dia_semana - 1}`;
+          if (!disponibilidad[h.uid]) disponibilidad[h.uid] = new Set();
+          disponibilidad[h.uid].add(key);
+        });
+      }
+    } catch (err) {
+      console.error("Error cargando disponibilidad:", err);
+    }
+
+    const contadorGuardias = {};
+    profesores.forEach((p) => {
+      contadorGuardias[p.uid] = 0;
+    });
+
+    // 2️⃣ Bucle de días y periodos
+    dias.forEach((_, dIndex) => {
+      const usadosEnDia = new Set();
+      const ultimoAsignadoHora = {};
+
+      // --- FILTRO DE DÍA LIBRE ---
+      // Identificamos qué profesores tienen al menos una sesión este día (dIndex)
+      const profesConActividadHoy = profesores.filter((p) => {
+        // Buscamos en su disponibilidad si tiene alguna clave que termine en "-dIndex"
+        const tieneClaseHoy = Array.from(disponibilidad[p.uid] || []).some(
+          (key) => key.endsWith(`-${dIndex}`)
+        );
+        return tieneClaseHoy;
+      });
+
+      periodos.forEach((periodo) => {
+        const idperiodo = periodo.id;
+        const clave = `${idperiodo}-${dIndex}`;
+        const cantidad = Math.max(0, getNumGuardiasCelda(clave));
+
+        const asignados = [];
+
+        for (let j = 0; j < cantidad; j++) {
+          // 🔥 1. FILTRADO: Ahora usamos 'profesConActividadHoy' en lugar de 'profesores'
+          let candidatos = profesConActividadHoy.filter(
+            (c) =>
+              !usadosEnDia.has(c.uid) &&
+              ultimoAsignadoHora[idperiodo - 1] !== c.uid &&
+              !disponibilidad[c.uid]?.has(clave) && // No está ocupado en esta hora
+              contadorGuardias[c.uid] < maxGuardiasSemana
+          );
+
+          // Fallback si la hora está muy vacía de personal
+          if (candidatos.length === 0) {
+            candidatos = profesConActividadHoy.filter(
+              (c) =>
+                !disponibilidad[c.uid]?.has(clave) &&
+                contadorGuardias[c.uid] < maxGuardiasSemana
+            );
+          }
+
+          if (candidatos.length === 0) continue;
+
+          // 🔥 2. ORDENACIÓN (Carga + Contigüidad)
+          candidatos.sort((a, b) => {
+            const diffCarga = contadorGuardias[a.uid] - contadorGuardias[b.uid];
+            if (diffCarga !== 0) return diffCarga;
+
+            const tieneAdyacente = (prof) => {
+              const horaAnterior = `${idperiodo - 1}-${dIndex}`;
+              const horaPosterior = `${idperiodo + 1}-${dIndex}`;
+              return (
+                disponibilidad[prof.uid]?.has(horaAnterior) ||
+                disponibilidad[prof.uid]?.has(horaPosterior) ||
+                nuevo[horaAnterior]?.some((p) => p.uid === prof.uid)
+              );
+            };
+
+            if (tieneAdyacente(a) && !tieneAdyacente(b)) return -1;
+            if (!tieneAdyacente(a) && tieneAdyacente(b)) return 1;
+
+            return Math.random() - 0.5;
+          });
+
+          const profesor = candidatos[0];
+
+          if (!nuevo[clave]) nuevo[clave] = [];
+          nuevo[clave].push(profesor);
+
+          usadosEnDia.add(profesor.uid);
+          ultimoAsignadoHora[idperiodo] = profesor.uid;
+          contadorGuardias[profesor.uid]++;
+        }
+      });
+    });
+
+    setGuardias(nuevo);
+    setGuardiasTotales(contadorGuardias);
   }
 
   const totalesPorProfesor = useMemo(() => {
@@ -287,14 +397,14 @@ export function CuadranteGuardiasIndex() {
     return <div>Cargando datos...</div>;
 
   return (
-    <div className="container mx-auto py-10 p-12">
-      <div className="grid grid-cols-[350px_1fr] gap-6">
+    <div className="container mx-auto py-5 p-5">
+      <div className="grid grid-cols-[minmax(0,300px)_1fr] gap-3">
         {/* Panel Profesores */}
-        <Card>
+        <Card className="h-[750px] flex flex-col overflow-hidden">
           <CardHeader>
             <CardTitle>Profesores</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 flex-1 flex flex-col overflow-hidden">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -304,8 +414,11 @@ export function CuadranteGuardiasIndex() {
                 onChange={(e) => setBusqueda(e.target.value)}
               />
             </div>
-            <ScrollArea className="h-[750px] pr-3">
-              <div className="space-y-2">
+            <ScrollArea className="flex-1 pr-3">
+              {/* AÑADIMOS: w-[250px] (o el ancho aproximado del interior del card)
+     Esto es el "ancla" para que el truncate sepa dónde ponerse.
+  */}
+              <div className="space-y-2 w-full max-w-[240px]">
                 {profesoresFiltrados.map((profesor) => (
                   <div
                     key={profesor.uid}
@@ -316,9 +429,15 @@ export function CuadranteGuardiasIndex() {
                         JSON.stringify(profesor)
                       )
                     }
-                    className="cursor-grab rounded-lg bg-blue-400 text-white px-3 py-2 text-sm shadow-sm hover:bg-blue-600 active:cursor-grabbing active:scale-[0.98] transition"
+                    /* CAMBIO CLAVE: 
+           - flex-nowrap: evita que intente saltar de línea
+           - shrink: permite que el botón se encoja
+        */
+                    className="cursor-grab rounded-lg bg-blue-400 text-white px-3 py-2 text-sm shadow-sm hover:bg-blue-600 transition w-full flex flex-nowrap items-center overflow-hidden"
                   >
-                    {nombreProfesor(profesor)}
+                    <span className="truncate min-w-0 flex-1 block">
+                      {nombreProfesor(profesor)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -329,150 +448,170 @@ export function CuadranteGuardiasIndex() {
         {/* Panel Cuadrante */}
         <Card className="flex flex-col">
           <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <CardTitle>Cuadrante de guardias</CardTitle>
-            <div className="flex items-center gap-2">
+            <CardTitle>
               <div className="flex items-center gap-2">
-                <Label className="text-sm">Guardias/hora</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={numPorHora}
-                  onChange={(e) => setNumPorHora(Number(e.target.value))}
-                  className="w-20"
-                />
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm">Máx/semana</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={maxGuardiasSemana}
+                    onChange={(e) =>
+                      setMaxGuardiasSemana(Number(e.target.value))
+                    }
+                    className="w-20"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm">Guardias/hora</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={numPorHora}
+                    onChange={(e) => setNumPorHora(Number(e.target.value))}
+                    className="w-20"
+                  />
+                </div>
+
+                {/* Botón Asignar */}
+                <AlertDialog
+                  open={autoDialogOpen}
+                  onOpenChange={setAutoDialogOpen}
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      className="flex items-center gap-2"
+                      onClick={() => setAutoDialogOpen(true)}
+                    >
+                      <Wand2 className="h-4 w-4" /> Generar nuevo ...
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="sm:max-w-[400px]">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Generar nuevo cuadrante
+                      </AlertDialogTitle>
+                    </AlertDialogHeader>
+                    <div className="py-2 text-sm">
+                      Se realizará una asignación automática de guardias usando:
+                      <ul className="list-disc ml-4 mt-2">
+                        <li>Número global: {numPorHora}</li>
+                        <li>Configuraciones personalizadas por celda</li>
+                        <li>Distribución aleatoria de profesores</li>
+                      </ul>
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <Button
+                        onClick={() => {
+                          asignacionAutomaticaCustom();
+                          setAutoDialogOpen(false);
+                        }}
+                      >
+                        Confirmar
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Botón Guardar Cuadrante */}
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="flex items-center gap-2 bg-green-600 hover:bg-green-700">
+                      Guardar Cuadrante
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                      <DialogTitle>Guardar cuadrante de guardias</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-2 text-sm">
+                      Se guardará el cuadrante de guardias, sobreescribiendo
+                      cualquier registro anterior del curso actual.
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => setDialogOpen(false)}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          try {
+                            const curso = getCursoActual().label;
+                            const resp = await fetch(
+                              `${API_URL}/db/horario-profesorado/insertCuadranteGuardias`,
+                              {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  cuadrante: guardias,
+                                  curso_academico: curso,
+                                }),
+                              }
+                            );
+                            const data = await resp.json();
+                            if (!data.ok)
+                              throw new Error(
+                                data.error || "Error desconocido"
+                              );
+                            setDialogOpen(false);
+                            alert(
+                              `✅ Guardado ${data.total} registros de guardias`
+                            );
+                          } catch (err) {
+                            console.error(err);
+                            alert(
+                              "❌ Error guardando cuadrante: " + err.message
+                            );
+                          }
+                        }}
+                      >
+                        Guardar
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Botón Limpiar */}
+                <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      className="flex-1 flex items-center gap-2 bg-red-600 hover:bg-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" /> Limpiar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="sm:max-w-[400px]">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmar limpieza</AlertDialogTitle>
+                    </AlertDialogHeader>
+                    <div className="py-2">
+                      ¿Estás seguro de que quieres limpiar todos los datos de la
+                      tabla de guardias?
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <Button
+                        onClick={() => {
+                          limpiarCuadrante();
+                          setAlertOpen(false);
+                        }}
+                      >
+                        Confirmar
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
-
-              {/* Botón Asignar */}
-              <AlertDialog
-                open={autoDialogOpen}
-                onOpenChange={setAutoDialogOpen}
-              >
-                <AlertDialogTrigger asChild>
-                  <Button
-                    className="flex items-center gap-2"
-                    onClick={() => setAutoDialogOpen(true)}
-                  >
-                    <Wand2 className="h-4 w-4" /> Asignar automático
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="sm:max-w-[400px]">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Asignación automática</AlertDialogTitle>
-                  </AlertDialogHeader>
-                  <div className="py-2 text-sm">
-                    Se realizará una asignación automática de guardias usando:
-                    <ul className="list-disc ml-4 mt-2">
-                      <li>Número global: {numPorHora}</li>
-                      <li>Configuraciones personalizadas por celda</li>
-                      <li>Distribución aleatoria de profesores</li>
-                    </ul>
-                  </div>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <Button
-                      onClick={() => {
-                        asignacionAutomaticaCustom();
-                        setAutoDialogOpen(false);
-                      }}
-                    >
-                      Confirmar
-                    </Button>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-
-              {/* Botón Guardar Cuadrante */}
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2 bg-green-600 hover:bg-green-700">
-                    Guardar Cuadrante
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[400px]">
-                  <DialogHeader>
-                    <DialogTitle>Guardar cuadrante de guardias</DialogTitle>
-                  </DialogHeader>
-                  <div className="py-2 text-sm">
-                    Se guardará el cuadrante de guardias, sobreescribiendo
-                    cualquier registro anterior del curso actual.
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setDialogOpen(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={async () => {
-                        try {
-                          const curso = getCursoActual().label;
-                          const resp = await fetch(
-                            `${API_URL}/db/horario-profesorado/insertCuadranteGuardias`,
-                            {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                cuadrante: guardias,
-                                curso_academico: curso,
-                              }),
-                            }
-                          );
-                          const data = await resp.json();
-                          if (!data.ok)
-                            throw new Error(data.error || "Error desconocido");
-                          setDialogOpen(false);
-                          alert(
-                            `✅ Guardado ${data.total} registros de guardias`
-                          );
-                        } catch (err) {
-                          console.error(err);
-                          alert("❌ Error guardando cuadrante: " + err.message);
-                        }
-                      }}
-                    >
-                      Guardar
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              {/* Botón Limpiar */}
-              <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    className="flex-1 flex items-center gap-2 bg-red-600 hover:bg-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" /> Limpiar
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="sm:max-w-[400px]">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmar limpieza</AlertDialogTitle>
-                  </AlertDialogHeader>
-                  <div className="py-2">
-                    ¿Estás seguro de que quieres limpiar todos los datos de la
-                    tabla de guardias?
-                  </div>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <Button
-                      onClick={() => {
-                        limpiarCuadrante();
-                        setAlertOpen(false);
-                      }}
-                    >
-                      Confirmar
-                    </Button>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+            </CardTitle>
           </CardHeader>
 
           <CardContent>
-            <div className="grid grid-cols-[110px_repeat(5,1fr)]">
+            <div className="grid grid-cols-[110px_repeat(5,minmax(0,1fr))] w-full">
+              {" "}
               <div />
               {dias.map((d) => (
                 <div
@@ -482,7 +621,6 @@ export function CuadranteGuardiasIndex() {
                   {d}
                 </div>
               ))}
-
               {periodos.map((periodo) => (
                 <div key={periodo.id} className="contents">
                   <div className="border text-center py-3 font-medium bg-muted text-sm">
@@ -514,29 +652,26 @@ export function CuadranteGuardiasIndex() {
                         )}
                       >
                         <div className="flex flex-col">
-                          <div className="flex justify-between items-start">
-                            <span className="text-xs text-muted-foreground">
-                              {profesoresCelda.length}/
-                              {getNumGuardiasCelda(clave)}
-                            </span>
-                          </div>
-
                           <div className="flex flex-col gap-1 mt-2">
                             {profesoresCelda.map((p) => (
                               <div
                                 key={p.uid}
-                                className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm"
+                                /* Importante: w-full y overflow-hidden para respetar el redondeado */
+                                className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm w-full overflow-hidden"
                               >
-                                <div className="flex items-center gap-2">
-                                  <span>{nombreProfesor(p)}</span>
-                                  {/* Circulito con total de guardias */}
-                                  <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-white text-blue-600 rounded-full">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  {/* min-w-0 y flex-1 son CRUCIALES para que el truncado funcione dentro de un flexbox */}
+                                  <span className="truncate">
+                                    {nombreProfesor(p)}
+                                  </span>
+
+                                  <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-white text-blue-600 rounded-full shrink-0">
                                     {totalesPorProfesor[p.uid] || 0}
                                   </span>
                                 </div>
 
                                 <X
-                                  className="h-3 w-3 cursor-pointer"
+                                  className="h-3 w-3 cursor-pointer ml-1 shrink-0"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     eliminarProfesor(clave, p.uid);

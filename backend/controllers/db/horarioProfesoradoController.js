@@ -11,6 +11,8 @@ const { obtenerGruposPorTipo } = require("../ldap/gruposController");
 /**
  * Obtener horario del profesorado enriquecido
  */
+// Backend: getHorarioProfesoradoEnriquecido.js
+
 async function getHorarioProfesoradoEnriquecido(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -36,29 +38,43 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
         });
       });
 
+    // Obtenemos los grupos del tipo school_class
     const grupos = await obtenerGruposPorTipo(ldapSession, "school_class");
     grupos.forEach((g) => {
       gruposCache[String(g.gidNumber)] = g.cn;
     });
 
-    const { uid, gidnumber, curso_academico, dia_semana } = req.query;
+    // Obtenemos los parámetros de consulta
+    let { uid, gidnumber, curso_academico, dia_semana } = req.query;
+
+    // Aseguramos que uid sea un array
+    if (!uid) uid = [];
+    else if (!Array.isArray(uid)) uid = [uid];
+
     const filtros = [];
     const vals = [];
     let i = 0;
 
-    if (uid) {
-      filtros.push(`h.uid = $${++i}`);
-      vals.push(uid);
+    // Filtro por UIDs usando IN
+    if (uid.length) {
+      const placeholders = uid.map(() => `$${++i}`).join(", ");
+      filtros.push(`h.uid IN (${placeholders})`);
+      vals.push(...uid);
     }
-    // CAMBIO: Si se busca por un gidnumber, usamos el operador ANY para arrays
+
+    // Filtro por gidnumber (usa ANY para arrays)
     if (gidnumber) {
       filtros.push(`$${++i} = ANY(h.gidnumber)`);
       vals.push(Number(gidnumber));
     }
+
+    // Filtro por curso_academico
     if (curso_academico) {
       filtros.push(`h.curso_academico = $${++i}`);
       vals.push(curso_academico);
     }
+
+    // Filtro por dia_semana
     if (dia_semana) {
       filtros.push(`h.dia_semana = $${++i}`);
       vals.push(Number(dia_semana));
@@ -66,6 +82,7 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
 
     const where = filtros.length ? "WHERE " + filtros.join(" AND ") : "";
 
+    // Consulta principal
     const { rows } = await db.query(
       `SELECT h.*, 
               m.nombre AS materia_nombre,
@@ -78,13 +95,14 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
       vals
     );
 
+    // Obtenemos los nombres de los profesores desde LDAP
     const uidsUnicos = Array.from(
       new Set(rows.map((r) => r.uid).filter(Boolean))
     );
     await Promise.all(uidsUnicos.map((u) => getNombreProfesor(u)));
 
+    // Enriquecemos los datos
     const enriquecido = rows.map((item) => {
-      // CAMBIO: Ahora procesamos gidnumber como un array para mostrar los nombres de grupos
       let nombresGrupos = [];
       if (Array.isArray(item.gidnumber)) {
         nombresGrupos = item.gidnumber.map(
@@ -95,7 +113,6 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
       return {
         ...item,
         nombreProfesor: usuariosCache[item.uid] || "Profesor desconocido",
-        // Devolvemos el array original y una versión legible
         grupos_nombres: nombresGrupos,
         grupo: nombresGrupos.join(", ") || null,
         materia: item.materia_nombre || "Materia desconocida",
@@ -109,6 +126,8 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
     res.status(500).json({ ok: false, error: "Error obteniendo horario" });
   }
 }
+
+module.exports = { getHorarioProfesoradoEnriquecido };
 
 /**
  * Insertar nueva fila
@@ -239,14 +258,17 @@ async function duplicarHorarioProfesorado(req, res) {
     const { uidOrigen, uidDestino, curso_academico } = req.body;
 
     if (!uidOrigen || !uidDestino || !curso_academico) {
-      return res.status(400).json({ 
-        ok: false, 
-        error: "uidOrigen, uidDestino y curso_academico son obligatorios" 
+      return res.status(400).json({
+        ok: false,
+        error: "uidOrigen, uidDestino y curso_academico son obligatorios",
       });
     }
 
     if (uidOrigen === uidDestino) {
-      return res.status(400).json({ ok: false, error: "El profesor origen y destino no pueden ser el mismo" });
+      return res.status(400).json({
+        ok: false,
+        error: "El profesor origen y destino no pueden ser el mismo",
+      });
     }
 
     // 1. Obtener el horario del profesor origen
@@ -256,9 +278,10 @@ async function duplicarHorarioProfesorado(req, res) {
     );
 
     if (filasOrigen.length === 0) {
-      return res.status(404).json({ 
-        ok: false, 
-        error: "No se encontró horario para el profesor origen en el curso especificado" 
+      return res.status(404).json({
+        ok: false,
+        error:
+          "No se encontró horario para el profesor origen en el curso especificado",
       });
     }
 
@@ -269,9 +292,10 @@ async function duplicarHorarioProfesorado(req, res) {
     );
 
     if (filasDestino.length > 0) {
-      return res.status(409).json({ 
-        ok: false, 
-        error: "El profesor destino ya tiene un horario asignado en este curso. Bórralo primero si quieres duplicar." 
+      return res.status(409).json({
+        ok: false,
+        error:
+          "El profesor destino ya tiene un horario asignado en este curso. Bórralo primero si quieres duplicar.",
       });
     }
 
@@ -291,7 +315,7 @@ async function duplicarHorarioProfesorado(req, res) {
           f.gidnumber, // Se mantiene como array integer[]
           f.idmateria,
           f.idestancia,
-          f.curso_academico
+          f.curso_academico,
         ]
       );
     });
@@ -302,14 +326,13 @@ async function duplicarHorarioProfesorado(req, res) {
       ok: true,
       mensaje: `Se han duplicado ${resultados.length} sesiones correctamente`,
       total: resultados.length,
-      filas: resultados.map(r => r.rows[0])
+      filas: resultados.map((r) => r.rows[0]),
     });
-
   } catch (err) {
     console.error("[duplicarHorarioProfesorado] Error:", err);
-    res.status(500).json({ 
-      ok: false, 
-      error: "Error interno al intentar duplicar el horario" 
+    res.status(500).json({
+      ok: false,
+      error: "Error interno al intentar duplicar el horario",
     });
   }
 }
@@ -384,8 +407,7 @@ async function insertCuadranteGuardias(req, res) {
       const idperiodo = Number(hIndexStr);
 
       profesores.forEach((profesor) => {
-        console.log("profesor backend: ", profesor);
-        console.log("Curso académico: ", curso_academico);
+
         insertPromises.push(
           db.query(
             `INSERT INTO horario_profesorado

@@ -35,6 +35,7 @@ import { useState, useEffect } from "react";
 import { columns } from "../../Usuarios/components/colums";
 import { TablaUsuarios } from "../../Usuarios/components/TablaUsuarios";
 import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 //import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 import {
   Loader,
@@ -56,6 +57,7 @@ import {
 import { generateListadoAPs } from "../../../utils/Informes";
 import { DialogoEditarHorario } from "../components/DialogoEditarHorario";
 import { DialogoAsignarHorario } from "../components/DialogoAsignarHorario";
+import { generarPdfHorariosProfesores } from "@/Informes/horarios";
 
 export function HorariosIndex() {
   const [profesoresFiltrados, setProfesoresFiltrados] = useState([]);
@@ -64,13 +66,16 @@ export function HorariosIndex() {
   const [abrirEditar, setAbrirEditar] = useState(false);
   const [abrirAsignarHorario, setAbrirAsignarHorario] = useState(false);
 
+  const { data: periodos } = usePeriodosHorarios();
+
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const {
     data: profesores,
     isLoading: loadingProfesores,
     error: errorProfesores,
   } = useProfesoresActivos();
 
-  
   const handleInsertar = () => {
     alert("Inserción de profesor: No implementado");
   };
@@ -99,16 +104,54 @@ export function HorariosIndex() {
     setAbrirEditar(true);
   };
 
-  const handleGenerarPdf = () => {
-    // Ahora los datos de empleado ya están en cada profesor
-    const listadoCombinado = profesoresFiltrados.map((profesor) => ({
-      ...profesor,
-      dni: profesor.dni || "",
-      asuntos_propios: profesor.asuntos_propios || 0,
-      tipo_empleado: profesor.tipo_empleado || "",
-    }));
+  const handleGenerarPdf = async () => {
+    if (!profesoresFiltrados.length) {
+      alert("No hay profesores seleccionados para generar el informe.");
+      return;
+    }
 
-    generateListadoAPs(listadoCombinado);
+    try {
+      const uids = profesoresFiltrados.map((p) => p.uid).filter(Boolean);
+      const query = new URLSearchParams();
+      uids.forEach((uid) => query.append("uid", uid));
+
+      const url = `${API_URL}/db/horario-profesorado/enriquecido?${query.toString()}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!data.ok) {
+        alert("Error al obtener horarios: " + (data.error || "Desconocido"));
+        return;
+      }
+
+      // --- ORDENACIÓN EN EL FRONTEND ---
+      const horarioOrdenado = [...data.horario].sort((a, b) => {
+        // Usamos localeCompare para que ignore tildes y mayúsculas
+        // Como nombreProfesor ya viene como "Apellido, Nombre", el peso cae en el Apellido
+        const comparacionNombres = a.nombreProfesor.localeCompare(
+          b.nombreProfesor,
+          "es",
+          {
+            sensitivity: "base",
+          }
+        );
+
+        // Si es el mismo profesor, ordenamos por día y periodo para no romper su tabla
+        if (comparacionNombres === 0) {
+          if (a.dia_semana !== b.dia_semana) return a.dia_semana - b.dia_semana;
+          return a.idperiodo - b.idperiodo;
+        }
+
+        return comparacionNombres;
+      });
+      // ---------------------------------
+
+      // Enviamos los datos ya ordenados al PDF
+      generarPdfHorariosProfesores(horarioOrdenado, periodos);
+    } catch (err) {
+      console.error("[ERROR] Excepción generando informe de horarios:", err);
+      alert("Error generando el informe de horarios.");
+    }
   };
 
   const isLoading = loadingProfesores;
@@ -137,7 +180,7 @@ export function HorariosIndex() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleGenerarPdf}>
                   <Users className="mr-2 h-4 w-4" />
-                  Listado profesores
+                  Listar horarios
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

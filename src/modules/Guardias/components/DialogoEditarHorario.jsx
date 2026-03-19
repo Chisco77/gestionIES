@@ -44,8 +44,7 @@ export function DialogoEditarHorario({
   open,
   onClose,
   usuarioSeleccionado,
-  empleadoSeleccionado,
-  esAlumno = false,
+
 }) {
   const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
   const [horaActual, setHoraActual] = useState(getHoraActualMadrid());
@@ -113,7 +112,6 @@ export function DialogoEditarHorario({
           );
           if (!res.ok) throw new Error("Error obteniendo horario del profesor");
           const data = await res.json();
-          console.log("Horario: ", data);
 
           // Llenamos la tabla
           const tabla = periodos.map((periodo) => {
