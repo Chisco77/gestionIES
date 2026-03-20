@@ -39,8 +39,7 @@ export function DialogoEditarCeldaHorario({
 
   // DialogoEditarCeldaHorario.jsx
   useEffect(() => {
-    // Solo inicializamos si el diálogo está abierto y hay una celda
-    if (!open || !celdaActual) return;
+    if (!open || !celdaActual || !materias.length || !cursos.length) return;
 
     setTipo(celdaActual.tipo || "");
 
@@ -50,28 +49,22 @@ export function DialogoEditarCeldaHorario({
     );
     setMateria(mFound ? { id: mFound.id, label: mFound.nombre } : null);
 
-    // Grupos (limpiamos la lógica)
+    // Grupos
     const ids = Array.isArray(celdaActual.gidnumber)
       ? celdaActual.gidnumber
       : [];
     const seleccionados = cursos
       .filter((c) => ids.map(Number).includes(Number(c.gid)))
       .map((c) => ({ id: c.gid, label: c.nombre }));
-
     setGruposSeleccionados(seleccionados);
 
     // Estancia
+    const idABuscar = celdaActual.estancia?.id || celdaActual.idestancia;
+    const eFound = estancias.find((e) => String(e.id) === String(idABuscar));
     setEstancia(
-      celdaActual.estancia
-        ? {
-            id: celdaActual.estancia.id,
-            label: celdaActual.estancia.descripcion,
-            raw: celdaActual.estancia,
-          }
-        : null
+      eFound ? { id: eFound.id, label: eFound.descripcion, raw: eFound } : null
     );
-
-  }, [open, celdaActual.id]); // Solo dependemos del ID de la celda
+  }, [open, celdaActual, estancias, materias, cursos]);
 
   const esLibre =
     tipo === "guardia" || tipo === "tutores" || tipo === "departamento";
@@ -90,29 +83,34 @@ export function DialogoEditarCeldaHorario({
   const eliminarGrupo = (id) => {
     setGruposSeleccionados(gruposSeleccionados.filter((g) => g.id !== id));
   };
-
   const handleGuardar = async () => {
     try {
-      // Creamos el body a enviar al backend
+      // 1. Extraemos el curso de celdaActual.
+      // Si por alguna razón es nulo (porque en la DB estaba nulo o se perdió en el mapeo),
+      // usamos un valor por defecto para que la base de datos NO rechace el UPDATE.
+      const cursoParaEnviar = celdaActual.curso_academico || "2025-2026";
+
+      // 2. Construimos el body asegurándonos de incluir TODOS los campos necesarios
       const body = {
         uid: celdaActual.uid,
         dia_semana: celdaActual.dia_semana,
         idperiodo: celdaActual.idperiodo,
         tipo,
-        // Grupos y materia según si es reunión o no
+        // Grupos y materia según el tipo de sesión
         gidnumber:
-          tipo === "tutores" || tipo === "departamento"
+          tipo === "tutores" || tipo === "departamento" || tipo === "guardia"
             ? null
             : gruposSeleccionados.map((g) => g.id),
         idmateria:
-          tipo === "tutores" || tipo === "departamento"
+          tipo === "tutores" || tipo === "departamento" || tipo === "guardia"
             ? null
             : materia?.id || null,
-        // Estancia siempre se envía si hay
         idestancia: estancia?.id || null,
-        curso_academico: celdaActual.curso_academico || null,
+        // AQUÍ ESTÁ LA CLAVE:
+        curso_academico: cursoParaEnviar,
       };
 
+      // 3. Ejecutamos la petición al backend
       const res = await fetch(
         `${API_URL}/db/horario-profesorado/${celdaActual.id}`,
         {
@@ -129,34 +127,38 @@ export function DialogoEditarCeldaHorario({
 
       toast.success("Celda actualizada");
 
-      // Actualizamos localmente la celda
+      // 4. Devolvemos el objeto actualizado al padre
+      // Usamos el spread de celdaActual para NO PERDER el curso_academico original
+      // ni otros metadatos (como el ID del registro)
       onGuardar?.({
         ...celdaActual,
+        curso_academico: cursoParaEnviar, // Lo aseguramos también en el estado local
         tipo,
         materia:
           tipo === "tutores"
             ? "Reunión de Tutores"
             : tipo === "departamento"
               ? "Reunión de Departamento"
-              : materia?.label || "",
+              : tipo === "guardia"
+                ? "Guardia"
+                : materia?.label || "",
         grupo:
-          tipo === "tutores" || tipo === "departamento"
+          tipo === "tutores" || tipo === "departamento" || tipo === "guardia"
             ? ""
             : gruposSeleccionados.map((g) => g.label).join(", "),
         gidnumber:
-          tipo === "tutores" || tipo === "departamento"
+          tipo === "tutores" || tipo === "departamento" || tipo === "guardia"
             ? null
             : gruposSeleccionados.map((g) => g.id),
-        // Siempre reflejamos la estancia seleccionada
         estancia: estancia?.raw || null,
       });
 
       onClose();
     } catch (err) {
+      console.error("Error al guardar:", err);
       toast.error(err.message || "Error al guardar");
     }
   };
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
@@ -219,7 +221,10 @@ export function DialogoEditarCeldaHorario({
                   >
                     {g.label}
                     <button
-                      onClick={() => eliminarGrupo(g.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        eliminarGrupo(g.id);
+                      }}
                       className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
                     >
                       <X className="h-3 w-3" />

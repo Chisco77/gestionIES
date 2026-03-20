@@ -13,14 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+
 import { Label } from "@/components/ui/label";
 import { Search, X, Wand2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,7 +21,15 @@ import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { Button } from "@/components/ui/button";
 import { getCursoActual } from "@/utils/fechasHoras";
 
+import { toast } from "sonner";
+
 import { useEffect } from "react";
+
+import { useEstancias } from "@/hooks/Estancias/useEstancias";
+import { useMaterias } from "@/hooks/useMaterias";
+import { useCursosLdap } from "@/hooks/useCursosLdap";
+
+import { DialogoEditarCeldaHorario } from "../components/DialogoEditarCeldaHorario";
 
 const dias = ["L", "M", "X", "J", "V"];
 
@@ -54,7 +55,9 @@ export function CuadranteGuardiasIndex() {
   const [horarioProfesores, setHorarioProfesores] = useState([]);
   const [disponibilidad, setDisponibilidad] = useState({});
 
-  const [maxGuardiasSemana, setMaxGuardiasSemana] = useState(5);
+  const [maxGuardiasSemana, setMaxGuardiasSemana] = useState(3);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [sesionAEditar, setSesionAEditar] = useState(null);
 
   const profesoresFiltrados = useMemo(() => {
     return profesores.filter((p) =>
@@ -64,6 +67,63 @@ export function CuadranteGuardiasIndex() {
     );
   }, [busqueda, profesores]);
 
+  const { data: estancias = [] } = useEstancias(); // Asumiendo que tienes estos hooks
+  const { data: cursos = [] } = useCursosLdap();
+  const { data: materias = [] } = useMaterias();
+
+  // Función para persistir en la BD
+  const sincronizarConBD = async (nuevoCuadrante, mensajeExito = null) => {
+    try {
+      const curso = getCursoActual().label;
+
+      const resp = await fetch(
+        `${API_URL}/db/horario-profesorado/insertCuadranteGuardias`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cuadrante: nuevoCuadrante,
+            curso_academico: curso,
+          }),
+        }
+      );
+
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error);
+
+      // 🔥 SIEMPRE usar lo que viene del backend
+      setGuardias(data.cuadranteActualizado);
+
+      if (mensajeExito) toast.success(mensajeExito);
+    } catch (err) {
+      console.error("❌ Error sincronización:", err);
+    }
+  };
+
+  const abrirEditorSesion = (e, registroEnCelda, periodo, dIndex) => {
+    e.stopPropagation();
+
+    // 1. Extraemos el tipo con un "fallback" agresivo
+    // Si registroEnCelda.tipo no existe, usamos "guardia"
+    const tipoReal = registroEnCelda.tipo || "guardia";
+
+    const datosParaDialogo = {
+      ...registroEnCelda,
+      id: registroEnCelda.id_registro || registroEnCelda.id,
+      idperiodo: periodo.id,
+      dia_semana: dIndex + 1,
+      // FORZAMOS el tipo aquí para que no sea undefined
+      tipo: tipoReal,
+      idestancia:
+        registroEnCelda.estancia?.id || registroEnCelda.idestancia || null,
+    };
+
+    console.log("🚀 DATOS FINALES ENVIADOS AL HIJO:", datosParaDialogo);
+
+    setSesionAEditar(datosParaDialogo);
+    setEditDialogOpen(true);
+  };
+
   useEffect(() => {
     async function cargarCuadrante() {
       try {
@@ -72,35 +132,88 @@ export function CuadranteGuardiasIndex() {
           `${API_URL}/db/horario-profesorado/enriquecido?curso_academico=${curso}`
         );
         const data = await resp.json();
+        console.log("RAW BACKEND:", data.horario[0]); // Ya lo tienes
+        console.log(
+          "✅ Todos los tipos:",
+          data.horario.map((r) => ({ id: r.id, tipo: r.tipo }))
+        );
         if (!data.ok) throw new Error(data.error || "Error desconocido");
 
-        // Mapear a la estructura { "idperiodo-dia": [profesor,...] }
-        // Filtrar solo guardias (esto SÍ es correcto aquí)
         const guardiasFiltradas = data.horario.filter(
           (r) => r.tipo === "guardia"
         );
-
-        // Mapear a la estructura { "idperiodo-dia": [profesor,...] }
+        console.log(
+          "🔹 Guardias filtradas:",
+          guardiasFiltradas.map((g) => ({
+            id: g.id,
+            uid: g.uid,
+            tipo: g.tipo,
+          }))
+        );
         const nuevoGuardias = {};
+        const nuevoNumPorCelda = {}; // 👈 Creamos un objeto para los números
+
         guardiasFiltradas.forEach((g) => {
           const clave = `${g.idperiodo}-${g.dia_semana - 1}`;
-          if (!nuevoGuardias[clave]) nuevoGuardias[clave] = [];
-          nuevoGuardias[clave].push({
-            uid: g.uid,
-            givenName: g.nombreProfesor.split(", ")[1] || "",
-            sn: g.nombreProfesor.split(", ")[0] || "",
-          });
+
+          if (!nuevoGuardias[clave]) {
+            nuevoGuardias[clave] = [];
+          }
+
+          const registroNormalizado = {
+            ...g,
+
+            // 🔥 Forzamos tipo
+            tipo: g.tipo ?? null,
+
+            id_registro: g.id,
+
+            givenName: g.nombreProfesor?.split(", ")[1]?.trim() || "",
+            sn: g.nombreProfesor?.split(", ")[0]?.trim() || "",
+
+            estancia: g.idestancia
+              ? {
+                  id: g.idestancia,
+                  descripcion: g.estancia_descripcion || g.nombreEstancia,
+                }
+              : null,
+          };
+
+          // DEBUG (muy importante ahora)
+          if (!registroNormalizado.tipo) {
+            console.warn(
+              "⚠️ Registro sin tipo tras normalizar:",
+              registroNormalizado
+            );
+          } else {
+            console.log(
+              "✅ Registro normalizado:",
+              registroNormalizado.id,
+              registroNormalizado.tipo
+            );
+          }
+
+          nuevoGuardias[clave].push(registroNormalizado);
         });
 
         setGuardias(nuevoGuardias);
+        // Dentro de cargarCuadrante, justo después de generar nuevoGuardias:
+
+        Object.entries(nuevoGuardias).forEach(([clave, listaProfes]) => {
+          // Ponemos como valor de la celda el número de profesores que vienen de la BD
+          nuevoNumPorCelda[clave] = listaProfes.length;
+        });
+
+        setGuardias(nuevoGuardias);
+        setNumPorCelda(nuevoNumPorCelda);
       } catch (err) {
+        // <--- Asegúrate de que esta línea esté así
         console.error("Error cargando cuadrante:", err);
-        alert("❌ No se pudo cargar el cuadrante actual: " + err.message);
+        toast.error("Error al cargar los datos iniciales.");
       } finally {
         setCargandoCuadrante(false);
       }
     }
-
     cargarCuadrante();
   }, []);
 
@@ -135,9 +248,26 @@ export function CuadranteGuardiasIndex() {
     fetchHorario();
   }, []);
 
+  function eliminarGuardia(clave, uid) {
+    const nuevo = {
+      ...guardias,
+      [clave]: guardias[clave].filter((p) => p.uid !== uid),
+    };
+
+    setGuardias(nuevo);
+    sincronizarConBD(nuevo);
+  }
+
   function nombreProfesor(p) {
     return `${p.givenName ?? ""} ${p.sn ?? ""}`.trim();
   }
+  const handleNumCeldaChange = (clave, valor) => {
+    const num = parseInt(valor, 10);
+    setNumPorCelda((prev) => ({
+      ...prev,
+      [clave]: isNaN(num) ? 0 : num,
+    }));
+  };
 
   function claveCelda(idperiodo, dIndex) {
     return `${idperiodo}-${dIndex}`;
@@ -148,132 +278,38 @@ export function CuadranteGuardiasIndex() {
     const profesor = JSON.parse(e.dataTransfer.getData("profesor"));
     const clave = `${hIndex}-${dIndex}`;
 
-    // comprobar disponibilidad
     if (disponibilidad[profesor.uid]?.has(clave)) {
-      alert(`${nombreProfesor(profesor)} ya tiene guardia en esta hora.`);
+      toast.error(
+        `Conflicto: ${nombreProfesor(profesor)} ya tiene clase o guardia en esta hora.`
+      );
       return;
     }
 
-    setGuardias((prev) => {
-      const lista = prev[clave] || [];
-      if (lista.find((p) => p.uid === profesor.uid)) return prev;
-      return { ...prev, [clave]: [...lista, profesor] };
-    });
+    const nuevo = {
+      ...guardias,
+      [clave]: [
+        ...(guardias[clave] || []),
+        {
+          ...profesor,
+          tipo: "guardia", // 🔥 obligatorio
+        },
+      ],
+    };
 
-    setCeldaHover(null); // Limpiar resaltado al soltar
-  }
-
-  function eliminarProfesor(clave, uid) {
-    setGuardias((prev) => ({
-      ...prev,
-      [clave]: prev[clave].filter((p) => p.uid !== uid),
-    }));
+    setGuardias(nuevo);
+    sincronizarConBD(nuevo); // 🔥 inmediato
   }
 
   function limpiarCuadrante() {
+    // Al poner guardias como objeto vacío, el debounce enviará {} a la BD
+    // y el backend ejecutará el DELETE de todo el curso.
     setGuardias({});
+    sincronizarConBD({}, "El cuadrante ha sido borrado por completo.");
   }
 
   function getNumGuardiasCelda(clave) {
     return numPorCelda[clave] ?? numPorHora;
   }
-
-  /*async function asignacionAutomaticaCustom() {
-    if (!profesores.length || !periodos.length) return;
-
-    const nuevo = {};
-
-    // 1️⃣ Disponibilidad real (NO solo guardias)
-    let disponibilidad = {};
-    try {
-      const curso = getCursoActual().label;
-      const resp = await fetch(
-        `${API_URL}/db/horario-profesorado/enriquecido?curso_academico=${curso}`
-      );
-      const data = await resp.json();
-      if (data.ok) {
-        disponibilidad = {};
-        data.horario.forEach((h) => {
-          const clave = `${h.idperiodo}-${h.dia_semana - 1}`;
-          if (!disponibilidad[h.uid]) disponibilidad[h.uid] = new Set();
-          disponibilidad[h.uid].add(clave);
-        });
-      }
-    } catch (err) {
-      console.error("Error cargando disponibilidad:", err);
-      disponibilidad = {};
-    }
-
-    // 2️⃣ Contador global
-    const contadorGuardias = {};
-
-    // Inicializar a 0
-    profesores.forEach((p) => {
-      contadorGuardias[p.uid] = 0;
-    });
-
-    // 3️⃣ Recorrido
-    dias.forEach((_, dIndex) => {
-      const usadosEnDia = new Set();
-      const ultimoAsignadoHora = {};
-
-      periodos.forEach((periodo) => {
-        const idperiodo = periodo.id;
-        const clave = `${idperiodo}-${dIndex}`;
-        const cantidad = Math.max(0, getNumGuardiasCelda(clave));
-
-        const asignados = [];
-
-        for (let j = 0; j < cantidad; j++) {
-          // 🔥 1. Filtrar candidatos válidos
-          let candidatos = profesores.filter(
-            (c) =>
-              !usadosEnDia.has(c.uid) &&
-              ultimoAsignadoHora[idperiodo - 1] !== c.uid &&
-              !disponibilidad[c.uid]?.has(clave) &&
-              contadorGuardias[c.uid] < maxGuardiasSemana
-          );
-
-          // 🔁 fallback más flexible
-          if (candidatos.length === 0) {
-            candidatos = profesores.filter(
-              (c) =>
-                !disponibilidad[c.uid]?.has(clave) &&
-                contadorGuardias[c.uid] < maxGuardiasSemana
-            );
-          }
-
-          if (candidatos.length === 0) continue;
-
-          // 🔥 2. ORDENAR POR MENOS CARGA
-          candidatos.sort((a, b) => {
-            const diff = contadorGuardias[a.uid] - contadorGuardias[b.uid];
-
-            // desempate aleatorio para evitar patrones rígidos
-            if (diff === 0) return Math.random() - 0.5;
-
-            return diff;
-          });
-
-          const profesor = candidatos[0];
-
-          // 3. Asignar
-          asignados.push(profesor);
-          usadosEnDia.add(profesor.uid);
-          ultimoAsignadoHora[idperiodo] = profesor.uid;
-
-          contadorGuardias[profesor.uid]++;
-        }
-
-        nuevo[clave] = asignados;
-      });
-    });
-
-    console.log("Distribución final:", contadorGuardias);
-
-    setGuardias(nuevo);
-    setGuardiasTotales(contadorGuardias);
-  }*/
 
   /**
    * Realiza la asignación automática de guardias siguiendo criterios de carga horaria y contigüidad.
@@ -396,6 +432,13 @@ export function CuadranteGuardiasIndex() {
 
     setGuardias(nuevo);
     setGuardiasTotales(contadorGuardias);
+    setAutoDialogOpen(false);
+
+    // FORZAMOS la sincronización inmediata con el objeto "nuevo"
+    sincronizarConBD(
+      nuevo,
+      "Se ha generado y guardado el nuevo cuadrante correctamente."
+    );
   }
 
   const totalesPorProfesor = useMemo(() => {
@@ -430,7 +473,6 @@ export function CuadranteGuardiasIndex() {
               />
             </div>
             <ScrollArea className="flex-1 pr-3">
-
               <div className="space-y-2 w-full max-w-[240px]">
                 {profesoresFiltrados.map((profesor) => (
                   <div
@@ -442,7 +484,6 @@ export function CuadranteGuardiasIndex() {
                         JSON.stringify(profesor)
                       )
                     }
-
                     className="cursor-grab rounded-lg bg-blue-400 text-white px-3 py-2 text-sm shadow-sm hover:bg-blue-600 transition w-full flex flex-nowrap items-center overflow-hidden"
                   >
                     <span className="truncate min-w-0 flex-1 block">
@@ -524,66 +565,6 @@ export function CuadranteGuardiasIndex() {
                   </AlertDialogContent>
                 </AlertDialog>
 
-                {/* Botón Guardar Cuadrante */}
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="flex items-center gap-2 bg-green-600 hover:bg-green-700">
-                      Guardar Cuadrante
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[400px]">
-                    <DialogHeader>
-                      <DialogTitle>Guardar cuadrante de guardias</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-2 text-sm">
-                      Se guardará el cuadrante de guardias, sobreescribiendo
-                      cualquier registro anterior del curso actual.
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        variant="outline"
-                        onClick={() => setDialogOpen(false)}
-                      >
-                        Cancelar
-                      </Button>
-                      <Button
-                        onClick={async () => {
-                          try {
-                            const curso = getCursoActual().label;
-                            const resp = await fetch(
-                              `${API_URL}/db/horario-profesorado/insertCuadranteGuardias`,
-                              {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  cuadrante: guardias,
-                                  curso_academico: curso,
-                                }),
-                              }
-                            );
-                            const data = await resp.json();
-                            if (!data.ok)
-                              throw new Error(
-                                data.error || "Error desconocido"
-                              );
-                            setDialogOpen(false);
-                            alert(
-                              `✅ Guardado ${data.total} registros de guardias`
-                            );
-                          } catch (err) {
-                            console.error(err);
-                            alert(
-                              "❌ Error guardando cuadrante: " + err.message
-                            );
-                          }
-                        }}
-                      >
-                        Guardar
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-
                 {/* Botón Limpiar */}
                 <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
                   <AlertDialogTrigger asChild>
@@ -645,6 +626,10 @@ export function CuadranteGuardiasIndex() {
                     const profesoresCelda = guardias[clave] || [];
                     const seleccionada = celdaSeleccionada === clave;
 
+                    // Determinamos el valor actual de la celda
+                    const valorEfectivo = getNumGuardiasCelda(clave);
+                    const esPersonalizado = numPorCelda[clave] !== undefined;
+
                     return (
                       <div
                         key={clave}
@@ -656,38 +641,67 @@ export function CuadranteGuardiasIndex() {
                         onDragLeave={() => setCeldaHover(null)}
                         onDrop={(e) => handleDrop(e, periodo.id, dIndex)}
                         className={cn(
-                          "border min-h-[100px] p-2 cursor-pointer transition",
+                          "border min-h-[120px] p-1 cursor-pointer transition relative group",
                           seleccionada && "bg-blue-50 border-blue-400",
                           celdaHover === clave && "bg-blue-100 border-blue-500"
                         )}
                       >
+                        {/* Control de número de guardias por celda */}
+                        <div className="flex justify-end items-center mb-1 gap-1">
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold">
+                            G:
+                          </span>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={valorEfectivo}
+                            onChange={(e) =>
+                              handleNumCeldaChange(clave, e.target.value)
+                            }
+                            onClick={(e) => e.stopPropagation()} // Evita seleccionar la celda al hacer clic en el input
+                            className={cn(
+                              "h-6 w-10 text-[11px] px-1 text-center font-bold",
+                              esPersonalizado
+                                ? "border-orange-400 bg-orange-50"
+                                : "bg-transparent border-dashed"
+                            )}
+                          />
+                        </div>
+
                         <div className="flex flex-col">
-                          <div className="flex flex-col gap-1 mt-2">
+                          <div className="flex flex-col gap-1">
                             {profesoresCelda.map((p) => (
                               <div
-                                key={p.uid}
-                                /* Importante: w-full y overflow-hidden para respetar el redondeado */
-                                className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm w-full overflow-hidden"
+                                key={p.id_registro}
+                                onClick={(e) =>
+                                  abrirEditorSesion(e, p, periodo, dIndex)
+                                } // ✨ Añadido
+                                className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm w-full cursor-pointer hover:bg-blue-500 transition-colors"
                               >
                                 <div className="flex items-center gap-2 min-w-0 flex-1">
                                   <span className="truncate">
                                     {nombreProfesor(p)}
                                   </span>
-
                                   <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-white text-blue-600 rounded-full shrink-0">
                                     {totalesPorProfesor[p.uid] || 0}
                                   </span>
                                 </div>
-
                                 <X
-                                  className="h-3 w-3 cursor-pointer ml-1 shrink-0"
+                                  className="h-3 w-3 cursor-pointer ml-1 shrink-0 hover:text-red-200"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    eliminarProfesor(clave, p.uid);
+                                    eliminarGuardia(clave, p.uid);
                                   }}
                                 />
                               </div>
                             ))}
+
+                            {/* Indicador visual si faltan profesores por asignar */}
+                            {profesoresCelda.length < valorEfectivo && (
+                              <div className="mt-1 border border-dashed border-slate-300 rounded text-[10px] text-center text-slate-400 py-1">
+                                Faltan {valorEfectivo - profesoresCelda.length}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -699,6 +713,49 @@ export function CuadranteGuardiasIndex() {
           </CardContent>
         </Card>
       </div>
+      {sesionAEditar && (
+        <DialogoEditarCeldaHorario
+          open={editDialogOpen}
+          onClose={() => {
+            setEditDialogOpen(false);
+            setSesionAEditar(null);
+          }}
+          celdaActual={sesionAEditar}
+          dia={dias[sesionAEditar.dia_semana - 1]}
+          periodo={
+            periodos.find((p) => p.id === sesionAEditar.idperiodo)?.nombre
+          }
+          estancias={estancias}
+          cursos={cursos}
+          materias={materias}
+          onGuardar={(datosActualizados) => {
+            const clave = `${sesionAEditar.idperiodo}-${sesionAEditar.dia_semana - 1}`;
+
+            const nuevo = {
+              ...guardias,
+              [clave]: guardias[clave].map((p) =>
+                // Comparamos por id_registro o id
+                p.id_registro === datosActualizados.id ||
+                p.id === datosActualizados.id
+                  ? {
+                      ...p,
+                      // Prioridad: 1. Lo que viene del diálogo, 2. Lo que ya tenía el objeto, 3. "guardia"
+                      tipo: datosActualizados.tipo || p.tipo || "guardia",
+                      materia: datosActualizados.materia,
+                      grupo: datosActualizados.grupo,
+                      gidnumber: datosActualizados.gidnumber,
+                      estancia: datosActualizados.estancia,
+                    }
+                  : p
+              ),
+            };
+
+            setGuardias(nuevo);
+            sincronizarConBD(nuevo);
+            setEditDialogOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

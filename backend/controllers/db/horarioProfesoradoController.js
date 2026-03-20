@@ -378,60 +378,104 @@ async function deleteHorarioProfesorado(req, res) {
 async function insertCuadranteGuardias(req, res) {
   try {
     const usuarioSesion = req.session?.user;
-    const ldapSession = req.session?.ldap;
-
     if (!usuarioSesion)
       return res.status(401).json({ ok: false, error: "No autenticado" });
 
     const { cuadrante, curso_academico } = req.body;
 
-    if (!cuadrante || !curso_academico) {
-      return res.status(400).json({
-        ok: false,
-        error: "Cuadrante y curso_academico son obligatorios",
-      });
+    if (!curso_academico) {
+      return res
+        .status(400)
+        .json({ ok: false, error: "curso_academico es obligatorio" });
     }
 
-    // 1️⃣ Borrar guardias existentes del curso
+    // 1️⃣ Borramos las guardias actuales del curso para reinsertar el nuevo estado
     await db.query(
       `DELETE FROM horario_profesorado WHERE tipo='guardia' AND curso_academico=$1`,
       [curso_academico]
     );
 
-    // 2️⃣ Insertar nuevas guardias
     const insertPromises = [];
 
+    // 2️⃣ Recorremos el objeto cuadrante que envía el Front
     Object.entries(cuadrante).forEach(([clave, profesores]) => {
-      const [hIndexStr, dIndexStr] = clave.split("-");
-      const dia_semana = Number(dIndexStr) + 1; // días 1-5
-      const idperiodo = Number(hIndexStr);
+      const [idperiodo, dIndexStr] = clave.split("-");
+      const dia_semana = Number(dIndexStr) + 1;
 
-      profesores.forEach((profesor) => {
+      profesores.forEach((p) => {
+        // IMPORTANTE: Extraemos el id de la estancia si existe (puede venir como objeto o id directo)
+        const idestancia = p.estancia?.id || p.idestancia || null;
 
         insertPromises.push(
           db.query(
-            `INSERT INTO horario_profesorado
-             (uid, dia_semana, idperiodo, tipo, gidnumber, idmateria, idestancia, curso_academico)
-             VALUES ($1,$2,$3,'guardia',null,null,null,$4)
+            `INSERT INTO horario_profesorado 
+             (uid, dia_semana, idperiodo, tipo, idestancia, idmateria, gidnumber, curso_academico) 
+             VALUES ($1, $2, $3, 'guardia', $4, $5, $6, $7) 
              RETURNING *`,
-            [profesor.uid, dia_semana, idperiodo, curso_academico]
+            [
+              p.uid,
+              dia_semana,
+              idperiodo,
+              idestancia,
+              p.idmateria || null,
+              p.gidnumber || null,
+              curso_academico,
+            ]
           )
         );
       });
     });
 
-    const filasInsertadas = await Promise.all(insertPromises);
+    const resultados = await Promise.all(insertPromises);
+    const filasNuevas = resultados.map((r) => r.rows[0]);
+
+    // 3️⃣ RECONSTRUIMOS EL OBJETO para el Frontend (para que el setGuardias no pierda datos)
+    const cuadranteActualizado = {};
+
+    filasNuevas.forEach((fila) => {
+      const clave = `${fila.idperiodo}-${fila.dia_semana - 1}`;
+      if (!cuadranteActualizado[clave]) cuadranteActualizado[clave] = [];
+
+      // Buscamos los datos del profesor original en el body para no perder el nombre
+      const profeOriginal = cuadrante[clave]?.find(
+        (orig) => orig.uid === fila.uid
+      );
+
+      cuadranteActualizado[clave].push({
+        id_registro: fila.id, // El nuevo ID real de la BD
+        uid: fila.uid,
+        givenName: profeOriginal?.givenName || "",
+        sn: profeOriginal?.sn || "",
+        estancia: profeOriginal?.estancia || null, // Mantenemos el objeto estancia para el diálogo
+        idmateria: fila.idmateria,
+        gidnumber: fila.gidnumber || [],
+      });
+    });
 
     res.status(201).json({
       ok: true,
-      total: filasInsertadas.length,
-      filas: filasInsertadas.map((r) => r.rows?.[0] || null),
+      cuadranteActualizado, // 👈 El Front hará setGuardias(data.cuadranteActualizado)
     });
   } catch (err) {
     console.error("[insertCuadranteGuardias] Error:", err);
-    res
-      .status(500)
-      .json({ ok: false, error: "Error insertando cuadrante de guardias" });
+    res.status(500).json({ ok: false, error: "Error al sincronizar guardias" });
+  }
+}
+
+async function deleteCuadranteGuardias(req, res) {
+  try {
+    const { curso_academico } = req.body;
+    if (!curso_academico)
+      return res.status(400).json({ ok: false, error: "Curso requerido" });
+
+    await db.query(
+      `DELETE FROM horario_profesorado WHERE tipo='guardia' AND curso_academico=$1`,
+      [curso_academico]
+    );
+
+    res.json({ ok: true, message: "Cuadrante borrado correctamente" });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
   }
 }
 
@@ -442,4 +486,5 @@ module.exports = {
   deleteHorarioProfesorado,
   duplicarHorarioProfesorado,
   insertCuadranteGuardias,
+  deleteCuadranteGuardias,
 };

@@ -87,7 +87,7 @@ export function DialogoInsertarCeldaHorario({
         //  Enviamos el ARRAY de IDs de los grupos seleccionados
         gidnumber: esLibre ? null : gruposSeleccionados.map((g) => g.id),
         idmateria: esLibre ? null : materia?.id || null,
-        idestancia: esLibre ? null : estancia?.id || null,
+        idestancia: estancia?.id || null,
         curso_academico: cursoActual.label,
       };
 
@@ -120,7 +120,7 @@ export function DialogoInsertarCeldaHorario({
           ? ""
           : gruposSeleccionados.map((g) => g.label).join(", "),
         gidnumber: esLibre ? null : gruposSeleccionados.map((g) => g.id),
-        estancia: esLibre ? null : estancia?.raw || null, // Enviamos el objeto raw del aula
+        estancia: estancia?.raw || null, // Enviamos el objeto raw del aula
       });
 
       onClose();

@@ -107,7 +107,7 @@ export function DialogoEditarHorario({ open, onClose, usuarioSeleccionado }) {
           );
           if (!res.ok) throw new Error("Error obteniendo horario del profesor");
           const data = await res.json();
-
+          console.log("Horarios: ", data);
           // Llenamos la tabla
           const tabla = periodos.map((periodo) => {
             const fila = { periodo: periodo.nombre };
@@ -124,6 +124,7 @@ export function DialogoEditarHorario({ open, onClose, usuarioSeleccionado }) {
                     ...celdaData, //  IMPORTANTE: mantener toda la info original
                     materia: celdaData.materia_nombre,
                     grupo: celdaData.grupo,
+                    curso_academico: celdaData.curso_academico,
                     estancia:
                       estancias.find(
                         (e) => e.descripcion === celdaData.estancia
@@ -506,11 +507,11 @@ export function DialogoEditarHorario({ open, onClose, usuarioSeleccionado }) {
                       dia_semana: diasMap[diaSeleccionado],
                       idperiodo: periodoObj?.id,
                       tipo: nuevaCelda.tipo,
-                      idmateria: nuevaCelda.idmateria, 
+                      idmateria: nuevaCelda.idmateria,
                       materia: nuevaCelda.materia,
                       grupo: nuevaCelda.grupo || "",
                       gidnumber: nuevaCelda.gidnumber,
-                      estancia: nuevaCelda.estancia || null, 
+                      estancia: nuevaCelda.estancia || null,
                     },
                   };
                 }
