@@ -383,7 +383,6 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
           fechadevolucion: p.fechadevolucion,
         })),
       };
-
       const res = await fetch(
         `${API_URL}/db/prestamos/${usuario.id_prestamo}`,
         {
@@ -587,25 +586,6 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
         seleccionadosIzquierda: [],
       }));
     }
-  };
-
-  const handleDocCompromisoChange = (nuevoValor) => {
-    const valorActual = Number(usuarioEdit.doc_compromiso);
-    const valorNuevo = Number(nuevoValor);
-
-    const esCambioValido =
-      (valorActual === 0 && valorNuevo === 1) ||
-      (valorActual === 1 && valorNuevo === 0);
-
-    if (!esCambioValido) {
-      toast.error("Cambio de estado no permitido.");
-      return;
-    }
-
-    setUsuarioEdit((prev) => ({
-      ...prev,
-      doc_compromiso: valorNuevo,
-    }));
   };
 
   return (
@@ -1053,8 +1033,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                     const esCambioValido =
                       (valorActual === 0 && valorNuevo === 1) ||
                       (valorActual === 1 && valorNuevo === 0) ||
-                      (valorActual === 1 && valorNuevo === 2);
-
+                      (valorActual === 1 && valorNuevo === 2) 
                     if (!esCambioValido) {
                       toast.error("Cambio de estado no permitido.");
                       return;
@@ -1065,7 +1044,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                       doc_compromiso: valorNuevo,
                     }));
                   }}
-                  disabled={usuarioEdit?.doc_compromiso === 2} // cuando llega a 2 queda bloqueado
+                  //disabled={usuarioEdit?.doc_compromiso === 2} // cuando llega a 2 queda bloqueado
                 >
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Selecciona estado" />
