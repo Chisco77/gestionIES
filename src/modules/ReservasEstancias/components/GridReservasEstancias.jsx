@@ -282,6 +282,7 @@ export function GridReservasEstancias({
               >
                 <option value="">Seleccionar tipo de estancia</option>
                 <option value="Aula Polivalente">Aula Polivalente</option>
+                <option value="Armario">Armario</option>
                 <option value="Infolab">Infolab</option>
                 <option value="Laboratorio">Laboratorio</option>
                 <option value="Optativa">Optativa</option>

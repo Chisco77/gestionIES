@@ -148,6 +148,7 @@ export function DialogoEditarEstancia({
             >
               <option value="">Seleccionar tipo</option>
               <option value="Almacen">Almacén</option>
+              <option value="Armario">Armario</option>
               <option value="Aula">Aula</option>
               <option value="Aula Polivalente">Aula Polivalente</option>
               <option value="Departamento">Departamento</option>

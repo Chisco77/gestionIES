@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { Label } from "@/components/ui/label";
-import { Search, X, Wand2, Trash2 } from "lucide-react";
+import { Search, X, Wand2, Trash2, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { Button } from "@/components/ui/button";
@@ -31,10 +31,20 @@ import { useCursosLdap } from "@/hooks/useCursosLdap";
 
 import { DialogoEditarCeldaHorario } from "../components/DialogoEditarCeldaHorario";
 
+import { generarPdfCuadrante } from "@/Informes/horarios";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 const dias = ["L", "M", "X", "J", "V"];
 
 export function CuadranteGuardiasIndex() {
   const { data: profesores = [], isLoading } = useProfesoresActivos();
+  console.log("Profesores: ", profesores);
   const { data: periodos = [], isLoading: loadingPeriodos } =
     usePeriodosHorarios();
   const API_URL = import.meta.env.VITE_API_URL;
@@ -55,7 +65,7 @@ export function CuadranteGuardiasIndex() {
   const [horarioProfesores, setHorarioProfesores] = useState([]);
   const [disponibilidad, setDisponibilidad] = useState({});
 
-  const [maxGuardiasSemana, setMaxGuardiasSemana] = useState(3);
+  const [maxGuardiasSemana, setMaxGuardiasSemana] = useState(2);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [sesionAEditar, setSesionAEditar] = useState(null);
 
@@ -258,9 +268,15 @@ export function CuadranteGuardiasIndex() {
     sincronizarConBD(nuevo);
   }
 
-  function nombreProfesor(p) {
-    return `${p.givenName ?? ""} ${p.sn ?? ""}`.trim();
-  }
+  const nombreProfesor = (p) => {
+    if (!p) return "Desconocido";
+    const apellidos = p.sn ? p.sn.trim() : "";
+    const nombre = p.givenName ? p.givenName.trim() : "";
+
+    // Retorna "APELLIDOS, Nombre"
+    return `${apellidos}, ${nombre}`.trim();
+  };
+
   const handleNumCeldaChange = (clave, valor) => {
     const num = parseInt(valor, 10);
     setNumPorCelda((prev) => ({
@@ -275,29 +291,70 @@ export function CuadranteGuardiasIndex() {
 
   function handleDrop(e, hIndex, dIndex) {
     e.preventDefault();
-    const profesor = JSON.parse(e.dataTransfer.getData("profesor"));
-    const clave = `${hIndex}-${dIndex}`;
 
-    if (disponibilidad[profesor.uid]?.has(clave)) {
+    const claveDestino = `${hIndex}-${dIndex}`;
+    const tipo = e.dataTransfer.getData("tipo");
+
+    // 🟦 CASO 1: arrastre desde lista izquierda
+    if (tipo !== "interna") {
+      const profesor = JSON.parse(e.dataTransfer.getData("profesor"));
+
+      if (disponibilidad[profesor.uid]?.has(claveDestino)) {
+        toast.error(
+          `Conflicto: ${nombreProfesor(profesor)} ya tiene clase o guardia en esta hora.`
+        );
+        return;
+      }
+
+      const nuevo = {
+        ...guardias,
+        [claveDestino]: [
+          ...(guardias[claveDestino] || []),
+          {
+            ...profesor,
+            tipo: "guardia",
+          },
+        ],
+      };
+
+      setGuardias(nuevo);
+      sincronizarConBD(nuevo);
+      return;
+    }
+
+    // 🟨 CASO 2: arrastre interno entre celdas
+    const data = JSON.parse(e.dataTransfer.getData("guardiaInterna"));
+    const { profesor, origenClave } = data;
+
+    // Si suelta en la misma celda → no hacer nada
+    if (origenClave === claveDestino) return;
+
+    // Validación de disponibilidad
+    if (disponibilidad[profesor.uid]?.has(claveDestino)) {
       toast.error(
         `Conflicto: ${nombreProfesor(profesor)} ya tiene clase o guardia en esta hora.`
       );
       return;
     }
 
-    const nuevo = {
-      ...guardias,
-      [clave]: [
-        ...(guardias[clave] || []),
-        {
-          ...profesor,
-          tipo: "guardia", // 🔥 obligatorio
-        },
-      ],
-    };
+    // 🔥 mover profesor
+    const nuevo = { ...guardias };
+
+    // quitar del origen
+    nuevo[origenClave] = (nuevo[origenClave] || []).filter(
+      (p) => p.id_registro !== profesor.id_registro
+    );
+
+    // añadir al destino
+    if (!nuevo[claveDestino]) nuevo[claveDestino] = [];
+
+    nuevo[claveDestino].push({
+      ...profesor,
+      tipo: "guardia",
+    });
 
     setGuardias(nuevo);
-    sincronizarConBD(nuevo); // 🔥 inmediato
+    sincronizarConBD(nuevo);
   }
 
   function limpiarCuadrante() {
@@ -331,7 +388,6 @@ export function CuadranteGuardiasIndex() {
     const nuevo = {};
     let disponibilidad = {};
 
-    // 1️⃣ Obtención de disponibilidad real
     try {
       const curso = getCursoActual().label;
       const resp = await fetch(
@@ -340,9 +396,18 @@ export function CuadranteGuardiasIndex() {
       const data = await resp.json();
       if (data.ok) {
         data.horario.forEach((h) => {
-          const key = `${h.idperiodo}-${h.dia_semana - 1}`;
-          if (!disponibilidad[h.uid]) disponibilidad[h.uid] = new Set();
-          disponibilidad[h.uid].add(key);
+          // Guardamos el día de la semana (0-4) para facilitar la comprobación de "día libre"
+          const diaIndex = h.dia_semana - 1;
+          const key = `${h.idperiodo}-${diaIndex}`;
+
+          if (!disponibilidad[h.uid]) {
+            disponibilidad[h.uid] = {
+              celdas: new Set(),
+              diasConClase: new Set(),
+            };
+          }
+          disponibilidad[h.uid].celdas.add(key);
+          disponibilidad[h.uid].diasConClase.add(diaIndex); // Guardamos qué días trabaja
         });
       }
     } catch (err) {
@@ -354,19 +419,15 @@ export function CuadranteGuardiasIndex() {
       contadorGuardias[p.uid] = 0;
     });
 
-    // 2️⃣ Bucle de días y periodos
     dias.forEach((_, dIndex) => {
       const usadosEnDia = new Set();
       const ultimoAsignadoHora = {};
 
-      // --- FILTRO DE DÍA LIBRE ---
-      // Identificamos qué profesores tienen al menos una sesión este día (dIndex)
+      // --- FILTRO DE DÍA LIBRE MEJORADO ---
+      // Solo entran los que tienen el dIndex en su Set de 'diasConClase'
       const profesConActividadHoy = profesores.filter((p) => {
-        // Buscamos en su disponibilidad si tiene alguna clave que termine en "-dIndex"
-        const tieneClaseHoy = Array.from(disponibilidad[p.uid] || []).some(
-          (key) => key.endsWith(`-${dIndex}`)
-        );
-        return tieneClaseHoy;
+        const datosDisp = disponibilidad[p.uid];
+        return datosDisp && datosDisp.diasConClase.has(dIndex);
       });
 
       periodos.forEach((periodo) => {
@@ -374,30 +435,26 @@ export function CuadranteGuardiasIndex() {
         const clave = `${idperiodo}-${dIndex}`;
         const cantidad = Math.max(0, getNumGuardiasCelda(clave));
 
-        const asignados = [];
-
         for (let j = 0; j < cantidad; j++) {
-          //  1. FILTRADO:  usamos 'profesConActividadHoy'
           let candidatos = profesConActividadHoy.filter(
             (c) =>
               !usadosEnDia.has(c.uid) &&
               ultimoAsignadoHora[idperiodo - 1] !== c.uid &&
-              !disponibilidad[c.uid]?.has(clave) && // No está ocupado en esta hora
+              !disponibilidad[c.uid]?.celdas.has(clave) &&
               contadorGuardias[c.uid] < maxGuardiasSemana
           );
 
-          // Fallback si la hora está muy vacía de personal
           if (candidatos.length === 0) {
             candidatos = profesConActividadHoy.filter(
               (c) =>
-                !disponibilidad[c.uid]?.has(clave) &&
+                !disponibilidad[c.uid]?.celdas.has(clave) &&
                 contadorGuardias[c.uid] < maxGuardiasSemana
             );
           }
 
           if (candidatos.length === 0) continue;
 
-          //  2. ORDENACIÓN (Carga + Contigüidad)
+          // ORDENACIÓN (Carga + Contigüidad)
           candidatos.sort((a, b) => {
             const diffCarga = contadorGuardias[a.uid] - contadorGuardias[b.uid];
             if (diffCarga !== 0) return diffCarga;
@@ -405,21 +462,24 @@ export function CuadranteGuardiasIndex() {
             const tieneAdyacente = (prof) => {
               const horaAnterior = `${idperiodo - 1}-${dIndex}`;
               const horaPosterior = `${idperiodo + 1}-${dIndex}`;
+              const disp = disponibilidad[prof.uid]?.celdas;
               return (
-                disponibilidad[prof.uid]?.has(horaAnterior) ||
-                disponibilidad[prof.uid]?.has(horaPosterior) ||
+                disp?.has(horaAnterior) ||
+                disp?.has(horaPosterior) ||
                 nuevo[horaAnterior]?.some((p) => p.uid === prof.uid)
               );
             };
 
-            if (tieneAdyacente(a) && !tieneAdyacente(b)) return -1;
-            if (!tieneAdyacente(a) && tieneAdyacente(b)) return 1;
+            const aContiguo = tieneAdyacente(a);
+            const bContiguo = tieneAdyacente(b);
+
+            if (aContiguo && !bContiguo) return -1;
+            if (!aContiguo && bContiguo) return 1;
 
             return Math.random() - 0.5;
           });
 
           const profesor = candidatos[0];
-
           if (!nuevo[clave]) nuevo[clave] = [];
           nuevo[clave].push(profesor);
 
@@ -433,11 +493,9 @@ export function CuadranteGuardiasIndex() {
     setGuardias(nuevo);
     setGuardiasTotales(contadorGuardias);
     setAutoDialogOpen(false);
-
-    // FORZAMOS la sincronización inmediata con el objeto "nuevo"
     sincronizarConBD(
       nuevo,
-      "Se ha generado y guardado el nuevo cuadrante correctamente."
+      "Cuadrante generado respetando días libres y contigüidad."
     );
   }
 
@@ -474,23 +532,38 @@ export function CuadranteGuardiasIndex() {
             </div>
             <ScrollArea className="flex-1 pr-3">
               <div className="space-y-2 w-full max-w-[240px]">
-                {profesoresFiltrados.map((profesor) => (
-                  <div
-                    key={profesor.uid}
-                    draggable
-                    onDragStart={(e) =>
-                      e.dataTransfer.setData(
-                        "profesor",
-                        JSON.stringify(profesor)
-                      )
-                    }
-                    className="cursor-grab rounded-lg bg-blue-400 text-white px-3 py-2 text-sm shadow-sm hover:bg-blue-600 transition w-full flex flex-nowrap items-center overflow-hidden"
-                  >
-                    <span className="truncate min-w-0 flex-1 block">
-                      {nombreProfesor(profesor)}
-                    </span>
-                  </div>
-                ))}
+                {profesoresFiltrados.map((profesor) => {
+                  const total = totalesPorProfesor[profesor.uid] || 0;
+                  const disponible = total < maxGuardiasSemana;
+
+                  return (
+                    <div
+                      key={profesor.uid}
+                      draggable
+                      onDragStart={(e) =>
+                        e.dataTransfer.setData(
+                          "profesor",
+                          JSON.stringify(profesor)
+                        )
+                      }
+                      className={cn(
+                        "cursor-grab rounded-lg text-white px-3 py-2 text-sm shadow-sm transition w-full flex flex-nowrap items-center overflow-hidden",
+                        disponible
+                          ? "bg-green-500 hover:bg-green-600"
+                          : "bg-blue-400 hover:bg-blue-600"
+                      )}
+                    >
+                      <span className="truncate min-w-0 flex-1 block">
+                        {nombreProfesor(profesor)}
+                      </span>
+
+                      {/* Contador */}
+                      <span className="ml-2 text-[10px] bg-white text-black rounded px-1 shrink-0">
+                        {total}/{maxGuardiasSemana}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </ScrollArea>
           </CardContent>
@@ -596,6 +669,14 @@ export function CuadranteGuardiasIndex() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                <div className="flex items-center gap-2">
+                  <Button
+                    className="flex items-center gap-2"
+                    onClick={() => generarPdfCuadrante(guardias, periodos)}
+                  >
+                    <Printer className="h-4 w-4" /> Imprimir cuadrante
+                  </Button>
+                </div>
               </div>
             </CardTitle>
           </CardHeader>
@@ -671,29 +752,62 @@ export function CuadranteGuardiasIndex() {
                         <div className="flex flex-col">
                           <div className="flex flex-col gap-1">
                             {profesoresCelda.map((p) => (
-                              <div
-                                key={p.id_registro}
-                                onClick={(e) =>
-                                  abrirEditorSesion(e, p, periodo, dIndex)
-                                } // ✨ Añadido
-                                className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm w-full cursor-pointer hover:bg-blue-500 transition-colors"
-                              >
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                  <span className="truncate">
-                                    {nombreProfesor(p)}
-                                  </span>
-                                  <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-white text-blue-600 rounded-full shrink-0">
-                                    {totalesPorProfesor[p.uid] || 0}
-                                  </span>
-                                </div>
-                                <X
-                                  className="h-3 w-3 cursor-pointer ml-1 shrink-0 hover:text-red-200"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    eliminarGuardia(clave, p.uid);
-                                  }}
-                                />
-                              </div>
+                              <TooltipProvider key={p.id_registro}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div
+                                      draggable
+                                      onDragStart={(e) => {
+                                        e.stopPropagation();
+
+                                        e.dataTransfer.setData(
+                                          "guardiaInterna",
+                                          JSON.stringify({
+                                            profesor: p,
+                                            origenClave: clave,
+                                          })
+                                        );
+
+                                        e.dataTransfer.setData(
+                                          "tipo",
+                                          "interna"
+                                        );
+                                      }}
+                                      onClick={(e) =>
+                                        abrirEditorSesion(e, p, periodo, dIndex)
+                                      }
+                                      className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm w-full cursor-grab active:cursor-grabbing hover:bg-blue-500 transition-colors"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        <span className="truncate flex gap-1">
+                                          {p.estancia && (
+                                            <span className="font-bold">
+                                              {p.estancia.descripcion} -
+                                            </span>
+                                          )}
+                                          <span>{nombreProfesor(p)}</span>
+                                        </span>
+
+                                        <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-white text-blue-600 rounded-full shrink-0">
+                                          {totalesPorProfesor[p.uid] || 0}
+                                        </span>
+                                      </div>
+
+                                      <X
+                                        className="h-3 w-3 cursor-pointer ml-1 shrink-0 hover:text-red-200"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          eliminarGuardia(clave, p.uid);
+                                        }}
+                                      />
+                                    </div>
+                                  </TooltipTrigger>
+
+                                  <TooltipContent>
+                                    {`${p.sn || ""}, ${p.givenName || ""}`}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             ))}
 
                             {/* Indicador visual si faltan profesores por asignar */}

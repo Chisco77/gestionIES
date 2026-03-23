@@ -468,9 +468,16 @@ export default function PlanoEstanciasEdicion() {
                           Seleccionar tipo
                         </SelectItem>
                         <SelectItem value="Almacen">Almacén</SelectItem>
+                        <SelectItem value="Armario">Armario</SelectItem>
                         <SelectItem value="Aula">Aula</SelectItem>
-                        <SelectItem value="Aula Polivalente">Aula Polivalente</SelectItem>
-                        <SelectItem value="Departamento">Departamento</SelectItem>
+
+                        <SelectItem value="Aula Polivalente">
+                          Aula Polivalente
+                        </SelectItem>
+
+                        <SelectItem value="Departamento">
+                          Departamento
+                        </SelectItem>
                         <SelectItem value="Despacho">Despacho</SelectItem>
                         <SelectItem value="Infolab">Infolab</SelectItem>
                         <SelectItem value="Laboratorio">Laboratorio</SelectItem>
