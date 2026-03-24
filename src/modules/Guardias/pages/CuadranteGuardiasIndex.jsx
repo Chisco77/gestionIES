@@ -751,64 +751,106 @@ export function CuadranteGuardiasIndex() {
 
                         <div className="flex flex-col">
                           <div className="flex flex-col gap-1">
-                            {profesoresCelda.map((p) => (
-                              <TooltipProvider key={p.id_registro}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div
-                                      draggable
-                                      onDragStart={(e) => {
-                                        e.stopPropagation();
+                            {[...profesoresCelda]
+                              .sort((a, b) => {
+                                const aTieneEstancia = !!a.estancia;
+                                const bTieneEstancia = !!b.estancia;
 
-                                        e.dataTransfer.setData(
-                                          "guardiaInterna",
-                                          JSON.stringify({
-                                            profesor: p,
-                                            origenClave: clave,
-                                          })
-                                        );
+                                // 1. Con estancia primero
+                                if (aTieneEstancia && !bTieneEstancia)
+                                  return -1;
+                                if (!aTieneEstancia && bTieneEstancia) return 1;
 
-                                        e.dataTransfer.setData(
-                                          "tipo",
-                                          "interna"
-                                        );
-                                      }}
-                                      onClick={(e) =>
-                                        abrirEditorSesion(e, p, periodo, dIndex)
-                                      }
-                                      className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm w-full cursor-grab active:cursor-grabbing hover:bg-blue-500 transition-colors"
-                                    >
-                                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <span className="truncate flex gap-1">
-                                          {p.estancia && (
-                                            <span className="font-bold">
-                                              {p.estancia.descripcion} -
-                                            </span>
-                                          )}
-                                          <span>{nombreProfesor(p)}</span>
-                                        </span>
+                                // 2. Si ambos tienen estancia → ordenar por estancia
+                                if (aTieneEstancia && bTieneEstancia) {
+                                  const estA =
+                                    a.estancia.descripcion.toLowerCase();
+                                  const estB =
+                                    b.estancia.descripcion.toLowerCase();
 
-                                        <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-white text-blue-600 rounded-full shrink-0">
-                                          {totalesPorProfesor[p.uid] || 0}
-                                        </span>
-                                      </div>
+                                  if (estA < estB) return -1;
+                                  if (estA > estB) return 1;
+                                }
 
-                                      <X
-                                        className="h-3 w-3 cursor-pointer ml-1 shrink-0 hover:text-red-200"
-                                        onClick={(e) => {
+                                // 3. Orden por apellidos (sn)
+                                const snA = (a.sn || "").toLowerCase();
+                                const snB = (b.sn || "").toLowerCase();
+
+                                if (snA < snB) return -1;
+                                if (snA > snB) return 1;
+
+                                // 4. Desempate por nombre
+                                const gnA = (a.givenName || "").toLowerCase();
+                                const gnB = (b.givenName || "").toLowerCase();
+
+                                if (gnA < gnB) return -1;
+                                if (gnA > gnB) return 1;
+
+                                return 0;
+                              })
+                              .map((p) => (
+                                <TooltipProvider key={p.id_registro}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div
+                                        draggable
+                                        onDragStart={(e) => {
                                           e.stopPropagation();
-                                          eliminarGuardia(clave, p.uid);
-                                        }}
-                                      />
-                                    </div>
-                                  </TooltipTrigger>
 
-                                  <TooltipContent>
-                                    {`${p.sn || ""}, ${p.givenName || ""}`}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            ))}
+                                          e.dataTransfer.setData(
+                                            "guardiaInterna",
+                                            JSON.stringify({
+                                              profesor: p,
+                                              origenClave: clave,
+                                            })
+                                          );
+
+                                          e.dataTransfer.setData(
+                                            "tipo",
+                                            "interna"
+                                          );
+                                        }}
+                                        onClick={(e) =>
+                                          abrirEditorSesion(
+                                            e,
+                                            p,
+                                            periodo,
+                                            dIndex
+                                          )
+                                        }
+                                        className="flex items-center justify-between text-xs rounded-lg bg-blue-400 text-white px-2 py-1 shadow-sm w-full cursor-grab active:cursor-grabbing hover:bg-blue-500 transition-colors"
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                          <span className="truncate flex gap-1">
+                                            {p.estancia && (
+                                              <span className="font-bold">
+                                                {p.estancia.descripcion} -
+                                              </span>
+                                            )}
+                                            <span>{nombreProfesor(p)}</span>
+                                          </span>
+
+                                          <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-white text-blue-600 rounded-full shrink-0">
+                                            {totalesPorProfesor[p.uid] || 0}
+                                          </span>
+                                        </div>
+
+                                        <X
+                                          className="h-3 w-3 cursor-pointer ml-1 shrink-0 hover:text-red-200"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            eliminarGuardia(clave, p.uid);
+                                          }}
+                                        />
+                                      </div>
+                                    </TooltipTrigger>
+
+                                    <TooltipContent>
+                                      {`${p.sn || ""}, ${p.givenName || ""}`}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ))}
 
                             {/* Indicador visual si faltan profesores por asignar */}
                             {profesoresCelda.length < valorEfectivo && (

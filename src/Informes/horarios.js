@@ -262,8 +262,39 @@ export function generarPdfCuadrante(guardias, periodos) {
 
     for (let d = 0; d < 5; d++) {
       const clave = `${p.id}-${d}`;
-      const profes = guardias[clave] || [];
+      const profes = [...(guardias[clave] || [])].sort((a, b) => {
+        const aTieneEstancia = !!a.estancia;
+        const bTieneEstancia = !!b.estancia;
 
+        // 1. Con estancia primero
+        if (aTieneEstancia && !bTieneEstancia) return -1;
+        if (!aTieneEstancia && bTieneEstancia) return 1;
+
+        // 2. Si ambos tienen estancia → ordenar por estancia
+        if (aTieneEstancia && bTieneEstancia) {
+          const estA = a.estancia.descripcion.toLowerCase();
+          const estB = b.estancia.descripcion.toLowerCase();
+
+          if (estA < estB) return -1;
+          if (estA > estB) return 1;
+        }
+
+        // 3. Orden por apellidos
+        const snA = (a.sn || "").toLowerCase();
+        const snB = (b.sn || "").toLowerCase();
+
+        if (snA < snB) return -1;
+        if (snA > snB) return 1;
+
+        // 4. Desempate por nombre
+        const gnA = (a.givenName || "").toLowerCase();
+        const gnB = (b.givenName || "").toLowerCase();
+
+        if (gnA < gnB) return -1;
+        if (gnA > gnB) return 1;
+
+        return 0;
+      });
       const lineas = calcularLineasCelda(profes, doc, colWidth);
       if (lineas > maxLineas) maxLineas = lineas;
     }
@@ -283,8 +314,39 @@ export function generarPdfCuadrante(guardias, periodos) {
     // Días
     for (let d = 0; d < 5; d++) {
       const clave = `${p.id}-${d}`;
-      const profes = guardias[clave] || [];
+      const profes = [...(guardias[clave] || [])].sort((a, b) => {
+        const aTieneEstancia = !!a.estancia;
+        const bTieneEstancia = !!b.estancia;
 
+        // 1. Con estancia primero
+        if (aTieneEstancia && !bTieneEstancia) return -1;
+        if (!aTieneEstancia && bTieneEstancia) return 1;
+
+        // 2. Si ambos tienen estancia → ordenar por estancia
+        if (aTieneEstancia && bTieneEstancia) {
+          const estA = a.estancia.descripcion.toLowerCase();
+          const estB = b.estancia.descripcion.toLowerCase();
+
+          if (estA < estB) return -1;
+          if (estA > estB) return 1;
+        }
+
+        // 3. Orden por apellidos
+        const snA = (a.sn || "").toLowerCase();
+        const snB = (b.sn || "").toLowerCase();
+
+        if (snA < snB) return -1;
+        if (snA > snB) return 1;
+
+        // 4. Desempate por nombre
+        const gnA = (a.givenName || "").toLowerCase();
+        const gnB = (b.givenName || "").toLowerCase();
+
+        if (gnA < gnB) return -1;
+        if (gnA > gnB) return 1;
+
+        return 0;
+      });
       const posX = margin + colWidth * (d + 1);
 
       doc.rect(posX, y, colWidth, rowHeight, "S");
@@ -304,14 +366,17 @@ export function generarPdfCuadrante(guardias, periodos) {
           if (prof.estancia) {
             doc.setFont("helvetica", "bold");
 
-            let estanciaTexto = `${prof.estancia.descripcion} - `;
+            const MAX_ESTANCIA = 16;
 
-            // recorte si se pasa
-            while (
-              doc.getTextWidth(estanciaTexto + nombre) > maxWidth &&
-              estanciaTexto.length > 0
-            ) {
-              estanciaTexto = estanciaTexto.slice(0, -1);
+            let estanciaTexto = prof.estancia.descripcion || "";
+
+            if (estanciaTexto.length > MAX_ESTANCIA) {
+              estanciaTexto = estanciaTexto.slice(0, MAX_ESTANCIA - 1) + "…";
+            }
+
+            // solo añadimos separador si hay estancia
+            if (estanciaTexto.length > 0) {
+              estanciaTexto += " - ";
             }
 
             doc.text(estanciaTexto, xTexto, yTexto);
