@@ -115,6 +115,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       setError("");
       try {
         const dataEstancias = await apiListarEstancias(planta);
+        console.log ("Data estancias: ", dataEstancias);
         const normal = dataEstancias.map((r) => ({
           id: r.id,
           codigo: r.codigo,
@@ -298,6 +299,12 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                             const offset = 30;
                             const circleX = maxX - offset;
                             const circleY = maxY - offset;
+
+                            const totalLlaves = Number(s.totalllaves) || 0;
+
+                            // 🔥 condición robusta
+                            if (totalLlaves <= 0) return null;
+
                             return (
                               <>
                                 <circle
