@@ -217,6 +217,8 @@ export function generarPdfCuadrante(guardias, periodos) {
     orientation: "landscape",
   });
 
+  const rowHeight = 18;
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 10;
   const colWidth = (pageWidth - margin * 2) / 6;
