@@ -323,9 +323,7 @@ export function PanelReservas({ uid, loading = false }) {
     const textoPeriodo = (permiso) => {
       if (permiso.dia_completo) return "Día completo";
 
-      const inicio = periodos.find(
-        (p) => p.id === permiso.idperiodo_inicio
-      );
+      const inicio = periodos.find((p) => p.id === permiso.idperiodo_inicio);
       const fin = periodos.find((p) => p.id === permiso.idperiodo_fin);
 
       if (!inicio || !fin) return "";
@@ -336,11 +334,44 @@ export function PanelReservas({ uid, loading = false }) {
     };
 
     return permisos.map((a, i) => {
-      const fechaStr = new Date(a.fecha).toLocaleDateString("es-ES", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      // --- LÓGICA DE FORMATEO DE FECHAS ---
+      const fInicio = new Date(a.fecha);
+      const fFin = a.fecha_fin ? new Date(a.fecha_fin) : null;
+
+      let textoFechaFinal = "";
+
+      // Comprobamos si hay fecha_fin y si es un día distinto al de inicio
+      const esDistintoDia =
+        fFin && fInicio.toDateString() !== fFin.toDateString();
+
+      if (esDistintoDia) {
+        const mismoAnio = fInicio.getFullYear() === fFin.getFullYear();
+
+        // Formato para la primera fecha (7 de abril)
+        // Si el año es distinto (ej. nochevieja), sí incluimos el año en la primera
+        const inicioStr = fInicio.toLocaleDateString("es-ES", {
+          day: "numeric",
+          month: "long",
+          ...(mismoAnio ? {} : { year: "numeric" }),
+        });
+
+        // Formato para la segunda fecha (8 de abril de 2026)
+        const finStr = fFin.toLocaleDateString("es-ES", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+
+        textoFechaFinal = `${inicioStr} a ${finStr}`;
+      } else {
+        // Formato normal para un solo día (7 de abril de 2026)
+        textoFechaFinal = fInicio.toLocaleDateString("es-ES", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+      }
+      // ------------------------------------
 
       const estado = estadoMap[a.estado] ?? { text: "—", color: "" };
 
@@ -382,8 +413,10 @@ export function PanelReservas({ uid, loading = false }) {
           {/* Pie: fecha, periodo, estado y PDF a la derecha */}
           <div className="flex items-center justify-between mt-1">
             <div className="flex flex-col gap-0.5">
-              <p className="text-gray-500">{fechaStr}</p>
-              <p className="text-gray-500 text-sm">{textoPeriodo(a)}</p>
+              <p className="text-gray-500 text-sm font-medium">
+                {textoFechaFinal}
+              </p>
+              <p className="text-gray-500 text-xs">{textoPeriodo(a)}</p>
             </div>
             <div className="flex items-center gap-2">
               <span

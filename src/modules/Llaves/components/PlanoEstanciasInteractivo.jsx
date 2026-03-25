@@ -115,12 +115,12 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
       setError("");
       try {
         const dataEstancias = await apiListarEstancias(planta);
-        console.log ("Data estancias: ", dataEstancias);
+        console.log("Data estancias: ", dataEstancias);
         const normal = dataEstancias.map((r) => ({
           id: r.id,
           codigo: r.codigo,
           descripcion: r.descripcion,
-          totalllaves: r.totalllaves || 1,
+          totalllaves: r.totalllaves ?? 0,
           coordenadas: r.coordenadas || r.coordenadas_json || [],
           armario: r.armario,
           codigollave: r.codigollave,
@@ -193,6 +193,10 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   const scalePoints = (pts) => pts.map(([x, y]) => [x * size.w, y * size.h]);
 
   const abrirModalLlaves = (estancia) => {
+    // Nueva condición: Si no hay llaves, no hacemos nada
+    const total = Number(estancia.totalllaves) || 0;
+    if (total <= 0) return;
+
     const prestamosEstancia = prestamos.flatMap((p) =>
       p.prestamos
         .filter((pr) => pr.idestancia === estancia.id && !pr.fechadevolucion)
@@ -265,8 +269,15 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
               {size.w > 0 &&
                 size.h > 0 &&
                 estancias.map((s) => {
+
+                  //Si totalllaves es 0, no pintamos absolutamente nada para esta estancia.
+                  if (s.totalllaves <= 0) return null;
                   const { prestadas, estado } = estadoEstancia(s);
                   const absPts = scalePoints(s.coordenadas);
+
+                  // Determinamos el total de llaves de forma segura
+                  const totalLlaves = Number(s.totalllaves) || 0;
+
                   const color =
                     estado === "none"
                       ? "rgba(200,200,200,0.95)"
@@ -280,9 +291,15 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                         <g
                           onClick={(e) => {
                             e.stopPropagation();
-                            abrirModalLlaves(s);
+                            // Solo abrimos el modal si hay llaves disponibles para esta estancia
+                            if (totalLlaves > 0) {
+                              abrirModalLlaves(s);
+                            }
                           }}
-                          style={{ cursor: "pointer" }}
+                          // Cambiamos el cursor a 'default' si no hay llaves para no confundir al usuario
+                          style={{
+                            cursor: totalLlaves > 0 ? "pointer" : "default",
+                          }}
                         >
                           <path
                             d={polyToPath(absPts)}
@@ -292,6 +309,9 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                             strokeWidth={2}
                           />
                           {(() => {
+                            // Si no hay llaves, no dibujamos ni el círculo ni el número de prestadas
+                            if (totalLlaves <= 0) return null;
+
                             const xs = absPts.map((p) => p[0]);
                             const ys = absPts.map((p) => p[1]);
                             const maxX = Math.max(...xs);
@@ -299,11 +319,6 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                             const offset = 30;
                             const circleX = maxX - offset;
                             const circleY = maxY - offset;
-
-                            const totalLlaves = Number(s.totalllaves) || 0;
-
-                            // 🔥 condición robusta
-                            if (totalLlaves <= 0) return null;
 
                             return (
                               <>
@@ -335,6 +350,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                         className="bg-sky-500 text-white text-base px-4 py-2 rounded-md shadow-lg font-medium"
                       >
                         {s.descripcion || s.codigo}
+                        {totalLlaves === 0 && " (Sin llaves)"}
                       </TooltipContent>
                     </Tooltip>
                   );

@@ -11,7 +11,7 @@ export function CalendarioPermisos({
   currentMonth,
   currentYear,
   todayStr,
-  permisosUsuario,
+  permisosUsuario = {}, // 👈 por si viene undefined
   onDiaClick,
   onMonthChange,
 }) {
@@ -53,6 +53,23 @@ export function CalendarioPermisos({
     return `${year}-${month}-${day}`;
   };
 
+  // Chequea si la fecha está dentro de algún permiso
+  const isDateInPermisos = (dateObj) => {
+    const d = new Date(dateObj);
+    d.setHours(0, 0, 0, 0);
+
+    return Object.keys(permisosUsuario).some((key) => {
+      const permiso = permisosUsuario[key];
+      const inicio = new Date(permiso.fecha_inicio || key);
+      const fin = new Date(permiso.fecha_fin || permiso.fecha_inicio || key);
+
+      inicio.setHours(0, 0, 0, 0);
+      fin.setHours(0, 0, 0, 0);
+
+      return d >= inicio && d <= fin;
+    });
+  };
+
   return (
     <Card className="shadow-lg rounded-2xl flex flex-col h-[350px]">
       <CardHeader className="flex flex-row items-center justify-between py-2 px-4">
@@ -91,9 +108,8 @@ export function CalendarioPermisos({
                     const dateObj = new Date(currentYear, currentMonth, d);
                     const dateKey = formatDateKey(dateObj);
                     const isToday = dateKey === todayStr;
-                    const hasPermiso = !!permisosUsuario[dateKey];
+                    const hasPermiso = isDateInPermisos(dateObj);
 
-                    // Todos los días son clicables, y si hay permiso, fondo amarillo
                     const baseClass = hasPermiso
                       ? "bg-yellow-100 cursor-pointer hover:bg-yellow-200"
                       : "cursor-pointer hover:bg-gray-100";

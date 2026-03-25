@@ -180,7 +180,7 @@ export function TablaPermisosDirectiva({
     }
   }, [soloPendientesInicial, table]);
 
-  // Actualizamos el filtro de rango cuando cambia la prop fecha
+  // 1. Sincronización con la prop 'fecha' (cuando se navega por el calendario general)
   useEffect(() => {
     if (fecha) {
       setFechaDesde(fecha);
@@ -190,6 +190,14 @@ export function TablaPermisosDirectiva({
       setFechaHasta("");
     }
   }, [fecha]);
+
+  // 2. APLICACIÓN DEL FILTRO DE RANGO
+  // Enviamos un objeto con 'desde' y 'hasta' a la columna "fecha"
+  useEffect(() => {
+    table
+      .getColumn("fecha")
+      ?.setFilterValue({ desde: fechaDesde, hasta: fechaHasta });
+  }, [fechaDesde, fechaHasta, table]);
 
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
@@ -330,6 +338,7 @@ export function TablaPermisosDirectiva({
             </Select>
           </div>
           {/* Filtro Rango - Un poco más pequeño */}
+          {/* Filtro Rango Fechas */}
           <div className="flex-none space-y-1">
             <label className="text-[10px] uppercase font-bold text-muted-foreground">
               Rango Fechas
@@ -339,17 +348,20 @@ export function TablaPermisosDirectiva({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-[190px] justify-start text-left font-normal h-8 text-[11px]"
+                    className={cn(
+                      "h-8 w-[200px] justify-start text-left text-[11px] font-normal",
+                      !fechaDesde && !fechaHasta && "text-muted-foreground"
+                    )}
                   >
                     <CalendarIcon className="mr-1 h-3 w-3 shrink-0" />
                     <span className="truncate">
                       {fechaDesde && fechaHasta
                         ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(fechaHasta).toLocaleDateString()}`
-                        : "Seleccionar rango"}
+                        : "Seleccionar fechas"}
                     </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="range"
                     numberOfMonths={2}
@@ -367,13 +379,15 @@ export function TablaPermisosDirectiva({
                   />
                 </PopoverContent>
               </Popover>
+
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 shrink-0"
                 onClick={limpiarTodosLosFiltros}
+                title="Limpiar filtros"
               >
-                <Eraser className="h-4 w-4" />
+                <Eraser className="w-4 h-4" />
               </Button>
             </div>
           </div>

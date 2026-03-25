@@ -75,13 +75,6 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   const employeeNumber = empleado?.dni || "";
   const telefono = empleado?.telefono || "";
   const email = empleado?.email || "";
-  //anonimizar 
-  /*const apellidoUsuario = "Apllido1 Apellido2";
-  const nombreUsuario = "Nombre";
-  const employeeNumber = "123456A";
-  const telefono = "600600600";
-  const email = "profe@gmail.com";*/
-
   const grupo = empleado?.grupo || "";
   const cuerpo = empleado?.cuerpo || "";
 
@@ -103,17 +96,14 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   y += row1Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
-  // Fila 2: Apellidos, Nombre, DNI
   const row2Height = 10;
   const col1Width = 70;
   const col2Width = 60;
-
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.text("Apellidos:", tableX + textPad, y + row2Height - 3);
   doc.text(apellidoUsuario, tableX + 22, y + row2Height - 3);
   doc.line(tableX + col1Width, y, tableX + col1Width, y + row2Height);
-
   doc.text("Nombre:", tableX + col1Width + textPad, y + row2Height - 3);
   doc.text(nombreUsuario, tableX + col1Width + 22, y + row2Height - 3);
   doc.line(
@@ -122,7 +112,6 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
     tableX + col1Width + col2Width,
     y + row2Height
   );
-
   doc.text(
     "DNI:",
     tableX + col1Width + col2Width + textPad,
@@ -133,11 +122,9 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
     tableX + col1Width + col2Width + 15,
     y + row2Height - 3
   );
-
   y += row2Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
-  // Fila 3: Teléfono y email
   const row3Height = 10;
   const col3_1Width = 85;
   doc.text("Teléfono móvil:", tableX + textPad, y + row3Height - 3);
@@ -148,20 +135,15 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   y += row3Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
-  // Fila 4: Cuerpo, Grupo, Subgrupo
   const row4Height = 10;
   const col4_1Width = 70;
   const col4_2Width = 50;
-
-  // Fila 4 - Cuerpo
   doc.text(
     `Cuerpo: ${cuerpo || "Profesores de Secundaria"}`,
     tableX + textPad,
     y + row4Height - 3
   );
   doc.line(tableX + col4_1Width, y, tableX + col4_1Width, y + row4Height);
-
-  // Grupo
   doc.text("Grupo:", tableX + col4_1Width + textPad, y + row4Height - 3);
   doc.text(grupo || "", tableX + col4_1Width + 22, y + row4Height - 3);
   doc.line(
@@ -170,8 +152,6 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
     tableX + col4_1Width + col4_2Width,
     y + row4Height
   );
-
-  // Subgrupo
   doc.text(
     "Subgrupo:",
     tableX + col4_1Width + col4_2Width + textPad,
@@ -182,11 +162,9 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
     tableX + col4_1Width + col4_2Width + 22,
     y + row4Height - 3
   );
-
   y += row4Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
-  // Fila 5: Relación jurídica
   const row5Height = 24;
   doc.setFontSize(11);
   doc.text(
@@ -206,7 +184,6 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   ];
   doc.setFontSize(10);
   let checkY = y + 11;
-
   const tipoEmpleadoMap = {
     "funcionario de carrera": "Personal funcionario de carrera",
     "funcionario en prácticas": "Personal funcionario en prácticas",
@@ -214,31 +191,31 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
     "laboral indefinido": "Personal laboral indefinido",
     "laboral temporal": "Personal laboral temporal",
   };
-
   opciones.forEach((opcion, index) => {
     const xPos = index % 2 === 0 ? 5 : 80;
     doc.rect(tableX + xPos, checkY, 3.5, 3.5);
     doc.text(opcion, tableX + (index % 2 === 0 ? 10 : 85), checkY + 3);
-    if (opcion === tipoEmpleadoMap[empleado.tipo_empleado]) {
+    if (opcion === tipoEmpleadoMap[empleado.tipo_empleado])
       doc.text("X", tableX + xPos + 0.3, checkY + 2.8);
-    }
-    if (index === 5) checkY += 7;
     if (index % 2 === 1) checkY += 7;
   });
-
   y += row5Height + 10;
   doc.line(tableX, y, tableX + tableWidth, y);
 
-  // Fila 6: Fecha, Centro de destino, Jornada
+  // --- FILA 6: FECHA (RANGO) ---
   const row6Height = 10;
-  const col6_1Width = 70;
+  const col6_1Width = 85;
   doc.text("Fecha:", tableX + textPad, y + row6Height - 3);
-  const fechaStr = new Date(permiso.fecha).toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-  doc.text(fechaStr, tableX + 30, y + row6Height - 3);
+  const fInicio = new Date(permiso.fecha);
+  const fFin = permiso.fecha_fin ? new Date(permiso.fecha_fin) : null;
+  const formatOptions = { day: "2-digit", month: "2-digit", year: "numeric" };
+  let stringFechaFinal = fInicio.toLocaleDateString("es-ES", formatOptions);
+  if (fFin && fInicio.toDateString() !== fFin.toDateString()) {
+    stringFechaFinal = `Del ${stringFechaFinal} al ${fFin.toLocaleDateString("es-ES", formatOptions)}`;
+  }
+  doc.setFontSize(10);
+  doc.text(stringFechaFinal, tableX + 16, y + row6Height - 3);
+  doc.setFontSize(10);
   doc.line(tableX + col6_1Width, y, tableX + col6_1Width, y + row6Height * 2);
   doc.text(
     `Centro de destino:    ${import.meta.env.VITE_IES_NAME}`,
@@ -248,48 +225,23 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   y += row6Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
-  // --- MARCAR JORNADA ---
   doc.text("Jornada:", tableX + col6_1Width + textPad, y + row6Height - 3);
-  const completaX = tableX + 95;
-  const parcialX = marginLeft + 125;
+  const completaX = tableX + 110;
+  const parcialX = tableX + 140;
   const yJornada = y + row6Height - 7;
-
-  // marcar casillas
   doc.rect(completaX, yJornada, 3.5, 3.5);
   doc.text("Completa", completaX + 5, y + row6Height - 3);
-
   doc.rect(parcialX, yJornada, 3.5, 3.5);
-
-  // calcular texto de jornada parcial usando periodos
   let textoParcial = "Parcial";
   if (!permiso.dia_completo && periodos?.length) {
-    const periodoInicio = periodos.find(
-      (p) => p.id === permiso.idperiodo_inicio
-    );
-    const periodoFin = periodos.find((p) => p.id === permiso.idperiodo_fin);
-
-    if (periodoInicio && periodoFin) {
-      // quitar segundos
-      const inicio = periodoInicio.inicio.slice(0, 5); // "HH:MM"
-      const fin = periodoFin.fin.slice(0, 5); // "HH:MM"
-
-      if (permiso.idperiodo_inicio === permiso.idperiodo_fin) {
-        textoParcial += ` (${inicio} - ${fin})`;
-      } else {
-        textoParcial += ` (${inicio} - ${fin})`;
-      }
-    }
+    const pIni = periodos.find((p) => p.id === permiso.idperiodo_inicio);
+    const pFin = periodos.find((p) => p.id === permiso.idperiodo_fin);
+    if (pIni && pFin)
+      textoParcial += ` (${pIni.inicio.slice(0, 5)} - ${pFin.fin.slice(0, 5)})`;
   }
-
   doc.text(textoParcial, parcialX + 5, y + row6Height - 3);
-
-  // marcar X según dia_completo
-  if (permiso.dia_completo) {
-    doc.text("X", completaX + 0.3, yJornada + 2.8);
-  } else {
-    doc.text("X", parcialX + 0.3, yJornada + 2.8);
-  }
-
+  if (permiso.dia_completo) doc.text("X", completaX + 0.3, yJornada + 2.8);
+  else doc.text("X", parcialX + 0.3, yJornada + 2.8);
   y += row6Height;
   doc.rect(tableX, startY, tableWidth, y - startY);
 
@@ -301,11 +253,9 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   doc.text("2. PERMISO QUE SOLICITA", tableX + textPad, y + row2_1Height - 2);
   y += row2_1Height;
   doc.line(tableX, y, tableX + tableWidth, y);
-
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text("PERMISOS:", tableX + textPad, y + 6);
-
   const PERMISOS_CHECKLIST = [
     {
       tipo: 2,
@@ -341,58 +291,41 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
     },
     { tipo: 0, texto: "Otras situaciones." },
   ];
-
-  const permisosLeft = PERMISOS_CHECKLIST.slice(0, 6);
-  const permisosRight = PERMISOS_CHECKLIST.slice(6);
-
+  const colSplitX = tableX + 85;
   let yLeft = y + 12;
   let yRight = y + 12;
-  const colSplitX = tableX + 85;
-  const rightColTextX = colSplitX + 6;
-  const leftColTextX = tableX + 6;
-  const textWidth = 75;
-
-  permisosLeft.forEach(({ tipo, texto }) => {
-    doc.rect(leftColTextX - 4, yLeft - 3, 3.5, 3.5);
-    if (permiso.tipo === tipo) {
-      doc.text("X", leftColTextX - 3.3, yLeft);
-    }
-    doc.text(doc.splitTextToSize(texto, textWidth), leftColTextX, yLeft);
+  PERMISOS_CHECKLIST.slice(0, 6).forEach(({ tipo, texto }) => {
+    doc.rect(tableX + 2, yLeft - 3, 3.5, 3.5);
+    if (permiso.tipo === tipo) doc.text("X", tableX + 2.7, yLeft - 0.2);
+    doc.text(doc.splitTextToSize(texto, 75), tableX + 7, yLeft);
     yLeft += 15;
   });
-
-  permisosRight.forEach(({ tipo, texto }) => {
-    doc.rect(rightColTextX - 4, yRight - 3, 3.5, 3.5);
-    if (permiso.tipo === tipo) {
-      doc.text("X", rightColTextX - 3.3, yRight);
-    }
-    doc.text(doc.splitTextToSize(texto, textWidth), rightColTextX, yRight);
+  PERMISOS_CHECKLIST.slice(6).forEach(({ tipo, texto }) => {
+    doc.rect(colSplitX + 2, yRight - 3, 3.5, 3.5);
+    if (permiso.tipo === tipo) doc.text("X", colSplitX + 2.7, yRight - 0.2);
+    doc.text(doc.splitTextToSize(texto, 75), colSplitX + 7, yRight);
     yRight += 15;
   });
-
   y = Math.max(yLeft, yRight);
   doc.rect(tableX, startY, tableWidth, y - startY);
   doc.line(colSplitX, startY + row2_1Height, colSplitX, y);
 
-  // --- 3. DOCUMENTACIÓN QUE SE APORTA ---
+  // --- 3. DOCUMENTACIÓN ---
   doc.addPage();
   y = marginTop;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   startY = y;
-  const row3_1Height = 8;
+  const rowDocHeaderHeight = 8; 
   doc.text(
     "3. DOCUMENTACIÓN QUE SE APORTA",
     tableX + textPad,
-    y + row3_1Height - 2
+    y + rowDocHeaderHeight - 2
   );
-  y += row3_1Height;
+  y += rowDocHeaderHeight;
   doc.line(tableX, y, tableX + tableWidth, y);
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-
-  const docs = [
+  const docsList = [
     "Fotocopia cotejada del libro de familia o certificaciones digitales que lo sustituyan/DNI.",
     "Certificado de empadronamiento.",
     "Certificado de defunción.",
@@ -406,26 +339,23 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   ];
 
   let yDocs = y + 6;
-  docs.forEach((texto) => {
-    if (yDocs > 270) {
-      doc.addPage();
-      yDocs = marginTop;
-    }
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  docsList.forEach((texto) => {
     doc.rect(tableX + 2, yDocs - 3, 3.5, 3.5);
     doc.text(doc.splitTextToSize(texto, 160), tableX + 8, yDocs);
     yDocs += 10;
   });
-
   y = yDocs + 5;
   doc.rect(tableX, startY, tableWidth, y - startY);
 
-  // --- Firma ---
+  // --- Firma con Fecha Automática ---
   y += 15;
-  doc.text(
-    "Trujillo, _____ de _________________________ de 20_______",
-    marginLeft,
-    y
-  );
+  const fechaHoy = new Date();
+  const mesActual = fechaHoy.toLocaleDateString("es-ES", { month: "long" });
+  const anioActual = fechaHoy.getFullYear();
+  doc.text(`Trujillo, _____ de ${mesActual} de ${anioActual}`, marginLeft, y);
+
   y += 10;
   doc.setFont("helvetica", "bold");
   doc.text("DIRECTOR/A DEL CENTRO", pageWidth / 2, y, { align: "center" });

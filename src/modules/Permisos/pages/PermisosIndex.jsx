@@ -97,13 +97,32 @@ export function PermisosIndex() {
   };
 
   const handleDiaClick = (dateKey) => {
-    const asuntoExistente = asuntosPropiosUsuario[dateKey];
+    const fechaPulsada = new Date(dateKey);
+    fechaPulsada.setHours(0, 0, 0, 0);
+
+    // Buscamos en el array original de asuntos del mes
+    const asuntoExistente = asuntosPropiosMes.find((a) => {
+      // Solo nos interesan los del usuario actual
+      if (a.uid !== uid) return false;
+
+      const inicio = new Date(a.fecha);
+      const fin = new Date(a.fecha_fin || a.fecha);
+
+      inicio.setHours(0, 0, 0, 0);
+      fin.setHours(0, 0, 0, 0);
+
+      return fechaPulsada >= inicio && fechaPulsada <= fin;
+    });
+
     setSelectedDate(dateKey);
 
     if (asuntoExistente) {
       setAsuntoSeleccionado(asuntoExistente);
       setAbrirDialogoEdicion(true);
     } else {
+      // Importante: resetear el seleccionado para que no interfiera
+      // si antes habías pinchado en uno de edición
+      setAsuntoSeleccionado(null);
       setAbrirDialogo(true);
     }
   };

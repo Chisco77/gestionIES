@@ -15,6 +15,9 @@ import { generatePermisosPdf } from "@/Informes/permisos";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
+import { SelectorFecha } from "@/modules/Comunes/SelectorFecha";
+
+import { format } from "date-fns";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -40,13 +43,15 @@ export function DialogoInsertarPermiso({
   const [diaCompleto, setDiaCompleto] = useState(true);
   const [periodoInicio, setPeriodoInicio] = useState(null);
   const [periodoFin, setPeriodoFin] = useState(null);
-
+  const [fechaFin, setFechaFin] = useState(fecha); // Date para el calendario
+  const [fechaFinStr, setFechaFinStr] = useState(""); // String seguro para backend
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: periodos = [] } = usePeriodosHorarios();
 
+  // Reset en carga de diálogo
   useEffect(() => {
     if (open) {
       setDiaCompleto(true);
@@ -56,8 +61,17 @@ export function DialogoInsertarPermiso({
       setShowPdfDialog(false);
       setTipo(null);
       setPermisoCreado(null);
+      setFechaFin(fecha);
+      setFechaFinStr(`${format(new Date(fecha), "yyyy-MM-dd")} 00:00:00`);
     }
-  }, [open]);
+  }, [open, fecha]);
+
+  useEffect(() => {
+    if (!diaCompleto) {
+      setFechaFin(fecha);
+      setFechaFinStr(`${format(new Date(fecha), "yyyy-MM-dd")} 00:00:00`);
+    }
+  }, [diaCompleto, fecha]);
 
   const mutation = useMutation({
     mutationFn: async (nuevoPermiso) => {
@@ -77,6 +91,7 @@ export function DialogoInsertarPermiso({
       const nuevoPermiso = {
         uid: variables.uid,
         fecha: variables.fecha,
+        fecha_fin: variables.fecha_fin,
         descripcion: variables.descripcion,
         tipo: variables.tipo,
         dia_completo: variables.dia_completo,
@@ -110,6 +125,11 @@ export function DialogoInsertarPermiso({
 
   const handleConfirmarPdf = async () => {
     if (!permisoCreado) return;
+
+    if (diaCompleto && fechaFin < fecha)
+      return toast.error(
+        "La fecha fin no puede ser anterior a la fecha inicio"
+      );
     try {
       const res = await fetch(`/api/db/empleados/${user.username}`);
       if (!res.ok) throw new Error("Error obteniendo empleado");
@@ -149,6 +169,7 @@ export function DialogoInsertarPermiso({
     mutation.mutate({
       uid: user.username,
       fecha,
+      fecha_fin: diaCompleto ? fechaFinStr : fecha,
       descripcion,
       tipo: tipoNumber,
       dia_completo: diaCompleto,
@@ -199,6 +220,18 @@ export function DialogoInsertarPermiso({
                 Permiso de día completo
               </Label>
             </div>
+
+            {/* Fecha fin */}
+            {diaCompleto && (
+              <SelectorFecha
+                label="Fecha finalización del permiso (incluída)"
+                fecha={fechaFin}
+                setFecha={setFechaFin}
+                setFechaStr={setFechaFinStr} // aquí generamos string seguro
+                minDate={new Date(fecha)} // no puede ser anterior a la fecha de inicio
+              />
+            )}
+
             {!diaCompleto && (
               <div className="grid grid-cols-2 gap-4">
                 {/* Periodo inicio */}
@@ -213,7 +246,6 @@ export function DialogoInsertarPermiso({
                     <SelectTrigger>
                       <SelectValue placeholder="Inicio" />
                     </SelectTrigger>
-
                     <SelectContent>
                       {periodos_horarios.map((p) => (
                         <SelectItem key={p.id} value={String(p.id)}>
@@ -236,7 +268,6 @@ export function DialogoInsertarPermiso({
                     <SelectTrigger>
                       <SelectValue placeholder="Fin" />
                     </SelectTrigger>
-
                     <SelectContent>
                       {periodos_horarios.map((p) => (
                         <SelectItem key={p.id} value={String(p.id)}>

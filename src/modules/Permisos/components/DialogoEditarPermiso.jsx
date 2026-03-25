@@ -25,6 +25,9 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
+import { format } from "date-fns";
+import { SelectorFecha } from "@/modules/Comunes/SelectorFecha";
+
 export function DialogoEditarPermiso({
   open,
   onClose,
@@ -37,6 +40,8 @@ export function DialogoEditarPermiso({
   const [diaCompleto, setDiaCompleto] = useState(true);
   const [periodoInicio, setPeriodoInicio] = useState(null);
   const [periodoFin, setPeriodoFin] = useState(null);
+  const [fechaFin, setFechaFin] = useState(new Date());
+  const [fechaFinStr, setFechaFinStr] = useState(""); // para backend
 
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
@@ -48,16 +53,24 @@ export function DialogoEditarPermiso({
       setTipo(permiso.tipo?.toString() || null);
 
       const esDiaCompleto = permiso.dia_completo ?? true;
-
       setDiaCompleto(esDiaCompleto);
+
       setPeriodoInicio(
         permiso.idperiodo_inicio ? String(permiso.idperiodo_inicio) : null
       );
       setPeriodoFin(
         permiso.idperiodo_fin ? String(permiso.idperiodo_fin) : null
       );
+
+      setFechaFin(permiso.fecha_fin || permiso.fecha);
     }
   }, [open, permiso]);
+
+  useEffect(() => {
+    if (!diaCompleto && permiso) {
+      setFechaFin(permiso.fecha); // bloqueamos
+    }
+  }, [diaCompleto, permiso]);
 
   // --------------------------
   // Mutation con React Query
@@ -119,10 +132,21 @@ export function DialogoEditarPermiso({
       }
     }
 
+    // --------------------------
+    // Manejo seguro de fechas
+    // --------------------------
+    const fechaFinStr = fechaFin
+      ? format(
+          fechaFin instanceof Date ? fechaFin : new Date(fechaFin),
+          "yyyy-MM-dd"
+        ) + " 00:00:00"
+      : null;
+
     mutation.mutate({
       descripcion,
       tipo: Number(tipo),
       uid: user.username,
+      fecha_fin: diaCompleto ? fechaFinStr : permiso.fecha, // 👈 ahora seguro
       dia_completo: diaCompleto,
       idperiodo_inicio: diaCompleto ? null : Number(periodoInicio),
       idperiodo_fin: diaCompleto ? null : Number(periodoFin),
@@ -135,7 +159,6 @@ export function DialogoEditarPermiso({
         onInteractOutside={(e) => e.preventDefault()}
         className="p-0 overflow-hidden rounded-lg"
       >
-        {/* ENCABEZADO */}
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Editar Permiso (
@@ -143,7 +166,6 @@ export function DialogoEditarPermiso({
           </DialogTitle>
         </DialogHeader>
 
-        {/* CUERPO */}
         <div className="flex flex-col space-y-6 p-6">
           {/* Descripción */}
           <div>
@@ -172,6 +194,16 @@ export function DialogoEditarPermiso({
             </Label>
           </div>
 
+          {diaCompleto && (
+            <SelectorFecha
+              label="Fecha fin del permiso (inclusive)"
+              fecha={fechaFin}
+              setFecha={setFechaFin}
+              setFechaStr={setFechaFinStr}
+              minDate={permiso?.fecha ? new Date(permiso.fecha) : undefined}
+            />
+          )}
+
           {!diaCompleto && (
             <div className="grid grid-cols-2 gap-4">
               {/* Periodo inicio */}
@@ -179,7 +211,6 @@ export function DialogoEditarPermiso({
                 <Label className="mb-2 block text-sm font-medium">
                   Desde ...
                 </Label>
-
                 <Select
                   value={periodoInicio}
                   onValueChange={(v) => setPeriodoInicio(v)}
@@ -187,7 +218,6 @@ export function DialogoEditarPermiso({
                   <SelectTrigger>
                     <SelectValue placeholder="Inicio" />
                   </SelectTrigger>
-
                   <SelectContent>
                     {periodos_horarios.map((p) => (
                       <SelectItem key={p.id} value={String(p.id)}>
@@ -203,7 +233,6 @@ export function DialogoEditarPermiso({
                 <Label className="mb-2 block text-sm font-medium">
                   ... hasta (inclusive)
                 </Label>
-
                 <Select
                   value={periodoFin}
                   onValueChange={(v) => setPeriodoFin(v)}
@@ -211,7 +240,6 @@ export function DialogoEditarPermiso({
                   <SelectTrigger>
                     <SelectValue placeholder="Fin" />
                   </SelectTrigger>
-
                   <SelectContent>
                     {periodos_horarios.map((p) => (
                       <SelectItem key={p.id} value={String(p.id)}>
@@ -257,7 +285,6 @@ export function DialogoEditarPermiso({
           </div>
         </div>
 
-        {/* PIE */}
         <DialogFooter className="px-6 py-4 bg-gray-50">
           <Button
             variant="outline"
