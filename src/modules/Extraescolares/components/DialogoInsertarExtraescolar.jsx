@@ -204,21 +204,28 @@ export function DialogoInsertarExtraescolar({
 
     let fechaInicioStr, fechaFinStr;
 
+    const isValidDate = (d) => d instanceof Date && !isNaN(d);
+
+    if (!isValidDate(fechaInicio) || !isValidDate(fechaFin)) {
+      toast.error("Las fechas no son válidas");
+      return;
+    }
+
     const fechaInicioBase = format(fechaInicio, "yyyy-MM-dd");
     const fechaFinBase = format(fechaFin, "yyyy-MM-dd");
 
     if (tipo === "extraescolar") {
       fechaInicioStr = `${fechaInicioBase} ${horaInicio}:00`;
       fechaFinStr = `${fechaFinBase} ${horaFin}:00`;
-
-      // Validación segura sin Date
-      if (fechaFinStr <= fechaInicioStr) {
-        toast.error("La fecha y hora de fin debe ser posterior a la de inicio");
-        return;
-      }
     } else {
       fechaInicioStr = `${fechaInicioBase} 00:00:00`;
       fechaFinStr = `${fechaFinBase} 00:00:00`;
+    }
+
+    // Validación segura sin Date
+    if (fechaFinStr < fechaInicioStr) {
+      toast.error("La fecha y hora de fin debe ser posterior a la de inicio");
+      return;
     }
 
     const datos = {
@@ -332,14 +339,16 @@ export function DialogoInsertarExtraescolar({
                         variant="outline"
                         className="w-full justify-start"
                       >
-                        {format(fechaInicio, "dd/MM/yyyy")}
+                        {fechaInicio instanceof Date && !isNaN(fechaInicio)
+                          ? format(fechaInicio, "dd/MM/yyyy")
+                          : "Seleccionar fecha"}{" "}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="p-0">
                       <Calendar
                         mode="single"
                         selected={fechaInicio}
-                        onSelect={setFechaInicio}
+                        onSelect={(date) => date && setFechaInicio(date)}
                         locale={es}
                       />
                     </PopoverContent>
@@ -367,14 +376,16 @@ export function DialogoInsertarExtraescolar({
                         variant="outline"
                         className="w-full justify-start"
                       >
-                        {format(fechaFin, "dd/MM/yyyy")}
+                        {fechaFin instanceof Date && !isNaN(fechaFin)
+                          ? format(fechaFin, "dd/MM/yyyy")
+                          : "Seleccionar fecha"}{" "}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="p-0">
                       <Calendar
                         mode="single"
                         selected={fechaFin}
-                        onSelect={setFechaFin}
+                        onSelect={(date) => date && setFechaFin(date)}
                         locale={es}
                       />
                     </PopoverContent>

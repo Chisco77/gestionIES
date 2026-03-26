@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { parse } from "date-fns";
 
 const provider = new OpenStreetMapProvider();
 
@@ -138,7 +139,8 @@ export function DialogoEditarExtraescolar({
       const [fechaStr, horaStr] = actividad.fecha_inicio.split(" ");
 
       // Solo fecha (sin hora)
-      setFechaInicio(new Date(fechaStr));
+      //setFechaInicio(new Date(fechaStr));
+      setFechaInicio(parse(fechaStr, "yyyy-MM-dd", new Date()));
 
       if (actividad.tipo === "extraescolar" && horaStr) {
         setHoraInicio(horaStr.slice(0, 5)); // HH:mm
@@ -148,7 +150,8 @@ export function DialogoEditarExtraescolar({
     if (actividad.fecha_fin) {
       const [fechaStr, horaStr] = actividad.fecha_fin.split(" ");
 
-      setFechaFin(new Date(fechaStr));
+      // setFechaFin(new Date(fechaStr));
+      setFechaFin(parse(fechaStr, "yyyy-MM-dd", new Date()));
 
       if (actividad.tipo === "extraescolar" && horaStr) {
         setHoraFin(horaStr.slice(0, 5));
@@ -240,23 +243,28 @@ export function DialogoEditarExtraescolar({
 
     let fechaInicioStr, fechaFinStr;
 
+    const isValidDate = (d) => d instanceof Date && !isNaN(d);
+
+    if (!isValidDate(fechaInicio) || !isValidDate(fechaFin)) {
+      toast.error("Las fechas no son válidas");
+      return;
+    }
+
     const fechaInicioBase = format(fechaInicio, "yyyy-MM-dd");
     const fechaFinBase = format(fechaFin, "yyyy-MM-dd");
 
     if (tipo === "extraescolar") {
       fechaInicioStr = `${fechaInicioBase} ${horaInicio}:00`;
       fechaFinStr = `${fechaFinBase} ${horaFin}:00`;
-
-      // Validación sin usar Date con zona
-      if (fechaFinStr <= fechaInicioStr) {
-        setErrores({
-          fecha_fin: "La fecha y hora de fin debe ser posterior a la de inicio",
-        });
-        return;
-      }
     } else {
       fechaInicioStr = `${fechaInicioBase} 00:00:00`;
       fechaFinStr = `${fechaFinBase} 00:00:00`;
+    }
+
+    // 🔴 Validación lógica de fechas
+    if (fechaFinStr < fechaInicioStr) {
+      toast.error("La fecha y hora de fin debe ser posterior a la de inicio");
+      return;
     }
 
     const datos = {
@@ -380,14 +388,16 @@ export function DialogoEditarExtraescolar({
                         className="w-full justify-start"
                         disabled={!editableCamposGenerales}
                       >
-                        {format(fechaInicio, "dd/MM/yyyy")}
+                        {fechaInicio instanceof Date && !isNaN(fechaInicio)
+                          ? format(fechaInicio, "dd/MM/yyyy")
+                          : "Seleccionar fecha"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="p-0">
                       <Calendar
                         mode="single"
                         selected={fechaInicio}
-                        onSelect={setFechaInicio}
+                        onSelect={(date) => date && setFechaInicio(date)}
                         locale={es}
                       />
                     </PopoverContent>
@@ -416,14 +426,16 @@ export function DialogoEditarExtraescolar({
                         className="w-full justify-start"
                         disabled={!editableCamposGenerales}
                       >
-                        {format(fechaFin, "dd/MM/yyyy")}
+                        {fechaFin instanceof Date && !isNaN(fechaFin)
+                          ? format(fechaFin, "dd/MM/yyyy")
+                          : "Seleccionar fecha"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="p-0">
                       <Calendar
                         mode="single"
                         selected={fechaFin}
-                        onSelect={setFechaFin}
+                        onSelect={(date) => date && setFechaFin(date)}
                         locale={es}
                       />
                     </PopoverContent>
