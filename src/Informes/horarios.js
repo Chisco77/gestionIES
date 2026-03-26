@@ -1,7 +1,9 @@
 // src/modules/horarios.js
 import jsPDF from "jspdf";
-import { drawHeader, drawFooter } from "./utils";
 import { getCursoActual } from "@/utils/fechasHoras";
+import { drawHeader } from "./utils";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export async function generarPdfHorariosProfesores(
   horarios,
@@ -410,4 +412,164 @@ export function generarPdfCuadrante(guardias, periodos) {
   });
 
   doc.save("cuadrante_guardias.pdf");
+}
+
+/**
+ * Genera el PDF del "Parte de Faltas Diario"
+ * @param {Array} datosProcesados - Lista de objetos { periodo, filas: [{profesor, asignatura, curso, observaciones}] }
+ * @param {Date} fecha - La fecha del parte
+ */
+export async function generarParteDiarioAusencias(datosProcesados, fecha) {
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const margin = 15;
+  const tableWidth = doc.internal.pageSize.getWidth() - margin * 2;
+
+  const colHorasW = 16;
+  const colProfW = 45;
+  const colAsigW = 35;
+  const colCursoW = 18;
+  const colObsW = 48;
+  const colFirmaW = 18;
+
+  const opcionesFecha = { day: "numeric", month: "long", year: "numeric" };
+  const tituloCompleto = `Parte diario de Ausencias del ${fecha.toLocaleDateString("es-ES", opcionesFecha)}`;
+
+  let y = drawHeader(doc, tituloCompleto);
+  y += 5; // Un poco de espacio tras la cabecera
+
+  // --- POSIBLES AUSENCIAS ---
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text("POSIBLES AUSENCIAS:", margin, y);
+  y += 2;
+  doc.setDrawColor(180);
+  for (let i = 0; i < 3; i++) {
+    y += 6;
+    doc.line(margin, y, margin + tableWidth, y);
+  }
+  y += 10;
+
+  // --- CABECERA TABLA ---
+  doc.setDrawColor(0);
+  doc.setFillColor(240, 240, 240);
+  doc.rect(margin, y, tableWidth, 10, "F");
+  doc.rect(margin, y, tableWidth, 10, "S");
+  doc.setFontSize(8);
+  doc.text("HORAS", margin + 2, y + 6);
+  doc.text("PROFESORES\nAUSENTES", margin + colHorasW + 2, y + 5);
+  doc.text("ASIGNATURA", margin + colHorasW + colProfW + 2, y + 6);
+  doc.text("CURSO", margin + colHorasW + colProfW + colAsigW + 2, y + 6);
+  doc.text(
+    "OBSERVACIONES",
+    margin + colHorasW + colProfW + colAsigW + colCursoW + 5,
+    y + 6
+  );
+  doc.text("FIRMA", margin + tableWidth - colFirmaW + 5, y + 6);
+  y += 10;
+
+  // --- CUERPO DINÁMICO ---
+  datosProcesados.forEach((p) => {
+    // Calculamos primero la altura total que necesitará este bloque horario
+    const subfilasConAltura = p.filas.map((f) => {
+      const lineasAsig = doc.splitTextToSize(
+        f.asignatura || "",
+        colAsigW - 4
+      ).length;
+      const lineasProf = doc.splitTextToSize(
+        f.profesor || "",
+        colProfW - 4
+      ).length;
+      const maxLineas = Math.max(lineasAsig, lineasProf, 1);
+      return { ...f, altura: Math.max(9, maxLineas * 5) }; // Mínimo 9mm, o 5mm por línea
+    });
+
+    const alturaTotalBloque =
+      subfilasConAltura.length > 0
+        ? subfilasConAltura.reduce((acc, curr) => acc + curr.altura, 0)
+        : 9; // Si no hay filas, altura por defecto
+
+    if (y + alturaTotalBloque > 275) {
+      doc.addPage();
+      y = drawHeader(doc, tituloCompleto);
+      y += 20;
+    }
+
+    // 1. Celdas combinadas (Hora, Observaciones, Firma)
+    doc.setFont("helvetica", "bold");
+    doc.rect(margin, y, colHorasW, alturaTotalBloque, "S");
+    doc.text(
+      p.horaLabel,
+      margin + colHorasW / 2,
+      y + alturaTotalBloque / 2 + 1,
+      { align: "center" }
+    );
+
+    const xObs = margin + colHorasW + colProfW + colAsigW + colCursoW;
+    doc.rect(xObs, y, colObsW, alturaTotalBloque, "S");
+    doc.rect(
+      margin + tableWidth - colFirmaW,
+      y,
+      colFirmaW,
+      alturaTotalBloque,
+      "S"
+    );
+
+    // 2. Dibujar subfilas de contenido
+    // 2. Dibujar subfilas de contenido
+    let currentSubY = y;
+    if (subfilasConAltura.length > 0) {
+      subfilasConAltura.forEach((f) => {
+        const sX = margin + colHorasW;
+
+        doc.rect(sX, currentSubY, colProfW, f.altura, "S");
+        doc.rect(sX + colProfW, currentSubY, colAsigW, f.altura, "S");
+        doc.rect(
+          sX + colProfW + colAsigW,
+          currentSubY,
+          colCursoW,
+          f.altura,
+          "S"
+        );
+
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+
+        doc.text(
+          doc.splitTextToSize(f.profesor, colProfW - 4),
+          sX + 2,
+          currentSubY + 5
+        );
+        doc.text(
+          doc.splitTextToSize(f.asignatura, colAsigW - 4),
+          sX + colProfW + 2,
+          currentSubY + 5
+        );
+        doc.text(
+          doc.splitTextToSize(String(f.curso), colCursoW - 2),
+          sX + colProfW + colAsigW + 2,
+          currentSubY + 5
+        );
+
+        currentSubY += f.altura;
+      });
+    } else {
+      // CORRECCIÓN AQUÍ: Usamos los argumentos correctos (x, y, ancho, alto, estilo)
+      const sX = margin + colHorasW;
+      const alturaVacia = 9;
+      doc.rect(sX, currentSubY, colProfW, alturaVacia, "S");
+      doc.rect(sX + colProfW, currentSubY, colAsigW, alturaVacia, "S");
+      doc.rect(
+        sX + colProfW + colAsigW,
+        currentSubY,
+        colCursoW,
+        alturaVacia,
+        "S"
+      );
+      currentSubY += alturaVacia;
+    }
+
+    y = currentSubY;
+  });
+
+  doc.save(`Parte_Ausencias_${format(fecha, "yyyy-MM-dd")}.pdf`);
 }

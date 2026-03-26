@@ -95,7 +95,6 @@ async function getPermisos(req, res) {
 async function getPermisosEnriquecidos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
-    console.log("Entro aquí");
     if (!ldapSession)
       return res
         .status(401)
@@ -773,187 +772,6 @@ async function deletePermiso(req, res) {
 /**
  * Actualizar solo el estado de un asunto propio (para la directiva)
  */
-/*async function updateEstadoPermiso(req, res) {
-  const id = req.params.id;
-  const { estado } = req.body; // 1 = Aceptado, 2 = Rechazado
-  if (![1, 2].includes(estado))
-    return res.status(400).json({ ok: false, error: "Estado inválido" });
-
-  try {
-    // ===============================
-    // VALIDACIÓN DE ASUNTOS PROPIOS
-    // ===============================
-    if (estado === 1) {
-      // Obtener el permiso que se quiere aceptar
-      const { rows: permisoRows } = await db.query(
-        `SELECT uid, tipo, estado FROM permisos WHERE id = $1`,
-        [id]
-      );
-
-      const permiso = permisoRows[0];
-      if (!permiso)
-        return res
-          .status(404)
-          .json({ ok: false, error: "Asunto propio no encontrado" });
-
-      if (estado === 1 && permiso.tipo === 13 && permiso.estado !== 1) {
-        const empleado = await obtenerEmpleado(permiso.uid);
-        if (!empleado)
-          return res
-            .status(404)
-            .json({ ok: false, error: "Empleado no encontrado" });
-
-        let maxDias = empleado.asuntos_propios;
-        if (!maxDias || maxDias === 0) {
-          const restricciones = await getRestriccionesAsuntos();
-          const diasRestriccion = restricciones.find(
-            (r) => r.descripcion === "dias"
-          );
-          maxDias = diasRestriccion?.valor_num ?? 0;
-        }
-
-        if (!maxDias || maxDias <= 0)
-          return res.status(400).json({
-            ok: false,
-            error:
-              "No está configurado el número máximo de asuntos propios del empleado",
-          });
-
-        const { rows: concedidos } = await db.query(
-          `SELECT COUNT(*)::int AS total
-     FROM permisos
-     WHERE uid = $1 AND tipo = 13 AND estado = 1`,
-          [permiso.uid]
-        );
-
-        if (concedidos[0].total >= maxDias)
-          return res.status(400).json({
-            ok: false,
-            error: `No se puede aceptar el asunto propio. El empleado ya ha alcanzado el máximo de ${maxDias} días de asuntos propios.`,
-          });
-      }
-    }
-
-    const query = `UPDATE permisos SET estado = $1 WHERE id = $2 RETURNING id, uid, fecha, descripcion, estado, tipo, idperiodo_inicio, idperiodo_fin, dia_completo`;
-    const { rows } = await db.query(query, [estado, id]);
-    if (!rows[0])
-      return res
-        .status(404)
-        .json({ ok: false, error: "Asunto propio no encontrado" });
-
-    const asunto = rows[0];
-
-    // =====================================
-    // SINCRONIZAR AUSENCIAS PROFESORADO
-    // =====================================
-    try {
-      if (estado === 1) {
-        // INSERT o UPDATE (UPSERT)
-        await db.query(
-          `
-      INSERT INTO ausencias_profesorado (
-        uid_profesor,
-        fecha_inicio,
-        fecha_fin,
-        idperiodo_inicio,
-        idperiodo_fin,
-        tipo_ausencia,
-        creada_por,
-        idpermiso
-      )
-      VALUES ($1, $2, $3, $4, $5, 'permiso', 'permiso', $6)
-      ON CONFLICT (idpermiso)
-      DO UPDATE SET
-        uid_profesor = EXCLUDED.uid_profesor,
-        fecha_inicio = EXCLUDED.fecha_inicio,
-        fecha_fin = EXCLUDED.fecha_fin,
-        idperiodo_inicio = EXCLUDED.idperiodo_inicio,
-        idperiodo_fin = EXCLUDED.idperiodo_fin,
-        tipo_ausencia = 'permiso',
-        creada_por = 'permiso'
-      `,
-          [
-            asunto.uid,
-            asunto.fecha,
-            asunto.fecha, // fecha_fin = fecha_inicio
-            asunto.idperiodo_inicio,
-            asunto.idperiodo_fin,
-            asunto.id,
-          ]
-        );
-      }
-
-      if (estado === 2) {
-        // BORRAR ausencia asociada
-        await db.query(
-          `DELETE FROM ausencias_profesorado WHERE idpermiso = $1`,
-          [asunto.id]
-        );
-      }
-    } catch (errAusencias) {
-      console.error(
-        "[updateEstadoPermiso] Error sincronizando ausencias:",
-        errAusencias
-      );
-    }
-
-    // ✅ Responder al frontend antes de enviar correo
-    res.json({ ok: true, asunto });
-
-    // Enviar email asíncrono
-    setImmediate(async () => {
-      try {
-        const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'asuntos-propios' LIMIT 1`
-        );
-        const emailsRaw = avisos[0]?.emails || [];
-        const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
-        if (!emails.length) return;
-
-        const ldapSession = req.session?.ldap;
-        const datosUsuario = await new Promise((resolve) => {
-          buscarPorUid(ldapSession, asunto.uid, (err, datos) =>
-            resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
-            )
-          );
-        });
-
-        const nombreProfesor =
-          `${datosUsuario.givenName || ""} ${datosUsuario.sn || ""}`.trim();
-        const fechaFmt = new Date(asunto.fecha).toLocaleDateString("es-ES");
-        const estadoTexto = estado === 1 ? "Aceptado" : "Rechazado";
-        const subjectPrefix =
-          estado === 1
-            ? "[ASUNTO PROPIO ACEPTADO]"
-            : "[ASUNTO PROPIO RECHAZADO]";
-
-        await mailer.sendMail({
-          from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
-          to: emails.join(", "),
-          subject: `${subjectPrefix} Estado actualizado (${fechaFmt})`,
-          html: `
-    <p><b>Profesor:</b> ${nombreProfesor}</p>
-    <p><b>Fecha:</b> ${fechaFmt}</p>
-    <p><b>Descripción:</b> ${asunto.descripcion}</p>
-    <p><b>Estado:</b> ${estadoTexto}</p>
-
-    <p><a href="https://172.16.218.200/gestionIES/">Pulse aquí</a> para acceder a la aplicación.</p>
-  `,
-        });
-
-        console.log(
-          `[updateEstadoPermiso] Email enviado a: ${emails.join(", ")}`
-        );
-      } catch (errMail) {
-        console.error("[updateEstadoPermiso] Error enviando email:", errMail);
-      }
-    });
-  } catch (err) {
-    console.error("[updateEstadoPermiso] Error:", err);
-    res.status(500).json({ ok: false, error: "Error actualizando estado" });
-  }
-}*/
 
 async function updateEstadoPermiso(req, res) {
   const id = req.params.id;
@@ -1069,7 +887,7 @@ async function updateEstadoPermiso(req, res) {
     creada_por,
     idpermiso
   )
-  VALUES ($1, $2, $3, $4, $5, 'permiso', 'permiso', $6)
+  VALUES ($1, $2, $3, $4, $5, 'permiso', $1, $6)
   ON CONFLICT (idpermiso)
   DO UPDATE SET
     uid_profesor = EXCLUDED.uid_profesor,

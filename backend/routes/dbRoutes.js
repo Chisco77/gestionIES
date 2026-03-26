@@ -30,6 +30,14 @@ const {
   deletePeriodo,
 } = require("../controllers/db/periodosHorariosController");
 
+// --- Controlador de ausencias de profesorado ---
+const {
+  getAusenciasEnriquecidas,
+  insertAusencia,
+  updateAusencia,
+  deleteAusencia,
+} = require("../controllers/db/ausenciasController");
+
 // --- Controlador de avisos ---
 const {
   getAvisos,
@@ -85,7 +93,6 @@ const {
   duplicarHorarioProfesorado,
   insertCuadranteGuardias,
 } = require("../controllers/db/horarioProfesoradoController");
-
 
 // --- Controlador de libros ---
 const {
@@ -284,16 +291,21 @@ router.get("/reservas-estancias/dia", getReservasEstanciasPorDia);
 router.put("/reservas-estancias/:id", updateReservaEstancia);
 router.post("/reservas-estancias/periodicas", insertReservaEstanciaPeriodica);
 
-
 // ================================================================
 //   Rutas de Horarios del profesorado
 // ================================================================
-router.get("/horario-profesorado/enriquecido", getHorarioProfesoradoEnriquecido);
+router.get(
+  "/horario-profesorado/enriquecido",
+  getHorarioProfesoradoEnriquecido
+);
 router.post("/horario-profesorado", insertHorarioProfesorado);
 router.put("/horario-profesorado/:id", updateHorarioProfesorado);
 router.post("/horario-profesorado/duplicar", duplicarHorarioProfesorado);
 router.delete("/horario-profesorado/:id", deleteHorarioProfesorado);
-router.post("/horario-profesorado/insertCuadranteGuardias", insertCuadranteGuardias);
+router.post(
+  "/horario-profesorado/insertCuadranteGuardias",
+  insertCuadranteGuardias
+);
 
 // Rutas de cursos
 router.get("/cursos", getCursos);
@@ -412,5 +424,31 @@ const {
 //   Rutas de Notificaciones Directiva
 // ================================================================
 router.get("/directiva/pendientes", getPendientesDirectiva);
+
+// ================================================================
+//   Rutas de Ausencias de Profesorado
+// ================================================================
+/**
+ * GET /ausencias-enriquecidas: Obtiene ausencias con nombres de
+ * profesor, creador y datos de periodos horarios.
+ * Soporta query params: uid_profesor, fecha_inicio, tipo_ausencia.
+ */
+router.get("/ausencias-enriquecidas", getAusenciasEnriquecidas);
+
+/**
+ * POST /ausencias: Inserción manual de ausencias (no vinculadas
+ * necesariamente a un permiso previo).
+ */
+router.post("/ausencias", insertAusencia);
+
+/**
+ * PUT /ausencias/:id: Actualización de datos de una ausencia.
+ */
+router.put("/ausencias/:id", updateAusencia);
+
+/**
+ * DELETE /ausencias/:id: Eliminación de una ausencia.
+ */
+router.delete("/ausencias/:id", deleteAusencia);
 
 module.exports = router;

@@ -78,7 +78,8 @@ exports.loginLdap = (req, res) => {
             entry.attributes.find((a) => a.type === "employeeNumber")
               ?.values[0] || null;
           const givenName =
-            entry.attributes.find((a) => a.type === "givenName")?.values[0] || "";
+            entry.attributes.find((a) => a.type === "givenName")?.values[0] ||
+            "";
           const sn =
             entry.attributes.find((a) => a.type === "sn")?.values[0] || "";
 
@@ -94,12 +95,20 @@ exports.loginLdap = (req, res) => {
         });
         // ➜ Lanzar volcado completo usando contraseña del admin
         const volcarProfesoresALaBD = require("../../utils/volcadoProfesores");
+        const volcarAusenciasALaBD = require("../../utils/volcadoAusencias");
 
-        volcarProfesoresALaBD(password)
+        Promise.all([
+          volcarProfesoresALaBD(password),
+          volcarAusenciasALaBD(), // <--- Nueva llamada
+        ])
           .then(() =>
-            console.log("🟢 Volcado completo ejecutado tras login de admin.")
+            console.log(
+              "🟢 Volcados completos (Profesores y Ausencias) ejecutados tras login de admin."
+            )
           )
-          .catch((err) => console.error("❌ Error en volcado:", err));
+          .catch((err) =>
+            console.error("❌ Error en procesos de volcado:", err)
+          );
 
         searchRes.on("end", () => {
           client.unbind();

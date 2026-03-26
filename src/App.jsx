@@ -48,6 +48,7 @@ import { DashboardAdmministrativos } from "./modules/Dashboard/pages/DashboardAd
 import { MateriasIndex } from "./modules/Materias/pages/MateriasIndex";
 import { HorariosIndex } from "./modules/Guardias/pages/HorariosIndex";
 import { CuadranteGuardiasIndex } from "./modules/Guardias/pages/CuadranteGuardiasIndex";
+import { AusenciasIndex } from "./modules/Guardias/pages/AusenciasIndex";
 
 const queryClient = new QueryClient();
 
@@ -322,6 +323,16 @@ const router = createBrowserRouter(
             <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
               {" "}
               <CuadranteGuardiasIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+
+        {
+          path: "ausencias-profesorado",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+              {" "}
+              <AusenciasIndex />{" "}
             </ProtectedRoute>
           ),
         },

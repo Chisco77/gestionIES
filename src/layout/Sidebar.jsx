@@ -53,6 +53,7 @@ import {
   User,
   Info,
   Calendar,
+  CalendarOff,
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -120,8 +121,21 @@ function SidebarComponent({
               url: "#",
               icon: CalendarCheck,
               items: [
-                { title: "Horarios profesores", url: "/horarios", icon: Calendar },
-                { title: "Cuadrante guardias", url: "/cuadrante-guardias", icon: Calendar },
+                {
+                  title: "Horarios profesores",
+                  url: "/horarios",
+                  icon: Calendar,
+                },
+                {
+                  title: "Cuadrante guardias",
+                  url: "/cuadrante-guardias",
+                  icon: Calendar,
+                },
+                {
+                  title: "Ausencias",
+                  url: "/ausencias-profesorado",
+                  icon: CalendarOff,
+                },
               ],
             },
           ]
