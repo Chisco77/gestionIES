@@ -422,8 +422,10 @@ export function generarPdfCuadrante(guardias, periodos) {
 export async function generarParteDiarioAusencias(datosProcesados, fecha) {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const margin = 15;
-  const tableWidth = doc.internal.pageSize.getWidth() - margin * 2;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const tableWidth = pageWidth - margin * 2;
 
+  // Configuración de columnas
   const colHorasW = 16;
   const colProfW = 45;
   const colAsigW = 35;
@@ -434,29 +436,32 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
   const opcionesFecha = { day: "numeric", month: "long", year: "numeric" };
   const tituloCompleto = `Parte diario de Ausencias del ${fecha.toLocaleDateString("es-ES", opcionesFecha)}`;
 
+  // --- CABECERA ---
   let y = drawHeader(doc, tituloCompleto);
-  y += 5; // Un poco de espacio tras la cabecera
 
-  // --- POSIBLES AUSENCIAS ---
+  // Subimos el contenido para eliminar el aire innecesario
+  y -= 8;
+
+  // --- POSIBLES AUSENCIAS (Compacto) ---
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.text("POSIBLES AUSENCIAS:", margin, y);
-  y += 2;
+  y += 1.5;
   doc.setDrawColor(180);
   for (let i = 0; i < 3; i++) {
-    y += 6;
+    y += 5.5;
     doc.line(margin, y, margin + tableWidth, y);
   }
-  y += 10;
+  y += 7;
 
   // --- CABECERA TABLA ---
   doc.setDrawColor(0);
   doc.setFillColor(240, 240, 240);
-  doc.rect(margin, y, tableWidth, 10, "F");
-  doc.rect(margin, y, tableWidth, 10, "S");
+  doc.rect(margin, y, tableWidth, 9, "F");
+  doc.rect(margin, y, tableWidth, 9, "S");
   doc.setFontSize(8);
   doc.text("HORAS", margin + 2, y + 6);
-  doc.text("PROFESORES\nAUSENTES", margin + colHorasW + 2, y + 5);
+  doc.text("PROFESORES\nAUSENTES", margin + colHorasW + 2, y + 4.5);
   doc.text("ASIGNATURA", margin + colHorasW + colProfW + 2, y + 6);
   doc.text("CURSO", margin + colHorasW + colProfW + colAsigW + 2, y + 6);
   doc.text(
@@ -465,11 +470,11 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
     y + 6
   );
   doc.text("FIRMA", margin + tableWidth - colFirmaW + 5, y + 6);
-  y += 10;
+  y += 9;
 
   // --- CUERPO DINÁMICO ---
   datosProcesados.forEach((p) => {
-    // Calculamos primero la altura total que necesitará este bloque horario
+    // Calculamos altura con control de desbordamiento de texto
     const subfilasConAltura = p.filas.map((f) => {
       const lineasAsig = doc.splitTextToSize(
         f.asignatura || "",
@@ -479,22 +484,29 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
         f.profesor || "",
         colProfW - 4
       ).length;
-      const maxLineas = Math.max(lineasAsig, lineasProf, 1);
-      return { ...f, altura: Math.max(9, maxLineas * 5) }; // Mínimo 9mm, o 5mm por línea
+      const lineasCurso = doc.splitTextToSize(
+        String(f.curso || ""),
+        colCursoW - 2
+      ).length;
+
+      const maxLineas = Math.max(lineasAsig, lineasProf, lineasCurso, 1);
+      // Altura base 7mm + 4mm por cada línea extra
+      return { ...f, altura: Math.max(7, maxLineas * 4 + 1) };
     });
 
     const alturaTotalBloque =
       subfilasConAltura.length > 0
         ? subfilasConAltura.reduce((acc, curr) => acc + curr.altura, 0)
-        : 9; // Si no hay filas, altura por defecto
+        : 7;
 
-    if (y + alturaTotalBloque > 275) {
+    // Salto de página preventivo (ajustado a 280mm para máxima seguridad)
+    if (y + alturaTotalBloque > 280) {
       doc.addPage();
       y = drawHeader(doc, tituloCompleto);
-      y += 20;
+      y += 10;
     }
 
-    // 1. Celdas combinadas (Hora, Observaciones, Firma)
+    // 1. Celdas Estáticas del bloque (Hora, Observaciones, Firma)
     doc.setFont("helvetica", "bold");
     doc.rect(margin, y, colHorasW, alturaTotalBloque, "S");
     doc.text(
@@ -514,13 +526,11 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
       "S"
     );
 
-    // 2. Dibujar subfilas de contenido
-    // 2. Dibujar subfilas de contenido
+    // 2. Celdas de Contenido
     let currentSubY = y;
     if (subfilasConAltura.length > 0) {
       subfilasConAltura.forEach((f) => {
         const sX = margin + colHorasW;
-
         doc.rect(sX, currentSubY, colProfW, f.altura, "S");
         doc.rect(sX + colProfW, currentSubY, colAsigW, f.altura, "S");
         doc.rect(
@@ -534,28 +544,29 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
 
-        doc.text(
-          doc.splitTextToSize(f.profesor, colProfW - 4),
-          sX + 2,
-          currentSubY + 5
-        );
-        doc.text(
-          doc.splitTextToSize(f.asignatura, colAsigW - 4),
-          sX + colProfW + 2,
-          currentSubY + 5
-        );
-        doc.text(
-          doc.splitTextToSize(String(f.curso), colCursoW - 2),
-          sX + colProfW + colAsigW + 2,
-          currentSubY + 5
-        );
+        // Dibujamos el texto limitando líneas para evitar que pisen el borde inferior
+        const limitLines = Math.floor(f.altura / 4);
+
+        const profLines = doc
+          .splitTextToSize(f.profesor, colProfW - 4)
+          .slice(0, limitLines);
+        doc.text(profLines, sX + 2, currentSubY + 4);
+
+        const asigLines = doc
+          .splitTextToSize(f.asignatura || "", colAsigW - 4)
+          .slice(0, limitLines);
+        doc.text(asigLines, sX + colProfW + 2, currentSubY + 4);
+
+        const cursoLines = doc
+          .splitTextToSize(String(f.curso || ""), colCursoW - 2)
+          .slice(0, limitLines);
+        doc.text(cursoLines, sX + colProfW + colAsigW + 2, currentSubY + 4);
 
         currentSubY += f.altura;
       });
     } else {
-      // CORRECCIÓN AQUÍ: Usamos los argumentos correctos (x, y, ancho, alto, estilo)
       const sX = margin + colHorasW;
-      const alturaVacia = 9;
+      const alturaVacia = 7;
       doc.rect(sX, currentSubY, colProfW, alturaVacia, "S");
       doc.rect(sX + colProfW, currentSubY, colAsigW, alturaVacia, "S");
       doc.rect(
@@ -567,7 +578,6 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
       );
       currentSubY += alturaVacia;
     }
-
     y = currentSubY;
   });
 

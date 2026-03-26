@@ -228,7 +228,7 @@ async function getExtraescolaresEnriquecidos(req, res) {
  *  ACTUALIZAR ESTADO (ACEPTAR / RECHAZAR)
  * ================================================================
  */
-async function updateEstadoExtraescolar(req, res) {
+/*async function updateEstadoExtraescolar(req, res) {
   try {
     const id = req.params.id;
     const { estado } = req.body; // 1 = Aceptado, 2 = Rechazado
@@ -328,6 +328,152 @@ async function updateEstadoExtraescolar(req, res) {
   } catch (err) {
     console.error("[updateEstadoExtraescolar] Error:", err);
     res.status(500).json({ ok: false, error: "Error actualizando estado" });
+  }
+}*/
+
+async function updateEstadoExtraescolar(req, res) {
+  const id = req.params.id;
+  const { estado } = req.body; // 1 = Aceptado, 2 = Rechazado
+  const usuarioSesion = req.session?.user;
+
+  if (!usuarioSesion) {
+    return res.status(401).json({ ok: false, error: "No autenticado" });
+  }
+
+  const esDirectiva = usuarioSesion.perfil === "directiva";
+  if (!esDirectiva) {
+    return res.status(403).json({ ok: false, error: "No autorizado" });
+  }
+
+  if (![1, 2].includes(estado)) {
+    return res.status(400).json({ ok: false, error: "Estado inválido" });
+  }
+
+  try {
+    // Iniciamos transacción para asegurar consistencia entre tablas
+    await db.query("BEGIN");
+
+    // 1. Actualizar el estado de la actividad
+    const { rows } = await db.query(
+      `UPDATE extraescolares 
+       SET estado = $1, updated_at = NOW(), updated_by = $2
+       WHERE id = $3 
+       RETURNING *`,
+      [estado, usuarioSesion.uid, id]
+    );
+
+    if (!rows[0]) {
+      await db.query("ROLLBACK");
+      return res
+        .status(404)
+        .json({ ok: false, error: "Actividad no encontrada" });
+    }
+
+    const actividad = rows[0];
+
+    // 2. Sincronizar con la tabla de ausencias_profesorado
+    if (estado === 1) {
+      // --- CASO ACEPTADA: Crear o actualizar ausencias para cada responsable ---
+      const responsables = actividad.responsables_uids || [];
+
+      // Saneamiento preventivo de fechas para evitar violación de CHK_FECHAS_VALIDAS
+      const fInicio = new Date(actividad.fecha_inicio);
+      let fFin = actividad.fecha_fin ? new Date(actividad.fecha_fin) : fInicio;
+      if (fFin < fInicio) fFin = fInicio;
+
+      for (const uidProf of responsables) {
+        await db.query(
+          `INSERT INTO ausencias_profesorado (
+            uid_profesor, fecha_inicio, fecha_fin, 
+            idperiodo_inicio, idperiodo_fin, tipo_ausencia, 
+            creada_por, idextraescolar
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          ON CONFLICT (idextraescolar, uid_profesor) 
+          DO UPDATE SET
+            fecha_inicio = EXCLUDED.fecha_inicio,
+            fecha_fin = EXCLUDED.fecha_fin,
+            idperiodo_inicio = EXCLUDED.idperiodo_inicio,
+            idperiodo_fin = EXCLUDED.idperiodo_fin,
+            tipo_ausencia = EXCLUDED.tipo_ausencia`,
+          [
+            uidProf,
+            fInicio,
+            fFin,
+            actividad.idperiodo_inicio,
+            actividad.idperiodo_fin,
+            `Extraescolar: ${actividad.titulo}`,
+            actividad.uid, // Creada por el UID del autor de la extraescolar
+            actividad.id,
+          ]
+        );
+      }
+    } else if (estado === 2) {
+      // --- CASO RECHAZADA: Eliminar cualquier ausencia vinculada a esta actividad ---
+      await db.query(
+        `DELETE FROM ausencias_profesorado WHERE idextraescolar = $1`,
+        [id]
+      );
+    }
+
+    // Confirmar cambios en la base de datos
+    await db.query("COMMIT");
+
+    // Respuesta al frontend
+    res.json({ ok: true, actividad });
+
+    // 3. Envío de Email (Asíncrono, fuera de la transacción)
+    setImmediate(async () => {
+      try {
+        const { rows: avisos } = await db.query(
+          `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
+        );
+        const emails = (avisos[0]?.emails || [])
+          .map((e) => e.trim())
+          .filter(Boolean);
+        if (!emails.length) return;
+
+        const ldapSession = req.session?.ldap;
+        const datosUsuario = await new Promise((resolve) => {
+          buscarPorUid(ldapSession, actividad.uid, (err, datos) =>
+            resolve(
+              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
+            )
+          );
+        });
+
+        const nombreProfesor =
+          `${datosUsuario.givenName} ${datosUsuario.sn}`.trim();
+        const fechaFmt = new Date(actividad.fecha_inicio).toLocaleDateString(
+          "es-ES"
+        );
+        const estadoTxt = estado === 1 ? "Aceptada" : "Rechazada";
+        const subject = `${estado === 1 ? "[ACEPTADA]" : "[RECHAZADA]"} Extraescolar: ${actividad.titulo}`;
+
+        await mailer.sendMail({
+          from: `"Gestión IES" <comunicaciones@iesfcodeorellana.es>`,
+          to: emails.join(", "),
+          subject: subject,
+          html: `
+            <h3>Estado de actividad actualizado</h3>
+            <p><b>Actividad:</b> ${actividad.titulo}</p>
+            <p><b>Estado:</b> <span style="color: ${estado === 1 ? "green" : "red"}">${estadoTxt}</span></p>
+            <p><b>Responsable:</b> ${nombreProfesor}</p>
+            <p><b>Fecha:</b> ${fechaFmt}</p>
+            <p><b>Descripción:</b> ${actividad.descripcion}</p>
+            <p><a href="https://172.16.218.200/gestionIES/">Acceder a la plataforma</a></p>
+          `,
+        });
+      } catch (errMail) {
+        console.error("[Email Extraescolar] Error:", errMail);
+      }
+    });
+  } catch (err) {
+    await db.query("ROLLBACK");
+    console.error("[updateEstadoExtraescolar] Error crítico:", err);
+    res
+      .status(500)
+      .json({ ok: false, error: "Error interno al procesar la solicitud" });
   }
 }
 
