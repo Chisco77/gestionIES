@@ -33,7 +33,6 @@ import {
   MapContainer,
   TileLayer,
   Marker,
-  Popup,
   useMapEvent,
   useMap,
 } from "react-leaflet";
@@ -120,22 +119,23 @@ export function DialogoInsertarExtraescolar({
   const [ubicacion, setUbicacion] = useState("");
   const [coords, setCoords] = useState({ lat: 40.4168, lng: -3.7038 });
 
+  // NUEVO ATRIBUTO: genera_ausencias
+  const [generaAusencias, setGeneraAusencias] = useState(true);
+
   const { data: departamentos = [] } = useDepartamentosLdap();
   const { data: cursos = [] } = useCursosLdap();
 
   const [errores, setErrores] = useState({});
 
-  // Para permitir seleccionar todos lso cursos a la vez
   const todosLosCursosSeleccionados =
     cursos.length > 0 && cursosSeleccionados.length === cursos.length;
 
-  const handleToggleTodosCursos = (checked) => {
-    if (checked) {
-      setCursosSeleccionados(cursos.map((c) => c.gid));
-    } else {
-      setCursosSeleccionados([]);
+  // Si el tipo es extraescolar, forzamos que genere ausencias (según lógica de negocio)
+  useEffect(() => {
+    if (tipo === "extraescolar") {
+      setGeneraAusencias(true);
     }
-  };
+  }, [tipo]);
 
   // Inicializar fechas si viene una seleccionada
   useEffect(() => {
@@ -182,9 +182,7 @@ export function DialogoInsertarExtraescolar({
     },
     onError: (err) => {
       const data = err?.data;
-
       if (data?.errores && Array.isArray(data.errores)) {
-        // Mostrar todos los errores en un solo toast, cada uno en renglón
         toast.error(
           <div className="flex flex-col">
             {data.errores.map((e, i) => (
@@ -202,10 +200,7 @@ export function DialogoInsertarExtraescolar({
   const handleGuardar = () => {
     if (mutation.isLoading) return;
 
-    let fechaInicioStr, fechaFinStr;
-
     const isValidDate = (d) => d instanceof Date && !isNaN(d);
-
     if (!isValidDate(fechaInicio) || !isValidDate(fechaFin)) {
       toast.error("Las fechas no son válidas");
       return;
@@ -214,6 +209,7 @@ export function DialogoInsertarExtraescolar({
     const fechaInicioBase = format(fechaInicio, "yyyy-MM-dd");
     const fechaFinBase = format(fechaFin, "yyyy-MM-dd");
 
+    let fechaInicioStr, fechaFinStr;
     if (tipo === "extraescolar") {
       fechaInicioStr = `${fechaInicioBase} ${horaInicio}:00`;
       fechaFinStr = `${fechaFinBase} ${horaFin}:00`;
@@ -222,7 +218,6 @@ export function DialogoInsertarExtraescolar({
       fechaFinStr = `${fechaFinBase} 00:00:00`;
     }
 
-    // Validación segura sin Date
     if (fechaFinStr < fechaInicioStr) {
       toast.error("La fecha y hora de fin debe ser posterior a la de inicio");
       return;
@@ -247,6 +242,7 @@ export function DialogoInsertarExtraescolar({
       coords,
       uid: user.username,
       updated_by: user.username,
+      genera_ausencias: generaAusencias, // Enviamos el nuevo valor
     };
 
     mutation.mutate(datos);
@@ -281,17 +277,14 @@ export function DialogoInsertarExtraescolar({
 
             {/* ====== GENERAL ====== */}
             <TabsContent value="general" className="space-y-4">
-              {/* Título */}
               <div className="space-y-1">
                 <Label>Título</Label>
                 <Input
                   value={titulo}
                   onChange={(e) => setTitulo(e.target.value)}
                 />
-                {errores.titulo && <CampoError>{errores.titulo}</CampoError>}
               </div>
 
-              {/* Departamento */}
               <div className="space-y-1">
                 <Label>Departamento organizador</Label>
                 <Select value={departamento} onValueChange={setDepartamento}>
@@ -306,12 +299,8 @@ export function DialogoInsertarExtraescolar({
                     ))}
                   </SelectContent>
                 </Select>
-                {errores.gidnumber && (
-                  <CampoError>{errores.gidnumber}</CampoError>
-                )}
               </div>
 
-              {/* Tipo */}
               <div className="space-y-1">
                 <Label>Tipo de actividad</Label>
                 <Select value={tipo} onValueChange={setTipo}>
@@ -329,7 +318,6 @@ export function DialogoInsertarExtraescolar({
                 </Select>
               </div>
 
-              {/* Fechas */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label>Fecha inicio</Label>
@@ -341,7 +329,7 @@ export function DialogoInsertarExtraescolar({
                       >
                         {fechaInicio instanceof Date && !isNaN(fechaInicio)
                           ? format(fechaInicio, "dd/MM/yyyy")
-                          : "Seleccionar fecha"}{" "}
+                          : "Seleccionar fecha"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="p-0">
@@ -354,7 +342,6 @@ export function DialogoInsertarExtraescolar({
                     </PopoverContent>
                   </Popover>
                 </div>
-
                 {tipo === "extraescolar" && (
                   <div className="space-y-1">
                     <Label>Hora inicio</Label>
@@ -378,7 +365,7 @@ export function DialogoInsertarExtraescolar({
                       >
                         {fechaFin instanceof Date && !isNaN(fechaFin)
                           ? format(fechaFin, "dd/MM/yyyy")
-                          : "Seleccionar fecha"}{" "}
+                          : "Seleccionar fecha"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="p-0">
@@ -391,7 +378,6 @@ export function DialogoInsertarExtraescolar({
                     </PopoverContent>
                   </Popover>
                 </div>
-
                 {tipo === "extraescolar" && (
                   <div className="space-y-1">
                     <Label>Hora fin</Label>
@@ -404,7 +390,6 @@ export function DialogoInsertarExtraescolar({
                 )}
               </div>
 
-              {/* Periodos */}
               {tipo === "complementaria" && (
                 <div className="grid grid-cols-2 gap-4">
                   <Select
@@ -422,7 +407,6 @@ export function DialogoInsertarExtraescolar({
                       ))}
                     </SelectContent>
                   </Select>
-
                   <Select value={periodoFin} onValueChange={setPeriodoFin}>
                     <SelectTrigger>
                       <SelectValue placeholder="Periodo fin" />
@@ -440,16 +424,14 @@ export function DialogoInsertarExtraescolar({
             </TabsContent>
 
             {/* ====== DETALLES ====== */}
-            <TabsContent value="detalles" className="space-y-4">
+            <TabsContent value="detalles" className="space-y-6">
               <div className="space-y-1">
                 <Label>Descripción</Label>
                 <Textarea
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
+                  placeholder="Explique brevemente la actividad..."
                 />
-                {errores.descripcion && (
-                  <CampoError>{errores.descripcion}</CampoError>
-                )}
               </div>
 
               <div className="space-y-1">
@@ -457,19 +439,35 @@ export function DialogoInsertarExtraescolar({
                   value={profesoresSeleccionados}
                   onChange={setProfesoresSeleccionados}
                 />
-
-                {errores.responsables_uids && (
-                  <CampoError>{errores.responsables_uids}</CampoError>
-                )}
               </div>
 
-              {/* ====== CURSOS PARTICIPANTES ====== */}
+              {/* ====== CUBRIR CON GUARDIAS ====== */}
+              <div className="flex flex-col space-y-2 p-4 border rounded-md bg-blue-50/30">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="genera_ausencias"
+                    checked={generaAusencias}
+                    disabled={tipo === "extraescolar"} // Deshabilitado si es extraescolar (siempre true)
+                    onCheckedChange={(checked) => setGeneraAusencias(!!checked)}
+                  />
+                  <Label
+                    htmlFor="genera_ausencias"
+                    className="font-semibold cursor-pointer"
+                  >
+                    Cubrir con guardias
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground ml-6 leading-relaxed">
+                  Marcar si la actividad genera ausencias del profesorado que participa
+                  en ella, que hay que cubrir con las guardias.
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label>Cursos participantes</Label>
-
-                {/* Checkbox "Todos los cursos" */}
                 <div className="flex items-center gap-2 mb-2">
                   <Checkbox
+                    id="todos-cursos"
                     checked={todosLosCursosSeleccionados}
                     onCheckedChange={(checked) => {
                       if (checked) {
@@ -479,22 +477,16 @@ export function DialogoInsertarExtraescolar({
                       }
                     }}
                   />
-                  <span className="text-sm">Todos los cursos</span>
+                  <label
+                    htmlFor="todos-cursos"
+                    className="text-sm cursor-pointer"
+                  >
+                    Todos los cursos
+                  </label>
                 </div>
-
-                {/* MultiSelect */}
                 <MultiSelect
                   values={cursosSeleccionados}
-                  onChange={(values) => {
-                    setCursosSeleccionados(values);
-
-                    if (values.length > 0) {
-                      setErrores((prev) => {
-                        const { cursos_gids, ...rest } = prev;
-                        return rest;
-                      });
-                    }
-                  }}
+                  onChange={setCursosSeleccionados}
                   options={cursos.map((c) => ({
                     value: c.gid,
                     label: c.nombre,
@@ -505,10 +497,6 @@ export function DialogoInsertarExtraescolar({
                       : ""
                   }
                 />
-
-                {errores.cursos_gids && (
-                  <CampoError>{errores.cursos_gids}</CampoError>
-                )}
               </div>
             </TabsContent>
 
@@ -519,25 +507,12 @@ export function DialogoInsertarExtraescolar({
                   value={ubicacion}
                   placeholder="Nombre de la localidad o lugar..."
                   buscar={buscarLugar}
-                  onChange={(val) => {
-                    setUbicacion(val);
-
-                    if (val?.trim()) {
-                      setErrores((prev) => {
-                        const { ubicacion, ...rest } = prev;
-                        return rest;
-                      });
-                    }
-                  }}
+                  onChange={setUbicacion}
                   onSelect={(lugar) => {
                     setUbicacion(lugar.label);
                     setCoords({ lat: lugar.lat, lng: lugar.lng });
                   }}
                 />
-
-                {errores.ubicacion && (
-                  <CampoError>{errores.ubicacion}</CampoError>
-                )}
               </div>
 
               <MapContainer
@@ -563,7 +538,7 @@ export function DialogoInsertarExtraescolar({
 
         <DialogFooter className="px-6 py-4 bg-gray-50">
           <Button
-            variant="outline"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
             onClick={handleGuardar}
             disabled={mutation.isLoading}
           >

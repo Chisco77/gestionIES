@@ -113,10 +113,12 @@ export function DialogoEditarExtraescolar({
   const [fechaInicio, setFechaInicio] = useState(new Date());
   const [fechaFin, setFechaFin] = useState(new Date());
 
+  // NUEVO ATRIBUTO
+  const [generaAusencias, setGeneraAusencias] = useState(true);
+
   // --- Permisos ---
   const esPropietario = user.username === actividad?.uid;
 
-  // Directiva o responsable de extraescolares pueden editar siempre
   const editableCamposGenerales =
     esDirectiva ||
     esExtraescolares ||
@@ -134,25 +136,19 @@ export function DialogoEditarExtraescolar({
     setTitulo(actividad.titulo || "");
     setDescripcion(actividad.descripcion || "");
     setTipo(actividad.tipo || "complementaria");
+    setGeneraAusencias(actividad.genera_ausencias ?? true);
 
     if (actividad.fecha_inicio) {
       const [fechaStr, horaStr] = actividad.fecha_inicio.split(" ");
-
-      // Solo fecha (sin hora)
-      //setFechaInicio(new Date(fechaStr));
       setFechaInicio(parse(fechaStr, "yyyy-MM-dd", new Date()));
-
       if (actividad.tipo === "extraescolar" && horaStr) {
-        setHoraInicio(horaStr.slice(0, 5)); // HH:mm
+        setHoraInicio(horaStr.slice(0, 5));
       }
     }
 
     if (actividad.fecha_fin) {
       const [fechaStr, horaStr] = actividad.fecha_fin.split(" ");
-
-      // setFechaFin(new Date(fechaStr));
       setFechaFin(parse(fechaStr, "yyyy-MM-dd", new Date()));
-
       if (actividad.tipo === "extraescolar" && horaStr) {
         setHoraFin(horaStr.slice(0, 5));
       }
@@ -181,6 +177,13 @@ export function DialogoEditarExtraescolar({
     setUbicacion(actividad.ubicacion || "");
     setCoords(actividad.coords || { lat: 40.4168, lng: -3.7038 });
   }, [actividad, periodos, departamentos, cursos]);
+
+  // Si el tipo cambia a extraescolar en edición, forzamos el check
+  useEffect(() => {
+    if (tipo === "extraescolar") {
+      setGeneraAusencias(true);
+    }
+  }, [tipo]);
 
   // --- Toggle todos cursos ---
   const todosLosCursosSeleccionados =
@@ -219,7 +222,6 @@ export function DialogoEditarExtraescolar({
     },
     onError: (err) => {
       const data = err?.data;
-
       if (data?.errores && Array.isArray(data.errores)) {
         toast.error(
           <div className="flex flex-col">
@@ -239,12 +241,7 @@ export function DialogoEditarExtraescolar({
 
   // --- Guardar ---
   const handleGuardar = () => {
-    const pad = (n) => String(n).padStart(2, "0");
-
-    let fechaInicioStr, fechaFinStr;
-
     const isValidDate = (d) => d instanceof Date && !isNaN(d);
-
     if (!isValidDate(fechaInicio) || !isValidDate(fechaFin)) {
       toast.error("Las fechas no son válidas");
       return;
@@ -253,6 +250,7 @@ export function DialogoEditarExtraescolar({
     const fechaInicioBase = format(fechaInicio, "yyyy-MM-dd");
     const fechaFinBase = format(fechaFin, "yyyy-MM-dd");
 
+    let fechaInicioStr, fechaFinStr;
     if (tipo === "extraescolar") {
       fechaInicioStr = `${fechaInicioBase} ${horaInicio}:00`;
       fechaFinStr = `${fechaFinBase} ${horaFin}:00`;
@@ -261,7 +259,6 @@ export function DialogoEditarExtraescolar({
       fechaFinStr = `${fechaFinBase} 00:00:00`;
     }
 
-    // 🔴 Validación lógica de fechas
     if (fechaFinStr < fechaInicioStr) {
       toast.error("La fecha y hora de fin debe ser posterior a la de inicio");
       return;
@@ -283,6 +280,7 @@ export function DialogoEditarExtraescolar({
       ubicacion,
       coords,
       estado: actividad.estado,
+      genera_ausencias: generaAusencias,
     };
 
     mutation.mutate(datos);
@@ -299,7 +297,6 @@ export function DialogoEditarExtraescolar({
             Editar Actividad
           </DialogTitle>
 
-          {/* --- ESTADO DE LA ACTIVIDAD --- */}
           {actividad && (
             <span
               className={`mt-2 px-3 py-1 rounded-full text-sm font-medium
@@ -326,7 +323,6 @@ export function DialogoEditarExtraescolar({
 
             {/* --- GENERAL --- */}
             <TabsContent value="general" className="space-y-4">
-              {/* Título */}
               <div className="space-y-1">
                 <Label>Título</Label>
                 <Input
@@ -336,7 +332,6 @@ export function DialogoEditarExtraescolar({
                 />
               </div>
 
-              {/* Departamento */}
               <div className="space-y-1">
                 <Label>Departamento organizador</Label>
                 <Select
@@ -357,7 +352,6 @@ export function DialogoEditarExtraescolar({
                 </Select>
               </div>
 
-              {/* Tipo */}
               <div className="space-y-1">
                 <Label>Tipo de actividad</Label>
                 <Select
@@ -377,7 +371,6 @@ export function DialogoEditarExtraescolar({
                 </Select>
               </div>
 
-              {/* Fechas */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label>Fecha inicio</Label>
@@ -419,7 +412,7 @@ export function DialogoEditarExtraescolar({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label>Fecha fin</Label>
-                  <Popover disabled={!editableCamposGenerales}>
+                  <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -454,7 +447,6 @@ export function DialogoEditarExtraescolar({
                 )}
               </div>
 
-              {/* Periodos */}
               {tipo === "complementaria" && (
                 <div className="grid grid-cols-2 gap-4">
                   <Select
@@ -473,7 +465,6 @@ export function DialogoEditarExtraescolar({
                       ))}
                     </SelectContent>
                   </Select>
-
                   <Select
                     value={periodoFin}
                     onValueChange={setPeriodoFin}
@@ -495,7 +486,7 @@ export function DialogoEditarExtraescolar({
             </TabsContent>
 
             {/* --- DETALLES --- */}
-            <TabsContent value="detalles" className="space-y-4">
+            <TabsContent value="detalles" className="space-y-6">
               <div className="space-y-1">
                 <Label>Descripción</Label>
                 <Textarea
@@ -506,6 +497,7 @@ export function DialogoEditarExtraescolar({
               </div>
 
               <div className="space-y-1">
+                <Label>Profesores responsables</Label>
                 <MultiSelectProfesores
                   value={profesoresSeleccionados}
                   onChange={setProfesoresSeleccionados}
@@ -513,17 +505,46 @@ export function DialogoEditarExtraescolar({
                 />
               </div>
 
+              {/* NUEVO INPUT UBICADO DEBAJO DE PROFESORES */}
+              <div className="flex flex-col space-y-2 p-4 border rounded-md bg-blue-50/30">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="genera_ausencias"
+                    checked={generaAusencias}
+                    disabled={
+                      !editableCamposGenerales || tipo === "extraescolar"
+                    }
+                    onCheckedChange={(checked) => setGeneraAusencias(!!checked)}
+                  />
+                  <Label
+                    htmlFor="genera_ausencias"
+                    className="font-semibold cursor-pointer"
+                  >
+                    Cubrir con guardias
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground ml-6 leading-relaxed">
+                  Esta actividad genera ausencias del profesorado que participa
+                  en ella, que hay que cubrir con las guardias.
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label>Cursos participantes</Label>
                 <div className="flex items-center gap-2">
                   <Checkbox
+                    id="todos-cursos-edit"
                     checked={todosLosCursosSeleccionados}
                     onCheckedChange={handleToggleTodosCursos}
                     disabled={!editableCamposBasicos}
                   />
-                  <span className="text-sm">Todos los cursos</span>
+                  <label
+                    htmlFor="todos-cursos-edit"
+                    className="text-sm cursor-pointer"
+                  >
+                    Todos los cursos
+                  </label>
                 </div>
-
                 <MultiSelect
                   values={cursosSeleccionados}
                   onChange={setCursosSeleccionados}
@@ -590,7 +611,7 @@ export function DialogoEditarExtraescolar({
 
         <DialogFooter className="px-6 py-4 bg-gray-50">
           <Button
-            variant="outline"
+            className="bg-green-600 hover:bg-green-700 text-white"
             onClick={handleGuardar}
             disabled={!puedeGuardar || mutation.isLoading}
           >

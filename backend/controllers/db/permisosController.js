@@ -41,6 +41,7 @@ const MAPA_TIPOS = {
   14: "(Art. 14) Funciones sindicales / representación del personal",
   15: "(Art. 15) Exámenes finales o pruebas selectivas",
   32: "(Art. 32) Reducción de jornada para mayores de 55 años",
+  13: "(Art. 13) Asunto Propio",
   0: "Otros",
 };
 
@@ -497,24 +498,9 @@ async function insertAsuntoPropio(req, res) {
 
         const fechaFmt = new Date(rows[0].fecha).toLocaleDateString("es-ES");
 
-        await mailer.sendMail({
-          from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
-          to: emails.join(", "),
-          subject: `[ASUNTOS PROPIOS - Solicitud] Solicitud asunto propio (${fechaFmt})`,
-          html: `
-              <p><b>Profesor:</b> ${nombreProfesor}</p>
-              <p><b>Fecha:</b> ${fechaFmt}</p>
-              <p><b>Descripción:</b> ${descripcion}</p>
-  
-              <hr>
-
-              <p>
-                <a href="https://172.16.218.200/gestionIES/" target="_blank">
-                  Pulse aquí 
-                </a>
-                para acceder a la aplicación
-              </p>
-            `,
+        // mail
+        setImmediate(() => {
+          enviarEmailPermiso(rows[0], "asunto-propio", req.session.ldap);
         });
 
         console.log(
@@ -594,55 +580,9 @@ async function insertPermiso(req, res) {
       permiso: rows[0],
     });
 
-    setImmediate(async () => {
-      try {
-        const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'permisos' LIMIT 1`
-        );
-
-        const emailsRaw = avisos[0]?.emails || [];
-        const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
-        if (!emails.length) return;
-
-        const ldapSession = req.session?.ldap;
-        const datosUsuario = await new Promise((resolve) => {
-          buscarPorUid(ldapSession, uid, (err, datos) =>
-            resolve(datos || { givenName: "Desconocido", sn: "" })
-          );
-        });
-
-        const nombreProfesor =
-          `${datosUsuario.givenName || ""} ${datosUsuario.sn || ""}`.trim();
-
-        const fechaFmt = new Date(rows[0].fecha).toLocaleDateString("es-ES");
-
-        // mapeo del tipo
-        const tipoTexto = MAPA_TIPOS[tipo] || "Otros";
-
-        await mailer.sendMail({
-          from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
-          to: emails.join(", "),
-          subject: `[PERMISOS] Nueva solicitud (${fechaFmt})`,
-          html: `
-    <p><b>Profesor:</b> ${nombreProfesor}</p>
-    <p><b>Fecha:</b> ${fechaFmt}</p>
-    <p><b>Descripción:</b> ${descripcion}</p>
-    <p><b>Tipo:</b> ${tipoTexto}</p>
-
-    <hr>
-
-    <p>
-      <a href="https://172.16.218.200/gestionIES/" target="_blank">
-        Pulse aquí 
-      </a>para acceder a la aplicación
-    </p>
-  `,
-        });
-
-        console.log(`[insertPermiso] Email enviado a: ${emails.join(", ")}`);
-      } catch (err) {
-        console.error("[insertPermiso] Error enviando email:", err);
-      }
+    // mail
+    setImmediate(() => {
+      enviarEmailPermiso(rows[0], "permiso", req.session.ldap);
     });
   } catch (err) {
     console.error("[insertPermiso] Error:", err);
@@ -749,7 +689,7 @@ async function updatePermiso(req, res) {
 /**
  * Eliminar un asunto propio
  */
-async function deletePermiso(req, res) {
+/*async function deletePermiso(req, res) {
   const id = req.params.id;
   try {
     const { rowCount } = await db.query(`DELETE FROM permisos WHERE id = $1`, [
@@ -766,6 +706,84 @@ async function deletePermiso(req, res) {
     res
       .status(500)
       .json({ ok: false, error: "Error eliminando asunto propio" });
+  }
+}*/
+
+/**
+ * ELIMINAR PERMISO / ASUNTO PROPIO
+ * - Impide borrar permisos aceptados que ya han pasado (histórico de guardias).
+ * - Elimina las ausencias vinculadas en la misma transacción.
+ */
+async function deletePermiso(req, res) {
+  const id = req.params.id;
+  const usuarioSesion = req.session?.user;
+
+  if (!usuarioSesion) {
+    return res.status(401).json({ ok: false, error: "No autenticado" });
+  }
+
+  const client = await db.connect();
+
+  try {
+    // 1. Obtener datos del permiso para validar antes de borrar
+    const { rows } = await client.query(
+      `SELECT estado, fecha FROM permisos WHERE id = $1`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res
+        .status(404)
+        .json({ ok: false, error: "Permiso no encontrado" });
+    }
+
+    const permiso = rows[0];
+    const hoy = new Date().toISOString().split("T")[0];
+    const fechaPermiso = new Date(permiso.fecha).toISOString().split("T")[0];
+
+    // 2. REGLA DE NEGOCIO: Proteger el histórico
+    // Si el estado es Aceptado (1) y la fecha es anterior a hoy, bloqueamos el borrado.
+    if (permiso.estado === 1 && fechaPermiso < hoy) {
+      return res.status(403).json({
+        ok: false,
+        error:
+          "No se puede eliminar un permiso pasado que ya fue aceptado para no alterar el registro histórico de ausencias.",
+      });
+    }
+
+    // 3. TRANSACCIÓN DE BORRADO
+    await client.query("BEGIN");
+
+    // Borramos las ausencias asociadas (usando idpermiso)
+    await client.query(
+      `DELETE FROM ausencias_profesorado WHERE idpermiso = $1`,
+      [id]
+    );
+
+    // Borramos el registro del permiso
+    const { rowCount } = await client.query(
+      `DELETE FROM permisos WHERE id = $1`,
+      [id]
+    );
+
+    await client.query("COMMIT");
+
+    if (rowCount === 0) {
+      return res
+        .status(404)
+        .json({ ok: false, error: "No se pudo eliminar el registro" });
+    }
+
+    res.json({
+      ok: true,
+      mensaje: "Permiso y ausencias asociadas eliminados correctamente",
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[deletePermiso] Error crítico:", err);
+    res.status(500).json({ ok: false, error: "Error eliminando el permiso" });
+  } finally {
+    client.release();
   }
 }
 
@@ -924,57 +942,9 @@ async function updateEstadoPermiso(req, res) {
     // ===============================
     // EMAIL ASÍNCRONO (fuera transacción)
     // ===============================
-    setImmediate(async () => {
-      try {
-        const { rows: avisos } = await db.query(
-          `SELECT emails FROM avisos WHERE modulo = 'asuntos-propios' LIMIT 1`
-        );
-
-        const emailsRaw = avisos[0]?.emails || [];
-        const emails = emailsRaw.map((e) => e.trim()).filter(Boolean);
-        if (!emails.length) return;
-
-        const ldapSession = req.session?.ldap;
-
-        const datosUsuario = await new Promise((resolve) => {
-          buscarPorUid(ldapSession, asunto.uid, (err, datos) =>
-            resolve(
-              !err && datos ? datos : { givenName: "Desconocido", sn: "" }
-            )
-          );
-        });
-
-        const nombreProfesor =
-          `${datosUsuario.givenName || ""} ${datosUsuario.sn || ""}`.trim();
-
-        const fechaFmt = new Date(asunto.fecha).toLocaleDateString("es-ES");
-
-        const estadoTexto = estado === 1 ? "Aceptado" : "Rechazado";
-
-        const subjectPrefix =
-          estado === 1
-            ? "[ASUNTO PROPIO ACEPTADO]"
-            : "[ASUNTO PROPIO RECHAZADO]";
-
-        await mailer.sendMail({
-          from: `"Comunicaciones" <comunicaciones@iesfcodeorellana.es>`,
-          to: emails.join(", "),
-          subject: `${subjectPrefix} Estado actualizado (${fechaFmt})`,
-          html: `
-            <p><b>Profesor:</b> ${nombreProfesor}</p>
-            <p><b>Fecha:</b> ${fechaFmt}</p>
-            <p><b>Descripción:</b> ${asunto.descripcion}</p>
-            <p><b>Estado:</b> ${estadoTexto}</p>
-            <p><a href="https://172.16.218.200/gestionIES/">Pulse aquí</a></p>
-          `,
-        });
-
-        console.log(
-          `[updateEstadoPermiso] Email enviado a: ${emails.join(", ")}`
-        );
-      } catch (errMail) {
-        console.error("[updateEstadoPermiso] Error enviando email:", errMail);
-      }
+    // Dentro de updateEstadoPermiso, al final:
+    setImmediate(() => {
+      enviarEmailPermiso(asunto, "estado", req.session.ldap);
     });
   } catch (err) {
     await db.query("ROLLBACK");
@@ -984,6 +954,149 @@ async function updateEstadoPermiso(req, res) {
       ok: false,
       error: "Error actualizando estado",
     });
+  }
+}
+
+/**
+ * Función unificada para enviar avisos de Permisos y Asuntos Propios
+ * @param {Object} permiso - El objeto del permiso (asunto)
+ * @param {String} origen - 'insercion' o 'estado'
+ * @param {Object} ldapSession - Sesión LDAP
+ */
+async function enviarEmailPermiso(permiso, origen, ldapSession) {
+  try {
+    // 1. Determinar el módulo para buscar emails de aviso
+    const moduloAvisos = permiso.tipo === 13 ? "asuntos-propios" : "permisos";
+
+    const { rows: avisos } = await db.query(
+      `SELECT emails FROM avisos WHERE modulo = $1 LIMIT 1`,
+      [moduloAvisos]
+    );
+    const emails = (avisos[0]?.emails || [])
+      .map((e) => e.trim())
+      .filter(Boolean);
+    if (!emails.length) return;
+
+    // 2. Datos de LDAP (Profesor)
+    const nombreProfesor = await new Promise((resolve) => {
+      buscarPorUid(ldapSession, permiso.uid, (err, datos) => {
+        resolve(
+          !err && datos ? `${datos.sn}, ${datos.givenName}` : permiso.uid
+        );
+      });
+    });
+
+    // 3. Info de Periodos y Fechas
+    let infoHorario = permiso.dia_completo ? "Día completo" : "Por periodos";
+    if (!permiso.dia_completo && permiso.idperiodo_inicio) {
+      const { rows: pRows } = await db.query(
+        `SELECT id, nombre FROM periodos_horarios WHERE id IN ($1, $2)`,
+        [permiso.idperiodo_inicio, permiso.idperiodo_fin]
+      );
+      const pMap = Object.fromEntries(pRows.map((p) => [p.id, p.nombre]));
+      const pIni = pMap[permiso.idperiodo_inicio] || "N/A";
+      const pFin = pMap[permiso.idperiodo_fin] || pIni;
+      infoHorario = pIni === pFin ? pIni : `${pIni} a ${pFin}`;
+    }
+
+    const fIni = new Date(permiso.fecha).toLocaleDateString("es-ES");
+    const fFin = permiso.fecha_fin
+      ? new Date(permiso.fecha_fin).toLocaleDateString("es-ES")
+      : fIni;
+    const rangoFechas = fIni === fFin ? fIni : `del ${fIni} al ${fFin}`;
+
+    // 4. Lógica de Personalización (Colores y Textos)
+    let tituloHeader, subheader, colorEstado, tagAsunto;
+    let textoBadge = "Pendiente";
+    let colorBadge = "#f59e0b"; // Naranja
+
+    if (permiso.estado === 1) {
+      textoBadge = "Aceptado";
+      colorBadge = "#16a34a";
+    } else if (permiso.estado === 2) {
+      textoBadge = "Rechazado";
+      colorBadge = "#dc2626";
+    }
+
+    const tipoTexto = MAPA_TIPOS[permiso.tipo] || "Otros";
+
+    switch (origen) {
+      case "asunto-propio":
+        tituloHeader = "Nueva Solicitud de Asunto Propio";
+        subheader = "Se ha registrado una nueva petición";
+        colorEstado = "#f59e0b";
+        tagAsunto = "[SOLICITUD]";
+        break;
+      case "permiso":
+        tituloHeader = "Nueva Solicitud de Permiso";
+        subheader = "Se ha registrado una nueva petición";
+        colorEstado = "#f59e0b";
+        tagAsunto = "[SOLICITUD]";
+        break;
+      case "estado":
+        const aceptado = permiso.estado === 1;
+        if (permiso.tipo === 13)
+          tituloHeader = "Estado de Asunto Propio Actualizado";
+        else tituloHeader = "Estado de Permiso Actualizado";
+        subheader = `La solicitud ha sido <b>${aceptado ? "Aceptada" : "Rechazada"}</b>`;
+        colorEstado = aceptado ? "#16a34a" : "#dc2626";
+        tagAsunto = aceptado ? "[ACEPTADO]" : "[RECHAZADO]";
+        break;
+      default:
+        tituloHeader = "Aviso de Permiso";
+        subheader = "Cambio en la solicitud";
+        colorEstado = "#64748b";
+        tagAsunto = "[AVISO]";
+    }
+
+    // --- TRUCO ANTI-OCULTAMIENTO DE GMAIL ---
+    const hashUnico = Math.random().toString(36).substring(2, 8);
+    const tokenSeguridad = `${permiso.id}-${Date.now()}-${hashUnico}`;
+
+    // 5. Envío del Mail
+    await mailer.sendMail({
+      from: `"Gestión IES" <comunicaciones@iesfcodeorellana.es>`,
+      to: emails.join(", "),
+      subject: `${tagAsunto} ${permiso.tipo === 13 ? "AP" : "Permiso"}: ${nombreProfesor} (${fIni})`,
+      html: `
+        <div style="font-family: sans-serif; color: #334155; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin: 0 auto;">
+          <div style="background-color: ${colorEstado}; color: white; padding: 20px;">
+            <h2 style="margin: 0; font-size: 1.2rem; text-align: center;">${tituloHeader}</h2>
+            <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
+              <tr>
+                <td style="width: 20%;"></td>
+                <td style="text-align: center; color: white; opacity: 0.9; font-size: 0.9rem;">${subheader}</td>
+                <td style="text-align: right; width: 20%;">
+                  <span style="background-color: ${colorBadge}; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.4); display: inline-block; white-space: nowrap;">
+                    ${textoBadge}
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div style="padding: 25px;">
+            <h3 style="color: #1e293b; margin-top: 0;">Detalles de la solicitud</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; width: 130px;"><b>👤 Profesor:</b></td><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${nombreProfesor}</td></tr>
+              <tr><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;"><b>📅 Fecha:</b></td><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${rangoFechas}</td></tr>
+              <tr><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;"><b>⏰ Horario:</b></td><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${infoHorario}</td></tr>
+              <tr><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; vertical-align: top;"><b>📝 Tipo:</b></td><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${tipoTexto}</td></tr>
+            </table>
+            <div style="margin-top: 20px; padding: 15px; background-color: #f8fafc; border-radius: 6px; font-size: 0.9rem;">
+              <b>Descripción/Motivo:</b><br>${permiso.descripcion}
+            </div>
+            <div style="margin-top: 30px; text-align: center;">
+              <a href="https://172.16.218.200/gestionIES/" style="background-color: #334155; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Gestionar en la plataforma</a>
+            </div>
+          </div>
+          <div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 0.8rem; color: #64748b;">
+            Sistema de Gestión IES Francisco de Orellana<br>
+            <span style="color: #f1f5f9; font-size: 1px; display: none !important;">Ref: ${tokenSeguridad}</span>
+          </div>
+        </div>`,
+    });
+  } catch (err) {
+    console.error("[Email Permisos] Error:", err);
   }
 }
 
