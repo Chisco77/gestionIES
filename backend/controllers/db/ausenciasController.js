@@ -7,7 +7,6 @@
 
 const db = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
-
 /**
  * Obtener ausencias con filtros y datos enriquecidos (Profesor, Creador, Periodos)
  */
@@ -15,7 +14,9 @@ async function getAusenciasEnriquecidas(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) {
-      return res.status(401).json({ ok: false, error: "No autenticado en LDAP" });
+      return res
+        .status(401)
+        .json({ ok: false, error: "No autenticado en LDAP" });
     }
 
     const { uid_profesor, fecha_inicio, tipo_ausencia } = req.query;
@@ -23,13 +24,16 @@ async function getAusenciasEnriquecidas(req, res) {
     const vals = [];
     let i = 0;
 
-    if (uid_profesor) filtros.push(`a.uid_profesor = $${++i}`) && vals.push(uid_profesor);
-    if (fecha_inicio) filtros.push(`a.fecha_inicio = $${++i}`) && vals.push(fecha_inicio);
-    if (tipo_ausencia) filtros.push(`a.tipo_ausencia = $${++i}`) && vals.push(tipo_ausencia);
+    if (uid_profesor)
+      filtros.push(`a.uid_profesor = $${++i}`) && vals.push(uid_profesor);
+    if (fecha_inicio)
+      filtros.push(`a.fecha_inicio = $${++i}`) && vals.push(fecha_inicio);
+    if (tipo_ausencia)
+      filtros.push(`a.tipo_ausencia = $${++i}`) && vals.push(tipo_ausencia);
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
 
-    // 1️⃣ Consultar ausencias
+    // 1️⃣ Consultar ausencias (Añadido a.descripcion)
     const { rows: ausencias } = await db.query(
       `SELECT 
         a.id, 
@@ -39,6 +43,7 @@ async function getAusenciasEnriquecidas(req, res) {
         a.idperiodo_inicio,
         a.idperiodo_fin,
         a.tipo_ausencia,
+        a.descripcion,
         a.creada_en,
         a.creada_por,
         a.idpermiso
@@ -48,13 +53,15 @@ async function getAusenciasEnriquecidas(req, res) {
       vals
     );
 
-    // 2️⃣ Identificar UIDs únicos (profesores y creadores) para buscar en LDAP
-    const uidsUnicos = [...new Set([
-      ...ausencias.map(a => a.uid_profesor),
-      ...ausencias.map(a => a.creada_por)
-    ])].filter(Boolean);
+    // 2️⃣ Identificar UIDs únicos (profesores y creadores)
+    const uidsUnicos = [
+      ...new Set([
+        ...ausencias.map((a) => a.uid_profesor),
+        ...ausencias.map((a) => a.creada_por),
+      ]),
+    ].filter(Boolean);
 
-    // 3️⃣ Resolver nombres en LDAP (Caché local para la petición)
+    // 3️⃣ Resolver nombres en LDAP
     const nombreMap = {};
     for (const uid of uidsUnicos) {
       if (!nombreMap[uid]) {
@@ -62,16 +69,20 @@ async function getAusenciasEnriquecidas(req, res) {
           buscarPorUid(ldapSession, uid, (err, datos) => {
             if (!err && datos)
               resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
-            else resolve(uid); // Fallback al UID si no se encuentra
+            else resolve(uid);
           });
         });
       }
     }
 
-    // 4️⃣ Obtener Periodos Horarios involucrados
-    const periodosIds = [...new Set(
-      ausencias.flatMap(a => [a.idperiodo_inicio, a.idperiodo_fin]).filter(Boolean)
-    )];
+    // 4️⃣ Obtener Periodos Horarios
+    const periodosIds = [
+      ...new Set(
+        ausencias
+          .flatMap((a) => [a.idperiodo_inicio, a.idperiodo_fin])
+          .filter(Boolean)
+      ),
+    ];
 
     let periodosMap = {};
     if (periodosIds.length > 0) {
@@ -85,13 +96,17 @@ async function getAusenciasEnriquecidas(req, res) {
       }, {});
     }
 
-    // 5️⃣ Construir respuesta final enriquecida
-    const ausenciasEnriquecidas = ausencias.map(ausencia => ({
+    // 5️⃣ Respuesta final
+    const ausenciasEnriquecidas = ausencias.map((ausencia) => ({
       ...ausencia,
       nombreProfesor: nombreMap[ausencia.uid_profesor] || "Desconocido",
       nombreCreador: nombreMap[ausencia.creada_por] || ausencia.creada_por,
-      periodo_inicio: ausencia.idperiodo_inicio ? periodosMap[ausencia.idperiodo_inicio] : null,
-      periodo_fin: ausencia.idperiodo_fin ? periodosMap[ausencia.idperiodo_fin] : null,
+      periodo_inicio: ausencia.idperiodo_inicio
+        ? periodosMap[ausencia.idperiodo_inicio]
+        : null,
+      periodo_fin: ausencia.idperiodo_fin
+        ? periodosMap[ausencia.idperiodo_fin]
+        : null,
     }));
 
     res.json({ ok: true, ausencias: ausenciasEnriquecidas });
@@ -102,28 +117,31 @@ async function getAusenciasEnriquecidas(req, res) {
 }
 
 /**
- * Insertar una ausencia manualmente (sin pasar por permisos)
+ * Insertar una ausencia manualmente
  */
 async function insertAusencia(req, res) {
-  const { 
-    uid_profesor, 
-    fecha_inicio, 
-    fecha_fin, 
-    idperiodo_inicio, 
-    idperiodo_fin, 
-    tipo_ausencia, 
-    creada_por 
+  const {
+    uid_profesor,
+    fecha_inicio,
+    fecha_fin,
+    idperiodo_inicio,
+    idperiodo_fin,
+    tipo_ausencia,
+    descripcion, // <--- Nuevo campo
+    creada_por,
   } = req.body;
 
   if (!uid_profesor || !fecha_inicio) {
-    return res.status(400).json({ ok: false, error: "UID y fecha_inicio son obligatorios" });
+    return res
+      .status(400)
+      .json({ ok: false, error: "UID y fecha_inicio son obligatorios" });
   }
 
   try {
     const { rows } = await db.query(
       `INSERT INTO ausencias_profesorado 
-      (uid_profesor, fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin, tipo_ausencia, creada_por)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      (uid_profesor, fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin, tipo_ausencia, descripcion, creada_por)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
       [
         uid_profesor,
@@ -131,8 +149,9 @@ async function insertAusencia(req, res) {
         fecha_fin || fecha_inicio,
         idperiodo_inicio,
         idperiodo_fin,
-        tipo_ausencia || 'otros',
-        creada_por || uid_profesor
+        tipo_ausencia || "otros",
+        descripcion || null, // <--- Inclusión en el array de valores
+        creada_por || uid_profesor,
       ]
     );
 
@@ -154,14 +173,25 @@ async function updateAusencia(req, res) {
   const vals = [];
   let i = 0;
 
-  Object.keys(campos).forEach(key => {
-    if (['fecha_inicio', 'fecha_fin', 'idperiodo_inicio', 'idperiodo_fin', 'tipo_ausencia'].includes(key)) {
+  // Lista blanca de campos permitidos (Añadido 'descripcion')
+  const allowed = [
+    "fecha_inicio",
+    "fecha_fin",
+    "idperiodo_inicio",
+    "idperiodo_fin",
+    "tipo_ausencia",
+    "descripcion",
+  ];
+
+  Object.keys(campos).forEach((key) => {
+    if (allowed.includes(key)) {
       sets.push(`${key} = $${++i}`);
       vals.push(campos[key]);
     }
   });
 
-  if (sets.length === 0) return res.status(400).json({ ok: false, error: "Nada que actualizar" });
+  if (sets.length === 0)
+    return res.status(400).json({ ok: false, error: "Nada que actualizar" });
 
   try {
     vals.push(id);
@@ -170,7 +200,10 @@ async function updateAusencia(req, res) {
       vals
     );
 
-    if (rows.length === 0) return res.status(404).json({ ok: false, error: "Ausencia no encontrada" });
+    if (rows.length === 0)
+      return res
+        .status(404)
+        .json({ ok: false, error: "Ausencia no encontrada" });
 
     res.json({ ok: true, ausencia: rows[0] });
   } catch (err) {
@@ -185,13 +218,14 @@ async function updateAusencia(req, res) {
 async function deleteAusencia(req, res) {
   const { id } = req.params;
   try {
-    // Importante: Si la ausencia viene de un permiso, quizás quieras avisar o controlar 
-    // que el estado del permiso también cambie, pero siguiendo tu lógica, 
-    // aquí simplemente borramos el registro de la tabla.
-    const { rowCount } = await db.query(`DELETE FROM ausencias_profesorado WHERE id = $1`, [id]);
-    
-    if (!rowCount) return res.status(404).json({ ok: false, error: "Ausencia no encontrada" });
-
+    const { rowCount } = await db.query(
+      `DELETE FROM ausencias_profesorado WHERE id = $1`,
+      [id]
+    );
+    if (!rowCount)
+      return res
+        .status(404)
+        .json({ ok: false, error: "Ausencia no encontrada" });
     res.json({ ok: true });
   } catch (err) {
     console.error("[deleteAusencia] Error:", err);
@@ -203,5 +237,5 @@ module.exports = {
   getAusenciasEnriquecidas,
   insertAusencia,
   updateAusencia,
-  deleteAusencia
+  deleteAusencia,
 };

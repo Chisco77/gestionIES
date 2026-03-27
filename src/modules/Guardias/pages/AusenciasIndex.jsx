@@ -27,13 +27,12 @@ import { toast } from "sonner";
 
 export function AusenciasIndex() {
   const [abrirDialogoFecha, setAbrirDialogoFecha] = useState(false);
-
   const { data: ausencias, isLoading, error } = useAusencias();
   const { data: periodos } = usePeriodosHorarios();
 
-  const handleInsertar = () => alert("Nueva ausencia: No implementado");
-  const handleEditar = (sel) => alert(`Editando ID: ${sel.id}`);
-  const handleEliminar = (sel) => alert(`Eliminando ID: ${sel.id}`);
+  const handleInsertar = () => alert("Nueva ausencia");
+  const handleEditar = (sel) => alert(`Editando: ${sel.id}`);
+  const handleEliminar = (sel) => alert(`Eliminando: ${sel.id}`);
 
   const handleConfirmarGenerarPdf = async (fechaSeleccionada) => {
     const curso = getCursoActual(fechaSeleccionada).label;
@@ -112,21 +111,13 @@ export function AusenciasIndex() {
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <CalendarOff className="text-primary" /> Gestión de Ausencias
-          </h2>
-        </div>
-      </div>
-
       {isLoading ? (
         <div className="flex justify-center py-24">
           <Loader className="h-10 w-10 animate-spin text-primary" />
         </div>
       ) : error ? (
         <div className="text-red-500 text-center p-10 border rounded-lg bg-red-50">
-          ❌ Error al cargar datos: {error.message}
+          ❌ Error: {error.message}
         </div>
       ) : (
         <TablaAusencias
@@ -141,14 +132,13 @@ export function AusenciasIndex() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setAbrirDialogoFecha(true)}>
-                  <CalendarOff className="mr-2 h-4 w-4" />
-                  Parte de Ausencias
+                  <CalendarOff className="mr-2 h-4 w-4" /> Parte de Ausencias
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           }
           acciones={(seleccionado) => (
-            <>
+            <div className="flex gap-2">
               <Button variant="outline" size="icon" onClick={handleInsertar}>
                 <Plus className="w-4 h-4" />
               </Button>
@@ -168,12 +158,11 @@ export function AusenciasIndex() {
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
-            </>
+            </div>
           )}
         />
       )}
 
-      {/* DIÁLOGO FUERA DEL MENÚ */}
       <DialogoSeleccionarFechaParte
         open={abrirDialogoFecha}
         onOpenChange={setAbrirDialogoFecha}

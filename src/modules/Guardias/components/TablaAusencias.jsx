@@ -25,10 +25,20 @@ import {
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { format } from "date-fns";
 
-export function TablaAusencias({ columns, data, onFilteredChange, informes, acciones }) {
+export function TablaAusencias({
+  columns,
+  data,
+  onFilteredChange,
+  informes,
+  acciones,
+  fechaFiltroDefault = format(new Date(), "yyyy-MM-dd"),
+}) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: true }]);
-  const [columnFilters, setColumnFilters] = useState([]);
+  const [columnFilters, setColumnFilters] = useState([
+    { id: "fecha_inicio", value: fechaFiltroDefault },
+  ]);
 
   const table = useReactTable({
     data,
@@ -42,7 +52,7 @@ export function TablaAusencias({ columns, data, onFilteredChange, informes, acci
     enableRowSelection: true,
     enableMultiRowSelection: false,
     state: { sorting, columnFilters },
-    initialState: { pagination: { pageIndex: 0, pageSize: 15 } },
+    initialState: { pagination: { pageIndex: 0, pageSize: 12 } },
   });
 
   useEffect(() => {
@@ -50,7 +60,14 @@ export function TablaAusencias({ columns, data, onFilteredChange, informes, acci
       .getFilteredRowModel()
       .rows.map((row) => row.original);
     onFilteredChange?.(filtered);
-  }, [columnFilters, data]);
+  }, [columnFilters, data, table, onFilteredChange]);
+
+  const esHoy = (fInicio, fFin) => {
+    const hoy = new Date().setHours(0, 0, 0, 0);
+    const inicio = new Date(fInicio).setHours(0, 0, 0, 0);
+    const fin = new Date(fFin || fInicio).setHours(0, 0, 0, 0);
+    return hoy >= inicio && hoy <= fin;
+  };
 
   const selectedItem = table.getSelectedRowModel().rows[0]?.original;
   const currentPage = table.getState().pagination.pageIndex + 1;
@@ -72,9 +89,24 @@ export function TablaAusencias({ columns, data, onFilteredChange, informes, acci
                   .getColumn("nombreProfesor")
                   ?.setFilterValue(e.target.value)
               }
-              className="w-[250px] h-8 text-sm"
+              className="w-[200px] h-8 text-sm"
             />
           </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-muted-foreground">
+              Ver ausencias el día...
+            </label>
+            <Input
+              type="date"
+              value={table.getColumn("fecha_inicio")?.getFilterValue() ?? ""}
+              onChange={(e) =>
+                table.getColumn("fecha_inicio")?.setFilterValue(e.target.value)
+              }
+              className="w-[160px] h-8 text-sm font-medium"
+            />
+          </div>
+
           <Button
             variant="outline"
             size="sm"
@@ -83,6 +115,7 @@ export function TablaAusencias({ columns, data, onFilteredChange, informes, acci
           >
             <Eraser className="w-4 h-4" /> Limpiar filtros
           </Button>
+
           {informes && <div className="ml-auto">{informes}</div>}
         </div>
       </Card>
@@ -105,22 +138,43 @@ export function TablaAusencias({ columns, data, onFilteredChange, informes, acci
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className={`cursor-pointer ${row.getIsSelected() ? "bg-blue-100" : ""} hover:bg-gray-100 transition-colors`}
-                  onClick={() => row.toggleSelected()}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell className="py-1 px-2" key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const activaHoy = esHoy(
+                  row.original.fecha_inicio,
+                  row.original.fecha_fin
+                );
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    // Eliminamos el border-l del TableRow porque falla en muchos navegadores
+                    className={`cursor-pointer transition-colors
+            ${row.getIsSelected() ? "bg-blue-100 hover:bg-blue-200" : ""} 
+            ${!row.getIsSelected() && activaHoy ? "bg-amber-50/40 hover:bg-amber-100/50" : "hover:bg-gray-100"}
+          `}
+                    onClick={() => row.toggleSelected()}
+                  >
+                    {row.getVisibleCells().map((cell, index) => (
+                      <TableCell
+                        key={cell.id}
+                        className={`py-1 px-2 
+                ${
+                  /* Si es la primera celda (index 0) y está activa hoy, ponemos el borde */
+                  index === 0 && activaHoy
+                    ? "border-l-4 border-l-orange-500"
+                    : "border-l-4 border-l-transparent"
+                }
+              `}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell
@@ -135,12 +189,9 @@ export function TablaAusencias({ columns, data, onFilteredChange, informes, acci
         </Table>
       </div>
 
-      {/* FOOTER EXACTO: ACCIONES + PAGINACIÓN */}
       <div className="flex flex-col sm:flex-row items-center py-1 space-y-4 sm:space-y-0 text-xs">
         <div className="flex gap-2">{acciones(selectedItem)}</div>
-
         <div className="flex-1"></div>
-
         <div className="flex items-center justify-center space-x-1 flex-1">
           <Button
             variant="outline"
@@ -178,7 +229,6 @@ export function TablaAusencias({ columns, data, onFilteredChange, informes, acci
             <ChevronsRight className="w-4 h-4" />
           </Button>
         </div>
-
         <div className="flex-1 text-right text-xs text-muted-foreground">
           Total de registros: {table.getFilteredRowModel().rows.length}
         </div>
