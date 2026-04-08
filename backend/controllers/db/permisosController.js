@@ -791,7 +791,7 @@ async function deletePermiso(req, res) {
  * Actualizar solo el estado de un asunto propio (para la directiva)
  */
 
-async function updateEstadoPermiso(req, res) {
+/*async function updateEstadoPermiso(req, res) {
   const id = req.params.id;
   const { estado } = req.body;
 
@@ -954,6 +954,189 @@ async function updateEstadoPermiso(req, res) {
       ok: false,
       error: "Error actualizando estado",
     });
+  }
+}*/
+
+/**
+ * Actualizar el estado de un permiso (Aceptar/Rechazar) y sincronizar ausencias.
+ * Implementa política de absorción: la ausencia oficial elimina la manual previa.
+ */
+async function updateEstadoPermiso(req, res) {
+  const id = req.params.id;
+  const { estado } = req.body;
+
+  if (![1, 2].includes(estado)) {
+    return res.status(400).json({ ok: false, error: "Estado inválido" });
+  }
+
+  // Obtenemos un cliente del pool para manejar la transacción de forma real
+  const client = await db.connect();
+  let asunto = null;
+
+  try {
+    await client.query("BEGIN");
+
+    // ================================================================
+    // 1. VALIDACIÓN DE ASUNTOS PROPIOS (Lógica de cupo máximo)
+    // ================================================================
+    if (estado === 1) {
+      const { rows: permisoRows } = await client.query(
+        `SELECT uid, tipo, estado FROM permisos WHERE id = $1`,
+        [id]
+      );
+
+      const permiso = permisoRows[0];
+
+      if (!permiso) {
+        throw new Error("Asunto propio no encontrado");
+      }
+
+      // Validación específica para Asuntos Propios (Tipo 13)
+      if (permiso.tipo === 13 && permiso.estado !== 1) {
+        const empleado = await obtenerEmpleado(permiso.uid);
+
+        if (!empleado) {
+          throw new Error("Empleado no encontrado");
+        }
+
+        let maxDias = empleado.asuntos_propios;
+
+        if (!maxDias || maxDias === 0) {
+          const restricciones = await getRestriccionesAsuntos();
+          const diasRestriccion = restricciones.find(
+            (r) => r.descripcion === "dias"
+          );
+          maxDias = diasRestriccion?.valor_num ?? 0;
+        }
+
+        if (!maxDias || maxDias <= 0) {
+          throw new Error(
+            "No está configurado el número máximo de asuntos propios"
+          );
+        }
+
+        const { rows: concedidos } = await client.query(
+          `SELECT COUNT(*)::int AS total
+           FROM permisos
+           WHERE uid = $1 AND tipo = 13 AND estado = 1`,
+          [permiso.uid]
+        );
+
+        if (concedidos[0].total >= maxDias) {
+          throw new Error(
+            `Cupo alcanzado: El empleado ya tiene ${maxDias} días concedidos.`
+          );
+        }
+      }
+    }
+
+    // ================================================================
+    // 2. ACTUALIZACIÓN DEL REGISTRO DE PERMISO
+    // ================================================================
+    const { rows } = await client.query(
+      `UPDATE permisos 
+       SET estado = $1 
+       WHERE id = $2 
+       RETURNING id, uid, fecha, fecha_fin, descripcion, estado, tipo, idperiodo_inicio, idperiodo_fin, dia_completo`,
+      [estado, id]
+    );
+
+    if (!rows[0]) {
+      throw new Error("No se pudo actualizar el registro de permiso");
+    }
+
+    asunto = rows[0];
+
+    // ================================================================
+    // 3. SINCRONIZAR TABLA DE AUSENCIAS (Política de Absorción)
+    // ================================================================
+    if (estado === 1) {
+      // 🛡️ PASO A: Limpieza preventiva de ausencias manuales solapadas
+      // Borramos ausencias que NO tengan idpermiso ni idextraescolar en ese rango
+      await client.query(
+        `DELETE FROM ausencias_profesorado 
+         WHERE uid_profesor = $1 
+           AND idpermiso IS NULL 
+           AND idextraescolar IS NULL
+           AND fecha_inicio <= $3 
+           AND fecha_fin >= $2
+           AND (
+             (idperiodo_inicio IS NULL) OR ($4::int IS NULL)
+             OR ($4::int <= idperiodo_fin AND $5::int >= idperiodo_inicio)
+           )`,
+        [
+          asunto.uid,
+          asunto.fecha,
+          asunto.fecha_fin || asunto.fecha,
+          asunto.idperiodo_inicio || null,
+          asunto.idperiodo_fin || null,
+        ]
+      );
+
+      // 🛡️ PASO B: Inserción de la ausencia oficial
+      await client.query(
+        `INSERT INTO ausencias_profesorado (
+          uid_profesor,
+          fecha_inicio,
+          fecha_fin,
+          idperiodo_inicio,
+          idperiodo_fin,
+          tipo_ausencia,
+          creada_por,
+          idpermiso
+        )
+        VALUES ($1, $2, $3, $4, $5, 'permiso', 'sistema_permisos', $6)
+        ON CONFLICT (idpermiso)
+        DO UPDATE SET
+          uid_profesor = EXCLUDED.uid_profesor,
+          fecha_inicio = EXCLUDED.fecha_inicio,
+          fecha_fin = EXCLUDED.fecha_fin,
+          idperiodo_inicio = EXCLUDED.idperiodo_inicio,
+          idperiodo_fin = EXCLUDED.idperiodo_fin,
+          tipo_ausencia = 'permiso',
+          creada_por = 'sistema_permisos'`,
+        [
+          asunto.uid,
+          asunto.fecha,
+          asunto.fecha_fin || asunto.fecha,
+          asunto.idperiodo_inicio,
+          asunto.idperiodo_fin,
+          asunto.id,
+        ]
+      );
+    }
+
+    // Si el estado es Rechazado (2), eliminamos la ausencia vinculada
+    if (estado === 2) {
+      await client.query(
+        `DELETE FROM ausencias_profesorado WHERE idpermiso = $1`,
+        [id]
+      );
+    }
+
+    // ✅ TODO CORRECTO -> Confirmamos cambios
+    await client.query("COMMIT");
+
+    res.json({ ok: true, asunto });
+
+    // ================================================================
+    // 4. PROCESOS POST-TRANSACCIÓN (Emails, etc.)
+    // ================================================================
+    setImmediate(() => {
+      enviarEmailPermiso(asunto, "estado", req.session.ldap);
+    });
+  } catch (err) {
+    // Si algo falla, deshacemos todo lo realizado en la transacción
+    await client.query("ROLLBACK");
+    console.error("[updateEstadoPermiso] Error crítico:", err);
+
+    res.status(500).json({
+      ok: false,
+      error: err.message || "Error interno al procesar el estado del permiso",
+    });
+  } finally {
+    // Liberar el cliente para que vuelva al pool de conexiones
+    client.release();
   }
 }
 

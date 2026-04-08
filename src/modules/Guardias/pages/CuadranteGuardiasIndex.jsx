@@ -189,20 +189,6 @@ export function CuadranteGuardiasIndex() {
               : null,
           };
 
-          // DEBUG (muy importante ahora)
-          if (!registroNormalizado.tipo) {
-            console.warn(
-              "⚠️ Registro sin tipo tras normalizar:",
-              registroNormalizado
-            );
-          } else {
-            console.log(
-              "✅ Registro normalizado:",
-              registroNormalizado.id,
-              registroNormalizado.tipo
-            );
-          }
-
           nuevoGuardias[clave].push(registroNormalizado);
         });
 

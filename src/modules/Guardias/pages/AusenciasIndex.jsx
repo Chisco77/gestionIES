@@ -18,30 +18,51 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 import { getCursoActual } from "@/utils/fechasHoras";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { DialogoSeleccionarFechaParte } from "../components/DialogoSeleccionarFechaParte";
+import { DialogoInsertarAusenciaManual } from "../components/DialogoInsertarAusenciaManual";
+import { DialogoEliminarAusencia } from "../components/DialogoEliminarAusencia";
 import { generarParteDiarioAusencias } from "@/Informes/horarios";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
 export function AusenciasIndex() {
   const [abrirDialogoFecha, setAbrirDialogoFecha] = useState(false);
-  const { data: ausencias, isLoading, error } = useAusencias();
-  const { data: periodos } = usePeriodosHorarios();
+  const [abrirInsertar, setAbrirInsertar] = useState(false);
+  const [ausenciaSeleccionada, setAusenciaSeleccionada] = useState(null);
+  const [abrirEliminar, setAbrirEliminar] = useState(false);
 
-  const handleInsertar = () => alert("Nueva ausencia");
-  const handleEditar = (sel) => alert(`Editando: ${sel.id}`);
-  const handleEliminar = (sel) => alert(`Eliminando: ${sel.id}`);
+  // Usamos refetch para actualizar la tabla tras insertar
+  const { data: ausencias, isLoading, error, refetch } = useAusencias();
+  const { data: periodos = [] } = usePeriodosHorarios();
+
+  const handleEditar = (sel) => {
+    setAusenciaSeleccionada(sel);
+    // setAbrirEditar(true); // Cuando tengas el de editar listo
+    alert(`Editando: ${sel.id}`);
+  };
+
+  const handleEliminar = (sel) => {
+    setAusenciaSeleccionada(sel);
+    // setAbrirEliminar(true); // Cuando tengas el de eliminar listo
+    alert(`Eliminando: ${sel.id}`);
+  };
 
   const handleConfirmarGenerarPdf = async (fechaSeleccionada) => {
+    // ... (tu lógica de PDF se mantiene igual)
     const curso = getCursoActual(fechaSeleccionada).label;
     const diaSemana = fechaSeleccionada.getDay();
-
-    // 1. Filtramos ausencias de esa fecha (comparación inclusiva según tu nueva lógica SQL)
     const fechaFormateada = format(fechaSeleccionada, "yyyy-MM-dd");
+
     const ausenciasDia = (ausencias || []).filter((a) => {
-      // Si tienes fecha_inicio y fecha_fin en el objeto 'a'
       return (
         fechaFormateada >= a.fecha_inicio &&
         fechaFormateada <= (a.fecha_fin || a.fecha_inicio)
@@ -69,36 +90,37 @@ export function AusenciasIndex() {
       const data = await res.json();
       const horarios = data.horario || [];
 
-      // 2. Construcción de los datos cruzando Ausencia + Horario Lectivo
       const datosInforme = periodos.map((p) => {
-        // Filtramos las ausencias que ocurren en este periodo horario 'p'
         const filasFiltradas = ausenciasDia
           .map((a) => {
-            // Buscamos si el profesor tiene clase LECTIVA en este periodo 'p'
+            // --- 1. VALIDACIÓN DE RANGO HORARIO ---
+            // Si no es día completo (tiene periodos definidos), comprobamos si el periodo actual 'p' está fuera del rango
+            if (a.idperiodo_inicio && a.idperiodo_fin) {
+              if (p.id < a.idperiodo_inicio || p.id > a.idperiodo_fin) {
+                return null; // La ausencia no aplica a esta hora
+              }
+            }
+
+            // --- 2. CRUCE CON HORARIO LECTIVO ---
             const h = horarios.find(
               (slot) =>
                 slot.uid === a.uid_profesor &&
                 String(slot.idperiodo) === String(p.id) &&
-                slot.tipo === "lectiva" // <-- FILTRO CRÍTICO: Solo horas lectivas
+                slot.tipo === "lectiva"
             );
 
-            // Si el profesor no tiene clase lectiva en esta hora, devolvemos null
             if (!h) return null;
 
-            // Si tiene clase lectiva, devolvemos los datos para la fila
             return {
               profesor: a.nombreProfesor,
               asignatura: h.materia_nombre || h.materia || "---",
               curso: h.grupo || "---",
-              observaciones: a.observaciones || "",
+              observaciones: a.observaciones || a.tipo_ausencia || "",
             };
           })
-          .filter((fila) => fila !== null); // Eliminamos los huecos donde el profe no tiene clase
+          .filter((fila) => fila !== null);
 
-        return {
-          horaLabel: p.nombre,
-          filas: filasFiltradas,
-        };
+        return { horaLabel: p.nombre, filas: filasFiltradas };
       });
 
       await generarParteDiarioAusencias(datosInforme, fechaSeleccionada);
@@ -137,36 +159,99 @@ export function AusenciasIndex() {
               </DropdownMenuContent>
             </DropdownMenu>
           }
-          acciones={(seleccionado) => (
-            <div className="flex gap-2">
-              <Button variant="outline" size="icon" onClick={handleInsertar}>
-                <Plus className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleEditar(seleccionado)}
-                disabled={!seleccionado}
-              >
-                <Pencil className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleEliminar(seleccionado)}
-                disabled={!seleccionado}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
+          acciones={(seleccionado) => {
+            // Comprobamos si es manual para habilitar/deshabilitar acciones
+            const esManual =
+              seleccionado &&
+              !seleccionado.idpermiso &&
+              !seleccionado.idextraescolar;
+            return (
+              <div className="flex gap-2 mt-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setAbrirInsertar(true)}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-orange-600 text-white">
+                      <p>Registrar ausencia imprevista</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEditar(seleccionado)}
+                        disabled={!seleccionado}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-blue-500 text-white">
+                      <p>Editar ausencia</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {/* BOTÓN ELIMINAR */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setAusenciaSeleccionada(seleccionado);
+                          setAbrirEliminar(true);
+                        }}
+                        disabled={!esManual}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      className={esManual ? "bg-red-500" : "bg-gray-400"}
+                    >
+                      <p>
+                        {esManual
+                          ? "Eliminar registro"
+                          : "No se puede eliminar: Vinculada a Permiso"}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            );
+          }}
         />
       )}
 
+      {/* Diálogo para Generar PDF */}
       <DialogoSeleccionarFechaParte
         open={abrirDialogoFecha}
         onOpenChange={setAbrirDialogoFecha}
         onConfirmar={handleConfirmarGenerarPdf}
+      />
+
+      {/* Diálogo para Insertar Ausencia Manual */}
+      <DialogoInsertarAusenciaManual
+        open={abrirInsertar}
+        onClose={() => setAbrirInsertar(false)}
+        fecha={new Date()} // Por defecto hoy, ya que es "última hora"
+        periodos_horarios={periodos}
+        onSuccess={refetch} // Asegúrate de llamar a refetch en el onSuccess de la mutación del diálogo
+      />
+
+      <DialogoEliminarAusencia
+        open={abrirEliminar}
+        onOpenChange={setAbrirEliminar}
+        ausencia={ausenciaSeleccionada}
+        onDeleteSuccess={refetch}
       />
     </div>
   );

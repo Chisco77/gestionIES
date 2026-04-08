@@ -203,7 +203,7 @@ async function getExtraescolaresEnriquecidos(req, res) {
  * ================================================================
  */
 
-async function updateEstadoExtraescolar(req, res) {
+/*async function updateEstadoExtraescolar(req, res) {
   const id = req.params.id;
   const { estado } = req.body;
   const usuarioSesion = req.session?.user;
@@ -252,6 +252,135 @@ async function updateEstadoExtraescolar(req, res) {
     res.status(500).json({ ok: false, error: "Error interno" });
   } finally {
     client.release();
+  }
+}*/
+
+/**
+ * Actualizar estado de actividad extraescolar y sincronizar ausencias
+ */
+async function updateEstadoExtraescolar(req, res) {
+  const id = req.params.id;
+  const { estado } = req.body;
+  const usuarioSesion = req.session?.user;
+
+  if (!usuarioSesion)
+    return res.status(401).json({ ok: false, error: "No autenticado" });
+  if (usuarioSesion.perfil !== "directiva")
+    return res.status(403).json({ ok: false, error: "No autorizado" });
+  if (![1, 2].includes(estado))
+    return res.status(400).json({ ok: false, error: "Estado inválido" });
+
+  const client = await db.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
+      `UPDATE extraescolares 
+       SET estado = $1, updated_at = NOW(), updated_by = $2
+       WHERE id = $3 
+       RETURNING *`,
+      [estado, usuarioSesion.uid, id]
+    );
+
+    if (!rows[0]) {
+      throw new Error("Actividad no encontrada");
+    }
+
+    const actividad = rows[0];
+
+    // Pasamos el cliente para mantener la transacción
+    await sincronizarAusenciasActividad(actividad, client);
+
+    await client.query("COMMIT");
+    res.json({ ok: true, actividad });
+
+    setImmediate(() => {
+      enviarEmailActividad(actividad, "estado", req.session.ldap);
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[updateEstadoExtraescolar] Error crítico:", err);
+    res.status(500).json({ ok: false, error: err.message || "Error interno" });
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Lógica de sincronización con Política de Absorción
+ */
+async function sincronizarAusenciasActividad(actividad, client) {
+  const {
+    id,
+    estado,
+    genera_ausencias,
+    responsables_uids,
+    titulo,
+    fecha_inicio,
+    fecha_fin,
+    idperiodo_inicio,
+    idperiodo_fin,
+    uid, // Creador de la actividad
+  } = actividad;
+
+  // 1. Limpieza total de ausencias previas de ESTA actividad (por si se re-acepta)
+  await client.query(
+    `DELETE FROM ausencias_profesorado WHERE idextraescolar = $1`,
+    [id]
+  );
+
+  // 2. Si está ACEPTADA (1) y GENERA AUSENCIAS, procedemos
+  if (estado === 1 && genera_ausencias === true) {
+    const responsables = responsables_uids || [];
+    const fInicio = new Date(fecha_inicio);
+    let fFin = fecha_fin ? new Date(fecha_fin) : fInicio;
+
+    if (fFin < fInicio) fFin = fInicio;
+
+    for (const uidProf of responsables) {
+      // 🛡️ POLÍTICA DE ABSORCIÓN:
+      // Borramos cualquier ausencia MANUAL solapada para ESTE profesor en particular
+      await client.query(
+        `DELETE FROM ausencias_profesorado 
+         WHERE uid_profesor = $1 
+           AND idpermiso IS NULL 
+           AND idextraescolar IS NULL
+           AND fecha_inicio <= $3 
+           AND fecha_fin >= $2
+           AND (
+             (idperiodo_inicio IS NULL) OR ($4::int IS NULL)
+             OR ($4::int <= idperiodo_fin AND $5::int >= idperiodo_inicio)
+           )`,
+        [
+          uidProf,
+          fInicio,
+          fFin,
+          idperiodo_inicio || null,
+          idperiodo_fin || null,
+        ]
+      );
+
+      // 🛡️ Inserción de la ausencia oficial de la actividad
+      await client.query(
+        `INSERT INTO ausencias_profesorado (
+          uid_profesor, fecha_inicio, fecha_fin, 
+          idperiodo_inicio, idperiodo_fin, tipo_ausencia, 
+          creada_por, idextraescolar
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          uidProf,
+          fInicio,
+          fFin,
+          idperiodo_inicio,
+          idperiodo_fin,
+          `Extraescolar: ${titulo}`,
+          uid, // El profesor que creó la actividad consta como creador de la ausencia
+          id,
+        ]
+      );
+    }
   }
 }
 
@@ -562,7 +691,7 @@ function validarActividad(body) {
   return errores;
 }
 
-async function sincronizarAusenciasActividad(actividad, client) {
+/*async function sincronizarAusenciasActividad(actividad, client) {
   const {
     id,
     estado,
@@ -610,7 +739,7 @@ async function sincronizarAusenciasActividad(actividad, client) {
       );
     }
   }
-}
+}*/
 
 /**
  * Función unificada para enviar avisos de actividades
