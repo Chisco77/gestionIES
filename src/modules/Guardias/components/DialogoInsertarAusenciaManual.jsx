@@ -1,8 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Check, ChevronsUpDown } from "lucide-react";
-
 import {
   Dialog,
   DialogContent,
@@ -21,25 +19,11 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 import { SelectorFecha } from "@/modules/Comunes/SelectorFecha";
-import { cn } from "@/lib/utils";
 import { SelectProfesoresSimple } from "@/modules/Utilidades/components/SelectProfesoresSimple";
 
 const TIPOS_AUSENCIA_MANUAL = [
@@ -52,39 +36,42 @@ const TIPOS_AUSENCIA_MANUAL = [
 export function DialogoInsertarAusenciaManual({
   open,
   onClose,
-  fecha,
+  fecha: fechaInicial, // La fecha que viene del componente padre (hoy por defecto)
   periodos_horarios,
 }) {
   const [uidProfesor, setUidProfesor] = useState("");
-  const [openCombo, setOpenCombo] = useState(false);
   const [descripcion, setDescripcion] = useState("");
   const [tipo, setTipo] = useState("Aviso telefónico");
   const [diaCompleto, setDiaCompleto] = useState(true);
   const [periodoInicio, setPeriodoInicio] = useState(null);
   const [periodoFin, setPeriodoFin] = useState(null);
-  const [fechaFin, setFechaFin] = useState(fecha);
+
+  // AHORA TENEMOS ESTADO PARA AMBAS FECHAS
+  const [fechaInicio, setFechaInicio] = useState(fechaInicial);
+  const [fechaFin, setFechaFin] = useState(fechaInicial);
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data: profesores = [], isLoading: loadingProfes } =
-    useProfesoresActivos();
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // Texto de la fecha para que sepa qué día está editando
-  const fechaLegible = useMemo(() => {
-    if (!fecha) return "";
-    return format(new Date(fecha), "EEEE, d 'de' MMMM", { locale: es });
-  }, [fecha]);
-
+  // Sincronizar cuando el diálogo se abre
   useEffect(() => {
     if (open) {
       setUidProfesor("");
       setDescripcion("");
       setTipo("Aviso telefónico");
       setDiaCompleto(true);
-      setFechaFin(fecha);
+      setFechaInicio(fechaInicial || new Date());
+      setFechaFin(fechaInicial || new Date());
     }
-  }, [open, fecha]);
+  }, [open, fechaInicial]);
+
+  // Si cambia la fecha de inicio, ajustamos la de fin si esta es anterior
+  useEffect(() => {
+    if (fechaInicio > fechaFin) {
+      setFechaFin(fechaInicio);
+    }
+  }, [fechaInicio]);
 
   const mutation = useMutation({
     mutationFn: async (nuevaAusencia) => {
@@ -114,10 +101,10 @@ export function DialogoInsertarAusenciaManual({
 
     mutation.mutate({
       uid_profesor: uidProfesor,
-      fecha_inicio: format(new Date(fecha), "yyyy-MM-dd"),
+      fecha_inicio: format(new Date(fechaInicio), "yyyy-MM-dd"),
       fecha_fin: diaCompleto
         ? format(new Date(fechaFin), "yyyy-MM-dd")
-        : format(new Date(fecha), "yyyy-MM-dd"),
+        : format(new Date(fechaInicio), "yyyy-MM-dd"),
       idperiodo_inicio: diaCompleto ? null : Number(periodoInicio),
       idperiodo_fin: diaCompleto ? null : Number(periodoFin),
       tipo_ausencia: tipo,
@@ -132,61 +119,70 @@ export function DialogoInsertarAusenciaManual({
         onInteractOutside={(e) => e.preventDefault()}
         className="p-0 overflow-hidden rounded-lg"
       >
-        {/* HEADER ORIGINAL CON TU COLOR AZUL */}
-        <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex flex-col items-center justify-center py-3 px-6">
-          <DialogTitle className="text-lg font-semibold text-center leading-snug">
-            Registrar Ausencia de Última Hora
+        <DialogHeader className="bg-blue-600 text-white rounded-t-lg flex flex-col items-center justify-center py-4 px-6">
+          <DialogTitle className="text-lg font-semibold text-center">
+            Registrar Ausencia Manual
           </DialogTitle>
-          <span className="text-xs opacity-90 capitalize font-medium">
-            Para el {fechaLegible}
-          </span>
+          <p className="text-xs opacity-80 italic">
+            Usa este formulario para avisos imprevistos
+          </p>
         </DialogHeader>
 
         <div className="p-6 space-y-5">
-          {/* BUSCADOR INCREMENTAL DE PROFESOR */}
+          {/* PROFESOR */}
           <div className="space-y-2 flex flex-col">
             <Label>Profesor que se ausenta</Label>
-            {/* AQUÍ ESTÁ TU NUEVO COMPONENTE */}
             <SelectProfesoresSimple
               value={uidProfesor}
               onChange={setUidProfesor}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Tipo de aviso</Label>
-            <Select value={tipo} onValueChange={setTipo}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIPOS_AUSENCIA_MANUAL.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* FILA DE FECHA DE INICIO Y TIPO  */}
+          <div className="grid grid-cols-2 gap-4 items-end">
+            <div className="flex flex-col space-y-2">
+              <SelectorFecha
+                label="Fecha de inicio"
+                fecha={fechaInicio}
+                setFecha={setFechaInicio}
+              />
+            </div>
+
+            <div className="flex flex-col space-y-2">
+              <Label className="mb-[2px]">Tipo de aviso</Label>
+              <Select value={tipo} onValueChange={setTipo}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS_AUSENCIA_MANUAL.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2 py-2">
+          <div className="flex items-center space-x-2 py-1">
             <Checkbox
               id="fullDay"
               checked={diaCompleto}
               onCheckedChange={setDiaCompleto}
             />
-            <Label htmlFor="fullDay" className="cursor-pointer">
-              Ausencia de día completo
+            <Label htmlFor="fullDay" className="cursor-pointer font-medium">
+              Ausencia de día completo / Varios días
             </Label>
           </div>
 
           {!diaCompleto ? (
-            <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
+            <div className="grid grid-cols-2 gap-4 border-l-4 border-blue-200 pl-4 py-1 animate-in slide-in-from-left-2 duration-300">
               <div className="space-y-2">
-                <Label>Desde</Label>
+                <Label className="text-xs">Desde hora</Label>
                 <Select onValueChange={setPeriodoInicio}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Hora..." />
+                    <SelectValue placeholder="Inicio..." />
                   </SelectTrigger>
                   <SelectContent>
                     {periodos_horarios.map((p) => (
@@ -198,10 +194,10 @@ export function DialogoInsertarAusenciaManual({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Hasta</Label>
+                <Label className="text-xs">Hasta hora</Label>
                 <Select onValueChange={setPeriodoFin}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Hora..." />
+                    <SelectValue placeholder="Fin..." />
                   </SelectTrigger>
                   <SelectContent>
                     {periodos_horarios.map((p) => (
@@ -214,33 +210,34 @@ export function DialogoInsertarAusenciaManual({
               </div>
             </div>
           ) : (
-            <SelectorFecha
-              label="Fecha de finalización"
-              fecha={fechaFin}
-              setFecha={setFechaFin}
-              minDate={new Date(fecha)}
-            />
+            <div className="animate-in fade-in duration-300">
+              <SelectorFecha
+                label="Fecha de finalización (inclusive)"
+                fecha={fechaFin}
+                setFecha={setFechaFin}
+                minDate={fechaInicio}
+              />
+            </div>
           )}
 
           <div className="space-y-2">
-            <Label>Observaciones adicionales</Label>
+            <Label>Observaciones / Detalles</Label>
             <Input
-              placeholder="Ej: Ha llamado a las 8:05..."
+              placeholder="Ej: Avisa por WhatsApp, se siente mal..."
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
             />
           </div>
         </div>
 
-        {/* FOOTER ORIGINAL */}
-        <DialogFooter className="px-6 py-4 bg-gray-50">
+        <DialogFooter className="px-6 py-4 bg-gray-50 border-t">
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
           <Button
             onClick={handleGuardar}
             disabled={mutation.isLoading}
-            className="bg-slate-800 hover:bg-slate-900"
+            className="bg-blue-700 hover:bg-blue-800"
           >
             {mutation.isLoading ? "Guardando..." : "Registrar Ausencia"}
           </Button>

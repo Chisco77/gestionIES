@@ -159,9 +159,9 @@ export function DialogoEditarAusenciaManual({
           </div>
 
           {!diaCompleto ? (
-            <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
+            <div className="grid grid-cols-2 gap-4 border-l-4 border-green-200 pl-4 py-1 animate-in slide-in-from-left-2 duration-300">
               <div className="space-y-2">
-                <Label>Desde tramo</Label>
+                <Label className="text-xs">Desde tramo</Label>
                 <Select value={periodoInicio} onValueChange={setPeriodoInicio}>
                   <SelectTrigger>
                     <SelectValue placeholder="Inicio..." />
@@ -176,7 +176,7 @@ export function DialogoEditarAusenciaManual({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Hasta tramo</Label>
+                <Label className="text-xs">Hasta tramo</Label>
                 <Select value={periodoFin} onValueChange={setPeriodoFin}>
                   <SelectTrigger>
                     <SelectValue placeholder="Fin..." />
@@ -192,12 +192,14 @@ export function DialogoEditarAusenciaManual({
               </div>
             </div>
           ) : (
-            <SelectorFecha
-              label="Fecha de finalización"
-              fecha={fechaFin}
-              setFecha={setFechaFin}
-              minDate={fechaInicio}
-            />
+            <div className="animate-in fade-in duration-300">
+              <SelectorFecha
+                label="Fecha de finalización"
+                fecha={fechaFin}
+                setFecha={setFechaFin}
+                minDate={fechaInicio}
+              />
+            </div>
           )}
 
           <div className="space-y-2">
