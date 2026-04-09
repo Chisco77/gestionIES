@@ -29,6 +29,7 @@ import { getCursoActual } from "@/utils/fechasHoras";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { DialogoSeleccionarFechaParte } from "../components/DialogoSeleccionarFechaParte";
 import { DialogoInsertarAusenciaManual } from "../components/DialogoInsertarAusenciaManual";
+import { DialogoEditarAusenciaManual } from "../components/DialogoEditarAusenciaManual";
 import { DialogoEliminarAusencia } from "../components/DialogoEliminarAusencia";
 import { generarParteDiarioAusencias } from "@/Informes/horarios";
 import { format } from "date-fns";
@@ -39,15 +40,16 @@ export function AusenciasIndex() {
   const [abrirInsertar, setAbrirInsertar] = useState(false);
   const [ausenciaSeleccionada, setAusenciaSeleccionada] = useState(null);
   const [abrirEliminar, setAbrirEliminar] = useState(false);
+  const [abrirEditar, setAbrirEditar] = useState(false);
 
   // Usamos refetch para actualizar la tabla tras insertar
   const { data: ausencias, isLoading, error, refetch } = useAusencias();
   const { data: periodos = [] } = usePeriodosHorarios();
 
   const handleEditar = (sel) => {
+    if (!sel) return;
     setAusenciaSeleccionada(sel);
-    // setAbrirEditar(true); // Cuando tengas el de editar listo
-    alert(`Editando: ${sel.id}`);
+    setAbrirEditar(true);
   };
 
   const handleEliminar = (sel) => {
@@ -183,23 +185,34 @@ export function AusenciasIndex() {
                     </TooltipContent>
                   </Tooltip>
 
+                  {/* BOTÓN EDITAR (Solo si es manual) */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="outline"
                         size="icon"
                         onClick={() => handleEditar(seleccionado)}
-                        disabled={!seleccionado}
+                        disabled={!esManual} // <--- Bloqueamos si es automática
                       >
                         <Pencil className="w-4 h-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-blue-500 text-white">
-                      <p>Editar ausencia</p>
+                    <TooltipContent
+                      className={
+                        esManual
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-400 text-white"
+                      }
+                    >
+                      <p>
+                        {esManual
+                          ? "Editar registro manual"
+                          : "No editable: Proviene de un Permiso/Extraescolar"}
+                      </p>
                     </TooltipContent>
                   </Tooltip>
 
-                  {/* BOTÓN ELIMINAR */}
+                  {/* BOTÓN ELIMINAR (solo si es manual) */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -252,6 +265,16 @@ export function AusenciasIndex() {
         onOpenChange={setAbrirEliminar}
         ausencia={ausenciaSeleccionada}
         onDeleteSuccess={refetch}
+      />
+
+      <DialogoEditarAusenciaManual
+        open={abrirEditar}
+        onClose={() => {
+          setAbrirEditar(false);
+          setAusenciaSeleccionada(null); // Limpiamos al cerrar
+        }}
+        ausencia={ausenciaSeleccionada}
+        periodos_horarios={periodos}
       />
     </div>
   );
