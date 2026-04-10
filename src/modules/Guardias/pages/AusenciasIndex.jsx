@@ -91,6 +91,7 @@ export function AusenciasIndex() {
 
       const data = await res.json();
       const horarios = data.horario || [];
+      console.log("Horarios: ", horarios);
 
       const datosInforme = periodos.map((p) => {
         const filasFiltradas = ausenciasDia
@@ -108,7 +109,7 @@ export function AusenciasIndex() {
               (slot) =>
                 slot.uid === a.uid_profesor &&
                 String(slot.idperiodo) === String(p.id) &&
-                slot.tipo === "lectiva"
+                (slot.tipo === "lectiva" || slot.tipo === "guardia") 
             );
 
             if (!h) return null;
@@ -118,6 +119,7 @@ export function AusenciasIndex() {
               asignatura: h.materia_nombre || h.materia || "---",
               curso: h.grupo || "---",
               observaciones: a.observaciones || a.tipo_ausencia || "",
+              tipo: h.tipo,
             };
           })
           .filter((fila) => fila !== null);

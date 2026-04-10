@@ -435,7 +435,7 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
 
   const opcionesFecha = { day: "numeric", month: "long", year: "numeric" };
   const tituloCompleto = `Parte diario de Ausencias del ${fecha.toLocaleDateString("es-ES", opcionesFecha)}`;
-
+  console.log("Horarios: ", datosProcesados);
   // --- CABECERA ---
   let y = drawHeader(doc, tituloCompleto);
 
@@ -476,8 +476,12 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
   datosProcesados.forEach((p) => {
     // Calculamos altura con control de desbordamiento de texto
     const subfilasConAltura = p.filas.map((f) => {
+      // Determinamos qué texto mostrar en la columna Asignatura
+      const textoAsignatura =
+        f.tipo === "guardia" ? "GUARDIA" : f.asignatura || "";
+
       const lineasAsig = doc.splitTextToSize(
-        f.asignatura || "",
+        textoAsignatura,
         colAsigW - 4
       ).length;
       const lineasProf = doc.splitTextToSize(
@@ -490,8 +494,7 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
       ).length;
 
       const maxLineas = Math.max(lineasAsig, lineasProf, lineasCurso, 1);
-      // Altura base 7mm + 4mm por cada línea extra
-      return { ...f, altura: Math.max(7, maxLineas * 4 + 1) };
+      return { ...f, textoAsignatura, altura: Math.max(7, maxLineas * 4 + 1) };
     });
 
     const alturaTotalBloque =
@@ -553,10 +556,11 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
         doc.text(profLines, sX + 2, currentSubY + 4);
 
         const asigLines = doc
-          .splitTextToSize(f.asignatura || "", colAsigW - 4)
+          .splitTextToSize(f.textoAsignatura, colAsigW - 4)
           .slice(0, limitLines);
         doc.text(asigLines, sX + colProfW + 2, currentSubY + 4);
 
+        // Curso
         const cursoLines = doc
           .splitTextToSize(String(f.curso || ""), colCursoW - 2)
           .slice(0, limitLines);
