@@ -497,7 +497,6 @@ export function DialogoEditarExtraescolar({
               </div>
 
               <div className="space-y-1">
-                <Label>Profesores responsables</Label>
                 <MultiSelectProfesores
                   value={profesoresSeleccionados}
                   onChange={setProfesoresSeleccionados}

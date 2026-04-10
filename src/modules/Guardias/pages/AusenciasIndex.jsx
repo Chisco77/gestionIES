@@ -34,6 +34,7 @@ import { DialogoEliminarAusencia } from "../components/DialogoEliminarAusencia";
 import { generarParteDiarioAusencias } from "@/Informes/horarios";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { eachDayOfInterval } from "date-fns";
 
 export function AusenciasIndex() {
   const [abrirDialogoFecha, setAbrirDialogoFecha] = useState(false);
@@ -58,80 +59,115 @@ export function AusenciasIndex() {
     alert(`Eliminando: ${sel.id}`);
   };
 
-  const handleConfirmarGenerarPdf = async (fechaSeleccionada) => {
-    // ... (tu lógica de PDF se mantiene igual)
-    const curso = getCursoActual(fechaSeleccionada).label;
-    const diaSemana = fechaSeleccionada.getDay();
-    const fechaFormateada = format(fechaSeleccionada, "yyyy-MM-dd");
-
-    const ausenciasDia = (ausencias || []).filter((a) => {
-      return (
-        fechaFormateada >= a.fecha_inicio &&
-        fechaFormateada <= (a.fecha_fin || a.fecha_inicio)
-      );
+  const handleConfirmarGenerarPdf = async (fechaInicio, fechaFin) => {
+    // 1. Generamos el array de todos los días incluidos en el rango
+    const diasAProcesar = eachDayOfInterval({
+      start: fechaInicio,
+      end: fechaFin,
     });
 
-    if (ausenciasDia.length === 0) {
-      toast.info("No hay ausencias registradas para la fecha seleccionada.");
-      return;
-    }
+    let generadosExitosos = 0;
+    let diasSinAusencias = 0;
 
-    const uids = [...new Set(ausenciasDia.map((a) => a.uid_profesor))];
+    // 2. Iteramos sobre cada día del rango
+    for (const fechaSeleccionada of diasAProcesar) {
+      const diaSemana = fechaSeleccionada.getDay();
 
-    try {
-      const params = new URLSearchParams();
-      uids.forEach((id) => params.append("uid", id));
-      params.append("curso_academico", curso);
-      params.append("dia_semana", diaSemana);
+      // Omitimos sábados (6) y domingos (0)
+      if (diaSemana === 0 || diaSemana === 6) continue;
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/db/horario-profesorado/enriquecido?${params.toString()}`,
-        { credentials: "include" }
-      );
+      const curso = getCursoActual(fechaSeleccionada).label;
+      const fechaFormateada = format(fechaSeleccionada, "yyyy-MM-dd");
 
-      const data = await res.json();
-      const horarios = data.horario || [];
-      console.log("Horarios: ", horarios);
-
-      const datosInforme = periodos.map((p) => {
-        const filasFiltradas = ausenciasDia
-          .map((a) => {
-            // --- 1. VALIDACIÓN DE RANGO HORARIO ---
-            // Si no es día completo (tiene periodos definidos), comprobamos si el periodo actual 'p' está fuera del rango
-            if (a.idperiodo_inicio && a.idperiodo_fin) {
-              if (p.id < a.idperiodo_inicio || p.id > a.idperiodo_fin) {
-                return null; // La ausencia no aplica a esta hora
-              }
-            }
-
-            // --- 2. CRUCE CON HORARIO LECTIVO ---
-            const h = horarios.find(
-              (slot) =>
-                slot.uid === a.uid_profesor &&
-                String(slot.idperiodo) === String(p.id) &&
-                (slot.tipo === "lectiva" || slot.tipo === "guardia") 
-            );
-
-            if (!h) return null;
-
-            return {
-              profesor: a.nombreProfesor,
-              asignatura: h.materia_nombre || h.materia || "---",
-              curso: h.grupo || "---",
-              observaciones: a.observaciones || a.tipo_ausencia || "",
-              tipo: h.tipo,
-            };
-          })
-          .filter((fila) => fila !== null);
-
-        return { horaLabel: p.nombre, filas: filasFiltradas };
+      // 3. Filtramos las ausencias que caen en este día específico
+      const ausenciasDia = (ausencias || []).filter((a) => {
+        return (
+          fechaFormateada >= a.fecha_inicio &&
+          fechaFormateada <= (a.fecha_fin || a.fecha_inicio)
+        );
       });
 
-      await generarParteDiarioAusencias(datosInforme, fechaSeleccionada);
-      toast.success("Parte de ausencias generado con éxito");
-    } catch (err) {
-      console.error(err);
-      toast.error("Error al obtener datos del horario");
+      // Si no hay ausencias este día, pasamos al siguiente
+      if (ausenciasDia.length === 0) {
+        diasSinAusencias++;
+        continue;
+      }
+
+      // 4. Obtenemos UIDs únicos para la consulta al horario
+      const uids = [...new Set(ausenciasDia.map((a) => a.uid_profesor))];
+
+      try {
+        const params = new URLSearchParams();
+        uids.forEach((id) => params.append("uid", id));
+        params.append("curso_academico", curso);
+        params.append("dia_semana", diaSemana);
+
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/db/horario-profesorado/enriquecido?${params.toString()}`,
+          { credentials: "include" }
+        );
+
+        const data = await res.json();
+        const horarios = data.horario || [];
+
+        // 5. Construimos los datos del informe para este día
+        const datosInforme = periodos.map((p) => {
+          const filasFiltradas = ausenciasDia
+            .map((a) => {
+              // Validación de rango horario (periodos)
+              if (a.idperiodo_inicio && a.idperiodo_fin) {
+                if (p.id < a.idperiodo_inicio || p.id > a.idperiodo_fin) {
+                  return null;
+                }
+              }
+
+              // Cruce con horario (Lectivas o Guardias)
+              const h = horarios.find(
+                (slot) =>
+                  slot.uid === a.uid_profesor &&
+                  String(slot.idperiodo) === String(p.id) &&
+                  (slot.tipo === "lectiva" || slot.tipo === "guardia")
+              );
+
+              if (!h) return null;
+
+              return {
+                profesor: a.nombreProfesor,
+                asignatura: h.materia_nombre || h.materia || "---",
+                curso: h.grupo || "---",
+                observaciones: a.observaciones || a.tipo_ausencia || "",
+                tipo: h.tipo,
+                estancia: h.estancia,
+              };
+            })
+            .filter((fila) => fila !== null);
+
+          return { horaLabel: p.nombre, filas: filasFiltradas };
+        });
+
+        // 6. Llamamos a la generación del PDF para este día concreto
+        // Solo generamos si hay al menos una fila con datos en los periodos
+        const tieneContenido = datosInforme.some((d) => d.filas.length > 0);
+
+        if (tieneContenido) {
+          await generarParteDiarioAusencias(datosInforme, fechaSeleccionada);
+          generadosExitosos++;
+        }
+      } catch (err) {
+        console.error(`Error procesando el día ${fechaFormateada}:`, err);
+        toast.error(`Error al procesar el día ${fechaFormateada}`);
+      }
+    }
+
+    // 7. Feedback final al usuario
+    if (generadosExitosos > 0) {
+      toast.success(
+        `Proceso finalizado. ${generadosExitosos} partes de ausencias generados.`
+      );
+    } else if (diasSinAusencias > 0) {
+      toast.info(
+        "No se encontraron ausencias registradas para los días seleccionados."
+      );
     }
   };
 

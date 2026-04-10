@@ -44,7 +44,6 @@ const dias = ["L", "M", "X", "J", "V"];
 
 export function CuadranteGuardiasIndex() {
   const { data: profesores = [], isLoading } = useProfesoresActivos();
-  console.log("Profesores: ", profesores);
   const { data: periodos = [], isLoading: loadingPeriodos } =
     usePeriodosHorarios();
   const API_URL = import.meta.env.VITE_API_URL;
@@ -128,8 +127,6 @@ export function CuadranteGuardiasIndex() {
         registroEnCelda.estancia?.id || registroEnCelda.idestancia || null,
     };
 
-    console.log("🚀 DATOS FINALES ENVIADOS AL HIJO:", datosParaDialogo);
-
     setSesionAEditar(datosParaDialogo);
     setEditDialogOpen(true);
   };
@@ -142,24 +139,13 @@ export function CuadranteGuardiasIndex() {
           `${API_URL}/db/horario-profesorado/enriquecido?curso_academico=${curso}`
         );
         const data = await resp.json();
-        console.log("RAW BACKEND:", data.horario[0]); // Ya lo tienes
-        console.log(
-          "✅ Todos los tipos:",
-          data.horario.map((r) => ({ id: r.id, tipo: r.tipo }))
-        );
+
         if (!data.ok) throw new Error(data.error || "Error desconocido");
 
         const guardiasFiltradas = data.horario.filter(
           (r) => r.tipo === "guardia"
         );
-        console.log(
-          "🔹 Guardias filtradas:",
-          guardiasFiltradas.map((g) => ({
-            id: g.id,
-            uid: g.uid,
-            tipo: g.tipo,
-          }))
-        );
+
         const nuevoGuardias = {};
         const nuevoNumPorCelda = {}; // 👈 Creamos un objeto para los números
 

@@ -435,7 +435,6 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
 
   const opcionesFecha = { day: "numeric", month: "long", year: "numeric" };
   const tituloCompleto = `Parte diario de Ausencias del ${fecha.toLocaleDateString("es-ES", opcionesFecha)}`;
-  console.log("Horarios: ", datosProcesados);
   // --- CABECERA ---
   let y = drawHeader(doc, tituloCompleto);
 
@@ -480,6 +479,16 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
       const textoAsignatura =
         f.tipo === "guardia" ? "GUARDIA" : f.asignatura || "";
 
+      // Si es guardia y hay estancia, la añadimos a las observaciones de esa fila
+      let textoObs = "";
+      const estanciaValida =
+        f.estancia &&
+        f.estancia.toLowerCase().trim() !== "estancia desconocida";
+
+      if (f.tipo === "guardia" && estanciaValida) {
+        textoObs = `${f.estancia}`.trim();
+      }
+
       const lineasAsig = doc.splitTextToSize(
         textoAsignatura,
         colAsigW - 4
@@ -492,9 +501,22 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
         String(f.curso || ""),
         colCursoW - 2
       ).length;
+      const lineasObs = doc.splitTextToSize(textoObs, colObsW - 4).length; // Calculamos líneas de obs
 
-      const maxLineas = Math.max(lineasAsig, lineasProf, lineasCurso, 1);
-      return { ...f, textoAsignatura, altura: Math.max(7, maxLineas * 4 + 1) };
+      const maxLineas = Math.max(
+        lineasAsig,
+        lineasProf,
+        lineasCurso,
+        lineasObs,
+        1
+      );
+
+      return {
+        ...f,
+        textoAsignatura,
+        textoObs, // Guardamos el texto procesado
+        altura: Math.max(7, maxLineas * 4 + 1),
+      };
     });
 
     const alturaTotalBloque =
@@ -544,6 +566,18 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
           "S"
         );
 
+        // IMPORTANTE: Dibujamos el rectángulo de observaciones por CADA fila interna
+        // para que el texto de la estancia quede alineado con su profesor
+        const xObs = sX + colProfW + colAsigW + colCursoW;
+        doc.rect(xObs, currentSubY, colObsW, f.altura, "S");
+        doc.rect(
+          margin + tableWidth - colFirmaW,
+          currentSubY,
+          colFirmaW,
+          f.altura,
+          "S"
+        );
+
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
 
@@ -565,6 +599,12 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
           .splitTextToSize(String(f.curso || ""), colCursoW - 2)
           .slice(0, limitLines);
         doc.text(cursoLines, sX + colProfW + colAsigW + 2, currentSubY + 4);
+
+        // Imprimir OBSERVACIONES (con la estancia incluida)
+        const obsLines = doc
+          .splitTextToSize(f.textoObs, colObsW - 4)
+          .slice(0, limitLines);
+        doc.text(obsLines, xObs + 2, currentSubY + 4);
 
         currentSubY += f.altura;
       });
