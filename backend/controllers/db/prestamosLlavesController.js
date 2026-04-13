@@ -247,10 +247,10 @@ async function prestarLlave(req, res) {
         .status(400)
         .json({ error: "No hay suficientes llaves disponibles" });
 
-    const fechaentrega = new Date();
+    //const fechaentrega = new Date();
 
     // --- Insertar préstamo ---
-    const {
+    /*const {
       rows: [nuevoPrestamo],
     } = await pool.query(
       `
@@ -259,6 +259,16 @@ async function prestarLlave(req, res) {
       RETURNING *
     `,
       [idestancia, uid, unidades, fechaentrega]
+    );*/
+    const {
+      rows: [nuevoPrestamo],
+    } = await pool.query(
+      `
+  INSERT INTO prestamos_llaves (idestancia, uid, unidades, fechaentrega, devuelta)
+  VALUES ($1, $2, $3, NOW(), false)  
+  RETURNING *
+`,
+      [idestancia, uid, unidades]
     );
 
     res.json({ success: true, prestamo: nuevoPrestamo });
@@ -280,13 +290,23 @@ async function devolverLlave(req, res) {
 
     const fechaDevolucion = new Date();
 
-    await pool.query(
+    /* await pool.query(
       `
       UPDATE prestamos_llaves
       SET fechadevolucion = $1, devuelta = true
       WHERE id = ANY($2::int[])
     `,
       [fechaDevolucion, ids]
+    );*/
+
+    // --- En devolverLlave ---
+    await pool.query(
+      `
+  UPDATE prestamos_llaves
+  SET fechadevolucion = NOW(), devuelta = true -- <--- Usamos NOW() de Postgres
+  WHERE id = ANY($1::int[])
+`,
+      [ids] // <--- Quitamos fechaDevolucion
     );
 
     res.json({ success: true, cantidad: ids.length });
