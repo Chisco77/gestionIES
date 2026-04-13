@@ -19,28 +19,50 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+// 1. Importamos el hook del cliente
+import { useQueryClient } from "@tanstack/react-query";
 
-export function DialogoEditarMateria({ open, onClose, materiaSeleccionada, onSuccess }) {
+export function DialogoEditarMateria({
+  open,
+  onClose,
+  materiaSeleccionada,
+  onSuccess,
+}) {
   const [nombre, setNombre] = useState("");
   const API_URL = import.meta.env.VITE_API_URL;
+
+  // 2. Inicializamos el cliente
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (materiaSeleccionada) setNombre(materiaSeleccionada.nombre || "");
   }, [materiaSeleccionada]);
 
   const handleEditar = async () => {
+    if (!nombre.trim()) {
+      toast.error("El nombre no puede estar vacío");
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/db/materias/${materiaSeleccionada.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ nombre }),
-      });
+      const res = await fetch(
+        `${API_URL}/db/materias/${materiaSeleccionada.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ nombre }),
+        }
+      );
 
       if (!res.ok) throw new Error("Error al modificar");
 
+      // 3. Invalidamos la caché para que useMaterias vuelva a pedir los datos
+      await queryClient.invalidateQueries({ queryKey: ["materias"] });
+
       toast.success("Materia modificada");
-      await onSuccess?.();
+
+      if (onSuccess) await onSuccess();
       onClose();
     } catch (err) {
       toast.error("Error al modificar materia");
@@ -54,7 +76,11 @@ export function DialogoEditarMateria({ open, onClose, materiaSeleccionada, onSuc
         <DialogHeader>
           <DialogTitle>Editar materia</DialogTitle>
         </DialogHeader>
-        <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <Input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleEditar()}
+        />
         <DialogFooter>
           <Button onClick={handleEditar}>Guardar cambios</Button>
         </DialogFooter>

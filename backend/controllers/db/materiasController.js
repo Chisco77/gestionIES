@@ -98,7 +98,7 @@ exports.deleteMateria = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Comprobar si hay libros asociados a la materia
+    // 1. Comprobar si hay libros asociados a la materia
     const librosAsociados = await db.query(
       "SELECT COUNT(*) FROM libros WHERE idmateria = $1",
       [id]
@@ -111,7 +111,20 @@ exports.deleteMateria = async (req, res) => {
       });
     }
 
-    // Eliminar la materia
+    // 2. NUEVA VALIDACIÓN: Comprobar si hay registros en horario_profesorado
+    const horariosAsociados = await db.query(
+      "SELECT COUNT(*) FROM horario_profesorado WHERE idmateria = $1",
+      [id]
+    );
+
+    if (parseInt(horariosAsociados.rows[0].count, 10) > 0) {
+      return res.status(400).json({
+        message:
+          "No se puede eliminar la materia porque está asignada en el horario del profesorado",
+      });
+    }
+
+    // 3. Eliminar la materia si todo lo anterior es 0
     const result = await db.query("DELETE FROM materias WHERE id = $1", [id]);
 
     if (result.rowCount === 0) {

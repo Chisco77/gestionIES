@@ -19,12 +19,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
+// 1. Importamos useQueryClient
+import { useQueryClient } from "@tanstack/react-query";
 
 export function DialogoInsertarMateria({ open, onClose, onSuccess }) {
   const [nombre, setNombre] = useState("");
   const API_URL = import.meta.env.VITE_API_URL;
 
+  // 2. Inicializamos el cliente
+  const queryClient = useQueryClient();
+
   const handleGuardar = async () => {
+    if (!nombre.trim()) {
+      toast.error("El nombre no puede estar vacío");
+      return;
+    }
+
     try {
       const res = await fetch(`${API_URL}/db/materias`, {
         method: "POST",
@@ -34,6 +44,10 @@ export function DialogoInsertarMateria({ open, onClose, onSuccess }) {
       });
 
       if (!res.ok) throw new Error("Error al insertar");
+
+      // 3. Invalidamos la caché de 'materias'
+      // Esto marca los datos como 'stale' y dispara un refetch automático
+      await queryClient.invalidateQueries({ queryKey: ["materias"] });
 
       toast.success("Materia insertada correctamente");
       setNombre("");
@@ -55,6 +69,7 @@ export function DialogoInsertarMateria({ open, onClose, onSuccess }) {
           placeholder="Nombre de la materia"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleGuardar()}
         />
         <DialogFooter>
           <Button onClick={handleGuardar}>Guardar</Button>

@@ -1,7 +1,7 @@
 import { ArrowUpDown, ArrowUp, ArrowDown, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const formatoFechaHora = (fecha) => {
+/*const formatoFechaHora = (fecha) => {
   if (!fecha) return "—";
   const d = new Date(fecha);
   return d.toLocaleString("es-ES", {
@@ -10,6 +10,24 @@ const formatoFechaHora = (fecha) => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+  });
+};*/
+
+const formatoFechaHora = (fecha) => {
+  if (!fecha) return "—";
+  
+  // Convertimos el string que viene de la BD a un objeto Date de JS
+  const d = new Date(fecha);
+  
+  // Forzamos el renderizado en la zona horaria de Madrid
+  return d.toLocaleString("es-ES", {
+    timeZone: "Europe/Madrid", 
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
   });
 };
 
