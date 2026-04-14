@@ -35,6 +35,7 @@ const {
   simularGuardiasDia, 
   confirmarGuardias,
   cancelarAutoasignacion, 
+  getProfesoresDeGuardia,
   autoasignarGuardia
 } = require("../controllers/db/guardiasController");
 
@@ -468,6 +469,8 @@ router.post("/guardias/confirmar", confirmarGuardias);
 // Para los profesores (Autogestión)
 router.post("/guardias/autoasignar", autoasignarGuardia);
 
+// Obtiene los profesores que están de guardia y NO están ausentes
+router.get("/guardias/disponibles/:fecha/:idperiodo", getProfesoresDeGuardia);
 // Usamos DELETE porque estamos eliminando un registro de 'guardias_asignadas'
 router.delete("/guardias/cancelar/:id_guardia_asignada", cancelarAutoasignacion);
 

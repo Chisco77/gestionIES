@@ -10,12 +10,15 @@ import {
   AlertCircle,
   CheckCircle2,
   Calendar,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useGuardiasDia } from "@/hooks/useGuardiasDia";
 import { useAuth } from "@/context/AuthContext";
+
+import { useProfesoresGuardia } from "@/hooks/useProfesoresGuardia";
 
 export function PanelGuardias({ fecha = new Date() }) {
   const queryClient = useQueryClient();
@@ -46,14 +49,15 @@ export function PanelGuardias({ fecha = new Date() }) {
       return result;
     },
     onSuccess: (data) => {
-      // Mostramos el mensaje de éxito que viene del backend
       toast.success(data.mensaje || "Guardia asignada correctamente");
-      // Refrescamos los datos para que desaparezca el botón de "Cubrir"
       queryClient.invalidateQueries({ queryKey: ["guardias-dia"] });
+      queryClient.invalidateQueries({ queryKey: ["profes-guardia"] });
     },
     onError: (error) => {
       // Mostramos el error específico (ej: "No tienes guardia en este periodo")
       toast.error(error.message);
+      queryClient.invalidateQueries({ queryKey: ["guardias-dia"] });
+      queryClient.invalidateQueries({ queryKey: ["profes-guardia"] });
     },
   });
 
@@ -70,8 +74,13 @@ export function PanelGuardias({ fecha = new Date() }) {
     onSuccess: (data) => {
       toast.success(data.mensaje);
       queryClient.invalidateQueries({ queryKey: ["guardias-dia"] });
+      queryClient.invalidateQueries({ queryKey: ["profes-guardia"] });
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) => {
+      toast.error(error.message);
+      queryClient.invalidateQueries({ queryKey: ["guardias-dia"] });
+      queryClient.invalidateQueries({ queryKey: ["profes-guardia"] });
+    },
   });
 
   // Agrupamos y ordenamos periodos
@@ -113,7 +122,7 @@ export function PanelGuardias({ fecha = new Date() }) {
     );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 p-4">
+    <div className="max-w-7xl mx-auto space-y-6 p-4">
       {/* CABECERA */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
         <div>
@@ -131,7 +140,6 @@ export function PanelGuardias({ fecha = new Date() }) {
           {format(fecha, "EEEE, d 'de' MMMM", { locale: es })}
         </Badge>
       </div>
-
       {/* SISTEMA DE PESTAÑAS */}
       <Tabs defaultValue={String(periodosUnicos[0]?.id)} className="w-full">
         <div className="flex justify-center mb-8">
@@ -158,26 +166,46 @@ export function PanelGuardias({ fecha = new Date() }) {
               value={String(p.id)}
               className="animate-in fade-in slide-in-from-bottom-2 duration-300 outline-none"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {ausenciasEnPeriodo.map((item, idx) => (
-                  <GuardiaCard
-                    key={idx}
-                    item={item}
-                    uidUsuarioActual={user?.username}
-                    onAsignar={() =>
-                      mutationAuto.mutate({
-                        fecha: fechaFmt,
-                        idperiodo: item.periodo,
-                        uid_profesor_ausente: item.uid_ausente,
-                      })
-                    }
-                    onCancelar={() => mutationCancelar.mutate(item.id)}
-                    // Y actualizamos el loading para que bloquee el botón en ambas acciones:
-                    loading={
-                      mutationAuto.isLoading || mutationCancelar.isLoading
-                    }
-                  />
-                ))}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* --- NUEVA COLUMNA IZQUIERDA (Profes de Guardia) --- */}
+                <div className="lg:col-span-4 space-y-4">
+                  <div className="flex items-center gap-2 px-1 text-slate-700">
+                    <Users className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-lg">Profesores de Guardia</h3>
+                  </div>
+                  <ListaProfesGuardia fecha={fechaFmt} idPeriodo={p.id} />
+                </div>
+
+                {/* --- COLUMNA DERECHA (Ausencias - Tu código anterior adaptado) --- */}
+                <div className="lg:col-span-8 space-y-4">
+                  <div className="flex items-center gap-2 px-1 text-slate-700">
+                    <AlertCircle className="w-5 h-5 text-orange-500" />
+                    <h3 className="font-bold text-lg">Ausencias a cubrir</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {" "}
+                    {/* Una sola columna aquí para que las cards sean anchas */}
+                    {ausenciasEnPeriodo.map((item, idx) => (
+                      <GuardiaCard
+                        key={idx}
+                        item={item}
+                        uidUsuarioActual={user?.username}
+                        onAsignar={() =>
+                          mutationAuto.mutate({
+                            fecha: fechaFmt,
+                            idperiodo: item.periodo,
+                            uid_profesor_ausente: item.uid_ausente,
+                          })
+                        }
+                        onCancelar={() => mutationCancelar.mutate(item.id)}
+                        loading={
+                          mutationAuto.isPending || mutationCancelar.isPending
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             </TabsContent>
           );
@@ -299,5 +327,66 @@ function GuardiaCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function ListaProfesGuardia({ fecha, idPeriodo }) {
+  const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
+
+  if (isLoading) return <div className="animate-pulse space-y-2">...</div>;
+
+  return (
+    <div className="space-y-3">
+      {profes?.map((profe) => {
+        const estaOcupado = profe.ya_asignado;
+
+        return (
+          <Card
+            key={profe.uid}
+            className={`transition-all duration-300 border shadow-none ${
+              estaOcupado
+                ? "bg-blue-50 border-blue-200 ring-1 ring-blue-100"
+                : "bg-white border-slate-200 shadow-sm"
+            }`}
+          >
+            <CardContent className="p-3 flex justify-between items-center">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Indicador de estado */}
+                <div
+                  className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    estaOcupado ? "bg-blue-500 animate-pulse" : "bg-slate-300"
+                  }`}
+                />
+
+                <div className="min-w-0">
+                  <p
+                    className={`text-sm font-bold truncate ${estaOcupado ? "text-blue-900" : "text-slate-700"}`}
+                  >
+                    {profe.apellido1}
+                    {profe.nombre ? `, ${profe.nombre}` : ""}
+                  </p>
+                  {estaOcupado && (
+                    <p className="text-[10px] font-extrabold text-blue-600 uppercase tracking-tight">
+                      Guardia asignada
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <Badge
+                variant="outline"
+                className={`ml-2 font-mono h-6 ${
+                  estaOcupado
+                    ? "bg-blue-600 text-white border-transparent"
+                    : "bg-slate-100"
+                }`}
+              >
+                {profe.total_guardias} <Clock className="w-3 h-3 ml-1" />
+              </Badge>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 const db = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
 const { obtenerGruposPorTipo } = require("../ldap/gruposController");
+const { getCursoActual } = require("../../utils/fechas");
 
 /**
  * PASO 5: Criterio de Equidad
@@ -262,7 +263,7 @@ async function autoasignarGuardia(req, res) {
      AND idperiodo = $2 
      AND uid_profesor_cubridor = $3 -- <--- AQUÍ ESTÁ EL CAMBIO (Tú como cubridor)
      AND estado = 'activa'`,
-      [fecha, idperiodo, uid_cubridor] 
+      [fecha, idperiodo, uid_cubridor]
     );
 
     if (yaTieneOtraGuardia.length > 0) {
@@ -290,7 +291,6 @@ async function autoasignarGuardia(req, res) {
   }
 }
 
-
 async function cancelarAutoasignacion(req, res) {
   const { id_guardia_asignada } = req.params; // ID de la tabla guardias_asignadas
   const usuarioSesion = req.session?.user;
@@ -308,23 +308,37 @@ async function cancelarAutoasignacion(req, res) {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ ok: false, error: "La asignación no existe." });
+      return res
+        .status(404)
+        .json({ ok: false, error: "La asignación no existe." });
     }
 
     const guardia = rows[0];
 
     // 2. VALIDACIÓN: Solo el dueño o la directiva pueden cancelar
-    if (guardia.uid_profesor_cubridor !== usuarioSesion.username && usuarioSesion.perfil !== 'directiva') {
-      return res.status(403).json({ ok: false, error: "No tienes permiso para cancelar esta asignación." });
+    if (
+      guardia.uid_profesor_cubridor !== usuarioSesion.username &&
+      usuarioSesion.perfil !== "directiva"
+    ) {
+      return res.status(403).json({
+        ok: false,
+        error: "No tienes permiso para cancelar esta asignación.",
+      });
     }
 
-    // OPCIONAL: Podrías añadir una validación para que no se pueda cancelar 
+    // OPCIONAL: Podrías añadir una validación para que no se pueda cancelar
     // si la hora ya ha pasado o está en curso.
 
     // 3. Eliminamos la asignación (o cambiamos estado a 'cancelada')
-    await db.query(`DELETE FROM guardias_asignadas WHERE id = $1`, [id_guardia_asignada]);
+    await db.query(`DELETE FROM guardias_asignadas WHERE id = $1`, [
+      id_guardia_asignada,
+    ]);
 
-    res.json({ ok: true, mensaje: "Guardia liberada correctamente. Ahora otros compañeros pueden cubrirla." });
+    res.json({
+      ok: true,
+      mensaje:
+        "Guardia liberada correctamente. Ahora otros compañeros pueden cubrirla.",
+    });
   } catch (err) {
     console.error("[cancelarAutoasignacion] Error:", err);
     res.status(500).json({ ok: false, error: "Error al liberar la guardia." });
@@ -346,4 +360,104 @@ async function confirmarGuardias(req, res) {
   }
 }
 
-module.exports = { simularGuardiasDia, autoasignarGuardia, cancelarAutoasignacion, confirmarGuardias };
+/**
+ * profesores de guardia en fecha y periodo indicados por parámetro.
+ * Tiene en cuenta que el profesor no esté ausente.
+ * @param {*} req
+ * @param {*} res
+ */
+async function getProfesoresDeGuardia(req, res) {
+  const { fecha, idperiodo } = req.params;
+  const ldapSession = req.session?.ldap;
+  const curso = getCursoActual(new Date(fecha));
+  const diaSemana = new Date(fecha).getDay();
+
+  try {
+    // 1. Obtenemos solo los UIDs y el conteo de la DB
+    const query = `
+  SELECT 
+    h.uid, 
+    (SELECT COUNT(*) FROM guardias_asignadas ga 
+     WHERE ga.uid_profesor_cubridor = h.uid 
+     AND ga.fecha BETWEEN $1 AND $2 
+     AND ga.estado = 'activa') as total_guardias,
+    -- NUEVO: Chequeo si ya tiene una guardia asignada en este slot
+    EXISTS (
+      SELECT 1 FROM guardias_asignadas ga2
+      WHERE ga2.uid_profesor_cubridor = h.uid
+        AND ga2.fecha = $5
+        AND ga2.idperiodo = $4
+        AND ga2.estado = 'activa'
+    ) as ya_asignado
+  FROM horario_profesorado h
+  WHERE h.dia_semana = $3 
+    AND h.idperiodo = $4 
+    AND h.tipo = 'guardia'
+    AND NOT EXISTS (
+      SELECT 1 FROM ausencias_profesorado aus
+      WHERE aus.uid_profesor = h.uid
+        AND aus.fecha_inicio <= $5
+        AND (aus.fecha_fin IS NULL OR aus.fecha_fin >= $5)
+        AND (
+          (aus.idperiodo_inicio IS NULL AND aus.idperiodo_fin IS NULL)
+          OR 
+          ($4 BETWEEN COALESCE(aus.idperiodo_inicio, 0) AND COALESCE(aus.idperiodo_fin, 99))
+        )
+    )
+  ORDER BY total_guardias ASC -- <--- ORDEN ASCENDENTE POR GUARDIAS
+`;
+
+    const { rows: uidsDisponibles } = await db.query(query, [
+      curso.inicioCurso,
+      curso.finCurso,
+      diaSemana,
+      idperiodo,
+      fecha,
+    ]);
+
+    // 2. "Humanizar" los resultados con LDAP
+    // Usamos una caché local para esta petición para ser eficientes
+    const cacheNombres = {};
+
+    const profesEnriquecidos = await Promise.all(
+      uidsDisponibles.map(async (row) => {
+        return new Promise((resolve) => {
+          buscarPorUid(ldapSession, row.uid, (err, datos) => {
+            if (!err && datos) {
+              resolve({
+                uid: row.uid,
+                nombre: datos.givenName || "",
+                apellido1: datos.sn || "",
+                apellido2: "",
+                total_guardias: parseInt(row.total_guardias),
+                ya_asignado: row.ya_asignado, // <--- FUNDAMENTAL: Añadir esto aquí
+              });
+            } else {
+              resolve({
+                uid: row.uid,
+                nombre: row.uid,
+                apellido1: "",
+                apellido2: "",
+                total_guardias: parseInt(row.total_guardias),
+                ya_asignado: row.ya_asignado, // <--- Y también aquí por si falla LDAP
+              });
+            }
+          });
+        });
+      })
+    );
+    
+    res.json(profesEnriquecidos);
+  } catch (err) {
+    console.error("[getProfesoresDeGuardia] Error:", err);
+    res.status(500).json({ error: "Error al consultar disponibilidad real" });
+  }
+}
+
+module.exports = {
+  simularGuardiasDia,
+  autoasignarGuardia,
+  cancelarAutoasignacion,
+  confirmarGuardias,
+  getProfesoresDeGuardia,
+};
