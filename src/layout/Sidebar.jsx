@@ -117,7 +117,24 @@ function SidebarComponent({
       ...(MODULO_GUARDIAS
         ? [
             {
-              title: "Guardias",
+              title: "Guardias-PANEL",
+              url: "#",
+              icon: CalendarCheck,
+              items: [
+                {
+                  title: "Panel de Guardias",
+                  url: "/panel-guardias",
+                  icon: CalendarOff,
+                },
+              ],
+            },
+          ]
+        : []),
+
+      ...(MODULO_GUARDIAS
+        ? [
+            {
+              title: "Guardias-GESTIÓN",
               url: "#",
               icon: CalendarCheck,
               items: [
@@ -249,7 +266,7 @@ function SidebarComponent({
       ...(MODULO_GUARDIAS
         ? [
             {
-              title: "Guardias",
+              title: "Guardias-PANEL",
               url: "#",
               icon: CalendarCheck,
               items: [
@@ -330,6 +347,22 @@ function SidebarComponent({
           },
         ],
       },
+      ...(MODULO_GUARDIAS
+        ? [
+            {
+              title: "Guardias-PANEL",
+              url: "#",
+              icon: CalendarCheck,
+              items: [
+                {
+                  title: "Panel de Guardias",
+                  url: "/panel-guardias",
+                  icon: CalendarOff,
+                },
+              ],
+            },
+          ]
+        : []),
     ],
     ordenanza: [
       {
