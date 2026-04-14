@@ -246,6 +246,22 @@ function SidebarComponent({
           },
         ],
       },
+      ...(MODULO_GUARDIAS
+        ? [
+            {
+              title: "Guardias",
+              url: "#",
+              icon: CalendarCheck,
+              items: [
+                {
+                  title: "Panel de Guardias",
+                  url: "/panel-guardias",
+                  icon: CalendarOff,
+                },
+              ],
+            },
+          ]
+        : []),
     ],
 
     administrativo: [

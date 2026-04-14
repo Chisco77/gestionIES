@@ -90,6 +90,8 @@ export default function Layout(props) {
       "/horarios": "Horarios de Profesores",
       "/cuadrante-guardias": "Cuadrante de Guardias",
       "/ausencias-profesorado": "Ausencias del Profesorado",
+      "/panel-guardias": "Panel de Guardias",
+
     };
 
     const titulo = pathToTitleMap[location.pathname];

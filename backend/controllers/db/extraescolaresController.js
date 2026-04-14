@@ -280,7 +280,7 @@ async function updateEstadoExtraescolar(req, res) {
        SET estado = $1, updated_at = NOW(), updated_by = $2
        WHERE id = $3 
        RETURNING *`,
-      [estado, usuarioSesion.uid, id]
+      [estado, usuarioSesion.username, id]
     );
 
     if (!rows[0]) {

@@ -1,0 +1,349 @@
+const db = require("../../db");
+const { buscarPorUid } = require("../ldap/usuariosController");
+const { obtenerGruposPorTipo } = require("../ldap/gruposController");
+
+/**
+ * PASO 5: Criterio de Equidad
+ * Obtiene el conteo de guardias confirmadas y activas por profesor
+ */
+async function getContadorGuardias() {
+  const query = `
+        SELECT uid_profesor_cubridor, COUNT(*) as total
+        FROM guardias_asignadas
+        WHERE confirmada = true AND estado = 'activa'
+        GROUP BY uid_profesor_cubridor
+    `;
+  const { rows } = await db.query(query);
+  return rows.reduce((acc, r) => {
+    acc[r.uid_profesor_cubridor] = parseInt(r.total);
+    return acc;
+  }, {});
+}
+
+async function simularGuardiasDia(req, res) {
+  const { fecha } = req.params;
+  const ldapSession = req.session?.ldap;
+
+  try {
+    const diaSemana = new Date(fecha).getDay();
+    // Si tu base de datos usa 1 (Lunes) a 7 (Domingo), recuerda ajustar:
+    // const diaSemanaISO = diaSemana === 0 ? 7 : diaSemana;
+
+    // 1. Caches para no saturar LDAP/DB
+    const usuariosCache = {};
+    const gruposCache = {};
+
+    // 2. Cargar Grupos (school_class) para traducir gidnumber
+    const grupos = await obtenerGruposPorTipo(ldapSession, "school_class");
+    grupos.forEach((g) => {
+      gruposCache[String(g.gidNumber)] = g.cn;
+    });
+
+    // Función auxiliar para nombres de profesores
+    const getNombreProfesor = async (uid) => {
+      if (!uid) return "Desconocido";
+      if (usuariosCache[uid]) return usuariosCache[uid];
+      return new Promise((resolve) => {
+        buscarPorUid(ldapSession, uid, (err, datos) => {
+          const nombre =
+            !err && datos
+              ? `${datos.sn || ""}, ${datos.givenName || ""}`.trim()
+              : uid;
+          usuariosCache[uid] = nombre;
+          resolve(nombre);
+        });
+      });
+    };
+
+    // 3. Obtener ausencias y guardias ya confirmadas
+    const { rows: ausencias } = await db.query(
+      `SELECT a.* FROM ausencias_profesorado a 
+       WHERE fecha_inicio <= $1 AND (fecha_fin IS NULL OR fecha_fin >= $1)`,
+      [fecha]
+    );
+
+    const { rows: confirmadas } = await db.query(
+      `SELECT * FROM guardias_asignadas WHERE fecha = $1 AND estado = 'activa'`,
+      [fecha]
+    );
+
+    // 4. Obtener contadores de guardias para la equidad
+    const { rows: contadoresRows } = await db.query(
+      `SELECT uid_profesor_cubridor, COUNT(*) as total 
+       FROM guardias_asignadas GROUP BY uid_profesor_cubridor`
+    );
+    const contadores = {};
+    contadoresRows.forEach(
+      (r) => (contadores[r.uid_profesor_cubridor] = parseInt(r.total))
+    );
+
+    let simulacion = [];
+
+    // 5. Procesar cada ausencia
+    for (const ausencia of ausencias) {
+      // Traemos el horario del ausente para ese día, filtrando por lectiva/guardia
+      const { rows: horarioAusente } = await db.query(
+        `SELECT h.*, m.nombre AS materia_nombre, e.descripcion AS estancia_nombre, p.nombre as nombre_periodo
+         FROM horario_profesorado h
+         LEFT JOIN materias m ON h.idmateria = m.id
+         LEFT JOIN estancias e ON h.idestancia = e.id
+         LEFT JOIN periodos_horarios p ON h.idperiodo = p.id
+         WHERE h.uid = $1 AND h.dia_semana = $2 AND (h.tipo = 'lectiva' OR h.tipo = 'guardia')`,
+        [ausencia.uid_profesor, diaSemana]
+      );
+
+      for (const slot of horarioAusente) {
+        // FILTRO: ¿Esta hora está dentro del rango de la ausencia parcial?
+        if (
+          ausencia.idperiodo_inicio &&
+          slot.idperiodo < ausencia.idperiodo_inicio
+        )
+          continue;
+        if (ausencia.idperiodo_fin && slot.idperiodo > ausencia.idperiodo_fin)
+          continue;
+
+        // ¿Ya está confirmada?
+        const yaConfirmada = confirmadas.find(
+          (c) =>
+            c.idperiodo === slot.idperiodo &&
+            c.uid_profesor_ausente === ausencia.uid_profesor
+        );
+
+        if (yaConfirmada) {
+          simulacion.push({
+            ...yaConfirmada,
+            id: yaConfirmada.id,
+            tipo: "confirmada",
+            nombre_ausente: await getNombreProfesor(ausencia.uid_profesor),
+            nombre_cubridor: await getNombreProfesor(
+              yaConfirmada.uid_profesor_cubridor
+            ),
+            materia: slot.materia_nombre || "Guardia",
+            aula: slot.estancia_nombre,
+            periodo: slot.idperiodo,
+            nombre_periodo: slot.nombre_periodo,
+          });
+          continue;
+        }
+
+        // 6. Buscar candidatos (Tienen guardia, no están ausentes y no tienen ya una guardia asignada)
+        const { rows: candidatos } = await db.query(
+          `SELECT h.uid FROM horario_profesorado h
+           WHERE h.dia_semana = $1 AND h.idperiodo = $2 AND h.tipo = 'guardia'
+           AND h.uid NOT IN (
+              SELECT uid_profesor FROM ausencias_profesorado 
+              WHERE fecha_inicio <= $3 AND (fecha_fin IS NULL OR fecha_fin >= $3)
+           )
+           AND h.uid NOT IN (
+              SELECT uid_profesor_cubridor FROM guardias_asignadas
+              WHERE fecha = $3 AND idperiodo = $2 AND estado = 'activa'
+           )`,
+          [diaSemana, slot.idperiodo, fecha]
+        );
+
+        const candidatosEnriquecidos = await Promise.all(
+          candidatos.map(async (c) => ({
+            uid: c.uid,
+            nombre: await getNombreProfesor(c.uid),
+            guardias: contadores[c.uid] || 0,
+          }))
+        );
+
+        candidatosEnriquecidos.sort((a, b) => a.guardias - b.guardias);
+
+        // Traducir gidnumber a nombres de grupos
+        const nombresGrupos = Array.isArray(slot.gidnumber)
+          ? slot.gidnumber.map((g) => gruposCache[String(g)] || `G:${g}`)
+          : [];
+
+        simulacion.push({
+          tipo: "propuesta",
+          periodo: slot.idperiodo,
+          uid_ausente: ausencia.uid_profesor,
+          nombre_periodo: slot.nombre_periodo,
+          nombre_ausente: await getNombreProfesor(ausencia.uid_profesor),
+          materia:
+            slot.materia_nombre ||
+            (slot.tipo === "guardia" ? "Guardia propia" : "S/M"),
+          aula: slot.estancia_nombre || "---",
+          grupo: nombresGrupos.join(", "),
+          candidatos: candidatosEnriquecidos,
+          propuesta: candidatosEnriquecidos[0] || null,
+        });
+      }
+    }
+
+    // Ordenar simulación por periodo
+    simulacion.sort((a, b) => a.periodo - b.periodo);
+
+    res.json({ ok: true, simulacion });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+/**
+ * AUTOASIGNACIÓN PARA PROFESORES
+ */
+async function autoasignarGuardia(req, res) {
+  const { fecha, idperiodo, uid_profesor_ausente } = req.body;
+  const usuarioSesion = req.session?.user; // Usamos tu estándar
+  console.log("Usuario sesion: ", usuarioSesion);
+
+  // 1. Control de acceso básico
+  if (!usuarioSesion) {
+    return res.status(401).json({ ok: false, error: "No autenticado" });
+  }
+
+  const uid_cubridor = usuarioSesion.username;
+
+  try {
+    const diaSemana = new Date(fecha).getDay();
+
+    console.log("Diasemana, cubridor,periodo: ", diaSemana);
+    console.log("Cubridor: ", uid_cubridor);
+    console.log("periodo: ", diaSemana);
+    // 2. VALIDACIÓN: ¿Tiene el profesor esa hora de guardia en su horario?
+    const { rows: horarioPropio } = await db.query(
+      `SELECT id FROM horario_profesorado 
+       WHERE uid = $1 AND dia_semana = $2 AND idperiodo = $3 AND tipo = 'guardia'`,
+      [uid_cubridor, diaSemana, idperiodo]
+    );
+
+    if (horarioPropio.length === 0) {
+      return res.status(403).json({
+        ok: false,
+        error:
+          "No puedes asignarte esta guardia: no tienes hora de guardia en tu horario para este periodo.",
+      });
+    }
+
+    // 3. VALIDACIÓN: ¿El profesor que pretende cubrir está ausente?
+    // Comprobamos si hay alguna ausencia registrada para ese profesor en esa fecha y periodo
+    const { rows: ausenciaCubridor } = await db.query(
+      `SELECT id FROM ausencias_profesorado 
+       WHERE uid_profesor = $1 
+         AND fecha_inicio <= $2 AND (fecha_fin IS NULL OR fecha_fin >= $2)
+         AND (
+           (idperiodo_inicio IS NULL AND idperiodo_fin IS NULL) -- Día completo
+           OR 
+           ($3 BETWEEN COALESCE(idperiodo_inicio, 0) AND COALESCE(idperiodo_fin, 99)) -- Periodo concreto
+         )`,
+      [uid_cubridor, fecha, idperiodo]
+    );
+
+    if (ausenciaCubridor.length > 0) {
+      return res.status(403).json({
+        ok: false,
+        error:
+          "No puedes autoasignarte una guardia si tienes una ausencia registrada para esa hora.",
+      });
+    }
+
+    // 4. VALIDACIÓN: ¿Ya está ocupada por otro? (Doble chequeo de seguridad)
+    const { rows: yaAsignada } = await db.query(
+      `SELECT id FROM guardias_asignadas 
+       WHERE fecha = $1 AND idperiodo = $2 AND uid_profesor_ausente = $3 AND estado = 'activa'`,
+      [fecha, idperiodo, uid_profesor_ausente]
+    );
+
+    if (yaAsignada.length > 0) {
+      return res.status(409).json({
+        ok: false,
+        error: "Lo sentimos, otro compañero acaba de cubrir esta guardia.",
+      });
+    }
+
+    // Comprobar que no se pueda autoasignar más de una guardia en el mismo periodo
+    const { rows: yaTieneOtraGuardia } = await db.query(
+      `SELECT id FROM guardias_asignadas 
+   WHERE fecha = $1 
+     AND idperiodo = $2 
+     AND uid_profesor_cubridor = $3 -- <--- AQUÍ ESTÁ EL CAMBIO (Tú como cubridor)
+     AND estado = 'activa'`,
+      [fecha, idperiodo, uid_cubridor] 
+    );
+
+    if (yaTieneOtraGuardia.length > 0) {
+      return res.status(403).json({
+        ok: false,
+        error: "Ya tienes asignada otra guardia en este mismo periodo.",
+      });
+    }
+
+    // 5. OPERACIÓN: Inserción de la guardia
+    // Podrías usar transacciones aquí si tuvieras que tocar más tablas
+    await db.query(
+      `INSERT INTO guardias_asignadas 
+       (fecha, idperiodo, uid_profesor_ausente, uid_profesor_cubridor, estado)
+       VALUES ($1, $2, $3, $4, 'activa')`,
+      [fecha, idperiodo, uid_profesor_ausente, uid_cubridor]
+    );
+
+    res.json({ ok: true, mensaje: "Guardia autoasignada con éxito" });
+  } catch (err) {
+    console.error("[autoasignarGuardia] Error crítico:", err);
+    res
+      .status(500)
+      .json({ ok: false, error: "Error interno al procesar la guardia" });
+  }
+}
+
+
+async function cancelarAutoasignacion(req, res) {
+  const { id_guardia_asignada } = req.params; // ID de la tabla guardias_asignadas
+  const usuarioSesion = req.session?.user;
+
+  if (!usuarioSesion) {
+    return res.status(401).json({ ok: false, error: "No autenticado" });
+  }
+
+  try {
+    // 1. Buscamos la guardia para verificar propiedad
+    const { rows } = await db.query(
+      `SELECT uid_profesor_cubridor, fecha, idperiodo 
+       FROM guardias_asignadas WHERE id = $1`,
+      [id_guardia_asignada]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ ok: false, error: "La asignación no existe." });
+    }
+
+    const guardia = rows[0];
+
+    // 2. VALIDACIÓN: Solo el dueño o la directiva pueden cancelar
+    if (guardia.uid_profesor_cubridor !== usuarioSesion.username && usuarioSesion.perfil !== 'directiva') {
+      return res.status(403).json({ ok: false, error: "No tienes permiso para cancelar esta asignación." });
+    }
+
+    // OPCIONAL: Podrías añadir una validación para que no se pueda cancelar 
+    // si la hora ya ha pasado o está en curso.
+
+    // 3. Eliminamos la asignación (o cambiamos estado a 'cancelada')
+    await db.query(`DELETE FROM guardias_asignadas WHERE id = $1`, [id_guardia_asignada]);
+
+    res.json({ ok: true, mensaje: "Guardia liberada correctamente. Ahora otros compañeros pueden cubrirla." });
+  } catch (err) {
+    console.error("[cancelarAutoasignacion] Error:", err);
+    res.status(500).json({ ok: false, error: "Error al liberar la guardia." });
+  }
+}
+/**
+ * CONFIRMACIÓN MASIVA DE GUARDIAS (Jefatura)
+ */
+async function confirmarGuardias(req, res) {
+  try {
+    const { guardias } = req.body; // Array de propuestas aceptadas
+    const uid_asignador = req.session.ldap.uid;
+
+    // Aquí iría el bucle para insertar en guardias_asignadas
+    // Por ahora devolvemos un ok para que no falle el servidor
+    res.json({ ok: true, mensaje: "Ruta preparada, lógica pendiente" });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+module.exports = { simularGuardiasDia, autoasignarGuardia, cancelarAutoasignacion, confirmarGuardias };

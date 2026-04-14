@@ -30,6 +30,14 @@ const {
   deletePeriodo,
 } = require("../controllers/db/periodosHorariosController");
 
+// --- Controlador de guardias de profesorado ---
+const { 
+  simularGuardiasDia, 
+  confirmarGuardias,
+  cancelarAutoasignacion, 
+  autoasignarGuardia
+} = require("../controllers/db/guardiasController");
+
 // --- Controlador de ausencias de profesorado ---
 const {
   getAusenciasEnriquecidas,
@@ -450,5 +458,17 @@ router.put("/ausencias/:id", updateAusencia);
  * DELETE /ausencias/:id: Eliminación de una ausencia.
  */
 router.delete("/ausencias/:id", deleteAusencia);
+
+
+
+// Para la directiva
+router.get("/guardias/simular/:fecha", simularGuardiasDia);
+router.post("/guardias/confirmar", confirmarGuardias);
+
+// Para los profesores (Autogestión)
+router.post("/guardias/autoasignar", autoasignarGuardia);
+
+// Usamos DELETE porque estamos eliminando un registro de 'guardias_asignadas'
+router.delete("/guardias/cancelar/:id_guardia_asignada", cancelarAutoasignacion);
 
 module.exports = router;

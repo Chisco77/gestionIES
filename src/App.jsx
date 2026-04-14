@@ -49,6 +49,7 @@ import { MateriasIndex } from "./modules/Materias/pages/MateriasIndex";
 import { HorariosIndex } from "./modules/Guardias/pages/HorariosIndex";
 import { CuadranteGuardiasIndex } from "./modules/Guardias/pages/CuadranteGuardiasIndex";
 import { AusenciasIndex } from "./modules/Guardias/pages/AusenciasIndex";
+import { PanelGuardias } from "./modules/Guardias/pages/PanelGuardias";
 
 const queryClient = new QueryClient();
 
@@ -336,6 +337,8 @@ const router = createBrowserRouter(
             </ProtectedRoute>
           ),
         },
+
+        { path: "panel-guardias", element: <PanelGuardias /> },
       ],
     },
   ],
