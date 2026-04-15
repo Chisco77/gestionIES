@@ -9,7 +9,6 @@ import {
   Clock,
   AlertCircle,
   CheckCircle2,
-  Calendar,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -18,13 +17,34 @@ import { es } from "date-fns/locale";
 import { useGuardiasDia } from "@/hooks/useGuardiasDia";
 import { useAuth } from "@/context/AuthContext";
 
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"; // Nuevos iconos
+import { Calendar } from "@/components/ui/calendar"; // El componente Calendar de Shadcn
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { addDays, subDays, startOfDay } from "date-fns"; // Ayudantes de fecha
+
 import { useProfesoresGuardia } from "@/hooks/useProfesoresGuardia";
 
-export function PanelGuardias({ fecha = new Date() }) {
+export function PanelGuardias({ fechaInicial = new Date() }) {
   const queryClient = useQueryClient();
+
+  // 1. Estado para controlar la fecha seleccionada
+  const [fecha, setFecha] = useState(startOfDay(fechaInicial));
+
   const fechaFmt = format(fecha, "yyyy-MM-dd");
   const { user } = useAuth();
   const { data, isLoading } = useGuardiasDia(fechaFmt);
+
+  // Handlers para navegar rápido
+  const irAyer = () => setFecha((prev) => subDays(prev, 1));
+  const irMañana = () => setFecha((prev) => addDays(prev, 1));
 
   const mutationAuto = useMutation({
     mutationFn: async (payload) => {
@@ -100,117 +120,142 @@ export function PanelGuardias({ fecha = new Date() }) {
       .sort((a, b) => a.id - b.id);
   }, [data]);
 
-  if (isLoading)
-    return (
-      <div className="flex flex-col items-center justify-center p-20 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <p className="text-muted-foreground animate-pulse">
-          Cargando cuadrante...
-        </p>
-      </div>
-    );
-
-  if (periodosUnicos.length === 0)
-    return (
-      <div className="text-center p-20 border-2 border-dashed rounded-xl">
-        <Calendar className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
-        <h3 className="mt-4 text-lg font-medium">No hay ausencias</h3>
-        <p className="text-muted-foreground">
-          No se han registrado ausencias para el día seleccionado.
-        </p>
-      </div>
-    );
-
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-4">
-      {/* CABECERA */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
-        <div>
-          <h2 className="text-3xl font-extrabold tracking-tight">
-            Panel de Guardias
-          </h2>
-          <p className="text-muted-foreground">
-            Gestión de sustituciones y avisos
+      {/* SELECTOR DE FECHA */}
+      <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-lg border">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={irAyer}
+          className="h-9 w-9"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="min-w-[240px] justify-start text-left font-bold shadow-sm border-none bg-white hover:bg-slate-50"
+            >
+              <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+              {format(fecha, "EEEE, d 'de' MMMM", { locale: es })}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar
+              mode="single"
+              selected={fecha}
+              onSelect={(d) => d && setFecha(d)}
+              initialFocus
+              locale={es}
+            />
+          </PopoverContent>
+        </Popover>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={irMañana}
+          className="h-9 w-9"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* SISTEMA DE PESTAÑAS */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center p-20 space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground animate-pulse">
+            Cargando cuadrante de {format(fecha, "dd/MM")}...
           </p>
         </div>
-        <Badge
-          variant="secondary"
-          className="text-md py-1.5 px-4 shadow-sm w-fit"
-        >
-          {format(fecha, "EEEE, d 'de' MMMM", { locale: es })}
-        </Badge>
-      </div>
-      {/* SISTEMA DE PESTAÑAS */}
-      <Tabs defaultValue={String(periodosUnicos[0]?.id)} className="w-full">
-        <div className="flex justify-center mb-8">
-          <TabsList className="h-12 p-1 bg-muted/50 border overflow-x-auto flex-nowrap">
-            {periodosUnicos.map((p) => (
-              <TabsTrigger
+      ) : periodosUnicos.length === 0 ? (
+        <div className="text-center p-20 border-2 border-dashed rounded-xl bg-slate-50/50">
+          <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
+          <h3 className="mt-4 text-lg font-medium text-slate-600">
+            No hay ausencias
+          </h3>
+          <p className="text-muted-foreground">
+            Todo tranquilo. No hay ausencias registradas para este día.
+          </p>
+        </div>
+      ) : (
+        <Tabs defaultValue={String(periodosUnicos[0]?.id)} className="w-full">
+          <div className="flex justify-center mb-8">
+            <TabsList className="h-12 p-1 bg-muted/50 border overflow-x-auto flex-nowrap">
+              {periodosUnicos.map((p) => (
+                <TabsTrigger
+                  key={p.id}
+                  value={String(p.id)}
+                  className="px-6 font-bold"
+                >
+                  {p.nombre}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+          {periodosUnicos.map((p) => {
+            const ausenciasEnPeriodo = data.simulacion.filter(
+              (s) => s.periodo === p.id
+            );
+
+            return (
+              <TabsContent
                 key={p.id}
                 value={String(p.id)}
-                className="px-6 font-bold"
+                className="animate-in fade-in slide-in-from-bottom-2 duration-300 outline-none"
               >
-                {p.nombre}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-        {periodosUnicos.map((p) => {
-          const ausenciasEnPeriodo = data.simulacion.filter(
-            (s) => s.periodo === p.id
-          );
-
-          return (
-            <TabsContent
-              key={p.id}
-              value={String(p.id)}
-              className="animate-in fade-in slide-in-from-bottom-2 duration-300 outline-none"
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* --- NUEVA COLUMNA IZQUIERDA (Profes de Guardia) --- */}
-                <div className="lg:col-span-4 space-y-4">
-                  <div className="flex items-center gap-2 px-1 text-slate-700">
-                    <Users className="w-5 h-5 text-primary" />
-                    <h3 className="font-bold text-lg">Profesores de Guardia</h3>
-                  </div>
-                  <ListaProfesGuardia fecha={fechaFmt} idPeriodo={p.id} />
-                </div>
-
-                {/* --- COLUMNA DERECHA (Ausencias - Tu código anterior adaptado) --- */}
-                <div className="lg:col-span-8 space-y-4">
-                  <div className="flex items-center gap-2 px-1 text-slate-700">
-                    <AlertCircle className="w-5 h-5 text-orange-500" />
-                    <h3 className="font-bold text-lg">Ausencias a cubrir</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* --- NUEVA COLUMNA IZQUIERDA (Profes de Guardia) --- */}
+                  <div className="lg:col-span-4 space-y-4">
+                    <div className="flex items-center gap-2 px-1 text-slate-700">
+                      <Users className="w-5 h-5 text-primary" />
+                      <h3 className="font-bold text-lg">
+                        Profesores de Guardia
+                      </h3>
+                    </div>
+                    <ListaProfesGuardia fecha={fechaFmt} idPeriodo={p.id} />
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    {" "}
-                    {/* Una sola columna aquí para que las cards sean anchas */}
-                    {ausenciasEnPeriodo.map((item, idx) => (
-                      <GuardiaCard
-                        key={idx}
-                        item={item}
-                        uidUsuarioActual={user?.username}
-                        onAsignar={() =>
-                          mutationAuto.mutate({
-                            fecha: fechaFmt,
-                            idperiodo: item.periodo,
-                            uid_profesor_ausente: item.uid_ausente,
-                          })
-                        }
-                        onCancelar={() => mutationCancelar.mutate(item.id)}
-                        loading={
-                          mutationAuto.isPending || mutationCancelar.isPending
-                        }
-                      />
-                    ))}
+                  {/* --- COLUMNA DERECHA (Ausencias - Tu código anterior adaptado) --- */}
+                  <div className="lg:col-span-8 space-y-4">
+                    <div className="flex items-center gap-2 px-1 text-slate-700">
+                      <AlertCircle className="w-5 h-5 text-orange-500" />
+                      <h3 className="font-bold text-lg">Ausencias a cubrir</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {" "}
+                      {/* Una sola columna aquí para que las cards sean anchas */}
+                      {ausenciasEnPeriodo.map((item, idx) => (
+                        <GuardiaCard
+                          key={idx}
+                          item={item}
+                          uidUsuarioActual={user?.username}
+                          onAsignar={() =>
+                            mutationAuto.mutate({
+                              fecha: fechaFmt,
+                              idperiodo: item.periodo,
+                              uid_profesor_ausente: item.uid_ausente,
+                            })
+                          }
+                          onCancelar={() => mutationCancelar.mutate(item.id)}
+                          loading={
+                            mutationAuto.isPending || mutationCancelar.isPending
+                          }
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </TabsContent>
-          );
-        })}
-      </Tabs>
+              </TabsContent>
+            );
+          })}
+        </Tabs>
+      )}
     </div>
   );
 }

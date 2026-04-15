@@ -29,7 +29,7 @@ import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { useMaterias } from "@/hooks/useMaterias";
 import { useCursosLdap } from "@/hooks/useCursosLdap";
 
-import { DialogoEditarCeldaHorario } from "../components/DialogoEditarCeldaHorario";
+import { DialogoEditarCeldaHorario } from "../../HorariosProfesorado/components/DialogoEditarCeldaHorario";
 
 import { generarPdfCuadrante } from "@/Informes/horarios";
 

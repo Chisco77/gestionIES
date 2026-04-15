@@ -49,7 +49,7 @@ import { useSidebarContext } from "@/context/SidebarContext";
 
 import { DialogoAsuntosRestricciones } from "../modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
 import { DialogoLlavesRestricciones } from "@/modules/Llaves/components/DialogoLlavesRestricciones";
-import { DialogoImportarHorariosUNTIS } from "@/modules/Guardias/components/DialogoImportarHorariosUNTIS";
+import { DialogoImportarHorariosUNTIS } from "@/modules/HorariosProfesorado/components/DialogoImportarHorariosUNTIS";
 
 export default function Layout(props) {
   const [openEtiquetas, setOpenEtiquetas] = useState(false);

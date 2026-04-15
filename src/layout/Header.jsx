@@ -53,7 +53,7 @@ import DialogoEditarUsuario from "@/modules/Usuarios/components/DialogoEditarUsu
 
 import NotificacionesPopover from "@/modules/Notificaciones/components/NotificacionesPopover";
 import { useNotificaciones } from "@/hooks/useNotificaciones";
-import { DialogoEditarHorario } from "@/modules/Guardias/components/DialogoEditarHorario";
+import { DialogoEditarHorario } from "@/modules/HorariosProfesorado/components/DialogoEditarHorario";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";

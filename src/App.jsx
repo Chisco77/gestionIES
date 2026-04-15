@@ -46,9 +46,9 @@ import { useState } from "react"; // asegurarse de importar useState
 import { StaffIndex } from "./modules/Usuarios/pages/StaffIndex";
 import { DashboardAdmministrativos } from "./modules/Dashboard/pages/DashboardAdministrativos";
 import { MateriasIndex } from "./modules/Materias/pages/MateriasIndex";
-import { HorariosIndex } from "./modules/Guardias/pages/HorariosIndex";
+import { HorariosIndex } from "./modules/HorariosProfesorado/pages/HorariosIndex";
 import { CuadranteGuardiasIndex } from "./modules/Guardias/pages/CuadranteGuardiasIndex";
-import { AusenciasIndex } from "./modules/Guardias/pages/AusenciasIndex";
+import { AusenciasIndex } from "./modules/Ausencias/pages/AusenciasIndex";
 import { PanelGuardias } from "./modules/Guardias/pages/PanelGuardias";
 
 const queryClient = new QueryClient();
