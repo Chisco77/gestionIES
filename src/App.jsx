@@ -90,6 +90,10 @@ const router = createBrowserRouter(
       element: <PanelProyeccion />,
     },
     {
+      path: "/gestionIES/public-panel/:token",
+      element: <PanelProyeccion />,
+    },
+    {
       path: "/",
       element: (
         <ProtectedRoute>
