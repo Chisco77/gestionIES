@@ -23,14 +23,28 @@ import { useQuery } from "@tanstack/react-query";
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
-export function useGuardiasDia(fechaFmt) {
+// Ahora recibe un segundo objeto opcional con el token y el intervalo de refresco
+export function useGuardiasDia(fechaFmt, options = {}) {
+  const { tokenTV = null, refetchInterval = false } = options;
+
   return useQuery({
     queryKey: ["guardias-dia", fechaFmt],
     queryFn: async () => {
       if (!fechaFmt) return null;
 
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      // Si existe tokenTV, lo inyectamos en la cabecera para el backend
+      if (tokenTV && tokenTV !== "null" && tokenTV !== "undefined") {
+        headers["x-public-token"] = tokenTV;
+      }
+
       const res = await fetch(`${API_BASE}/guardias/simular/${fechaFmt}`, {
-        credentials: "include",
+        method: "GET",
+        headers: headers,
+        credentials: "include", // Importante para mantener la sesión LDAP en navegadores normales
       });
 
       const result = await res.json();
@@ -39,11 +53,11 @@ export function useGuardiasDia(fechaFmt) {
         throw new Error(result.error || "Error al simular las guardias");
       }
 
-      // Devolvemos el objeto completo (que contiene el array 'simulacion')
       return result;
     },
-    // Mantenemos los datos frescos pero permitimos refetch si es necesario
-    staleTime: 1000 * 60 * 2, // 2 minutos
-    enabled: !!fechaFmt,      // No ejecutar si no hay fecha
+    staleTime: 1000 * 60 * 2,
+    enabled: !!fechaFmt,
+    // Si estamos en modo TV, React Query refrescará los datos automáticamente
+    refetchInterval: refetchInterval,
   });
 }

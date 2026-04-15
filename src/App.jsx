@@ -50,6 +50,7 @@ import { HorariosIndex } from "./modules/HorariosProfesorado/pages/HorariosIndex
 import { CuadranteGuardiasIndex } from "./modules/Guardias/pages/CuadranteGuardiasIndex";
 import { AusenciasIndex } from "./modules/Ausencias/pages/AusenciasIndex";
 import { PanelGuardias } from "./modules/Guardias/pages/PanelGuardias";
+import { PanelProyeccion } from "./modules/Guardias/pages/PanelProyeccion";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,10 @@ const router = createBrowserRouter(
     {
       path: "/login",
       element: <Login />,
+    },
+    {
+      path: "/public-panel/:token",
+      element: <PanelProyeccion />,
     },
     {
       path: "/",

@@ -23,6 +23,15 @@ async function getContadorGuardias() {
 
 async function simularGuardiasDia(req, res) {
   const { fecha } = req.params;
+
+  // LOG CRÍTICO
+  console.log(
+    "LOG 7: [Controller] ¿Existe req.session.ldap?:",
+    !!req.session?.ldap
+  );
+  if (req.session?.ldap) {
+    console.log("LOG 8: [Controller] UID en sesión:", req.session.ldap.uid);
+  }
   const ldapSession = req.session?.ldap;
 
   try {
@@ -35,6 +44,7 @@ async function simularGuardiasDia(req, res) {
     const gruposCache = {};
 
     // 2. Cargar Grupos (school_class) para traducir gidnumber
+    console.log("LOG 9: [Controller] Llamando a obtenerGruposPorTipo...");
     const grupos = await obtenerGruposPorTipo(ldapSession, "school_class");
     grupos.forEach((g) => {
       gruposCache[String(g.gidNumber)] = g.cn;
@@ -446,7 +456,7 @@ async function getProfesoresDeGuardia(req, res) {
         });
       })
     );
-    
+
     res.json(profesEnriquecidos);
   } catch (err) {
     console.error("[getProfesoresDeGuardia] Error:", err);

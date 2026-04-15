@@ -22,6 +22,9 @@
 const express = require("express");
 const router = express.Router();
 
+// Cerca de los otros require al principio del archivo
+const { validarTokenPublico } = require("../middleware/authPublico");
+
 // --- Controladores ---
 const {
   getPeriodosHorarios,
@@ -31,12 +34,12 @@ const {
 } = require("../controllers/db/periodosHorariosController");
 
 // --- Controlador de guardias de profesorado ---
-const { 
-  simularGuardiasDia, 
+const {
+  simularGuardiasDia,
   confirmarGuardias,
-  cancelarAutoasignacion, 
+  cancelarAutoasignacion,
   getProfesoresDeGuardia,
-  autoasignarGuardia
+  autoasignarGuardia,
 } = require("../controllers/db/guardiasController");
 
 // --- Controlador de ausencias de profesorado ---
@@ -460,10 +463,8 @@ router.put("/ausencias/:id", updateAusencia);
  */
 router.delete("/ausencias/:id", deleteAusencia);
 
-
-
 // Para la directiva
-router.get("/guardias/simular/:fecha", simularGuardiasDia);
+router.get("/guardias/simular/:fecha", validarTokenPublico, simularGuardiasDia);
 router.post("/guardias/confirmar", confirmarGuardias);
 
 // Para los profesores (Autogestión)
@@ -472,6 +473,9 @@ router.post("/guardias/autoasignar", autoasignarGuardia);
 // Obtiene los profesores que están de guardia y NO están ausentes
 router.get("/guardias/disponibles/:fecha/:idperiodo", getProfesoresDeGuardia);
 // Usamos DELETE porque estamos eliminando un registro de 'guardias_asignadas'
-router.delete("/guardias/cancelar/:id_guardia_asignada", cancelarAutoasignacion);
+router.delete(
+  "/guardias/cancelar/:id_guardia_asignada",
+  cancelarAutoasignacion
+);
 
 module.exports = router;

@@ -125,7 +125,7 @@ function SidebarComponent({
                 {
                   title: "Panel de Guardias",
                   url: "/panel-guardias",
-                  ClipboardCheck,
+                  icon: ClipboardCheck,
                 },
               ],
             },

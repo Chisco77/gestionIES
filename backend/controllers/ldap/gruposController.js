@@ -214,8 +214,10 @@ exports.getMiembrosPorGidNumber = (req, res) => {
 // Uso interno desde otros controladores (NO es endpoint)
 // ================================================================
 async function obtenerGruposPorTipo(ldapSession, groupType) {
+  console.log("LOG 10: [Helper] Argumento ldapSession recibido:", ldapSession);
   return new Promise((resolve, reject) => {
     if (!ldapSession) {
+      console.error("LOG 11: [Helper] ¡ERROR! ldapSession es null o undefined");
       return reject(new Error("No hay sesión LDAP"));
     }
 
