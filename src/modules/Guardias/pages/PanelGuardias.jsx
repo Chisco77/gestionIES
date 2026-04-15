@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useGuardiasDia } from "@/hooks/useGuardiasDia";
 import { useAuth } from "@/context/AuthContext";
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios"; // Importamos tu hook
 
 import {
   Calendar as CalendarIcon,
@@ -40,7 +41,52 @@ export function PanelGuardias({ fechaInicial = new Date() }) {
 
   const fechaFmt = format(fecha, "yyyy-MM-dd");
   const { user } = useAuth();
-  const { data, isLoading } = useGuardiasDia(fechaFmt);
+  const { data: todosLosPeriodos, isLoading: loadingPeriodos } =
+    usePeriodosHorarios();
+  const { data, isLoading: loadingGuardias } = useGuardiasDia(fechaFmt);
+
+  const [tabActiva, setTabActiva] = useState("");
+
+  // Agrupamos y ordenamos periodos
+  const periodosUnicos = useMemo(() => {
+    if (!data?.simulacion) return [];
+    const mapaPeriodos = new Map();
+    data.simulacion.forEach((s) => {
+      if (!mapaPeriodos.has(s.periodo)) {
+        mapaPeriodos.set(s.periodo, s.nombre_periodo || `${s.periodo}º Hora`);
+      }
+    });
+    return Array.from(mapaPeriodos.entries())
+      .map(([id, nombre]) => ({ id, nombre }))
+      .sort((a, b) => a.id - b.id);
+  }, [data]);
+
+  const isLoading = loadingPeriodos || loadingGuardias;
+
+  // 2. Lógica para detectar el periodo actual dinámicamente
+  useEffect(() => {
+    // Solo ejecutamos si tenemos ambos datos: los periodos maestros y las ausencias de hoy
+    if (todosLosPeriodos && data?.simulacion && periodosUnicos.length > 0) {
+      const ahora = format(new Date(), "HH:mm:ss"); // Formato compatible con 'time' de SQL
+
+      // Buscamos en TODOS los periodos del centro cuál es el actual
+      const periodoActual = todosLosPeriodos.find((p) => {
+        return ahora >= p.inicio && ahora <= p.fin;
+      });
+
+      // Si hay un periodo actual Y ese periodo tiene ausencias hoy, lo seleccionamos
+      if (
+        periodoActual &&
+        periodosUnicos.some((p) => p.id === periodoActual.id)
+      ) {
+        setTabActiva(String(periodoActual.id));
+      } else {
+        // Si no estamos en horario escolar o el periodo actual no tiene ausencias,
+        // ponemos la primera pestaña disponible
+        setTabActiva(String(periodosUnicos[0].id));
+      }
+    }
+  }, [todosLosPeriodos, data, periodosUnicos]);
 
   // Handlers para navegar rápido
   const irAyer = () => setFecha((prev) => subDays(prev, 1));
@@ -103,73 +149,58 @@ export function PanelGuardias({ fechaInicial = new Date() }) {
     },
   });
 
-  // Agrupamos y ordenamos periodos
-  const periodosUnicos = useMemo(() => {
-    if (!data?.simulacion) return [];
-
-    const mapaPeriodos = new Map();
-    data.simulacion.forEach((s) => {
-      // Si el mapa no tiene este ID, lo guardamos con su nombre descriptivo
-      if (!mapaPeriodos.has(s.periodo)) {
-        mapaPeriodos.set(s.periodo, s.nombre_periodo || `${s.periodo}º Hora`);
-      }
-    });
-
-    return Array.from(mapaPeriodos.entries())
-      .map(([id, nombre]) => ({ id, nombre }))
-      .sort((a, b) => a.id - b.id);
-  }, [data]);
-
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-4">
-      {/* SELECTOR DE FECHA */}
-      <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-lg border">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={irAyer}
-          className="h-9 w-9"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+      {/* --- CABECERA CON SELECTOR DE FECHA --- */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
+        <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-lg border">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={irAyer}
+            className="h-9 w-9"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="min-w-[240px] justify-start text-left font-bold shadow-sm border-none bg-white hover:bg-slate-50"
-            >
-              <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-              {format(fecha, "EEEE, d 'de' MMMM", { locale: es })}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <Calendar
-              mode="single"
-              selected={fecha}
-              onSelect={(d) => d && setFecha(d)}
-              initialFocus
-              locale={es}
-            />
-          </PopoverContent>
-        </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="min-w-[240px] justify-start text-left font-bold shadow-sm border-none bg-white hover:bg-slate-50"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                {format(fecha, "EEEE, d 'de' MMMM", { locale: es })}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={fecha}
+                onSelect={(d) => d && setFecha(d)}
+                initialFocus
+                locale={es}
+              />
+            </PopoverContent>
+          </Popover>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={irMañana}
-          className="h-9 w-9"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={irMañana}
+            className="h-9 w-9"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      {/* SISTEMA DE PESTAÑAS */}
+      {/* --- ESTADOS DE CARGA Y VACÍO --- */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center p-20 space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           <p className="text-muted-foreground animate-pulse">
-            Cargando cuadrante de {format(fecha, "dd/MM")}...
+            Sincronizando cuadrante y horarios...
           </p>
         </div>
       ) : periodosUnicos.length === 0 ? (
@@ -179,24 +210,66 @@ export function PanelGuardias({ fechaInicial = new Date() }) {
             No hay ausencias
           </h3>
           <p className="text-muted-foreground">
-            Todo tranquilo. No hay ausencias registradas para este día.
+            No se han registrado ausencias para el día{" "}
+            {format(fecha, "dd/MM/yyyy")}.
           </p>
         </div>
       ) : (
-        <Tabs defaultValue={String(periodosUnicos[0]?.id)} className="w-full">
+        /* --- SISTEMA DE PESTAÑAS DINÁMICO --- */
+        <Tabs value={tabActiva} onValueChange={setTabActiva} className="w-full">
           <div className="flex justify-center mb-8">
-            <TabsList className="h-12 p-1 bg-muted/50 border overflow-x-auto flex-nowrap">
-              {periodosUnicos.map((p) => (
-                <TabsTrigger
-                  key={p.id}
-                  value={String(p.id)}
-                  className="px-6 font-bold"
-                >
-                  {p.nombre}
-                </TabsTrigger>
-              ))}
+            <TabsList className="h-15 p-1.5 bg-muted/50 border overflow-x-auto flex-nowrap gap-2">
+              {periodosUnicos.map((p) => {
+                const ahora = format(new Date(), "HH:mm:ss");
+                const infoPeriodo = todosLosPeriodos?.find(
+                  (tp) => tp.id === p.id
+                );
+                const esElActual =
+                  infoPeriodo &&
+                  ahora >= infoPeriodo.inicio &&
+                  ahora <= infoPeriodo.fin;
+
+                return (
+                  <TabsTrigger
+                    key={p.id}
+                    value={String(p.id)}
+                    className={`
+          px-6 font-bold transition-all duration-300 relative overflow-hidden
+          ${
+            esElActual
+              ? "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border-primary/20 shadow-sm"
+              : ""
+          }
+        `}
+                  >
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="text-sm">{p.nombre}</span>
+                      {esElActual && (
+                        <span
+                          className={`
+              text-[9px] uppercase tracking-tighter px-1.5 py-0 rounded-full
+              ${
+                tabActiva === String(p.id)
+                  ? "bg-primary-foreground/20 text-white animate-pulse"
+                  : "bg-primary/10 text-primary animate-pulse"
+              }
+            `}
+                        >
+                          Ahora
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Glow sutil de fondo solo para el periodo actual */}
+                    {esElActual && (
+                      <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
+                    )}
+                  </TabsTrigger>
+                );
+              })}
             </TabsList>
           </div>
+
           {periodosUnicos.map((p) => {
             const ausenciasEnPeriodo = data.simulacion.filter(
               (s) => s.periodo === p.id
@@ -209,7 +282,7 @@ export function PanelGuardias({ fechaInicial = new Date() }) {
                 className="animate-in fade-in slide-in-from-bottom-2 duration-300 outline-none"
               >
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                  {/* --- NUEVA COLUMNA IZQUIERDA (Profes de Guardia) --- */}
+                  {/* COLUMNA IZQUIERDA: Profesores de Guardia */}
                   <div className="lg:col-span-4 space-y-4">
                     <div className="flex items-center gap-2 px-1 text-slate-700">
                       <Users className="w-5 h-5 text-primary" />
@@ -220,7 +293,7 @@ export function PanelGuardias({ fechaInicial = new Date() }) {
                     <ListaProfesGuardia fecha={fechaFmt} idPeriodo={p.id} />
                   </div>
 
-                  {/* --- COLUMNA DERECHA (Ausencias - Tu código anterior adaptado) --- */}
+                  {/* COLUMNA DERECHA: Ausencias */}
                   <div className="lg:col-span-8 space-y-4">
                     <div className="flex items-center gap-2 px-1 text-slate-700">
                       <AlertCircle className="w-5 h-5 text-orange-500" />
@@ -228,8 +301,6 @@ export function PanelGuardias({ fechaInicial = new Date() }) {
                     </div>
 
                     <div className="grid grid-cols-1 gap-4">
-                      {" "}
-                      {/* Una sola columna aquí para que las cards sean anchas */}
                       {ausenciasEnPeriodo.map((item, idx) => (
                         <GuardiaCard
                           key={idx}

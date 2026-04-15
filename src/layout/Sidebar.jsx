@@ -54,6 +54,7 @@ import {
   Info,
   Calendar,
   CalendarOff,
+  ClipboardCheck,
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -124,7 +125,7 @@ function SidebarComponent({
                 {
                   title: "Panel de Guardias",
                   url: "/panel-guardias",
-                  icon: CalendarOff,
+                  ClipboardCheck,
                 },
               ],
             },
@@ -273,7 +274,7 @@ function SidebarComponent({
                 {
                   title: "Panel de Guardias",
                   url: "/panel-guardias",
-                  icon: CalendarOff,
+                  icon: ClipboardCheck,
                 },
               ],
             },
@@ -357,7 +358,7 @@ function SidebarComponent({
                 {
                   title: "Panel de Guardias",
                   url: "/panel-guardias",
-                  icon: CalendarOff,
+                  icon: ClipboardCheck,
                 },
               ],
             },

@@ -95,7 +95,7 @@ export const columnsAusencias = [
       const descripcion = row.original.descripcion;
 
       return (
-        <div className="flex flex-col items-start gap-1 max-w-[300px]">
+        <div className="flex flex-col items-start gap-1 max-w-[450px]">
           <Badge
             variant="outline"
             className="capitalize font-normal text-[10px] px-1.5 py-0 h-5"
