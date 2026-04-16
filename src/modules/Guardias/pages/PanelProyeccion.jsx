@@ -1,3 +1,27 @@
+/**
+ * Componente: PanelProyeccion
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Este componente es una versión optimizada del Panel de Guardias diseñada 
+ * específicamente para su visualización en monitores públicos (Modo TV).
+ * Muestra el estado actual del cuadrante de guardias de forma desatendida.
+ *
+ * Funcionalidades principales:
+ * - Interfaz de alta visibilidad (Modo TV) sin controles de edición.
+ * - Rotación automática de pestañas para cubrir todos los periodos con ausencias.
+ * - Sincronización automática de datos mediante intervalos de refetch.
+ * - Identificación visual de guardias cubiertas y pendientes para información 
+ * del profesorado y alumnado.
+ * - Consumo de datos mediante tokens públicos cuando se requiere acceso sin sesión.
+ */
+
 import { useParams } from "react-router-dom";
 import { PanelGuardias } from "./PanelGuardias";
 import { Clock, Monitor } from "lucide-react";

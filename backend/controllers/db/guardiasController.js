@@ -9,11 +9,11 @@ const { getCursoActual } = require("../../utils/fechas");
  */
 async function getContadorGuardias() {
   const query = `
-        SELECT uid_profesor_cubridor, COUNT(*) as total
-        FROM guardias_asignadas
-        WHERE confirmada = true AND estado = 'activa'
-        GROUP BY uid_profesor_cubridor
-    `;
+  SELECT uid_profesor_cubridor, COUNT(DISTINCT (fecha, idperiodo)) as total
+  FROM guardias_asignadas
+  WHERE confirmada = true AND estado = 'activa'
+  GROUP BY uid_profesor_cubridor
+`;
   const { rows } = await db.query(query);
   return rows.reduce((acc, r) => {
     acc[r.uid_profesor_cubridor] = parseInt(r.total);
@@ -198,9 +198,9 @@ async function simularGuardiasDia(req, res) {
  * AUTOASIGNACIÓN PARA PROFESORES
  */
 async function autoasignarGuardia(req, res) {
-  const { fecha, idperiodo, uid_profesor_ausente } = req.body;
-  const usuarioSesion = req.session?.user; // Usamos tu estándar
-  console.log("Usuario sesion: ", usuarioSesion);
+  const { fecha, idperiodo, uid_profesor_ausente, fuerza_doble } = req.body; // <-- Recibimos el flag
+  console.log("Datos recibidos en el body:", req.body);
+  const usuarioSesion = req.session?.user;
 
   // 1. Control de acceso básico
   if (!usuarioSesion) {
@@ -266,30 +266,28 @@ async function autoasignarGuardia(req, res) {
       });
     }
 
-    // Comprobar que no se pueda autoasignar más de una guardia en el mismo periodo
+    // 5. VALIDACIÓN DE DOBLAR GUARDIA
     const { rows: yaTieneOtraGuardia } = await db.query(
       `SELECT id FROM guardias_asignadas 
-   WHERE fecha = $1 
-     AND idperiodo = $2 
-     AND uid_profesor_cubridor = $3 -- <--- AQUÍ ESTÁ EL CAMBIO (Tú como cubridor)
-     AND estado = 'activa'`,
+       WHERE fecha = $1 AND idperiodo = $2 AND uid_profesor_cubridor = $3 AND estado = 'activa'`,
       [fecha, idperiodo, uid_cubridor]
     );
 
-    if (yaTieneOtraGuardia.length > 0) {
-      return res.status(403).json({
+    if (yaTieneOtraGuardia.length > 0 && !fuerza_doble) {
+      return res.status(409).json({
         ok: false,
-        error: "Ya tienes asignada otra guardia en este mismo periodo.",
+        code: "CONFIRM_REQUIRED", // Código de error personalizado
+        error:
+          "Ya tienes asignada otra guardia en este periodo. ¿Estás seguro de que quieres cubrir ambas?",
       });
     }
 
-    // 5. OPERACIÓN: Inserción de la guardia
-    // Podrías usar transacciones aquí si tuvieras que tocar más tablas
+    // 6. INSERCIÓN
     await db.query(
       `INSERT INTO guardias_asignadas 
-       (fecha, idperiodo, uid_profesor_ausente, uid_profesor_cubridor, estado)
-       VALUES ($1, $2, $3, $4, 'activa')`,
-      [fecha, idperiodo, uid_profesor_ausente, uid_cubridor]
+       (fecha, idperiodo, uid_profesor_ausente, uid_profesor_cubridor, estado, forzada)
+       VALUES ($1, $2, $3, $4, 'activa', $5)`,
+      [fecha, idperiodo, uid_profesor_ausente, uid_cubridor, !!fuerza_doble]
     );
 
     res.json({ ok: true, mensaje: "Guardia autoasignada con éxito" });
@@ -385,20 +383,21 @@ async function getProfesoresDeGuardia(req, res) {
   try {
     // 1. Obtenemos solo los UIDs y el conteo de la DB
     const query = `
-  SELECT 
+SELECT 
     h.uid, 
-    (SELECT COUNT(*) FROM guardias_asignadas ga 
+    -- Contamos periodos distintos para la equidad (2 clases en 1 hora = 1 guardia)
+    (SELECT COUNT(DISTINCT (ga.fecha, ga.idperiodo)) 
+     FROM guardias_asignadas ga 
      WHERE ga.uid_profesor_cubridor = h.uid 
      AND ga.fecha BETWEEN $1 AND $2 
      AND ga.estado = 'activa') as total_guardias,
-    -- NUEVO: Chequeo si ya tiene una guardia asignada en este slot
-    EXISTS (
-      SELECT 1 FROM guardias_asignadas ga2
-      WHERE ga2.uid_profesor_cubridor = h.uid
-        AND ga2.fecha = $5
-        AND ga2.idperiodo = $4
-        AND ga2.estado = 'activa'
-    ) as ya_asignado
+    -- Contamos cuántas tiene asignadas EN ESTE MOMENTO (0, 1 o más)
+    (SELECT COUNT(*) 
+     FROM guardias_asignadas ga2
+     WHERE ga2.uid_profesor_cubridor = h.uid
+       AND ga2.fecha = $5
+       AND ga2.idperiodo = $4
+       AND ga2.estado = 'activa') as num_asignadas_ahora
   FROM horario_profesorado h
   WHERE h.dia_semana = $3 
     AND h.idperiodo = $4 
@@ -433,23 +432,28 @@ async function getProfesoresDeGuardia(req, res) {
       uidsDisponibles.map(async (row) => {
         return new Promise((resolve) => {
           buscarPorUid(ldapSession, row.uid, (err, datos) => {
+            // Objeto base con los datos de la DB
+            const baseData = {
+              uid: row.uid,
+              total_guardias: parseInt(row.total_guardias),
+              // Ahora pasamos ambos datos al frontend:
+              num_asignadas_ahora: parseInt(row.num_asignadas_ahora),
+              ya_asignado: parseInt(row.num_asignadas_ahora) > 0,
+            };
+
             if (!err && datos) {
               resolve({
-                uid: row.uid,
+                ...baseData,
                 nombre: datos.givenName || "",
                 apellido1: datos.sn || "",
                 apellido2: "",
-                total_guardias: parseInt(row.total_guardias),
-                ya_asignado: row.ya_asignado, // <--- FUNDAMENTAL: Añadir esto aquí
               });
             } else {
               resolve({
-                uid: row.uid,
+                ...baseData,
                 nombre: row.uid,
                 apellido1: "",
                 apellido2: "",
-                total_guardias: parseInt(row.total_guardias),
-                ya_asignado: row.ya_asignado, // <--- Y también aquí por si falla LDAP
               });
             }
           });

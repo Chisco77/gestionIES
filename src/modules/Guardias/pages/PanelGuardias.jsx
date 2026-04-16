@@ -1,4 +1,28 @@
-import { useState, useMemo, useEffect } from "react";
+/**
+ * Componente: PanelGuardias
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * Este componente gestiona el cuadrante de guardias del centro en tiempo real,
+ * permitiendo la visualización de ausencias y la autoasignación de profesores
+ * para cubrirlas según su horario lectivo.
+ *
+ * Funcionalidades principales:
+ * - Selector de fecha dinámico con navegación rápida (Ayer/Hoy/Mañana).
+ * - Sistema de pestañas por periodos horarios con detección automática de la hora actual.
+ * - Listado de profesores de guardia con contador de equidad (histórico de guardias).
+ * - Gestión de ausencias: asignación, liberación y detección de guardias cubiertas.
+ * - Soporte para "Guardias Dobles" excepcionales con diálogo de confirmación Shadcn UI.
+ * - Modo TV: Rotación automática de pestañas para visualización en pantallas del centro.
+ */
+
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,13 +40,13 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useGuardiasDia } from "@/hooks/useGuardiasDia";
 import { useAuth } from "@/context/AuthContext";
-import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios"; // Importamos tu hook
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios"; 
 
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react"; // Nuevos iconos
+} from "lucide-react"; 
 import { Calendar } from "@/components/ui/calendar"; // El componente Calendar de Shadcn
 import {
   Popover,
@@ -33,12 +57,25 @@ import { addDays, subDays, startOfDay } from "date-fns"; // Ayudantes de fecha
 
 import { useProfesoresGuardia } from "@/hooks/useProfesoresGuardia";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 export function PanelGuardias({
   fechaInicial = new Date(),
   modoTV = false,
   publicToken = null,
 }) {
   const queryClient = useQueryClient();
+
+  const autoSeleccionRealizada = useRef(false);
 
   // 1. Estado para controlar la fecha seleccionada
   const [fecha, setFecha] = useState(startOfDay(fechaInicial));
@@ -53,6 +90,10 @@ export function PanelGuardias({
   });
 
   const [tabActiva, setTabActiva] = useState("");
+
+  // estados para el dialogo de confirmación para doble guardia.
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingGuardia, setPendingGuardia] = useState(null);
 
   // Agrupamos y ordenamos periodos
   const periodosUnicos = useMemo(() => {
@@ -70,82 +111,98 @@ export function PanelGuardias({
 
   const isLoading = loadingPeriodos || loadingGuardias;
 
+  useEffect(() => {
+    autoSeleccionRealizada.current = false;
+  }, [fecha]);
+
   // 2. Lógica para detectar el periodo actual dinámicamente
   useEffect(() => {
-    // Solo ejecutamos si tenemos ambos datos: los periodos maestros y las ausencias de hoy
     if (todosLosPeriodos && data?.simulacion && periodosUnicos.length > 0) {
-      const ahora = format(new Date(), "HH:mm:ss"); // Formato compatible con 'time' de SQL
+      // Si ya hemos seleccionado pestaña antes y NO estamos en modo TV, no hacemos nada
+      if (autoSeleccionRealizada.current && !modoTV) return;
 
-      // Buscamos en TODOS los periodos del centro cuál es el actual
-      const periodoActual = todosLosPeriodos.find((p) => {
-        return ahora >= p.inicio && ahora <= p.fin;
-      });
+      const ahora = format(new Date(), "HH:mm:ss");
+      const periodoActual = todosLosPeriodos.find(
+        (p) => ahora >= p.inicio && ahora <= p.fin
+      );
 
-      // Si hay un periodo actual Y ese periodo tiene ausencias hoy, lo seleccionamos
       if (
         periodoActual &&
         periodosUnicos.some((p) => p.id === periodoActual.id)
       ) {
         setTabActiva(String(periodoActual.id));
-      } else {
-        // Si no estamos en horario escolar o el periodo actual no tiene ausencias,
-        // ponemos la primera pestaña disponible
+      } else if (!tabActiva) {
+        // Solo ponemos la primera si no hay ninguna activa ya
         setTabActiva(String(periodosUnicos[0].id));
       }
+
+      // Marcamos que ya se hizo la selección inicial
+      if (!modoTV) {
+        autoSeleccionRealizada.current = true;
+      }
     }
-    // 2. LÓGICA DE ROTACIÓN AUTOMÁTICA (Solo para modo TV)
+
+    // Lógica de rotación de TV (se mantiene igual)
     if (modoTV && periodosUnicos.length > 1) {
       const intervaloRotacion = setInterval(() => {
         setTabActiva((currentTab) => {
-          // Encontramos el índice de la pestaña actual
           const currentIndex = periodosUnicos.findIndex(
             (p) => String(p.id) === currentTab
           );
-          // Calculamos el siguiente índice (y volvemos al principio si es el último)
           const nextIndex = (currentIndex + 1) % periodosUnicos.length;
           return String(periodosUnicos[nextIndex].id);
         });
-      }, 15000); // 15 segundos
-
-      // Limpiamos el intervalo si el componente se desmonta o cambian los periodos
+      }, 15000);
       return () => clearInterval(intervaloRotacion);
     }
-  }, [todosLosPeriodos, data, periodosUnicos, modoTV]);
+  }, [todosLosPeriodos, data, periodosUnicos, modoTV, fecha]);
 
   // Handlers para navegar rápido
   const irAyer = () => setFecha((prev) => subDays(prev, 1));
   const irMañana = () => setFecha((prev) => addDays(prev, 1));
 
   const mutationAuto = useMutation({
-    mutationFn: async (payload) => {
+    mutationFn: async (vars) => {
+      // vars puede ser el payload directo o { payload, fuerza }
+      const isRetry = vars.fuerza !== undefined;
+      const payload = isRetry ? vars.payload : vars;
+      const fuerza = isRetry ? vars.fuerza : false;
+
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/db/guardias/autoasignar`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...payload, fuerza_doble: fuerza }), // Aquí enviamos todo
         }
       );
 
       const result = await res.json();
 
-      // Si el backend responde con error (401, 403, 409, 500...),
-      // lanzamos el error con el mensaje que viene del backend
       if (!res.ok) {
+        // Si el servidor nos pide confirmar la doble guardia
+        if (res.status === 409 && result.code === "CONFIRM_REQUIRED") {
+          setPendingGuardia(payload);
+          setConfirmDialogOpen(true);
+          // Lanzamos un error silencioso para que la mutación no termine como "success" todavía
+          throw new Error("CONFIRMATION_NEEDED");
+        }
         throw new Error(result.error || "No se pudo asignar la guardia");
       }
 
       return result;
     },
     onSuccess: (data) => {
-      toast.success(data.mensaje || "Guardia asignada correctamente");
+      toast.success(data.mensaje);
       queryClient.invalidateQueries({ queryKey: ["guardias-dia"] });
       queryClient.invalidateQueries({ queryKey: ["profes-guardia"] });
     },
     onError: (error) => {
       // Mostramos el error específico (ej: "No tienes guardia en este periodo")
-      toast.error(error.message);
+      if (error.message !== "CONFIRMATION_NEEDED") {
+        toast.error(error.message);
+      }
       queryClient.invalidateQueries({ queryKey: ["guardias-dia"] });
       queryClient.invalidateQueries({ queryKey: ["profes-guardia"] });
     },
@@ -354,6 +411,39 @@ export function PanelGuardias({
           })}
         </Tabs>
       )}
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent className="max-w-[400px]">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-orange-100 rounded-full">
+                <AlertCircle className="h-6 w-6 text-orange-600" />
+              </div>
+              <AlertDialogTitle className="text-xl">
+                ¿Doblar guardia?
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-slate-600">
+              Ya tienes una guardia asignada en este periodo. Cubrir una segunda
+              ausencia implica hacerte cargo de dos grupos simultáneamente de
+              forma excepcional.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel className="border-slate-200">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+              onClick={() => {
+                mutationAuto.mutate({ payload: pendingGuardia, fuerza: true });
+                setConfirmDialogOpen(false);
+              }}
+            >
+              Sí, cubrir ambas
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -498,51 +588,81 @@ function ListaProfesGuardia({ fecha, idPeriodo }) {
   return (
     <div className="space-y-3">
       {profes?.map((profe) => {
-        const estaOcupado = profe.ya_asignado;
+        const numGuardias = profe.num_asignadas_ahora || 0;
+        const estaOcupado = numGuardias > 0;
+        const esDoble = numGuardias > 1;
 
         return (
           <Card
             key={profe.uid}
             className={`transition-all duration-300 border shadow-none ${
               estaOcupado
-                ? "bg-blue-50 border-blue-200 ring-1 ring-blue-100"
+                ? esDoble
+                  ? "bg-indigo-50 border-indigo-200 ring-1 ring-indigo-100" // Color distinto si es doble
+                  : "bg-blue-50 border-blue-200 ring-1 ring-blue-100"
                 : "bg-white border-slate-200 shadow-sm"
             }`}
           >
             <CardContent className="p-3 flex justify-between items-center">
               <div className="flex items-center gap-3 min-w-0">
-                {/* Indicador de estado */}
+                {/* Indicador de estado con pulso más rápido si es doble */}
                 <div
                   className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    estaOcupado ? "bg-blue-500 animate-pulse" : "bg-slate-300"
+                    estaOcupado
+                      ? esDoble
+                        ? "bg-indigo-600 animate-bounce"
+                        : "bg-blue-500 animate-pulse"
+                      : "bg-slate-300"
                   }`}
                 />
 
                 <div className="min-w-0">
                   <p
-                    className={`text-sm font-bold truncate ${estaOcupado ? "text-blue-900" : "text-slate-700"}`}
+                    className={`text-sm font-bold truncate ${
+                      estaOcupado
+                        ? esDoble
+                          ? "text-indigo-900"
+                          : "text-blue-900"
+                        : "text-slate-700"
+                    }`}
                   >
                     {profe.apellido1}
                     {profe.nombre ? `, ${profe.nombre}` : ""}
                   </p>
+
                   {estaOcupado && (
-                    <p className="text-[10px] font-extrabold text-blue-600 uppercase tracking-tight">
-                      Guardia asignada
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p
+                        className={`text-[10px] font-extrabold uppercase tracking-tight ${
+                          esDoble ? "text-indigo-600" : "text-blue-600"
+                        }`}
+                      >
+                        {esDoble ? `Doble Guardia` : "Guardia asignada"}
+                      </p>
+                      {esDoble && (
+                        <Badge className="h-4 px-1 bg-indigo-600 text-[9px] hover:bg-indigo-600">
+                          x{numGuardias}
+                        </Badge>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
 
-              <Badge
-                variant="outline"
-                className={`ml-2 font-mono h-6 ${
-                  estaOcupado
-                    ? "bg-blue-600 text-white border-transparent"
-                    : "bg-slate-100"
-                }`}
-              >
-                {profe.total_guardias} <Clock className="w-3 h-3 ml-1" />
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className={`ml-2 font-mono h-6 ${
+                    estaOcupado
+                      ? esDoble
+                        ? "bg-indigo-700 text-white border-transparent"
+                        : "bg-blue-600 text-white border-transparent"
+                      : "bg-slate-100"
+                  }`}
+                >
+                  {profe.total_guardias} <Clock className="w-3 h-3 ml-1" />
+                </Badge>
+              </div>
             </CardContent>
           </Card>
         );
