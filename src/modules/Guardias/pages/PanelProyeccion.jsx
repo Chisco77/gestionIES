@@ -9,7 +9,7 @@
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
  *
- * Este componente es una versión optimizada del Panel de Guardias diseñada 
+ * Este componente es una versión optimizada del Panel de Guardias diseñada
  * específicamente para su visualización en monitores públicos (Modo TV).
  * Muestra el estado actual del cuadrante de guardias de forma desatendida.
  *
@@ -17,7 +17,7 @@
  * - Interfaz de alta visibilidad (Modo TV) sin controles de edición.
  * - Rotación automática de pestañas para cubrir todos los periodos con ausencias.
  * - Sincronización automática de datos mediante intervalos de refetch.
- * - Identificación visual de guardias cubiertas y pendientes para información 
+ * - Identificación visual de guardias cubiertas y pendientes para información
  * del profesorado y alumnado.
  * - Consumo de datos mediante tokens públicos cuando se requiere acceso sin sesión.
  */
@@ -30,6 +30,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { RelojPeriodo } from "@/modules/Utilidades/components/RelojPeriodo";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
+import { AlertTriangle } from "lucide-react";
 
 export function PanelProyeccion() {
   const { token } = useParams();
@@ -81,6 +82,27 @@ export function PanelProyeccion() {
 
       {/* CUERPO: El PanelGuardias ya trae sus fondos blancos y bordes suaves */}
       <main className="p-8 pb-24">
+        {/* --- MENSAJE DE ADVERTENCIA (SÓLO EN PRUEBAS) --- */}
+        <div className="max-w-4xl mx-auto mb-8">
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-sm">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="space-y-1">
+                <p className="text-amber-900 font-bold text-sm uppercase tracking-tight">
+                  Panel en fase de pruebas
+                </p>
+                <p className="text-amber-800 text-xs leading-relaxed">
+                  La información mostrada es utilizada exclusivamente por el
+                  grupo de profesores participantes en el pilotaje. El sistema
+                  de gestión de guardias{" "}
+                  <span className="underline font-bold">NO HA CAMBIADO</span>:
+                  debe seguir realizándose en los{" "}
+                  <strong>registros de papel correspondientes</strong>. Gracias.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
         <div className="max-w-[1600px] mx-auto">
           {/* El modoTV={true} ocultará los botones de "Cubrir/Liberar" que pusimos en el componente hijo */}
           <PanelGuardias modoTV={true} publicToken={token} />
