@@ -34,19 +34,20 @@ import {
   AlertCircle,
   CheckCircle2,
   Users,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useGuardiasDia } from "@/hooks/useGuardiasDia";
 import { useAuth } from "@/context/AuthContext";
-import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios"; 
+import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react"; 
+} from "lucide-react";
 import { Calendar } from "@/components/ui/calendar"; // El componente Calendar de Shadcn
 import {
   Popover,
@@ -354,9 +355,18 @@ export function PanelGuardias({
           </div>
 
           {periodosUnicos.map((p) => {
+            // 1. Filtramos las ausencias de este periodo
             const ausenciasEnPeriodo = data.simulacion.filter(
               (s) => s.periodo === p.id
             );
+            // 2. Ordenamos: Primero "propuesta" (pendientes) y luego "confirmada" (cubiertas)
+            const ausenciasOrdenadas = [...ausenciasEnPeriodo].sort((a, b) => {
+              // Si 'a' es propuesta y 'b' es confirmada, 'a' va primero (-1)
+              if (a.tipo === "propuesta" && b.tipo === "confirmada") return -1;
+              // Si 'a' es confirmada y 'b' es propuesta, 'b' va primero (1)
+              if (a.tipo === "confirmada" && b.tipo === "propuesta") return 1;
+              return 0;
+            });
 
             return (
               <TabsContent
@@ -384,7 +394,8 @@ export function PanelGuardias({
                     </div>
 
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                      {ausenciasEnPeriodo.map((item, idx) => (
+                      {/* 3. Renderizamos la lista ORDENADA */}
+                      {ausenciasOrdenadas.map((item, idx) => (
                         <GuardiaCard
                           key={idx}
                           item={item}
@@ -525,38 +536,66 @@ function GuardiaCard({
               {item.materia || "Sin materia"}
             </span>
           </div>
+          {/* NOMBRE DEL CUBRIDOR --- */}
+          {esConfirmada && (
+            <div className="mt-2 flex items-center gap-1.5 pt-2 border-t border-slate-100">
+              <span
+                className={`text-[11px] font-semibold ${esMia ? "text-blue-700" : "text-green-700"}`}
+              >
+                Cubre:
+              </span>
+
+              <UserCheck
+                className={`w-3.5 h-3.5 ${esMia ? "text-blue-500" : "text-green-500"}`}
+              />
+
+              <span
+                className={`text-[11px] font-semibold truncate ${esMia ? "text-blue-700" : "text-green-700"}`}
+              >
+                {item.nombre_cubridor || item.uid_profesor_cubridor}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Botones de acción: Solo si NO es modoTV */}
         {!modoTV && (
           <div className="ml-1">
             {esConfirmada ? (
-              <div className="flex flex-col items-center">
-                <div
-                  className={`h-7 w-7 rounded-full flex items-center justify-center shadow-md ${
-                    esMia ? "bg-blue-600" : "bg-green-600"
-                  }`}
-                >
-                  <UserCheck className="w-3.5 h-3.5 text-white" />
-                </div>
-                {esMia && (
+              <div className="flex flex-col items-center gap-1">
+                {esMia ? (
+                  /* Botón de liberar para el dueño */
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={onCancelar}
                     disabled={loading}
-                    className="h-6 px-1 text-[9px] text-red-600"
+                    className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-full transition-colors"
+                    title="Liberar guardia"
                   >
-                    Liberar
+                    <XCircle className="w-6 h-6" />
+                    <span className="sr-only">Liberar</span>
                   </Button>
+                ) : (
+                  /* Icono informativo si la cubre otro */
+                  <div className="h-7 w-7 rounded-full flex items-center justify-center bg-green-600 shadow-sm">
+                    <UserCheck className="w-4 h-4 text-white" />
+                  </div>
+                )}
+
+                {esMia && (
+                  <span className="text-[9px] font-bold text-red-600 uppercase">
+                    Liberar
+                  </span>
                 )}
               </div>
             ) : (
+              /* Botón para cubrir si está pendiente */
               <Button
                 size="sm"
                 onClick={onAsignar}
                 disabled={loading}
-                className="h-8 px-3 bg-orange-600 text-xs text-white"
+                className="h-9 px-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg shadow-sm transition-all active:scale-95"
               >
                 Cubrir
               </Button>
