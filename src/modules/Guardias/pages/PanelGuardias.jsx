@@ -346,33 +346,31 @@ export function PanelGuardias({
                       key={p.id}
                       value={String(p.id)}
                       className={`
-          px-6 font-bold transition-all duration-300 relative overflow-hidden
-          ${
-            esElActual
-              ? "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border-primary/20 shadow-sm"
-              : ""
-          }
-        `}
+              px-6 font-bold transition-all duration-300 relative overflow-hidden
+              /* Ahora todas las activas son negras, sean el periodo actual o no */
+              data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border-primary/20 shadow-sm
+            `}
                     >
                       <div className="flex flex-col items-center gap-0.5">
                         <span className="text-sm">{p.nombre}</span>
+                        {/* Solo mostramos el badge si es realmente la hora actual */}
                         {esElActual && (
                           <span
                             className={`
-              text-[9px] uppercase tracking-tighter px-1.5 py-0 rounded-full
-              ${
-                tabActiva === String(p.id)
-                  ? "bg-primary-foreground/20 text-white animate-pulse"
-                  : "bg-primary/10 text-primary animate-pulse"
-              }
-            `}
+                    text-[9px] uppercase tracking-tighter px-1.5 py-0 rounded-full
+                    ${
+                      tabActiva === String(p.id)
+                        ? "bg-primary-foreground/20 text-white animate-pulse"
+                        : "bg-primary/10 text-primary animate-pulse"
+                    }
+                  `}
                           >
                             Ahora
                           </span>
                         )}
                       </div>
 
-                      {/* Glow sutil de fondo solo para el periodo actual */}
+                      {/* Glow sutil de fondo solo si es el periodo cronológico actual */}
                       {esElActual && (
                         <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
                       )}
@@ -383,17 +381,13 @@ export function PanelGuardias({
             </div>
 
             {periodosUnicos.map((p) => {
-              // 1. Filtramos las ausencias de este periodo
               const ausenciasEnPeriodo = data.simulacion.filter(
                 (s) => s.periodo === p.id
               );
-              // 2. Ordenamos: Primero "propuesta" (pendientes) y luego "confirmada" (cubiertas)
               const ausenciasOrdenadas = [...ausenciasEnPeriodo].sort(
                 (a, b) => {
-                  // Si 'a' es propuesta y 'b' es confirmada, 'a' va primero (-1)
                   if (a.tipo === "propuesta" && b.tipo === "confirmada")
                     return -1;
-                  // Si 'a' es confirmada y 'b' es propuesta, 'b' va primero (1)
                   if (a.tipo === "confirmada" && b.tipo === "propuesta")
                     return 1;
                   return 0;
@@ -412,7 +406,10 @@ export function PanelGuardias({
                       <div className="flex items-center gap-2 px-1 text-slate-700">
                         <Users className="w-5 h-5 text-primary" />
                         <h3 className="font-bold text-lg">
-                          Profesores de Guardia
+                          Profesores de Guardia{" "}
+                          <span className="text-slate-400 font-medium ml-1">
+                            ({p.nombre})
+                          </span>
                         </h3>
                       </div>
                       <ListaProfesGuardia fecha={fechaFmt} idPeriodo={p.id} />
@@ -423,12 +420,14 @@ export function PanelGuardias({
                       <div className="flex items-center gap-2 px-1 text-slate-700">
                         <AlertCircle className="w-5 h-5 text-orange-500" />
                         <h3 className="font-bold text-lg">
-                          Ausencias a cubrir
+                          Ausencias a cubrir{" "}
+                          <span className="text-slate-400 font-medium ml-1">
+                            ({p.nombre})
+                          </span>
                         </h3>
                       </div>
 
                       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                        {/* 3. Renderizamos la lista ORDENADA */}
                         {ausenciasOrdenadas.map((item, idx) => (
                           <GuardiaCard
                             key={idx}
