@@ -59,6 +59,8 @@ export function DialogoEditarHorario({ open, onClose, usuarioSeleccionado }) {
   const [openCeldaInsertar, setOpenCeldaInsertar] = useState(false);
   const [openEliminar, setOpenEliminar] = useState(false);
 
+  console.log ("EstanciaSeleccionada: ", estanciaSeleccionada);
+
   function esPeriodoActual(periodo) {
     if (!horaActual) return false;
 

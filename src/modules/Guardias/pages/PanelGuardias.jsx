@@ -57,6 +57,8 @@ import {
 import { addDays, subDays, startOfDay } from "date-fns"; // Ayudantes de fecha
 
 import { useProfesoresGuardia } from "@/hooks/useProfesoresGuardia";
+import { useEstancias } from "@/hooks/Estancias/useEstancias";
+import { DialogoPlanoEstancia } from "@/modules/ReservasEstancias/components/DialogoPlanoEstancia";
 
 import {
   AlertDialog,
@@ -96,6 +98,27 @@ export function PanelGuardias({
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingGuardia, setPendingGuardia] = useState(null);
 
+  // 1. Cargamos el catálogo de estancias
+  const { data: estancias } = useEstancias();
+
+  // 2. Estado para el diálogo
+  const [isPlanoOpen, setIsPlanoOpen] = useState(false);
+  const [estanciaSeleccionada, setEstanciaSeleccionada] = useState(null);
+
+  // 3. Función para abrir el plano
+  const handleOpenPlano = (nombreAula) => {
+    if (!nombreAula || !estancias) return;
+
+    // Buscamos el objeto completo que coincida con el nombre/ID
+    const encontrada = estancias.find(
+      (e) => e.descripcion === nombreAula || e.nombre === nombreAula
+    );
+
+    if (encontrada) {
+      setEstanciaSeleccionada(encontrada);
+      setIsPlanoOpen(true);
+    }
+  };
   // Agrupamos y ordenamos periodos
   const periodosUnicos = useMemo(() => {
     if (!data?.simulacion) return [];
@@ -232,92 +255,97 @@ export function PanelGuardias({
   });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 p-4">
-      {/* --- CABECERA CON SELECTOR DE FECHA --- */}
-      {!modoTV && (
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
-          <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-lg border">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={irAyer}
-              className="h-9 w-9"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+    <>
+      <div className="max-w-7xl mx-auto space-y-6 p-4">
+        {/* --- CABECERA CON SELECTOR DE FECHA --- */}
+        {!modoTV && (
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
+            <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-lg border">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={irAyer}
+                className="h-9 w-9"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="min-w-[240px] justify-start text-left font-bold shadow-sm border-none bg-white hover:bg-slate-50"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                  {format(fecha, "EEEE, d 'de' MMMM", { locale: es })}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="single"
-                  selected={fecha}
-                  onSelect={(d) => d && setFecha(d)}
-                  initialFocus
-                  locale={es}
-                />
-              </PopoverContent>
-            </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="min-w-[240px] justify-start text-left font-bold shadow-sm border-none bg-white hover:bg-slate-50"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                    {format(fecha, "EEEE, d 'de' MMMM", { locale: es })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={fecha}
+                    onSelect={(d) => d && setFecha(d)}
+                    initialFocus
+                    locale={es}
+                  />
+                </PopoverContent>
+              </Popover>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={irMañana}
-              className="h-9 w-9"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={irMañana}
+                className="h-9 w-9"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* --- ESTADOS DE CARGA Y VACÍO --- */}
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center p-20 space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-muted-foreground animate-pulse">
-            Sincronizando cuadrante y horarios...
-          </p>
-        </div>
-      ) : periodosUnicos.length === 0 ? (
-        <div className="text-center p-20 border-2 border-dashed rounded-xl bg-slate-50/50">
-          <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
-          <h3 className="mt-4 text-lg font-medium text-slate-600">
-            No hay ausencias
-          </h3>
-          <p className="text-muted-foreground">
-            No se han registrado ausencias para el día{" "}
-            {format(fecha, "dd/MM/yyyy")}.
-          </p>
-        </div>
-      ) : (
-        /* --- SISTEMA DE PESTAÑAS DINÁMICO --- */
-        <Tabs value={tabActiva} onValueChange={setTabActiva} className="w-full">
-          <div className="flex justify-center mb-8">
-            <TabsList className="h-15 p-1.5 bg-muted/50 border overflow-x-auto flex-nowrap gap-2">
-              {periodosUnicos.map((p) => {
-                const ahora = format(new Date(), "HH:mm:ss");
-                const infoPeriodo = todosLosPeriodos?.find(
-                  (tp) => tp.id === p.id
-                );
-                const esElActual =
-                  infoPeriodo &&
-                  ahora >= infoPeriodo.inicio &&
-                  ahora <= infoPeriodo.fin;
+        {/* --- ESTADOS DE CARGA Y VACÍO --- */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center p-20 space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="text-muted-foreground animate-pulse">
+              Sincronizando cuadrante y horarios...
+            </p>
+          </div>
+        ) : periodosUnicos.length === 0 ? (
+          <div className="text-center p-20 border-2 border-dashed rounded-xl bg-slate-50/50">
+            <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
+            <h3 className="mt-4 text-lg font-medium text-slate-600">
+              No hay ausencias
+            </h3>
+            <p className="text-muted-foreground">
+              No se han registrado ausencias para el día{" "}
+              {format(fecha, "dd/MM/yyyy")}.
+            </p>
+          </div>
+        ) : (
+          /* --- SISTEMA DE PESTAÑAS DINÁMICO --- */
+          <Tabs
+            value={tabActiva}
+            onValueChange={setTabActiva}
+            className="w-full"
+          >
+            <div className="flex justify-center mb-8">
+              <TabsList className="h-15 p-1.5 bg-muted/50 border overflow-x-auto flex-nowrap gap-2">
+                {periodosUnicos.map((p) => {
+                  const ahora = format(new Date(), "HH:mm:ss");
+                  const infoPeriodo = todosLosPeriodos?.find(
+                    (tp) => tp.id === p.id
+                  );
+                  const esElActual =
+                    infoPeriodo &&
+                    ahora >= infoPeriodo.inicio &&
+                    ahora <= infoPeriodo.fin;
 
-                return (
-                  <TabsTrigger
-                    key={p.id}
-                    value={String(p.id)}
-                    className={`
+                  return (
+                    <TabsTrigger
+                      key={p.id}
+                      value={String(p.id)}
+                      className={`
           px-6 font-bold transition-all duration-300 relative overflow-hidden
           ${
             esElActual
@@ -325,12 +353,12 @@ export function PanelGuardias({
               : ""
           }
         `}
-                  >
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className="text-sm">{p.nombre}</span>
-                      {esElActual && (
-                        <span
-                          className={`
+                    >
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-sm">{p.nombre}</span>
+                        {esElActual && (
+                          <span
+                            className={`
               text-[9px] uppercase tracking-tighter px-1.5 py-0 rounded-full
               ${
                 tabActiva === String(p.id)
@@ -338,124 +366,144 @@ export function PanelGuardias({
                   : "bg-primary/10 text-primary animate-pulse"
               }
             `}
-                        >
-                          Ahora
-                        </span>
+                          >
+                            Ahora
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Glow sutil de fondo solo para el periodo actual */}
+                      {esElActual && (
+                        <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
                       )}
-                    </div>
-
-                    {/* Glow sutil de fondo solo para el periodo actual */}
-                    {esElActual && (
-                      <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
-                    )}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </div>
-
-          {periodosUnicos.map((p) => {
-            // 1. Filtramos las ausencias de este periodo
-            const ausenciasEnPeriodo = data.simulacion.filter(
-              (s) => s.periodo === p.id
-            );
-            // 2. Ordenamos: Primero "propuesta" (pendientes) y luego "confirmada" (cubiertas)
-            const ausenciasOrdenadas = [...ausenciasEnPeriodo].sort((a, b) => {
-              // Si 'a' es propuesta y 'b' es confirmada, 'a' va primero (-1)
-              if (a.tipo === "propuesta" && b.tipo === "confirmada") return -1;
-              // Si 'a' es confirmada y 'b' es propuesta, 'b' va primero (1)
-              if (a.tipo === "confirmada" && b.tipo === "propuesta") return 1;
-              return 0;
-            });
-
-            return (
-              <TabsContent
-                key={p.id}
-                value={String(p.id)}
-                className="animate-in fade-in slide-in-from-bottom-2 duration-300 outline-none"
-              >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                  {/* COLUMNA IZQUIERDA: Profesores de Guardia */}
-                  <div className="lg:col-span-4 space-y-4">
-                    <div className="flex items-center gap-2 px-1 text-slate-700">
-                      <Users className="w-5 h-5 text-primary" />
-                      <h3 className="font-bold text-lg">
-                        Profesores de Guardia
-                      </h3>
-                    </div>
-                    <ListaProfesGuardia fecha={fechaFmt} idPeriodo={p.id} />
-                  </div>
-
-                  {/* COLUMNA DERECHA: Ausencias */}
-                  <div className="lg:col-span-8 space-y-4">
-                    <div className="flex items-center gap-2 px-1 text-slate-700">
-                      <AlertCircle className="w-5 h-5 text-orange-500" />
-                      <h3 className="font-bold text-lg">Ausencias a cubrir</h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                      {/* 3. Renderizamos la lista ORDENADA */}
-                      {ausenciasOrdenadas.map((item, idx) => (
-                        <GuardiaCard
-                          key={idx}
-                          item={item}
-                          modoTV={modoTV}
-                          uidUsuarioActual={user?.username}
-                          onAsignar={() =>
-                            mutationAuto.mutate({
-                              fecha: fechaFmt,
-                              idperiodo: item.periodo,
-                              uid_profesor_ausente: item.uid_ausente,
-                            })
-                          }
-                          onCancelar={() => mutationCancelar.mutate(item.id)}
-                          loading={
-                            mutationAuto.isPending || mutationCancelar.isPending
-                          }
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            );
-          })}
-        </Tabs>
-      )}
-      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <AlertDialogContent className="max-w-[400px]">
-          <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-orange-100 rounded-full">
-                <AlertCircle className="h-6 w-6 text-orange-600" />
-              </div>
-              <AlertDialogTitle className="text-xl">
-                ¿Doblar guardia?
-              </AlertDialogTitle>
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
             </div>
-            <AlertDialogDescription className="text-slate-600">
-              Ya tienes una guardia asignada en este periodo. Cubrir una segunda
-              ausencia implica hacerte cargo de dos grupos simultáneamente de
-              forma excepcional.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4">
-            <AlertDialogCancel className="border-slate-200">
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-              onClick={() => {
-                mutationAuto.mutate({ payload: pendingGuardia, fuerza: true });
-                setConfirmDialogOpen(false);
-              }}
-            >
-              Sí, cubrir ambas
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+
+            {periodosUnicos.map((p) => {
+              // 1. Filtramos las ausencias de este periodo
+              const ausenciasEnPeriodo = data.simulacion.filter(
+                (s) => s.periodo === p.id
+              );
+              // 2. Ordenamos: Primero "propuesta" (pendientes) y luego "confirmada" (cubiertas)
+              const ausenciasOrdenadas = [...ausenciasEnPeriodo].sort(
+                (a, b) => {
+                  // Si 'a' es propuesta y 'b' es confirmada, 'a' va primero (-1)
+                  if (a.tipo === "propuesta" && b.tipo === "confirmada")
+                    return -1;
+                  // Si 'a' es confirmada y 'b' es propuesta, 'b' va primero (1)
+                  if (a.tipo === "confirmada" && b.tipo === "propuesta")
+                    return 1;
+                  return 0;
+                }
+              );
+
+              return (
+                <TabsContent
+                  key={p.id}
+                  value={String(p.id)}
+                  className="animate-in fade-in slide-in-from-bottom-2 duration-300 outline-none"
+                >
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* COLUMNA IZQUIERDA: Profesores de Guardia */}
+                    <div className="lg:col-span-4 space-y-4">
+                      <div className="flex items-center gap-2 px-1 text-slate-700">
+                        <Users className="w-5 h-5 text-primary" />
+                        <h3 className="font-bold text-lg">
+                          Profesores de Guardia
+                        </h3>
+                      </div>
+                      <ListaProfesGuardia fecha={fechaFmt} idPeriodo={p.id} />
+                    </div>
+
+                    {/* COLUMNA DERECHA: Ausencias */}
+                    <div className="lg:col-span-8 space-y-4">
+                      <div className="flex items-center gap-2 px-1 text-slate-700">
+                        <AlertCircle className="w-5 h-5 text-orange-500" />
+                        <h3 className="font-bold text-lg">
+                          Ausencias a cubrir
+                        </h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                        {/* 3. Renderizamos la lista ORDENADA */}
+                        {ausenciasOrdenadas.map((item, idx) => (
+                          <GuardiaCard
+                            key={idx}
+                            item={item}
+                            modoTV={modoTV}
+                            uidUsuarioActual={user?.username}
+                            onAsignar={() =>
+                              mutationAuto.mutate({
+                                fecha: fechaFmt,
+                                idperiodo: item.periodo,
+                                uid_profesor_ausente: item.uid_ausente,
+                              })
+                            }
+                            onCancelar={() => mutationCancelar.mutate(item.id)}
+                            onOpenPlano={handleOpenPlano}
+                            loading={
+                              mutationAuto.isPending ||
+                              mutationCancelar.isPending
+                            }
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              );
+            })}
+          </Tabs>
+        )}
+        <AlertDialog
+          open={confirmDialogOpen}
+          onOpenChange={setConfirmDialogOpen}
+        >
+          <AlertDialogContent className="max-w-[400px]">
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-orange-100 rounded-full">
+                  <AlertCircle className="h-6 w-6 text-orange-600" />
+                </div>
+                <AlertDialogTitle className="text-xl">
+                  ¿Doblar guardia?
+                </AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="text-slate-600">
+                Ya tienes una guardia asignada en este periodo. Cubrir una
+                segunda ausencia implica hacerte cargo de dos grupos
+                simultáneamente de forma excepcional.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-4">
+              <AlertDialogCancel className="border-slate-200">
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+                onClick={() => {
+                  mutationAuto.mutate({
+                    payload: pendingGuardia,
+                    fuerza: true,
+                  });
+                  setConfirmDialogOpen(false);
+                }}
+              >
+                Sí, cubrir ambas
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+      <DialogoPlanoEstancia
+        open={isPlanoOpen}
+        onClose={() => setIsPlanoOpen(false)}
+        estancia={estanciaSeleccionada}
+      />
+    </>
   );
 }
 
@@ -463,6 +511,7 @@ function GuardiaCard({
   item,
   onAsignar,
   onCancelar,
+  onOpenPlano,
   loading,
   uidUsuarioActual,
   modoTV,
@@ -522,7 +571,8 @@ function GuardiaCard({
           <div className="flex flex-wrap items-center gap-1 mt-1">
             <Badge
               variant="outline"
-              className="text-[9px] h-4 px-1 bg-white/50 border-slate-200"
+              className="text-[9px] h-4 px-1 bg-white/50 border-slate-200 cursor-pointer hover:bg-blue-100 transition-colors"
+              onClick={() => onOpenPlano(item.aula)}
             >
               Aula: {item.aula || "---"}
             </Badge>

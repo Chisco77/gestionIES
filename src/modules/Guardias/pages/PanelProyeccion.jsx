@@ -93,7 +93,7 @@ export function PanelProyeccion() {
                 </p>
                 <p className="text-amber-800 text-xs leading-relaxed">
                   La información mostrada es utilizada exclusivamente por el
-                  grupo de profesores participantes en el pilotaje. El sistema
+                  grupo de profesores participantes en las pruebas. El sistema
                   de gestión de guardias{" "}
                   <span className="underline font-bold">NO HA CAMBIADO</span>:
                   debe seguir realizándose en los{" "}
