@@ -203,7 +203,7 @@ async function updateAusencia(req, res) {
   const campos = req.body;
 
   try {
-    // 1. Obtener datos actuales para completar la validación
+    // 1. Obtener datos actuales
     const { rows: actual } = await db.query(
       "SELECT * FROM ausencias_profesorado WHERE id = $1",
       [id]
@@ -212,7 +212,7 @@ async function updateAusencia(req, res) {
       return res.status(404).json({ ok: false, error: "No encontrada" });
     const reg = actual[0];
 
-    // 2. 🛡️ VALIDACIÓN DE COLISIONES (Excluyendo la propia fila actual)
+    // 2. Validación de colisión
     const colision = await verificarColision(
       reg.uid_profesor,
       campos.fecha_inicio || reg.fecha_inicio,
@@ -223,17 +223,16 @@ async function updateAusencia(req, res) {
       campos.hasOwnProperty("idperiodo_fin")
         ? campos.idperiodo_fin
         : reg.idperiodo_fin,
+
       id
     );
+    if (colision)
+      return res.status(409).json({ ok: false, error: "Colisión detectada" });
 
-    if (colision) {
-      return res.status(409).json({
-        ok: false,
-        error: "La modificación solapa con otra ausencia existente.",
-      });
-    }
+    // --- INICIO DE TRANSACCIÓN ---
+    await db.query("BEGIN");
 
-    // 3. Procesar Update original
+    // 3. Update
     const sets = [];
     const vals = [];
     let i = 0;
@@ -245,7 +244,6 @@ async function updateAusencia(req, res) {
       "tipo_ausencia",
       "descripcion",
     ];
-
     Object.keys(campos).forEach((key) => {
       if (allowed.includes(key)) {
         sets.push(`${key} = $${++i}`);
@@ -253,24 +251,49 @@ async function updateAusencia(req, res) {
       }
     });
 
-    if (sets.length === 0)
+    if (sets.length === 0) {
+      await db.query("ROLLBACK");
       return res.status(400).json({ ok: false, error: "Nada que actualizar" });
+    }
 
     vals.push(id);
     const { rows } = await db.query(
       `UPDATE ausencias_profesorado SET ${sets.join(", ")} WHERE id = $${++i} RETURNING *`,
       vals
     );
+    const ausenciaActualizada = rows[0];
 
-    res.json({ ok: true, ausencia: rows[0] });
+    // 4. Limpieza de guardias
+    await db.query(
+      `DELETE FROM guardias_asignadas 
+       WHERE idausencia = $1 
+       AND (
+         fecha < $2 OR fecha > $3 
+         OR ($4::int IS NOT NULL AND idperiodo < $4) 
+         OR ($5::int IS NOT NULL AND idperiodo > $5)
+       )`,
+      [
+        id,
+        ausenciaActualizada.fecha_inicio,
+        ausenciaActualizada.fecha_fin || "9999-12-31",
+        ausenciaActualizada.idperiodo_inicio,
+        ausenciaActualizada.idperiodo_fin,
+      ]
+    );
+
+    await db.query("COMMIT");
+    // --- FIN DE TRANSACCIÓN ---
+
+    res.json({ ok: true, ausencia: ausenciaActualizada });
   } catch (err) {
+    await db.query("ROLLBACK"); 
     console.error("[updateAusencia] Error:", err);
     res.status(500).json({ ok: false, error: "Error actualizando" });
   }
 }
 
 /**
- * Eliminar (Se mantiene igual que tu código original)
+ * Eliminar
  */
 async function deleteAusencia(req, res) {
   const { id } = req.params;
@@ -289,7 +312,10 @@ async function deleteAusencia(req, res) {
           "No se puede borrar una ausencia vinculada a un permiso oficial.",
       });
     }
-
+    // Al borrar la ausencia, borramos primero sus guardias (o el ON DELETE CASCADE de la DB lo hará)
+    await db.query("DELETE FROM guardias_asignadas WHERE idausencia = $1", [
+      id,
+    ]);
     await db.query(`DELETE FROM ausencias_profesorado WHERE id = $1`, [id]);
     res.json({ ok: true });
   } catch (err) {

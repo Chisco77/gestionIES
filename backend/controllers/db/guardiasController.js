@@ -24,7 +24,7 @@ async function getContadorGuardias() {
 async function simularGuardiasDia(req, res) {
   const { fecha } = req.params;
 
-  // LOG CRÍTICO
+  // LOG
   console.log(
     "LOG 7: [Controller] ¿Existe req.session.ldap?:",
     !!req.session?.ldap
@@ -169,6 +169,7 @@ async function simularGuardiasDia(req, res) {
 
         simulacion.push({
           tipo: "propuesta",
+          idausencia: ausencia.id,
           periodo: slot.idperiodo,
           uid_ausente: ausencia.uid_profesor,
           nombre_periodo: slot.nombre_periodo,
@@ -198,7 +199,8 @@ async function simularGuardiasDia(req, res) {
  * AUTOASIGNACIÓN PARA PROFESORES
  */
 async function autoasignarGuardia(req, res) {
-  const { fecha, idperiodo, uid_profesor_ausente, fuerza_doble } = req.body; // <-- Recibimos el flag
+  const { fecha, idperiodo, uid_profesor_ausente, idausencia, fuerza_doble } =
+    req.body; // <-- Recibimos el flag
   console.log("Datos recibidos en el body:", req.body);
   const usuarioSesion = req.session?.user;
 
@@ -266,6 +268,24 @@ async function autoasignarGuardia(req, res) {
       });
     }
 
+    // VALIDACIÓN: ¿Este profesor ya se ha asignado ESTA HORA específica de esta ausencia?
+    const { rows: yaCubreEsteSlot } = await db.query(
+      `SELECT id FROM guardias_asignadas 
+   WHERE idausencia = $1 
+     AND idperiodo = $2 
+     AND uid_profesor_cubridor = $3 
+     AND estado = 'activa'`,
+      [idausencia, idperiodo, uid_cubridor]
+    );
+
+    if (yaCubreEsteSlot.length > 0) {
+      return res.status(409).json({
+        ok: false,
+        error:
+          "Ya te has asignado la cobertura de esta ausencia para esta hora concreta.",
+      });
+    }
+
     // 5. VALIDACIÓN DE DOBLAR GUARDIA
     const { rows: yaTieneOtraGuardia } = await db.query(
       `SELECT id FROM guardias_asignadas 
@@ -285,9 +305,16 @@ async function autoasignarGuardia(req, res) {
     // 6. INSERCIÓN
     await db.query(
       `INSERT INTO guardias_asignadas 
-       (fecha, idperiodo, uid_profesor_ausente, uid_profesor_cubridor, estado, forzada)
-       VALUES ($1, $2, $3, $4, 'activa', $5)`,
-      [fecha, idperiodo, uid_profesor_ausente, uid_cubridor, !!fuerza_doble]
+       (fecha, idperiodo, uid_profesor_ausente, idausencia, uid_profesor_cubridor, estado, forzada)
+VALUES ($1, $2, $3, $4, $5, 'activa', $6)`,
+      [
+        fecha,
+        idperiodo,
+        uid_profesor_ausente,
+        idausencia,
+        uid_cubridor,
+        !!fuerza_doble,
+      ]
     );
 
     res.json({ ok: true, mensaje: "Guardia autoasignada con éxito" });
