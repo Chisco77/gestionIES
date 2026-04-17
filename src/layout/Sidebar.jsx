@@ -276,6 +276,11 @@ function SidebarComponent({
                   url: "/panel-guardias",
                   icon: ClipboardCheck,
                 },
+                  {
+                  title: "Mis ausencias",
+                  url: "/ausencias-profesorado",
+                  icon: CalendarOff,
+                },
               ],
             },
           ]

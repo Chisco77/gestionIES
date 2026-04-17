@@ -126,6 +126,7 @@ async function simularGuardiasDia(req, res) {
             id: yaConfirmada.id,
             tipo: "confirmada",
             idausencia: yaConfirmada.idausencia,
+            observaciones_guardia: ausencia.observaciones_guardia,
             nombre_ausente: await getNombreProfesor(ausencia.uid_profesor),
             nombre_cubridor: await getNombreProfesor(
               yaConfirmada.uid_profesor_cubridor
@@ -172,6 +173,7 @@ async function simularGuardiasDia(req, res) {
           tipo: "propuesta",
           idausencia: ausencia.id,
           periodo: slot.idperiodo,
+          observaciones_guardia: ausencia.observaciones_guardia,
           uid_ausente: ausencia.uid_profesor,
           nombre_periodo: slot.nombre_periodo,
           nombre_ausente: await getNombreProfesor(ausencia.uid_profesor),

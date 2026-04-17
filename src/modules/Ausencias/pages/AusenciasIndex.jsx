@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { columnsAusencias } from "../components/columns-ausencias";
 import { TablaAusencias } from "../components/TablaAusencias";
 import { useAusencias } from "@/hooks/useAusencias";
@@ -31,21 +31,47 @@ import { DialogoSeleccionarFechaParte } from "../components/DialogoSeleccionarFe
 import { DialogoInsertarAusenciaManual } from "../components/DialogoInsertarAusenciaManual";
 import { DialogoEditarAusenciaManual } from "../components/DialogoEditarAusenciaManual";
 import { DialogoEliminarAusencia } from "../components/DialogoEliminarAusencia";
+import { DialogoEditarTareas } from "../components/DialogoEditarTareas";
 import { generarParteDiarioAusencias } from "@/Informes/horarios";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { eachDayOfInterval } from "date-fns";
 
+import { useAuth } from "@/context/AuthContext";
+
 export function AusenciasIndex() {
+  const { user } = useAuth(); // Extraemos el usuario actual
   const [abrirDialogoFecha, setAbrirDialogoFecha] = useState(false);
   const [abrirInsertar, setAbrirInsertar] = useState(false);
   const [ausenciaSeleccionada, setAusenciaSeleccionada] = useState(null);
   const [abrirEliminar, setAbrirEliminar] = useState(false);
   const [abrirEditar, setAbrirEditar] = useState(false);
+  const [abrirTareas, setAbrirTareas] = useState(false);
 
   // Usamos refetch para actualizar la tabla tras insertar
   const { data: ausencias, isLoading, error, refetch } = useAusencias();
   const { data: periodos = [] } = usePeriodosHorarios();
+  const esDirectiva = user?.perfil === "directiva";
+  const hoyStr = format(new Date(), "yyyy-MM-dd");
+
+  // 1. FILTRADO INTELIGENTE: Si no es directiva, filtramos por su username (uid)
+  const ausenciasVisibles = useMemo(() => {
+    if (!ausencias) return [];
+
+    if (esDirectiva) return ausencias; // La directiva sigue viendo todo
+
+    // Filtro para PROFESORES
+    return ausencias.filter((a) => {
+      const esMio = a.uid_profesor === user?.username;
+
+      // Usamos fecha_fin si existe, si no, fecha_inicio.
+      // Comparamos si es mayor o igual a hoy para que no desaparezcan las de hoy.
+      const fechaReferencia = a.fecha_fin || a.fecha_inicio;
+      const esFuturaOHoy = fechaReferencia >= hoyStr;
+
+      return esMio && esFuturaOHoy;
+    });
+  }, [ausencias, user, esDirectiva, hoyStr]);
 
   const handleEditar = (sel) => {
     if (!sel) return;
@@ -173,6 +199,19 @@ export function AusenciasIndex() {
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-slate-800">
+          {esDirectiva
+            ? "Gestión Global de Ausencias"
+            : "Mis Próximas Ausencias"}
+        </h2>
+        {!esDirectiva && (
+          <p className="text-sm text-muted-foreground">
+            Aquí puedes gestionar las instrucciones para los compañeros que
+            cubran tus guardias.
+          </p>
+        )}
+      </div>
       {isLoading ? (
         <div className="flex justify-center py-24">
           <Loader className="h-10 w-10 animate-spin text-primary" />
@@ -184,97 +223,131 @@ export function AusenciasIndex() {
       ) : (
         <TablaAusencias
           columns={columnsAusencias}
-          data={ausencias || []}
+          data={ausenciasVisibles}
+          esDirectiva={user?.perfil === "directiva"}
           informes={
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Printer className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setAbrirDialogoFecha(true)}>
-                  <CalendarOff className="mr-2 h-4 w-4" /> Parte de Ausencias
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            esDirectiva && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Printer className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setAbrirDialogoFecha(true)}>
+                    <CalendarOff className="mr-2 h-4 w-4" /> Parte de Ausencias
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
           }
           acciones={(seleccionado) => {
+            const haySeleccion = !!seleccionado;
             // Comprobamos si es manual para habilitar/deshabilitar acciones
             const esManual =
               seleccionado &&
               !seleccionado.idpermiso &&
               !seleccionado.idextraescolar;
+            const esMia = seleccionado?.uid_profesor === user?.username;
             return (
               <div className="flex gap-2 mt-2">
                 <TooltipProvider>
+                  {/* BOTÓN INSTRUCCIONES: Se habilita solo si hay selección y es del profesor */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        variant="outline"
+                        variant="default"
                         size="icon"
-                        onClick={() => setAbrirInsertar(true)}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-orange-600 text-white">
-                      <p>Registrar ausencia imprevista</p>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  {/* BOTÓN EDITAR (Solo si es manual) */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleEditar(seleccionado)}
-                        disabled={!esManual} // <--- Bloqueamos si es automática
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      className={
-                        esManual
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-400 text-white"
-                      }
-                    >
-                      <p>
-                        {esManual
-                          ? "Editar registro manual"
-                          : "No editable: Proviene de un Permiso/Extraescolar"}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  {/* BOTÓN ELIMINAR (solo si es manual) */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
+                        className="bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all disabled:opacity-30"
                         onClick={() => {
                           setAusenciaSeleccionada(seleccionado);
-                          setAbrirEliminar(true);
+                          setAbrirTareas(true);
                         }}
-                        disabled={!esManual}
+                        disabled={!haySeleccion || (!esMia && !esDirectiva)}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Pencil className="w-4 h-4 text-white" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent
-                      className={esManual ? "bg-red-500" : "bg-gray-400"}
-                    >
+                    <TooltipContent className="bg-indigo-700 text-white">
                       <p>
-                        {esManual
-                          ? "Eliminar registro"
-                          : "No se puede eliminar: Vinculada a Permiso"}
+                        {haySeleccion
+                          ? "Dejar instrucciones de guardia"
+                          : "Selecciona una ausencia primero"}
                       </p>
                     </TooltipContent>
                   </Tooltip>
+                  {/* BOTONES DE GESTIÓN: Solo para Directiva */}
+                  {esDirectiva && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setAbrirInsertar(true)}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-orange-600 text-white">
+                          <p>Registrar ausencia imprevista</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {/* BOTÓN EDITAR (Solo si es manual) */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleEditar(seleccionado)}
+                            disabled={!esManual} // <--- Bloqueamos si es automática
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          className={
+                            esManual
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-400 text-white"
+                          }
+                        >
+                          <p>
+                            {esManual
+                              ? "Editar registro manual"
+                              : "No editable: Proviene de un Permiso/Extraescolar"}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {/* BOTÓN ELIMINAR (solo si es manual) */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => {
+                              setAusenciaSeleccionada(seleccionado);
+                              setAbrirEliminar(true);
+                            }}
+                            disabled={!esManual}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          className={esManual ? "bg-red-500" : "bg-gray-400"}
+                        >
+                          <p>
+                            {esManual
+                              ? "Eliminar registro"
+                              : "No se puede eliminar: Vinculada a Permiso"}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
                 </TooltipProvider>
               </div>
             );
@@ -313,6 +386,19 @@ export function AusenciasIndex() {
         }}
         ausencia={ausenciaSeleccionada}
         periodos_horarios={periodos}
+      />
+      {/* DialogoEditarTareas */}
+      <DialogoEditarTareas
+        key={ausenciaSeleccionada?.id || "nuevo"}
+        open={abrirTareas}
+        onClose={() => {
+          setAbrirTareas(false);
+          setAusenciaSeleccionada(null); // Limpiamos al cerrar
+        }}
+        ausencia={ausenciaSeleccionada}
+        onSuccess={() => {
+          refetch(); // Esto pedirá los datos nuevos al servidor
+        }}
       />
     </div>
   );

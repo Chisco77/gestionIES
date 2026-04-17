@@ -35,6 +35,8 @@ import {
   CheckCircle2,
   Users,
   XCircle,
+  BookOpen,
+  ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -518,6 +520,11 @@ function GuardiaCard({
 }) {
   const esConfirmada = item.tipo === "confirmada";
   const esMia = esConfirmada && item.uid_profesor_cubridor === uidUsuarioActual;
+  console.log("Guardia: ", item);
+  const mostrarInstrucciones =
+    esConfirmada &&
+    item.observaciones_guardia &&
+    item.observaciones_guardia.trim() !== "";
 
   return (
     <Card
@@ -550,7 +557,8 @@ function GuardiaCard({
 
         {/* Contenido principal */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-start gap-2 mb-1">
+            {/* 1. Indicador de Estado */}
             <span
               className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
                 esConfirmada
@@ -562,6 +570,38 @@ function GuardiaCard({
             >
               {esConfirmada ? (esMia ? "Tuya" : "Cubierta") : "Pendiente"}
             </span>
+            {/* 2. BOTÓN DE TAREAS */}
+            {mostrarInstrucciones && !modoTV &&  (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-6 px-2 gap-1 text-[10px] font-bold rounded-md transition-all
+            ${
+              esMia
+                ? "text-blue-600 hover:bg-blue-100 hover:text-blue-700"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-600"
+            }`}
+                  >
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    <span>Ver tareas</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4 border-t-4 border-t-blue-500 shadow-xl">
+                  {/* ... contenido del Popover igual al anterior ... */}
+                  <div className="space-y-3">
+                    <h4 className="font-bold text-sm flex items-center gap-2 text-slate-900">
+                      <BookOpen className="w-4 h-4 text-blue-500" />
+                      Instrucciones de guardia
+                    </h4>
+                    <div className="p-3 bg-blue-50/50 rounded-md border border-blue-100 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">
+                      {item.observaciones_guardia}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
 
           <h4 className="font-bold text-base truncate text-slate-800 leading-tight">

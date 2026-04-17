@@ -340,7 +340,7 @@ const router = createBrowserRouter(
         {
           path: "ausencias-profesorado",
           element: (
-            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva", "profesor", "extraescolares"]}>
               {" "}
               <AusenciasIndex />{" "}
             </ProtectedRoute>

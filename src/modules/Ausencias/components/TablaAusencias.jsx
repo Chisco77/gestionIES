@@ -33,25 +33,38 @@ export function TablaAusencias({
   onFilteredChange,
   informes,
   acciones,
+  esDirectiva = false,
   fechaFiltroDefault = format(new Date(), "yyyy-MM-dd"),
 }) {
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: true }]);
-  const [columnFilters, setColumnFilters] = useState([
-    { id: "fecha_inicio", value: fechaFiltroDefault },
-  ]);
+  // Si es directiva, filtramos por hoy. Si es profe, empezamos sin filtros de columna.
+  const [columnFilters, setColumnFilters] = useState(
+    esDirectiva ? [{ id: "fecha_inicio", value: fechaFiltroDefault }] : []
+  );
+
+  // Estado para controlar qué columnas se ven
+  const [columnVisibility, setColumnVisibility] = useState({
+    nombreProfesor: esDirectiva, // Si no es directiva, se oculta por defecto
+  });
 
   const table = useReactTable({
     data,
     columns,
+    // Unificamos todo en un solo objeto state
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+    onColumnVisibilityChange: setColumnVisibility,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     enableRowSelection: true,
     enableMultiRowSelection: false,
-    state: { sorting, columnFilters },
     initialState: { pagination: { pageIndex: 0, pageSize: 12 } },
   });
 
@@ -77,21 +90,26 @@ export function TablaAusencias({
     <div className="space-y-4">
       <Card className="p-4 shadow-none">
         <div className="flex flex-wrap items-end gap-4 text-sm">
-          <div className="space-y-1">
-            <label className="block text-xs font-medium text-muted-foreground">
-              Profesor/a
-            </label>
-            <Input
-              placeholder="Buscar profesor..."
-              value={table.getColumn("nombreProfesor")?.getFilterValue() ?? ""}
-              onChange={(e) =>
-                table
-                  .getColumn("nombreProfesor")
-                  ?.setFilterValue(e.target.value)
-              }
-              className="w-[200px] h-8 text-sm"
-            />
-          </div>
+          {/* FILTRO DE PROFESOR: Solo si es directiva */}
+          {esDirectiva && (
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-muted-foreground">
+                Profesor/a
+              </label>
+              <Input
+                placeholder="Buscar profesor..."
+                value={
+                  table.getColumn("nombreProfesor")?.getFilterValue() ?? ""
+                }
+                onChange={(e) =>
+                  table
+                    .getColumn("nombreProfesor")
+                    ?.setFilterValue(e.target.value)
+                }
+                className="w-[200px] h-8 text-sm"
+              />
+            </div>
+          )}
 
           <div className="space-y-1">
             <label className="block text-xs font-medium text-muted-foreground">

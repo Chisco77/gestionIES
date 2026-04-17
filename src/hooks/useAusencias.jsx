@@ -9,7 +9,6 @@
 import { useQuery } from "@tanstack/react-query";
 
 const API_URL = import.meta.env.VITE_API_URL;
-// Siguiendo tu lógica: si hay URL de API le quita la barra final y añade /db, si no usa /db
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
 export function useAusencias(filtros = {}) {

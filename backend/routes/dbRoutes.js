@@ -458,6 +458,8 @@ router.post("/ausencias", insertAusencia);
  */
 router.put("/ausencias/:id", updateAusencia);
 
+router.patch("/ausencias/:id", updateAusencia);
+
 /**
  * DELETE /ausencias/:id: Eliminación de una ausencia.
  */

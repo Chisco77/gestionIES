@@ -74,7 +74,7 @@ async function getAusenciasEnriquecidas(req, res) {
         TO_CHAR(a.fecha_inicio, 'YYYY-MM-DD') AS fecha_inicio,
         TO_CHAR(a.fecha_fin, 'YYYY-MM-DD') AS fecha_fin,
         a.idperiodo_inicio, a.idperiodo_fin, a.tipo_ausencia,
-        a.descripcion, a.creada_en, a.creada_por, a.idpermiso, a.idextraescolar
+        a.descripcion, a.creada_en, a.creada_por, a.idpermiso, a.idextraescolar, a.observaciones_guardia
       FROM ausencias_profesorado a
       ${where}
       ORDER BY a.fecha_inicio DESC`,
@@ -195,12 +195,10 @@ async function insertAusencia(req, res) {
   }
 }
 
-/**
- * Actualizar una ausencia (CON VALIDACIÓN)
- */
 async function updateAusencia(req, res) {
   const { id } = req.params;
   const campos = req.body;
+  const usuarioSesion = req.session?.user; // Asumo que guardas el usuario en la sesión
 
   try {
     // 1. Obtener datos actuales
@@ -212,31 +210,21 @@ async function updateAusencia(req, res) {
       return res.status(404).json({ ok: false, error: "No encontrada" });
     const reg = actual[0];
 
-    // 2. Validación de colisión
-    const colision = await verificarColision(
-      reg.uid_profesor,
-      campos.fecha_inicio || reg.fecha_inicio,
-      campos.fecha_fin || reg.fecha_fin,
-      campos.hasOwnProperty("idperiodo_inicio")
-        ? campos.idperiodo_inicio
-        : reg.idperiodo_inicio,
-      campos.hasOwnProperty("idperiodo_fin")
-        ? campos.idperiodo_fin
-        : reg.idperiodo_fin,
+    const esDirectiva = usuarioSesion?.perfil === "directiva";
+    const esPropietario = reg.uid_profesor === usuarioSesion?.username;
 
-      id
-    );
-    if (colision)
-      return res.status(409).json({ ok: false, error: "Colisión detectada" });
+    // 2. Control de Permisos
+    if (!esDirectiva && !esPropietario) {
+      return res
+        .status(403)
+        .json({
+          ok: false,
+          error: "No tienes permiso para modificar esta ausencia",
+        });
+    }
 
-    // --- INICIO DE TRANSACCIÓN ---
-    await db.query("BEGIN");
-
-    // 3. Update
-    const sets = [];
-    const vals = [];
-    let i = 0;
-    const allowed = [
+    // Definimos qué campos puede tocar cada uno
+    const allowedAdmin = [
       "fecha_inicio",
       "fecha_fin",
       "idperiodo_inicio",
@@ -244,17 +232,60 @@ async function updateAusencia(req, res) {
       "tipo_ausencia",
       "descripcion",
     ];
-    Object.keys(campos).forEach((key) => {
-      if (allowed.includes(key)) {
-        sets.push(`${key} = $${++i}`);
-        vals.push(campos[key]);
-      }
-    });
+    const allowedProfe = ["observaciones_guardia"]; // El nuevo campo para las instrucciones
 
-    if (sets.length === 0) {
-      await db.query("ROLLBACK");
-      return res.status(400).json({ ok: false, error: "Nada que actualizar" });
+    // Si un profe intenta cambiar campos de admin, lo filtramos o rechazamos
+    const camposAActualizar = Object.keys(campos).filter((key) =>
+      esDirectiva
+        ? [...allowedAdmin, ...allowedProfe].includes(key)
+        : allowedProfe.includes(key)
+    );
+
+    if (camposAActualizar.length === 0) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error: "No se han enviado campos válidos para actualizar",
+        });
     }
+
+    // 3. Validación de colisión (SOLO si se cambian fechas o periodos)
+    const cambiaHorario = [
+      "fecha_inicio",
+      "fecha_fin",
+      "idperiodo_inicio",
+      "idperiodo_fin",
+    ].some((k) => campos.hasOwnProperty(k));
+
+    if (esDirectiva && cambiaHorario) {
+      const colision = await verificarColision(
+        reg.uid_profesor,
+        campos.fecha_inicio || reg.fecha_inicio,
+        campos.fecha_fin || reg.fecha_fin,
+        campos.hasOwnProperty("idperiodo_inicio")
+          ? campos.idperiodo_inicio
+          : reg.idperiodo_inicio,
+        campos.hasOwnProperty("idperiodo_fin")
+          ? campos.idperiodo_fin
+          : reg.idperiodo_fin,
+        id
+      );
+      if (colision)
+        return res.status(409).json({ ok: false, error: "Colisión detectada" });
+    }
+
+    // --- INICIO DE TRANSACCIÓN ---
+    await db.query("BEGIN");
+
+    const sets = [];
+    const vals = [];
+    let i = 0;
+
+    camposAActualizar.forEach((key) => {
+      sets.push(`${key} = $${++i}`);
+      vals.push(campos[key]);
+    });
 
     vals.push(id);
     const { rows } = await db.query(
@@ -263,32 +294,32 @@ async function updateAusencia(req, res) {
     );
     const ausenciaActualizada = rows[0];
 
-    // 4. Limpieza de guardias
-    await db.query(
-      `DELETE FROM guardias_asignadas 
-       WHERE idausencia = $1 
-       AND (
-         fecha < $2 OR fecha > $3 
-         OR ($4::int IS NOT NULL AND idperiodo < $4) 
-         OR ($5::int IS NOT NULL AND idperiodo > $5)
-       )`,
-      [
-        id,
-        ausenciaActualizada.fecha_inicio,
-        ausenciaActualizada.fecha_fin || "9999-12-31",
-        ausenciaActualizada.idperiodo_inicio,
-        ausenciaActualizada.idperiodo_fin,
-      ]
-    );
+    // 4. Limpieza de guardias (SOLO si se ha cambiado el horario y somos admin)
+    if (esDirectiva && cambiaHorario) {
+      await db.query(
+        `DELETE FROM guardias_asignadas 
+         WHERE idausencia = $1 
+         AND (
+           fecha < $2 OR fecha > $3 
+           OR ($4::int IS NOT NULL AND idperiodo < $4) 
+           OR ($5::int IS NOT NULL AND idperiodo > $5)
+         )`,
+        [
+          id,
+          ausenciaActualizada.fecha_inicio,
+          ausenciaActualizada.fecha_fin || "9999-12-31",
+          ausenciaActualizada.idperiodo_inicio,
+          ausenciaActualizada.idperiodo_fin,
+        ]
+      );
+    }
 
     await db.query("COMMIT");
-    // --- FIN DE TRANSACCIÓN ---
-
     res.json({ ok: true, ausencia: ausenciaActualizada });
   } catch (err) {
-    await db.query("ROLLBACK"); 
+    await db.query("ROLLBACK");
     console.error("[updateAusencia] Error:", err);
-    res.status(500).json({ ok: false, error: "Error actualizando" });
+    res.status(500).json({ ok: false, error: "Error interno" });
   }
 }
 
