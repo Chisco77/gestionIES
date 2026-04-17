@@ -439,6 +439,7 @@ export function PanelGuardias({
                                 fecha: fechaFmt,
                                 idperiodo: item.periodo,
                                 uid_profesor_ausente: item.uid_ausente,
+                                idausencia: item.idausencia,
                               })
                             }
                             onCancelar={() => mutationCancelar.mutate(item.id)}

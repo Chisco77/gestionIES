@@ -125,6 +125,7 @@ async function simularGuardiasDia(req, res) {
             ...yaConfirmada,
             id: yaConfirmada.id,
             tipo: "confirmada",
+            idausencia: yaConfirmada.idausencia,
             nombre_ausente: await getNombreProfesor(ausencia.uid_profesor),
             nombre_cubridor: await getNombreProfesor(
               yaConfirmada.uid_profesor_cubridor
