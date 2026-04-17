@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, BookOpen, Info } from "lucide-react";
+import { Calendar, Clock, BookOpen, Info, User } from "lucide-react"; // Añadido User
 import { toast } from "sonner";
 import { format, isSameDay, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -18,21 +18,19 @@ export function DialogoEditarTareas({ open, onClose, ausencia, onSuccess }) {
   const [tareas, setTareas] = useState("");
   const [enviando, setEnviando] = useState(false);
 
+  console.log ("Ausencia: ", ausencia);
+
   useEffect(() => {
     if (open) {
       setTareas(ausencia?.observaciones_guardia || "");
     }
   }, [ausencia, open]);
 
-  /**
-   * Genera el texto de la fecha manejando rangos
-   */
   const getTextoFechas = () => {
     if (!ausencia?.fecha_inicio) return "";
 
     const inicio = parseISO(ausencia.fecha_inicio);
 
-    // Si no hay fecha_fin o son el mismo día
     if (
       !ausencia.fecha_fin ||
       isSameDay(inicio, parseISO(ausencia.fecha_fin))
@@ -42,18 +40,13 @@ export function DialogoEditarTareas({ open, onClose, ausencia, onSuccess }) {
 
     const fin = parseISO(ausencia.fecha_fin);
 
-    // Si los meses son distintos: "Del 28 de may. al 2 de jun. de 2026"
     if (inicio.getMonth() !== fin.getMonth()) {
       return `Del ${format(inicio, "d 'de' MMM", { locale: es })} al ${format(fin, "d 'de' MMM 'de' yyyy", { locale: es })}`;
     }
 
-    // Si es el mismo mes: "Del 12 al 19 de abril de 2026"
     return `Del ${format(inicio, "d", { locale: es })} al ${format(fin, "d 'de' MMMM 'de' yyyy", { locale: es })}`;
   };
 
-  /**
-   * Genera el texto de las horas/periodos
-   */
   const getTextoPeriodos = () => {
     if (!ausencia) return "";
     if (!ausencia.idperiodo_inicio && !ausencia.idperiodo_fin) {
@@ -93,7 +86,6 @@ export function DialogoEditarTareas({ open, onClose, ausencia, onSuccess }) {
     }
   };
 
-  // Verificamos si es una ausencia de varios días para el estilo visual
   const esRangoLargo =
     ausencia?.fecha_fin &&
     !isSameDay(parseISO(ausencia.fecha_inicio), parseISO(ausencia.fecha_fin));
@@ -101,19 +93,34 @@ export function DialogoEditarTareas({ open, onClose, ausencia, onSuccess }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="sm:max-w-[550px] border-t-4 border-t-indigo-600"
+        className="sm:max-w-[550px] border-t-4 border-t-blue-500"
         onInteractOutside={(e) => e.preventDefault()}
       >
-        <DialogHeader className="space-y-3">
-          <DialogTitle className="text-xl flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-600" />
-            Tareas para la Guardia
-          </DialogTitle>
+        <DialogHeader className="space-y-4">
+          <div className="flex justify-between items-start">
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-blue-500" />
+              Tareas para la Guardia
+            </DialogTitle>
+          </div>
 
           {ausencia && (
             <div className="space-y-3">
+              {/* --- NOMBRE DEL PROFESOR --- */}
+              <div className="flex items-center gap-2 text-slate-900 bg-slate-100/50 p-2 rounded-lg border border-slate-200/60">
+                <div className="bg-white p-1.5 rounded-full shadow-sm">
+                  <User className="w-4 h-4 text-blue-500" />
+                </div>
+                <span className="font-bold text-sm">
+                  Profesor/a:{" "}
+                  <span className="text-blue-700">
+                    {ausencia.nombreProfesor || ausencia.uid_profesor}
+                  </span>
+                </span>
+              </div>
+
+              {/* Fila: Fecha y Periodos */}
               <div className="flex flex-wrap gap-2 items-center">
-                {/* Badge de Fecha con estilo condicional si es un rango largo */}
                 <Badge
                   variant="outline"
                   className={`flex items-center gap-1.5 py-1 px-2.5 font-medium transition-colors ${
@@ -123,7 +130,7 @@ export function DialogoEditarTareas({ open, onClose, ausencia, onSuccess }) {
                   }`}
                 >
                   <Calendar
-                    className={`w-3.5 h-3.5 ${esRangoLargo ? "text-amber-500" : "text-indigo-500"}`}
+                    className={`w-3.5 h-3.5 ${esRangoLargo ? "text-amber-500" : "text-blue-500"}`}
                   />
                   {getTextoFechas()}
                 </Badge>
@@ -132,11 +139,11 @@ export function DialogoEditarTareas({ open, onClose, ausencia, onSuccess }) {
                   variant="outline"
                   className="flex items-center gap-1.5 py-1 px-2.5 bg-slate-50 border-slate-200 text-slate-700 font-medium"
                 >
-                  <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                  <Clock className="w-3.5 h-3.5 text-blue-500" />
                   {getTextoPeriodos()}
                 </Badge>
 
-                <Badge className="bg-indigo-100 text-indigo-700 border-none capitalize">
+                <Badge className="bg-blue-100 text-blue-700 border-none capitalize">
                   {ausencia.tipo_ausencia}
                 </Badge>
               </div>
@@ -161,18 +168,16 @@ export function DialogoEditarTareas({ open, onClose, ausencia, onSuccess }) {
               ¿Qué deben hacer los alumnos?
             </label>
             <p className="text-[12px] text-muted-foreground">
-              Esta información la verá el profesorado de guardia{" "}
-              {esRangoLargo
-                ? "durante todos los días de tu ausencia."
-                : "en el panel de guardias."}
+              Esta información será visible para los compañeros que cubran la
+              guardia.
             </p>
           </div>
 
           <Textarea
             value={tareas}
             onChange={(e) => setTareas(e.target.value)}
-            placeholder="Ej: Abrir el Aula Virtual, realizar el cuestionario de la Unidad 3..."
-            className="min-h-[200px] text-sm focus-visible:ring-indigo-500 border-slate-200 shadow-inner bg-white/50"
+            placeholder="Ej: Realizar los ejercicios de la página 42 del libro de texto..."
+            className="min-h-[200px] text-sm focus-visible:ring-blue-500 border-slate-200 shadow-inner bg-white/50"
           />
         </div>
 
@@ -188,7 +193,7 @@ export function DialogoEditarTareas({ open, onClose, ausencia, onSuccess }) {
           <Button
             onClick={handleGuardar}
             disabled={enviando}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[140px] shadow-sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px] shadow-sm"
           >
             {enviando ? "Guardando..." : "Guardar Cambios"}
           </Button>

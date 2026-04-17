@@ -258,7 +258,7 @@ export function AusenciasIndex() {
                       <Button
                         variant="default"
                         size="icon"
-                        className="bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all disabled:opacity-30"
+                        className="bg-blue-600 hover:bg-blue-700 shadow-md transition-all disabled:opacity-30"
                         onClick={() => {
                           setAusenciaSeleccionada(seleccionado);
                           setAbrirTareas(true);
@@ -268,7 +268,7 @@ export function AusenciasIndex() {
                         <Pencil className="w-4 h-4 text-white" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-indigo-700 text-white">
+                    <TooltipContent className="bg-blue-700 text-white">
                       <p>
                         {haySeleccion
                           ? "Dejar instrucciones de guardia"
