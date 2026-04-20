@@ -198,7 +198,7 @@ async function insertAusencia(req, res) {
 async function updateAusencia(req, res) {
   const { id } = req.params;
   const campos = req.body;
-  const usuarioSesion = req.session?.user; // Asumo que guardas el usuario en la sesión
+  const usuarioSesion = req.session?.user; 
 
   try {
     // 1. Obtener datos actuales

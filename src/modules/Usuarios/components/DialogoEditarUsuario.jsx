@@ -138,16 +138,32 @@ export default function DialogoEditarUsuario({
         }
       );
 
-      const json = await res.json();
-      if (!res.ok)
-        throw new Error(json.message || "Error al actualizar usuario");
+      // Leemos la respuesta como texto primero para evitar el error de parseo
+      const texto = await res.text();
+      let json = {};
+
+      try {
+        if (texto) json = JSON.parse(texto);
+      } catch (e) {
+        console.error("Error parseando respuesta JSON:", e);
+      }
+
+      if (!res.ok) {
+        throw new Error(
+          json.message ||
+            `Error ${res.status}: El servidor no respondió correctamente`
+        );
+      }
+
       return json;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["empleados"]);
-      queryClient.invalidateQueries(["profesores-ldap"]);
+      // Importante: Volvemos a marcar las queries como "viejas" para que se recarguen
+      queryClient.invalidateQueries({ queryKey: ["empleados"] });
+      queryClient.invalidateQueries({ queryKey: ["profesores-ldap"] });
+
       toast.success("Usuario actualizado correctamente");
-      onClose();
+      onClose(); // Cerramos el diálogo
     },
     onError: (err) => {
       console.error("Error actualizando usuario:", err);

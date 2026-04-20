@@ -788,182 +788,15 @@ async function deletePermiso(req, res) {
 }
 
 /**
- * Actualizar solo el estado de un asunto propio (para la directiva)
- */
-
-/*async function updateEstadoPermiso(req, res) {
-  const id = req.params.id;
-  const { estado } = req.body;
-
-  if (![1, 2].includes(estado))
-    return res.status(400).json({ ok: false, error: "Estado inválido" });
-
-  let asunto = null;
-
-  try {
-    await db.query("BEGIN");
-
-    // ===============================
-    // VALIDACIÓN DE ASUNTOS PROPIOS
-    // ===============================
-    if (estado === 1) {
-      const { rows: permisoRows } = await db.query(
-        `SELECT uid, tipo, estado FROM permisos WHERE id = $1`,
-        [id]
-      );
-
-      const permiso = permisoRows[0];
-
-      if (!permiso) {
-        await db.query("ROLLBACK");
-        return res
-          .status(404)
-          .json({ ok: false, error: "Asunto propio no encontrado" });
-      }
-
-      if (permiso.tipo === 13 && permiso.estado !== 1) {
-        const empleado = await obtenerEmpleado(permiso.uid);
-
-        if (!empleado) {
-          await db.query("ROLLBACK");
-          return res
-            .status(404)
-            .json({ ok: false, error: "Empleado no encontrado" });
-        }
-
-        let maxDias = empleado.asuntos_propios;
-
-        if (!maxDias || maxDias === 0) {
-          const restricciones = await getRestriccionesAsuntos();
-          const diasRestriccion = restricciones.find(
-            (r) => r.descripcion === "dias"
-          );
-          maxDias = diasRestriccion?.valor_num ?? 0;
-        }
-
-        if (!maxDias || maxDias <= 0) {
-          await db.query("ROLLBACK");
-          return res.status(400).json({
-            ok: false,
-            error:
-              "No está configurado el número máximo de asuntos propios del empleado",
-          });
-        }
-
-        const { rows: concedidos } = await db.query(
-          `SELECT COUNT(*)::int AS total
-           FROM permisos
-           WHERE uid = $1 AND tipo = 13 AND estado = 1`,
-          [permiso.uid]
-        );
-
-        if (concedidos[0].total >= maxDias) {
-          await db.query("ROLLBACK");
-          return res.status(400).json({
-            ok: false,
-            error: `No se puede aceptar el asunto propio. El empleado ya ha alcanzado el máximo de ${maxDias} días.`,
-          });
-        }
-      }
-    }
-
-    // ===============================
-    // UPDATE PERMISO
-    // ===============================
-
-    const { rows } = await db.query(
-      `UPDATE permisos 
-       SET estado = $1 
-       WHERE id = $2 
-       RETURNING id, uid, fecha, fecha_fin, descripcion, estado, tipo, idperiodo_inicio, idperiodo_fin, dia_completo`,
-      [estado, id]
-    );
-
-    if (!rows[0]) {
-      await db.query("ROLLBACK");
-      return res
-        .status(404)
-        .json({ ok: false, error: "Asunto propio no encontrado" });
-    }
-
-    asunto = rows[0];
-    // Ahora asunto.fecha_fin ya tiene el valor real de la base de datos
-
-    // =====================================
-    // SINCRONIZAR AUSENCIAS PROFESORADO
-    // =====================================
-    if (estado === 1) {
-      await db.query(
-        `
-  INSERT INTO ausencias_profesorado (
-    uid_profesor,
-    fecha_inicio,
-    fecha_fin,
-    idperiodo_inicio,
-    idperiodo_fin,
-    tipo_ausencia,
-    creada_por,
-    idpermiso
-  )
-  VALUES ($1, $2, $3, $4, $5, 'permiso', $1, $6)
-  ON CONFLICT (idpermiso)
-  DO UPDATE SET
-    uid_profesor = EXCLUDED.uid_profesor,
-    fecha_inicio = EXCLUDED.fecha_inicio,
-    fecha_fin = EXCLUDED.fecha_fin,
-    idperiodo_inicio = EXCLUDED.idperiodo_inicio,
-    idperiodo_fin = EXCLUDED.idperiodo_fin,
-    tipo_ausencia = 'permiso',
-    creada_por = 'permiso'
-  `,
-        [
-          asunto.uid,
-          asunto.fecha,
-          asunto.fecha_fin || asunto.fecha, // Por defecto, es de un día
-          asunto.idperiodo_inicio,
-          asunto.idperiodo_fin,
-          asunto.id,
-        ]
-      );
-    }
-
-    if (estado === 2) {
-      await db.query(`DELETE FROM ausencias_profesorado WHERE idpermiso = $1`, [
-        asunto.id,
-      ]);
-    }
-
-    // ✅ TODO OK → COMMIT
-    await db.query("COMMIT");
-
-    // ✅ RESPUESTA FRONTEND
-    res.json({ ok: true, asunto });
-
-    // ===============================
-    // EMAIL ASÍNCRONO (fuera transacción)
-    // ===============================
-    // Dentro de updateEstadoPermiso, al final:
-    setImmediate(() => {
-      enviarEmailPermiso(asunto, "estado", req.session.ldap);
-    });
-  } catch (err) {
-    await db.query("ROLLBACK");
-    console.error("[updateEstadoPermiso] Error:", err);
-
-    res.status(500).json({
-      ok: false,
-      error: "Error actualizando estado",
-    });
-  }
-}*/
-
-/**
  * Actualizar el estado de un permiso (Aceptar/Rechazar) y sincronizar ausencias.
  * Implementa política de absorción: la ausencia oficial elimina la manual previa.
  */
 async function updateEstadoPermiso(req, res) {
   const id = req.params.id;
   const { estado } = req.body;
+
+  // 1. Extraemos el UID del miembro de la directiva de la sesión
+  const uidDirectiva = req.session?.user?.username || "sistema";
 
   if (![1, 2].includes(estado)) {
     return res.status(400).json({ ok: false, error: "Estado inválido" });
@@ -1033,12 +866,24 @@ async function updateEstadoPermiso(req, res) {
     // ================================================================
     // 2. ACTUALIZACIÓN DEL REGISTRO DE PERMISO
     // ================================================================
-    const { rows } = await client.query(
+    /* const { rows } = await client.query(
       `UPDATE permisos 
        SET estado = $1 
        WHERE id = $2 
        RETURNING id, uid, fecha, fecha_fin, descripcion, estado, tipo, idperiodo_inicio, idperiodo_fin, dia_completo`,
       [estado, id]
+    );*/
+    
+    const { rows } = await client.query(
+      `UPDATE permisos 
+       SET estado = $1, 
+           uid_ultimo_procesado = $3, 
+           fecha_ultimo_procesado = NOW() 
+       WHERE id = $2 
+       RETURNING id, uid, fecha, fecha_fin, descripcion, estado, tipo, 
+                 idperiodo_inicio, idperiodo_fin, dia_completo, 
+                 uid_ultimo_procesado, fecha_ultimo_procesado`,
+      [estado, id, uidDirectiva]
     );
 
     if (!rows[0]) {
