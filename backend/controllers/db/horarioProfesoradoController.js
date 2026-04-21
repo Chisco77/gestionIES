@@ -83,7 +83,7 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
     const where = filtros.length ? "WHERE " + filtros.join(" AND ") : "";
 
     // Consulta principal
-    const { rows } = await db.query(
+    /*  const { rows } = await db.query(
       `SELECT h.*, 
               m.nombre AS materia_nombre,
               e.descripcion AS estancia_descripcion
@@ -92,12 +92,29 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
        LEFT JOIN estancias e ON h.idestancia = e.id
        ${where}
        ORDER BY h.uid, h.dia_semana, h.idperiodo ASC`,
-      vals
+      vals,
+    );*/
+
+    // Consulta principal con ordenación cronológica real
+    const { rows } = await db.query(
+      `SELECT h.*, 
+          m.nombre AS materia_nombre,
+          e.descripcion AS estancia_descripcion,
+          p.inicio, 
+          p.fin,
+          p.nombre AS periodo_nombre
+   FROM horario_profesorado h
+   INNER JOIN periodos_horarios p ON h.idperiodo = p.id
+   LEFT JOIN materias m ON h.idmateria = m.id
+   LEFT JOIN estancias e ON h.idestancia = e.id
+   ${where}
+   ORDER BY h.uid, h.dia_semana, p.inicio ASC`,
+      vals,
     );
 
     // Obtenemos los nombres de los profesores desde LDAP
     const uidsUnicos = Array.from(
-      new Set(rows.map((r) => r.uid).filter(Boolean))
+      new Set(rows.map((r) => r.uid).filter(Boolean)),
     );
     await Promise.all(uidsUnicos.map((u) => getNombreProfesor(u)));
 
@@ -106,7 +123,7 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
       let nombresGrupos = [];
       if (Array.isArray(item.gidnumber)) {
         nombresGrupos = item.gidnumber.map(
-          (g) => gruposCache[String(g)] || `Grupo ${g}`
+          (g) => gruposCache[String(g)] || `Grupo ${g}`,
         );
       }
 
@@ -185,7 +202,7 @@ async function insertHorarioProfesorado(req, res) {
         idmateria || null,
         idestancia || null,
         curso_academico,
-      ]
+      ],
     );
 
     res.status(201).json({ ok: true, fila: rows[0] });
@@ -236,7 +253,7 @@ async function updateHorarioProfesorado(req, res) {
         idestancia || null,
         curso_academico,
         id,
-      ]
+      ],
     );
 
     res.json({ ok: true, fila: rows[0] });
@@ -274,7 +291,7 @@ async function duplicarHorarioProfesorado(req, res) {
     // 1. Obtener el horario del profesor origen
     const { rows: filasOrigen } = await db.query(
       `SELECT * FROM horario_profesorado WHERE uid = $1 AND curso_academico = $2`,
-      [uidOrigen, curso_academico]
+      [uidOrigen, curso_academico],
     );
 
     if (filasOrigen.length === 0) {
@@ -288,7 +305,7 @@ async function duplicarHorarioProfesorado(req, res) {
     // 2. Validar que el profesor destino NO tenga ya un horario (evitar colisiones)
     const { rows: filasDestino } = await db.query(
       `SELECT id FROM horario_profesorado WHERE uid = $1 AND curso_academico = $2 LIMIT 1`,
-      [uidDestino, curso_academico]
+      [uidDestino, curso_academico],
     );
 
     if (filasDestino.length > 0) {
@@ -316,7 +333,7 @@ async function duplicarHorarioProfesorado(req, res) {
           f.idmateria,
           f.idestancia,
           f.curso_academico,
-        ]
+        ],
       );
     });
 
@@ -351,7 +368,7 @@ async function deleteHorarioProfesorado(req, res) {
     // 🔍 comprobar existencia previa
     const { rows } = await db.query(
       `SELECT * FROM horario_profesorado WHERE id=$1`,
-      [id]
+      [id],
     );
 
     if (!rows[0]) {
@@ -392,7 +409,7 @@ async function insertCuadranteGuardias(req, res) {
     // 1️⃣ Borramos las guardias actuales del curso para reinsertar el nuevo estado
     await db.query(
       `DELETE FROM horario_profesorado WHERE tipo='guardia' AND curso_academico=$1`,
-      [curso_academico]
+      [curso_academico],
     );
 
     const insertPromises = [];
@@ -420,8 +437,8 @@ async function insertCuadranteGuardias(req, res) {
               p.idmateria || null,
               p.gidnumber || null,
               curso_academico,
-            ]
-          )
+            ],
+          ),
         );
       });
     });
@@ -438,7 +455,7 @@ async function insertCuadranteGuardias(req, res) {
 
       // Buscamos los datos del profesor original en el body para no perder el nombre
       const profeOriginal = cuadrante[clave]?.find(
-        (orig) => orig.uid === fila.uid
+        (orig) => orig.uid === fila.uid,
       );
 
       cuadranteActualizado[clave].push({
@@ -470,7 +487,7 @@ async function deleteCuadranteGuardias(req, res) {
 
     await db.query(
       `DELETE FROM horario_profesorado WHERE tipo='guardia' AND curso_academico=$1`,
-      [curso_academico]
+      [curso_academico],
     );
 
     res.json({ ok: true, message: "Cuadrante borrado correctamente" });
