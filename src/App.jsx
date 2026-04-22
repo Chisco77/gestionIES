@@ -51,6 +51,7 @@ import { CuadranteGuardiasIndex } from "./modules/Guardias/pages/CuadranteGuardi
 import { AusenciasIndex } from "./modules/Ausencias/pages/AusenciasIndex";
 import { PanelGuardias } from "./modules/Guardias/pages/PanelGuardias";
 import { PanelProyeccion } from "./modules/Guardias/pages/PanelProyeccion";
+import { GuardiasIndex } from "./modules/Guardias/pages/GuardiasIndex";
 
 const queryClient = new QueryClient();
 
@@ -340,9 +341,32 @@ const router = createBrowserRouter(
         {
           path: "ausencias-profesorado",
           element: (
-            <ProtectedRoute perfilesPermitidos={["administrador", "directiva", "profesor", "extraescolares"]}>
+            <ProtectedRoute
+              perfilesPermitidos={[
+                "administrador",
+                "directiva",
+                "profesor",
+                "extraescolares",
+              ]}
+            >
               {" "}
               <AusenciasIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "guardias-profesorado",
+          element: (
+            <ProtectedRoute
+              perfilesPermitidos={[
+                "administrador",
+                "directiva",
+                "profesor",
+                "extraescolares",
+              ]}
+            >
+              {" "}
+              <GuardiasIndex />{" "}
             </ProtectedRoute>
           ),
         },

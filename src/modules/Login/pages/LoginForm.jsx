@@ -95,7 +95,7 @@ export function LoginForm({ className, ...props }) {
       queryClient.invalidateQueries(["ausencias"]);
       queryClient.invalidateQueries(["horario-profesorado"]);
       queryClient.invalidateQueries(["configuracion-centro"]);
-      
+      queryClient.invalidateQueries(["guardias"]);
 
 
       // Hacer check-auth con reintento

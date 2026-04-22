@@ -157,6 +157,11 @@ function SidebarComponent({
                   url: "/ausencias-profesorado",
                   icon: CalendarOff,
                 },
+                 {
+                  title: "Histórico Guardias",
+                  url: "/guardias-profesorado",
+                  icon: CalendarOff,
+                },
               ],
             },
           ]
@@ -289,6 +294,11 @@ function SidebarComponent({
                 {
                   title: "Mis ausencias",
                   url: "/ausencias-profesorado",
+                  icon: CalendarOff,
+                },
+                 {
+                  title: "Mis guardias",
+                  url: "/guardias-profesorado",
                   icon: CalendarOff,
                 },
               ],

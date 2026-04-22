@@ -92,6 +92,7 @@ export default function Layout(props) {
       "/horarios": "Horarios de Profesores",
       "/cuadrante-guardias": "Cuadrante de Guardias",
       "/ausencias-profesorado": "Ausencias del Profesorado",
+      "/guardias-profesorado": "Histórico de guardias del Profesorado",
       "/panel-guardias": "Panel de Guardias",
     };
 
