@@ -47,6 +47,8 @@ import {
   IdCard,
   ListChecks,
   Building2,
+  Building,
+  Key,
   Tag,
   Wrench,
   Power,
@@ -66,6 +68,7 @@ function SidebarComponent({
   onOpenRestricciones,
   onOpenEtiquetas,
   onOpenLlavesRestricciones,
+  onOpenConfiguracionCentro,
   onOpenImportarHorariosUNTIS,
   ...props
 }) {
@@ -202,6 +205,12 @@ function SidebarComponent({
         icon: ShieldCheck,
         items: [
           {
+            title: "Datos del Centro",
+            url: "#",
+            onClick: () => onOpenConfiguracionCentro(),
+            icon: Building,
+          },
+          {
             title: "Asuntos Propios",
             url: "#",
             onClick: () => onOpenRestricciones(),
@@ -211,8 +220,9 @@ function SidebarComponent({
             title: "Llaves",
             url: "#",
             onClick: () => onOpenLlavesRestricciones(),
-            icon: Wrench,
+            icon: Key,
           },
+
           { title: "Avisos", url: "/avisos", icon: Info },
           { title: "Cursos", url: "/cursos", icon: BookOpen },
           { title: "Estancias", url: "/estancias", icon: Building2 },
@@ -276,7 +286,7 @@ function SidebarComponent({
                   url: "/panel-guardias",
                   icon: ClipboardCheck,
                 },
-                  {
+                {
                   title: "Mis ausencias",
                   url: "/ausencias-profesorado",
                   icon: CalendarOff,

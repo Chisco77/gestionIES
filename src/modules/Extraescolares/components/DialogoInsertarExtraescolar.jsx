@@ -391,34 +391,57 @@ export function DialogoInsertarExtraescolar({
               </div>
 
               {tipo === "complementaria" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <Select
-                    value={periodoInicio}
-                    onValueChange={setPeriodoInicio}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Periodo inicio" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {periodos.map((p) => (
-                        <SelectItem key={p.id} value={String(p.id)}>
-                          {p.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={periodoFin} onValueChange={setPeriodoFin}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Periodo fin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {periodos.map((p) => (
-                        <SelectItem key={p.id} value={String(p.id)}>
-                          {p.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-3 pt-2">
+                  <div className="flex flex-col space-y-1">
+                    <Label className="text-sm font-bold text-gray-700">
+                      Horario lectivo afectado
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Selecciona el rango de periodos en los que se realizará la
+                      actividad.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-slate-50/50">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-semibold text-muted-foreground">
+                        Desde el periodo
+                      </Label>
+                      <Select
+                        value={periodoInicio}
+                        onValueChange={setPeriodoInicio}
+                      >
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Seleccionar inicio..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {periodos.map((p) => (
+                            <SelectItem key={p.id} value={String(p.id)}>
+                              {p.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-semibold text-muted-foreground">
+                        Hasta el periodo
+                      </Label>
+                      <Select value={periodoFin} onValueChange={setPeriodoFin}>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Seleccionar fin..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {periodos.map((p) => (
+                            <SelectItem key={p.id} value={String(p.id)}>
+                              {p.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
               )}
             </TabsContent>
@@ -458,8 +481,8 @@ export function DialogoInsertarExtraescolar({
                   </Label>
                 </div>
                 <p className="text-xs text-muted-foreground ml-6 leading-relaxed">
-                  Marcar si la actividad genera ausencias del profesorado que participa
-                  en ella, que hay que cubrir con las guardias.
+                  Marcar si la actividad genera ausencias del profesorado que
+                  participa en ella, que hay que cubrir con las guardias.
                 </p>
               </div>
 

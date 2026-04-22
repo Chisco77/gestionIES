@@ -640,6 +640,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                 variant="outline"
                 onClick={handleGuardar}
                 disabled={guardarRestriccionesMutation.isLoading}
+                className="bg-green-600 hover:bg-green-700 text-white min-w-[120px] gap-2"
               >
                 {guardarRestriccionesMutation.isLoading
                   ? "Guardando..."

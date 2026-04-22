@@ -33,6 +33,13 @@ const {
   deletePeriodo,
 } = require("../controllers/db/periodosHorariosController");
 
+// --- Controlador de Configuración del Centro ---
+const {
+  getConfiguracionCentro,
+  insertConfiguracion,
+  updateConfiguracion
+} = require("../controllers/db/configuracionCentroController");
+
 // --- Controlador de guardias de profesorado ---
 const {
   simularGuardiasDia,
@@ -426,6 +433,26 @@ router.post(
   "/reservas-estancias/repeticion/simular",
   simularReservaEstanciaRepeticion
 );
+
+
+// ================================================================
+//   Rutas de Configuración del Centro 
+// ================================================================
+/**
+ * GET /configuracion-centro: Obtiene los datos institucionales del IES.
+ */
+router.get("/configuracion-centro", getConfiguracionCentro);
+
+/**
+ * POST /configuracion-centro: Inserción inicial de los datos del centro.
+ */
+router.post("/configuracion-centro", insertConfiguracion);
+
+/**
+ * PUT /configuracion-centro/:id: Actualización de los datos del centro.
+ */
+router.put("/configuracion-centro/:id", updateConfiguracion);
+
 
 // --- Controlador de Notificaciones Directiva ---
 const {

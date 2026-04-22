@@ -60,6 +60,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+
 function toBase64(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -82,15 +84,26 @@ export function DialogoDocumentoPrestamo({ open, onOpenChange, alumnos = [] }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const lineasCabecera = [
-    import.meta.env.VITE_DIRECCION_LINEA_1,
-    import.meta.env.VITE_DIRECCION_LINEA_2,
-    import.meta.env.VITE_DIRECCION_LINEA_3,
-    import.meta.env.VITE_DIRECCION_LINEA_4,
-    import.meta.env.VITE_DIRECCION_LINEA_5,
-  ].filter(Boolean);
+
+  const { data: centro, isLoading: cargandoCentro } = useConfiguracionCentro();
+
+  // Usamos los campos que definimos en el hook (nombreIes, direccionLinea1, etc.)
+  const lineasCabecera = centro
+    ? [
+        centro.nombreIes,
+        centro.direccionLinea1,
+        centro.direccionLinea2,
+        centro.direccionLinea3,
+        `Teléfono: ${centro.telefono} | Fax: ${centro.fax}`,
+        `Email: ${centro.email}`,
+      ].filter((linea) => linea && linea.trim() !== "")
+    : [];
 
   const generarPdfPorAlumnos = async () => {
+    if (!centro) {
+    toast.error("No se han podido cargar los datos del centro para el PDF");
+    return;
+  }
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const pageWidth = 210;
     const marginLeft = 20;
@@ -136,7 +149,7 @@ export function DialogoDocumentoPrestamo({ open, onOpenChange, alumnos = [] }) {
       doc.setFont("helvetica", "normal");
 
       lineasCabecera.forEach((linea, index) => {
-        doc.text(linea, textX, marginTop + 4 + index * 2.5);
+        doc.text(linea, textX, marginTop + 4 + index * 3);
       });
 
       // Título

@@ -448,39 +448,62 @@ export function DialogoEditarExtraescolar({
               </div>
 
               {tipo === "complementaria" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <Select
-                    value={periodoInicio}
-                    onValueChange={setPeriodoInicio}
-                    disabled={!editableCamposGenerales}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Periodo inicio" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {periodos.map((p) => (
-                        <SelectItem key={p.id} value={String(p.id)}>
-                          {p.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select
-                    value={periodoFin}
-                    onValueChange={setPeriodoFin}
-                    disabled={!editableCamposGenerales}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Periodo fin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {periodos.map((p) => (
-                        <SelectItem key={p.id} value={String(p.id)}>
-                          {p.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-3 pt-2">
+                  <div className="flex flex-col space-y-1">
+                    <Label className="text-sm font-bold text-gray-700">
+                      Horario lectivo afectado
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Indica desde qué periodo hasta cuál se desarrollará la
+                      actividad.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-slate-50/50">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase text-muted-foreground">
+                        Desde el periodo
+                      </Label>
+                      <Select
+                        value={periodoInicio}
+                        onValueChange={setPeriodoInicio}
+                        disabled={!editableCamposGenerales}
+                      >
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Inicio" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {periodos.map((p) => (
+                            <SelectItem key={p.id} value={String(p.id)}>
+                              {p.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase text-muted-foreground">
+                        Hasta el periodo
+                      </Label>
+                      <Select
+                        value={periodoFin}
+                        onValueChange={setPeriodoFin}
+                        disabled={!editableCamposGenerales}
+                      >
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Fin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {periodos.map((p) => (
+                            <SelectItem key={p.id} value={String(p.id)}>
+                              {p.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
               )}
             </TabsContent>

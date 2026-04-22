@@ -203,61 +203,6 @@ async function getExtraescolaresEnriquecidos(req, res) {
  * ================================================================
  */
 
-/*async function updateEstadoExtraescolar(req, res) {
-  const id = req.params.id;
-  const { estado } = req.body;
-  const usuarioSesion = req.session?.user;
-
-  if (!usuarioSesion)
-    return res.status(401).json({ ok: false, error: "No autenticado" });
-  if (usuarioSesion.perfil !== "directiva")
-    return res.status(403).json({ ok: false, error: "No autorizado" });
-  if (![1, 2].includes(estado))
-    return res.status(400).json({ ok: false, error: "Estado inválido" });
-
-  const client = await db.connect();
-
-  try {
-    await client.query("BEGIN");
-
-    const { rows } = await client.query(
-      `UPDATE extraescolares 
-       SET estado = $1, updated_at = NOW(), updated_by = $2
-       WHERE id = $3 
-       RETURNING *`,
-      [estado, usuarioSesion.uid, id]
-    );
-
-    if (!rows[0]) {
-      await client.query("ROLLBACK");
-      return res
-        .status(404)
-        .json({ ok: false, error: "Actividad no encontrada" });
-    }
-
-    const actividad = rows[0];
-    await sincronizarAusenciasActividad(actividad, client);
-
-    await client.query("COMMIT");
-    res.json({ ok: true, actividad });
-
-    // --- ENVÍO DE EMAIL POTENCIADO ---
-    // Lanzamos el email en segundo plano sin bloquear la respuesta HTTP
-    setImmediate(() => {
-      enviarEmailActividad(actividad, "estado", req.session.ldap);
-    });
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("[updateEstadoExtraescolar] Error crítico:", err);
-    res.status(500).json({ ok: false, error: "Error interno" });
-  } finally {
-    client.release();
-  }
-}*/
-
-/**
- * Actualizar estado de actividad extraescolar y sincronizar ausencias
- */
 async function updateEstadoExtraescolar(req, res) {
   const id = req.params.id;
   const { estado } = req.body;
@@ -601,7 +546,6 @@ async function updateExtraescolar(req, res) {
 
     const genera_ausencias =
       tipo === "extraescolar" ? true : (req.body.genera_ausencias ?? false);
-
     await client.query("BEGIN");
 
     const { rows } = await client.query(

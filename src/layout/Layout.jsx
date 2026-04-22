@@ -49,12 +49,14 @@ import { useSidebarContext } from "@/context/SidebarContext";
 
 import { DialogoAsuntosRestricciones } from "../modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
 import { DialogoLlavesRestricciones } from "@/modules/Llaves/components/DialogoLlavesRestricciones";
+import { DialogoConfiguracionCentro } from "@/modules/DatosCentro/components/DialogoConfiguracionCentro";
 import { DialogoImportarHorariosUNTIS } from "@/modules/HorariosProfesorado/components/DialogoImportarHorariosUNTIS";
 
 export default function Layout(props) {
   const [openEtiquetas, setOpenEtiquetas] = useState(false);
   const [openRestricciones, setOpenRestricciones] = useState(false);
   const [openLlavesRestricciones, setOpenLlavesRestricciones] = useState(false);
+  const [openConfiguracionCentro, setOpenConfiguracionCentro] = useState(false);
   const [openImportarHorariosUNTIS, setOpenImportarHorariosUNTIS] =
     useState(false);
 
@@ -91,7 +93,6 @@ export default function Layout(props) {
       "/cuadrante-guardias": "Cuadrante de Guardias",
       "/ausencias-profesorado": "Ausencias del Profesorado",
       "/panel-guardias": "Panel de Guardias",
-
     };
 
     const titulo = pathToTitleMap[location.pathname];
@@ -106,6 +107,7 @@ export default function Layout(props) {
         onOpenRestricciones={() => setOpenRestricciones(true)}
         onOpenEtiquetas={() => setOpenEtiquetas(true)}
         onOpenLlavesRestricciones={() => setOpenLlavesRestricciones(true)}
+        onOpenConfiguracionCentro={() => setOpenConfiguracionCentro(true)}
         onOpenImportarHorariosUNTIS={() => setOpenImportarHorariosUNTIS(true)}
       />
 
@@ -129,6 +131,10 @@ export default function Layout(props) {
         <DialogoImportarHorariosUNTIS
           open={openImportarHorariosUNTIS}
           onOpenChange={setOpenImportarHorariosUNTIS}
+        />
+        <DialogoConfiguracionCentro
+          open={openConfiguracionCentro}
+          onOpenChange={setOpenConfiguracionCentro}
         />
       </SidebarInset>
     </SidebarProvider>

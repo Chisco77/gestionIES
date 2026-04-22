@@ -99,12 +99,19 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   const row2Height = 10;
   const col1Width = 70;
   const col2Width = 60;
+
+  // Apellidos
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.text("Apellidos:", tableX + textPad, y + row2Height - 3);
+  doc.setFont("helvetica", "bold");
   doc.text(apellidoUsuario, tableX + 22, y + row2Height - 3);
   doc.line(tableX + col1Width, y, tableX + col1Width, y + row2Height);
+
+  // Nombre
+  doc.setFont("helvetica", "normal");
   doc.text("Nombre:", tableX + col1Width + textPad, y + row2Height - 3);
+  doc.setFont("helvetica", "bold");
   doc.text(nombreUsuario, tableX + col1Width + 22, y + row2Height - 3);
   doc.line(
     tableX + col1Width + col2Width,
@@ -112,69 +119,97 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
     tableX + col1Width + col2Width,
     y + row2Height
   );
+
+  // DNI
+  doc.setFont("helvetica", "normal");
   doc.text(
     "DNI:",
     tableX + col1Width + col2Width + textPad,
     y + row2Height - 3
   );
+  doc.setFont("helvetica", "bold");
   doc.text(
     employeeNumber,
     tableX + col1Width + col2Width + 15,
     y + row2Height - 3
   );
+
   y += row2Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
   const row3Height = 10;
   const col3_1Width = 85;
+  // Teléfono
+  doc.setFont("helvetica", "normal");
   doc.text("Teléfono móvil:", tableX + textPad, y + row3Height - 3);
+  doc.setFont("helvetica", "bold");
   doc.text(telefono, tableX + 35, y + row3Height - 3);
   doc.line(tableX + col3_1Width, y, tableX + col3_1Width, y + row3Height);
+
+  // Email
+  doc.setFont("helvetica", "normal");
   doc.text("E-mail:", tableX + col3_1Width + textPad, y + row3Height - 3);
+  doc.setFont("helvetica", "bold");
   doc.text(email, tableX + col3_1Width + 18, y + row3Height - 3);
+
   y += row3Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
   const row4Height = 10;
   const col4_1Width = 70;
   const col4_2Width = 50;
+  // Cuerpo
+  doc.setFont("helvetica", "normal");
+  doc.text("Cuerpo:", tableX + textPad, y + row4Height - 3);
+  doc.setFont("helvetica", "bold");
   doc.text(
-    `Cuerpo: ${cuerpo || "Profesores de Secundaria"}`,
-    tableX + textPad,
+    cuerpo || "Profesores de Secundaria",
+    tableX + 20,
     y + row4Height - 3
   );
   doc.line(tableX + col4_1Width, y, tableX + col4_1Width, y + row4Height);
+
+  // Grupo
+  doc.setFont("helvetica", "normal");
   doc.text("Grupo:", tableX + col4_1Width + textPad, y + row4Height - 3);
-  doc.text(grupo || "", tableX + col4_1Width + 22, y + row4Height - 3);
+  doc.setFont("helvetica", "bold");
+  doc.text(grupo || "", tableX + col4_1Width + 18, y + row4Height - 3);
   doc.line(
     tableX + col4_1Width + col4_2Width,
     y,
     tableX + col4_1Width + col4_2Width,
     y + row4Height
   );
+
+  // Subgrupo
+  doc.setFont("helvetica", "normal");
   doc.text(
     "Subgrupo:",
     tableX + col4_1Width + col4_2Width + textPad,
     y + row4Height - 3
   );
+  doc.setFont("helvetica", "bold");
   doc.text(
     empleado?.subgrupo || "",
-    tableX + col4_1Width + col4_2Width + 22,
+    tableX + col4_1Width + col4_2Width + 24,
     y + row4Height - 3
   );
+
   y += row4Height;
   doc.line(tableX, y, tableX + tableWidth, y);
 
+  // --- FILA 5: RELACIÓN JURÍDICA ---
   const row5Height = 24;
-  doc.setFontSize(11);
-  doc.text(
-    "(Marcar con una x el recuadro correspondiente)",
-    tableX + 45,
-    y + 6
-  );
   doc.setFont("helvetica", "bold");
   doc.text("Relación jurídica:", tableX + textPad, y + 6);
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(
+    "(Marcar con una x el recuadro correspondiente)",
+    tableX + 42,
+    y + 6
+  );
+
   const opciones = [
     "Personal funcionario de carrera",
     "Personal funcionario en prácticas",
@@ -182,7 +217,6 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
     "Personal laboral indefinido",
     "Personal laboral temporal",
   ];
-  doc.setFontSize(10);
   let checkY = y + 11;
   const tipoEmpleadoMap = {
     "funcionario de carrera": "Personal funcionario de carrera",
@@ -191,21 +225,31 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
     "laboral indefinido": "Personal laboral indefinido",
     "laboral temporal": "Personal laboral temporal",
   };
+
   opciones.forEach((opcion, index) => {
     const xPos = index % 2 === 0 ? 5 : 80;
     doc.rect(tableX + xPos, checkY, 3.5, 3.5);
     doc.text(opcion, tableX + (index % 2 === 0 ? 10 : 85), checkY + 3);
-    if (opcion === tipoEmpleadoMap[empleado.tipo_empleado])
-      doc.text("X", tableX + xPos + 0.3, checkY + 2.8);
+    if (opcion === tipoEmpleadoMap[empleado.tipo_empleado]) {
+      doc.setFont("helvetica", "bold");
+      doc.text("X", tableX + xPos + 0.8, checkY + 2.8);
+      doc.setFont("helvetica", "normal");
+    }
     if (index % 2 === 1) checkY += 7;
   });
   y += row5Height + 10;
   doc.line(tableX, y, tableX + tableWidth, y);
 
-  // --- FILA 6: FECHA (RANGO) ---
+  // --- FILA 6: FECHA (FUSIÓN Y JORNADA UNIFICADAS) ---
+  const yBaseF6 = y;
   const row6Height = 10;
   const col6_1Width = 85;
-  doc.text("Fecha:", tableX + textPad, y + row6Height - 3);
+
+  // 1. Lado Izquierdo (Fecha Fusionada)
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("Fecha permiso:", tableX + textPad, yBaseF6 + 7);
+
   const fInicio = new Date(permiso.fecha);
   const fFin = permiso.fecha_fin ? new Date(permiso.fecha_fin) : null;
   const formatOptions = { day: "2-digit", month: "2-digit", year: "numeric" };
@@ -213,25 +257,62 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   if (fFin && fInicio.toDateString() !== fFin.toDateString()) {
     stringFechaFinal = `Del ${stringFechaFinal} al ${fFin.toLocaleDateString("es-ES", formatOptions)}`;
   }
-  doc.setFontSize(10);
-  doc.text(stringFechaFinal, tableX + 16, y + row6Height - 3);
-  doc.setFontSize(10);
-  doc.line(tableX + col6_1Width, y, tableX + col6_1Width, y + row6Height * 2);
-  doc.text(
-    `Centro de destino:    ${import.meta.env.VITE_IES_NAME}`,
-    tableX + col6_1Width + textPad,
-    y + row6Height - 3
-  );
-  y += row6Height;
-  doc.line(tableX, y, tableX + tableWidth, y);
 
-  doc.text("Jornada:", tableX + col6_1Width + textPad, y + row6Height - 3);
-  const completaX = tableX + 110;
-  const parcialX = tableX + 140;
-  const yJornada = y + row6Height - 7;
-  doc.rect(completaX, yJornada, 3.5, 3.5);
-  doc.text("Completa", completaX + 5, y + row6Height - 3);
-  doc.rect(parcialX, yJornada, 3.5, 3.5);
+  //doc.setFillColor(240, 240, 240);
+  //doc.roundedRect(tableX + 33, yBaseF6 + 8, 50, 10, 1, 1, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13); // +2 puntos
+  doc.text(stringFechaFinal, tableX + 35, yBaseF6 + 14.5);
+
+  // 2. Lado Derecho Superior (Centro Destino)
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(
+    "Centro destino:",
+    tableX + col6_1Width + textPad,
+    yBaseF6 + row6Height - 3
+  );
+  doc.setFont("helvetica", "bold");
+  doc.text(
+    import.meta.env.VITE_IES_NAME || "IES TRUJILLO",
+    tableX + col6_1Width + 30,
+    yBaseF6 + row6Height - 3
+  );
+
+  // Línea horizontal intermedia SOLO derecha
+  doc.line(
+    tableX + col6_1Width,
+    yBaseF6 + row6Height,
+    tableX + tableWidth,
+    yBaseF6 + row6Height
+  );
+
+  // 3. Lado Derecho Inferior (Jornada)
+  const yJornadaPos = yBaseF6 + row6Height;
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    "Jornada:",
+    tableX + col6_1Width + textPad,
+    yJornadaPos + row6Height - 3
+  );
+
+  const completaX = tableX + 105;
+  const parcialX = tableX + 132;
+  const yChecks = yJornadaPos + 3;
+
+  // --- OPCIÓN COMPLETA ---
+  doc.rect(completaX, yChecks, 3.5, 3.5);
+  if (permiso.dia_completo) {
+    doc.setFont("helvetica", "bold");
+    doc.text("X", completaX + 0.8, yChecks + 2.8);
+    doc.text("Completa", completaX + 5, yJornadaPos + row6Height - 3);
+  } else {
+    doc.setFont("helvetica", "normal");
+    doc.text("Completa", completaX + 5, yJornadaPos + row6Height - 3);
+  }
+
+  // --- OPCIÓN PARCIAL ---
+  doc.rect(parcialX, yChecks, 3.5, 3.5);
   let textoParcial = "Parcial";
   if (!permiso.dia_completo && periodos?.length) {
     const pIni = periodos.find((p) => p.id === permiso.idperiodo_inicio);
@@ -239,13 +320,25 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
     if (pIni && pFin)
       textoParcial += ` (${pIni.inicio.slice(0, 5)} - ${pFin.fin.slice(0, 5)})`;
   }
-  doc.text(textoParcial, parcialX + 5, y + row6Height - 3);
-  if (permiso.dia_completo) doc.text("X", completaX + 0.3, yJornada + 2.8);
-  else doc.text("X", parcialX + 0.3, yJornada + 2.8);
-  y += row6Height;
-  doc.rect(tableX, startY, tableWidth, y - startY);
+
+  if (!permiso.dia_completo) {
+    doc.setFont("helvetica", "bold");
+    doc.text("X", parcialX + 0.8, yChecks + 2.8);
+    if (textoParcial.length > 7) doc.setFontSize(9);
+    doc.text(textoParcial, parcialX + 5, yJornadaPos + row6Height - 3);
+  } else {
+    doc.setFont("helvetica", "normal");
+    if (textoParcial.length > 7) doc.setFontSize(9);
+    doc.text(textoParcial, parcialX + 5, yJornadaPos + row6Height - 3);
+  }
+
+  // Finalizar Sección 1
+  y = yBaseF6 + row6Height * 2;
+  doc.line(tableX + col6_1Width, yBaseF6, tableX + col6_1Width, y); // Línea vertical divisoria
+  doc.rect(tableX, startY, tableWidth, y - startY); // Cierre del cuadro de la sección 1
 
   // --- 2. PERMISO QUE SOLICITA ---
+  y += 0; // Pegado al cuadro anterior
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   startY = y;
@@ -256,6 +349,7 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text("PERMISOS:", tableX + textPad, y + 6);
+
   const PERMISOS_CHECKLIST = [
     {
       tipo: 2,
@@ -291,21 +385,35 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
     },
     { tipo: 0, texto: "Otras situaciones." },
   ];
+
   const colSplitX = tableX + 85;
   let yLeft = y + 12;
   let yRight = y + 12;
+
   PERMISOS_CHECKLIST.slice(0, 6).forEach(({ tipo, texto }) => {
     doc.rect(tableX + 2, yLeft - 3, 3.5, 3.5);
-    if (permiso.tipo === tipo) doc.text("X", tableX + 2.7, yLeft - 0.2);
+    if (permiso.tipo === tipo) {
+      doc.setFont("helvetica", "bold");
+      doc.text("X", tableX + 2.8, yLeft - 0.2);
+    } else {
+      doc.setFont("helvetica", "normal");
+    }
     doc.text(doc.splitTextToSize(texto, 75), tableX + 7, yLeft);
     yLeft += 15;
   });
+
   PERMISOS_CHECKLIST.slice(6).forEach(({ tipo, texto }) => {
     doc.rect(colSplitX + 2, yRight - 3, 3.5, 3.5);
-    if (permiso.tipo === tipo) doc.text("X", colSplitX + 2.7, yRight - 0.2);
+    if (permiso.tipo === tipo) {
+      doc.setFont("helvetica", "bold");
+      doc.text("X", colSplitX + 2.8, yRight - 0.2);
+    } else {
+      doc.setFont("helvetica", "normal");
+    }
     doc.text(doc.splitTextToSize(texto, 75), colSplitX + 7, yRight);
     yRight += 15;
   });
+
   y = Math.max(yLeft, yRight);
   doc.rect(tableX, startY, tableWidth, y - startY);
   doc.line(colSplitX, startY + row2_1Height, colSplitX, y);
@@ -316,13 +424,8 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   startY = y;
-  const rowDocHeaderHeight = 8; 
-  doc.text(
-    "3. DOCUMENTACIÓN QUE SE APORTA",
-    tableX + textPad,
-    y + rowDocHeaderHeight - 2
-  );
-  y += rowDocHeaderHeight;
+  doc.text("3. DOCUMENTACIÓN QUE SE APORTA", tableX + textPad, y + 6);
+  y += 8;
   doc.line(tableX, y, tableX + tableWidth, y);
 
   const docsList = [
@@ -349,18 +452,24 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   y = yDocs + 5;
   doc.rect(tableX, startY, tableWidth, y - startY);
 
-  // --- Firma con Fecha Automática ---
-  y += 15;
+  // --- Firma ---
+  y += 20;
   const fechaHoy = new Date();
   const mesActual = fechaHoy.toLocaleDateString("es-ES", { month: "long" });
   const anioActual = fechaHoy.getFullYear();
-  doc.text(`Trujillo, _____ de ${mesActual} de ${anioActual}`, marginLeft, y);
-
-  y += 10;
+  doc.setFont("helvetica", "normal");
+  doc.text(`Trujillo, a _____ de `, marginLeft, y);
   doc.setFont("helvetica", "bold");
-  doc.text("DIRECTOR/A DEL CENTRO", pageWidth / 2, y, { align: "center" });
+  doc.text(`${mesActual}`, marginLeft + 35, y);
+  doc.setFont("helvetica", "normal");
+  doc.text(` de ${anioActual}`, marginLeft + 58, y);
+  y += 15;
+  doc.setFont("helvetica", "bold");
+  doc.text("EL/LA DIRECTOR/A DEL CENTRO", pageWidth / 2, y, {
+    align: "center",
+  });
 
-  doc.save("anexo_v_concesion_permisos.pdf");
+  doc.save(`Anexo_V_Permiso_${apellidoUsuario}.pdf`);
 }
 
 export function generateListadoPermisosProfesores(permisos = []) {
