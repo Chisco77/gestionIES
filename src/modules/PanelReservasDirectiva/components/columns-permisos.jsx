@@ -115,20 +115,28 @@ export const columnsPermisos = () => [
   },
   {
     accessorKey: "ap_total",
-    header: "APs T.",
+    header: () => <div className="text-center w-full">APs Total</div>, // Centra el texto de la cabecera
     cell: ({ row }) => (
-      <span className="text-[11px] font-bold text-slate-400">
-        {row.original.ap_total ?? 0}
-      </span>
+      <div className="text-center w-full">
+        {" "}
+        {/* Centra el contenido de la celda */}
+        <span className="text-[11px] font-bold text-slate-400">
+          {row.original.ap_total ?? 0}
+        </span>
+      </div>
     ),
   },
   {
     accessorKey: "dias_disfrutados",
-    header: "APs A.",
+    header: () => <div className="text-center w-full">APs Disfrutados</div>, // Centra el texto de la cabecera
     cell: ({ row }) => (
-      <span className="text-[11px] font-bold text-blue-600">
-        {row.original.dias_disfrutados ?? 0}
-      </span>
+      <div className="text-center w-full">
+        {" "}
+        {/* Centra el contenido de la celda */}
+        <span className="text-[11px] font-bold text-blue-600">
+          {row.original.dias_disfrutados ?? 0}
+        </span>
+      </div>
     ),
   },
   {

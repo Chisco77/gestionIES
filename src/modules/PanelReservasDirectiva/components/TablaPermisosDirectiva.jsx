@@ -427,62 +427,70 @@ export function TablaPermisosDirectiva({
 
       {/* TABLA */}
       <div className="rounded-md border max-h-[288px] overflow-y-auto">
-        <Table>
-          <TableHeader className="bg-muted/50 sticky top-0 z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="cursor-pointer select-none"
-                  >
-                    {header.isPlaceholder ? null : (
-                      <div
-                        onClick={header.column.getToggleSortingHandler()}
-                        className="flex items-center gap-1"
-                      >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                        {{
-                          asc: "↑",
-                          desc: "↓",
-                        }[header.column.getIsSorted()] ?? ""}
-                      </div>
-                    )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="h-6">
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-0.5">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
+        {/* TABLA CON ESTILO UNIFICADO */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader className="bg-blue-50/50 border-b border-slate-200">
+              {" "}
+              {/* Fondo azul clarito */}
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className="h-9 text-[10px] uppercase font-bold text-slate-600 px-4"
+                    >
+                      {header.isPlaceholder ? null : (
+                        <div
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="flex items-center gap-1 cursor-pointer select-none"
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                          {{
+                            asc: <span className="text-blue-500">↑</span>,
+                            desc: <span className="text-blue-500">↓</span>,
+                          }[header.column.getIsSorted()] ?? ""}
+                        </div>
                       )}
-                    </TableCell>
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getAllColumns().length}
-                  className="text-center h-24"
-                >
-                  No hay asuntos propios
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="h-9 hover:bg-slate-50/50 border-slate-100 transition-colors"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="py-0 px-4">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={table.getAllColumns().length}
+                    className="text-center h-24 text-slate-400 italic"
+                  >
+                    No hay permisos registrados. Revise los filtros.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* PAGINACIÓN ESTILO "BASE" CON NAVEGACIÓN COMPLETA */}
