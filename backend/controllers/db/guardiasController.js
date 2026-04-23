@@ -498,10 +498,129 @@ SELECT
   }
 }
 
+/**
+ * Obtener guardias enriquecidas (histórico)
+ */
+async function getGuardiasEnriquecidas(req, res) {
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession) {
+      return res.status(401).json({ ok: false, error: "No autenticado" });
+    }
+
+    // Extraemos filtros de la query string
+    const { uid_profesor_cubridor, uid_profesor_ausente, fecha, estado } =
+      req.query;
+    const filtros = [];
+    const vals = [];
+    let i = 0;
+
+    if (uid_profesor_cubridor) {
+      filtros.push(`g.uid_profesor_cubridor = $${++i}`);
+      vals.push(uid_profesor_cubridor);
+    }
+    if (uid_profesor_ausente) {
+      filtros.push(`g.uid_profesor_ausente = $${++i}`);
+      vals.push(uid_profesor_ausente);
+    }
+    if (fecha) {
+      filtros.push(`g.fecha = $${++i}`);
+      vals.push(fecha);
+    }
+    if (estado) {
+      filtros.push(`g.estado = $${++i}`);
+      vals.push(estado);
+    }
+
+    const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
+
+    // 1. Consulta principal a la tabla de guardias
+    const { rows: guardias } = await db.query(
+      `SELECT 
+        g.id, 
+        TO_CHAR(g.fecha, 'YYYY-MM-DD') AS fecha,
+        g.idperiodo,
+        g.uid_profesor_ausente,
+        g.uid_profesor_cubridor,
+        g.forzada,
+        g.generada_automaticamente,
+        g.uid_asignador,
+        g.estado,
+        g.confirmada,
+        g.creada_en,
+        g.idausencia
+      FROM guardias_asignadas g
+      ${where}
+      ORDER BY g.fecha DESC, g.idperiodo ASC`,
+      vals
+    );
+
+    // 2. Resolución de nombres mediante LDAP
+    // Obtenemos todos los UIDs únicos involucrados (ausentes, cubridores y asignadores)
+    const uidsUnicos = [
+      ...new Set([
+        ...guardias.map((g) => g.uid_profesor_ausente),
+        ...guardias.map((g) => g.uid_profesor_cubridor),
+        ...guardias.map((g) => g.uid_asignador),
+      ]),
+    ].filter(Boolean);
+
+    const nombreMap = {};
+    for (const uid of uidsUnicos) {
+      nombreMap[uid] = await new Promise((resolve) => {
+        buscarPorUid(ldapSession, uid, (err, datos) => {
+          if (!err && datos) {
+            resolve(`${datos.sn || ""}, ${datos.givenName || ""}`.trim());
+          } else {
+            resolve(uid); // Si falla, devolvemos el UID como fallback
+          }
+        });
+      });
+    }
+
+    // 3. Resolución de Periodos Horarios
+    const periodosIds = [...new Set(guardias.map((g) => g.idperiodo))].filter(
+      Boolean
+    );
+    let periodosMap = {};
+    if (periodosIds.length > 0) {
+      const { rows: periodos } = await db.query(
+        `SELECT id, nombre, inicio, fin FROM periodos_horarios WHERE id = ANY($1)`,
+        [periodosIds]
+      );
+      periodosMap = periodos.reduce((acc, p) => {
+        acc[p.id] = p;
+        return acc;
+      }, {});
+    }
+
+    // 4. Montaje final del objeto enriquecido
+    const guardiasEnriquecidas = guardias.map((g) => ({
+      ...g,
+      nombre_ausente:
+        nombreMap[g.uid_profesor_ausente] || g.uid_profesor_ausente,
+      nombre_cubridor:
+        nombreMap[g.uid_profesor_cubridor] || g.uid_profesor_cubridor,
+      nombre_asignador: nombreMap[g.uid_asignador] || g.uid_asignador,
+      periodo_nombre: periodosMap[g.idperiodo]?.nombre || `Hora ${g.idperiodo}`,
+      periodo_inicio: periodosMap[g.idperiodo]?.inicio || "",
+      periodo_fin: periodosMap[g.idperiodo]?.fin || "",
+    }));
+
+    res.json({ ok: true, guardias: guardiasEnriquecidas });
+  } catch (err) {
+    console.error("Error en getGuardiasEnriquecidas:", err);
+    res
+      .status(500)
+      .json({ ok: false, error: "Error obteniendo el histórico de guardias" });
+  }
+}
+
 module.exports = {
   simularGuardiasDia,
   autoasignarGuardia,
   cancelarAutoasignacion,
   confirmarGuardias,
   getProfesoresDeGuardia,
+  getGuardiasEnriquecidas,
 };

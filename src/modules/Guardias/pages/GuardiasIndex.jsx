@@ -1,37 +1,49 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useGuardias } from "@/hooks/useGuardias"; // Debes crear este hook
-import { columnsGuardias } from "../components/columns-guardias";
+import { useGuardias } from "@/hooks/useGuardias";
+import { getColumnsGuardias } from "../components/columns-guardias";
 import { TablaGuardias } from "../components/TablaGuardias";
-import { Loader, ShieldCheck } from "lucide-react";
+import {
+  Loader,
+  ShieldCheck,
+  Printer,
+  FileText,
+  Info,
+  History,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { format } from "date-fns";
 
 export function GuardiasIndex() {
   const { user } = useAuth();
   const { data: guardias, isLoading, error } = useGuardias();
+  const esDirectiva = user?.perfil === "directiva";
+  const hoyStr = format(new Date(), "yyyy-MM-dd");
 
-  // Filtrado: El profesor solo ve sus guardias realizadas (donde él cubrió)
-  // Si es directiva, ve todas.
+  // Columnas dinámicas según perfil
+  const columns = useMemo(() => getColumnsGuardias(esDirectiva), [esDirectiva]);
+
+  // Filtrado inicial (el profesor solo ve lo suyo)
   const guardiasVisibles = useMemo(() => {
     if (!guardias) return [];
-    if (user?.perfil === "directiva") return guardias;
-    
+    if (esDirectiva) return guardias;
     return guardias.filter((g) => g.uid_profesor_cubridor === user?.username);
-  }, [guardias, user]);
+  }, [guardias, user, esDirectiva]);
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <ShieldCheck className="text-blue-600" />
-            Histórico de Guardias Realizadas
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Consulta el registro de todas las guardias que has cubierto hasta la fecha.
-          </p>
-        </div>
-      </div>
-
       {isLoading ? (
         <div className="flex justify-center py-24">
           <Loader className="h-10 w-10 animate-spin text-primary" />
@@ -41,9 +53,49 @@ export function GuardiasIndex() {
           ❌ Error al cargar las guardias: {error.message}
         </div>
       ) : (
-        <TablaGuardias 
-          columns={columnsGuardias} 
-          data={guardiasVisibles} 
+        <TablaGuardias
+          columns={columns}
+          data={guardiasVisibles}
+          esDirectiva={esDirectiva}
+          informes={
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Printer className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => window.print()}>
+                  <FileText className="mr-2 h-4 w-4" /> Exportar vista actual
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          }
+          acciones={(seleccionado) => (
+            <div className="flex gap-2 mt-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="cursor-default opacity-50"
+                      disabled={!seleccionado}
+                    >
+                      <Info className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {seleccionado
+                        ? "Registro histórico no editable"
+                        : "Selecciona una fila"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
         />
       )}
     </div>

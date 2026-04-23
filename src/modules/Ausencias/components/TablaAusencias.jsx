@@ -27,6 +27,22 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 
+// Lógica de filtrado: ¿Se solapa la ausencia con el rango seleccionado?
+const dateRangeFilter = (row, columnId, value) => {
+  const [start, end] = value;
+  if (!start && !end) return true;
+
+  const fInicioAusencia = row.original.fecha_inicio; // string YYYY-MM-DD
+  const fFinAusencia = row.original.fecha_fin || fInicioAusencia;
+
+  // Si solo hay fecha de inicio en el filtro
+  if (start && !end) return fFinAusencia >= start;
+  // Si solo hay fecha de fin en el filtro
+  if (!start && end) return fInicioAusencia <= end;
+  // Si hay rango completo: hay solapamiento si...
+  return fInicioAusencia <= end && fFinAusencia >= start;
+};
+
 export function TablaAusencias({
   columns,
   data,
@@ -36,6 +52,12 @@ export function TablaAusencias({
   esDirectiva = false,
   fechaFiltroDefault = format(new Date(), "yyyy-MM-dd"),
 }) {
+  const hoyStr = format(new Date(), "yyyy-MM-dd");
+
+  // ESTADO: Por defecto, ponemos hoy en ambos para ver las ausencias de hoy
+  const [fechaInicio, setFechaInicio] = useState(hoyStr);
+  const [fechaFin, setFechaFin] = useState(hoyStr);
+
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: true }]);
   // Si es directiva, filtramos por hoy. Si es profe, empezamos sin filtros de columna.
   const [columnFilters, setColumnFilters] = useState(
@@ -50,19 +72,14 @@ export function TablaAusencias({
   const table = useReactTable({
     data,
     columns,
-    // Unificamos todo en un solo objeto state
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-    },
-    onColumnVisibilityChange: setColumnVisibility,
+    filterFns: { dateRange: dateRangeFilter },
+    state: { sorting, columnFilters },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     enableRowSelection: true,
     enableMultiRowSelection: false,
     initialState: { pagination: { pageIndex: 0, pageSize: 12 } },
@@ -86,10 +103,45 @@ export function TablaAusencias({
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
 
+  // Sincronizar los inputs con el filtro de la tabla
+  useEffect(() => {
+    if (fechaInicio || fechaFin) {
+      table.getColumn("fecha_inicio")?.setFilterValue([fechaInicio, fechaFin]);
+    } else {
+      table.getColumn("fecha_inicio")?.setFilterValue(undefined);
+    }
+  }, [fechaInicio, fechaFin]);
+
   return (
     <div className="space-y-4">
       <Card className="p-4 shadow-none">
         <div className="flex flex-wrap items-end gap-4 text-sm">
+          {/* RANGO DE FECHAS */}
+          <div className="flex items-end gap-2 p-2 bg-white rounded-md border border-slate-200 shadow-sm">
+            <div className="space-y-1">
+              <label className="block text-[10px] uppercase font-bold text-slate-500">
+                Desde
+              </label>
+              <Input
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+                className="w-[150px] h-8 border-none focus-visible:ring-0 p-0 text-sm"
+              />
+            </div>
+            <div className="h-8 w-[1px] bg-slate-200 mx-1" />
+            <div className="space-y-1">
+              <label className="block text-[10px] uppercase font-bold text-slate-500">
+                Hasta
+              </label>
+              <Input
+                type="date"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+                className="w-[150px] h-8 border-none focus-visible:ring-0 p-0 text-sm"
+              />
+            </div>
+          </div>
           {/* FILTRO DE PROFESOR: Solo si es directiva */}
           {esDirectiva && (
             <div className="space-y-1">
@@ -110,20 +162,6 @@ export function TablaAusencias({
               />
             </div>
           )}
-
-          <div className="space-y-1">
-            <label className="block text-xs font-medium text-muted-foreground">
-              Ver ausencias el día...
-            </label>
-            <Input
-              type="date"
-              value={table.getColumn("fecha_inicio")?.getFilterValue() ?? ""}
-              onChange={(e) =>
-                table.getColumn("fecha_inicio")?.setFilterValue(e.target.value)
-              }
-              className="w-[160px] h-8 text-sm font-medium"
-            />
-          </div>
 
           <Button
             variant="outline"

@@ -47,6 +47,7 @@ const {
   cancelarAutoasignacion,
   getProfesoresDeGuardia,
   autoasignarGuardia,
+  getGuardiasEnriquecidas,
 } = require("../controllers/db/guardiasController");
 
 // --- Controlador de ausencias de profesorado ---
@@ -506,5 +507,8 @@ router.delete(
   "/guardias/cancelar/:id_guardia_asignada",
   cancelarAutoasignacion
 );
+
+// guardias enriquecidas
+router.get("/guardias-enriquecidas", getGuardiasEnriquecidas);
 
 module.exports = router;

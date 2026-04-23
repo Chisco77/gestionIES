@@ -199,19 +199,6 @@ export function AusenciasIndex() {
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-800">
-          {esDirectiva
-            ? "Gestión Global de Ausencias"
-            : "Mis Próximas Ausencias"}
-        </h2>
-        {!esDirectiva && (
-          <p className="text-sm text-muted-foreground">
-            Aquí puedes gestionar las instrucciones para los compañeros que
-            cubran tus guardias.
-          </p>
-        )}
-      </div>
       {isLoading ? (
         <div className="flex justify-center py-24">
           <Loader className="h-10 w-10 animate-spin text-primary" />

@@ -14,49 +14,22 @@ export const columnsAusencias = [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    filterFn: (row, columnId, filterValue) => {
-      if (!filterValue || filterValue.trim() === "") return true;
-      return String(row.getValue(columnId) ?? "")
-        .toLowerCase()
-        .includes(filterValue.toLowerCase());
-    },
   },
   {
     accessorKey: "fecha_inicio",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Desde
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    header: "Desde",
+    // CLAVE: Añadimos el identificador del filtro de rango
+    filterFn: "dateRange",
     cell: ({ row }) =>
       new Date(row.original.fecha_inicio).toLocaleDateString("es-ES"),
-    filterFn: (row, columnId, filterValue) => {
-      if (!filterValue) return true;
-      const filtro = new Date(filterValue).setHours(0, 0, 0, 0);
-      const inicio = new Date(row.original.fecha_inicio).setHours(0, 0, 0, 0);
-      const fin = new Date(
-        row.original.fecha_fin || row.original.fecha_inicio
-      ).setHours(0, 0, 0, 0);
-      return filtro >= inicio && filtro <= fin;
-    },
   },
   {
     accessorKey: "fecha_fin",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Hasta
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    header: "Hasta",
     cell: ({ row }) =>
-      new Date(row.original.fecha_fin).toLocaleDateString("es-ES"),
+      row.original.fecha_fin
+        ? new Date(row.original.fecha_fin).toLocaleDateString("es-ES")
+        : "---",
   },
   {
     id: "horario",

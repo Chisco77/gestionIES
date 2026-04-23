@@ -26,6 +26,7 @@ import {
   ChevronsRight,
   CalendarIcon,
   Check,
+  Search,
   X,
   Eraser,
 } from "lucide-react";
@@ -169,7 +170,7 @@ export function TablaPermisosDirectiva({
     onColumnFiltersChange: setColumnFilters,
     state: { sorting, columnFilters },
     initialState: {
-      pagination: { pageIndex: 0, pageSize: 6 },
+      pagination: { pageIndex: 0, pageSize: 5 },
     },
   });
 
@@ -270,53 +271,72 @@ export function TablaPermisosDirectiva({
     table.resetGlobalFilter();
     table.resetSorting();
     table.resetPagination();
+    toast.info("Filtros restablecidos: mostrando todo el histórico");
   };
 
   return (
     <div className="space-y-2">
-      {/* FILTROS */}
-      <div className="p-2 border rounded-md bg-muted/40 mb-4">
-        <div className="flex items-end gap-2 w-full flex-nowrap">
-          {" "}
-          {/* flex-nowrap es la clave */}
-          {/* Filtro profesor */}
-          <div className="flex-1 min-w-[120px] space-y-1">
-            <label className="text-[10px] uppercase font-bold text-muted-foreground">
-              Profesor
-            </label>
-            <Input
-              className="h-8 w-full text-xs"
-              placeholder="Profesor..."
-              value={table.getColumn("nombreProfesor")?.getFilterValue() ?? ""}
-              onChange={(e) =>
-                table
-                  .getColumn("nombreProfesor")
-                  ?.setFilterValue(e.target.value)
-              }
-            />
+      {/* PANEL DE FILTROS ESTILO CLOUD - PERMISOS */}
+      <div className="p-3 border rounded-xl bg-slate-50/50 shadow-sm mb-3">
+        <div className="flex flex-wrap items-end gap-3 w-full">
+          {/* 1. RANGO DE FECHAS (DISEÑO CÁPSULA) */}
+          <div className="flex items-end gap-2 p-1.5 bg-white rounded-lg border border-slate-200 shadow-sm">
+            <div className="space-y-0.5">
+              <label className="block text-[10px] uppercase font-bold text-slate-400 text-center">
+                Desde
+              </label>
+              <Input
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => setFechaDesde(e.target.value)}
+                className="w-[130px] h-7 border-none focus-visible:ring-0 p-0 text-xs text-center bg-transparent"
+              />
+            </div>
+            <div className="h-7 w-[1px] bg-slate-100 mx-0.5" />
+            <div className="space-y-0.5">
+              <label className="block text-[10px] uppercase font-bold text-slate-400 text-center">
+                Hasta
+              </label>
+              <Input
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => setFechaHasta(e.target.value)}
+                className="w-[130px] h-7 border-none focus-visible:ring-0 p-0 text-xs text-center bg-transparent"
+              />
+            </div>
           </div>
-          {/* Filtro descripción */}
-          <div className="flex-1 min-w-[120px] space-y-1">
-            <label className="text-[10px] uppercase font-bold text-muted-foreground">
-              Descripción
+
+          {/* 2. FILTRO PROFESOR */}
+          <div className="flex-1 min-w-[150px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">
+              Profesor/a
             </label>
-            <Input
-              className="h-8 w-full text-xs"
-              placeholder="Descripción..."
-              value={table.getColumn("descripcion")?.getFilterValue() ?? ""}
-              onChange={(e) =>
-                table.getColumn("descripcion")?.setFilterValue(e.target.value)
-              }
-            />
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+              <Input
+                className="h-9 w-full text-xs bg-white pl-8 shadow-sm"
+                placeholder="Buscar profesor..."
+                value={
+                  table.getColumn("nombreProfesor")?.getFilterValue() ?? ""
+                }
+                onChange={(e) =>
+                  table
+                    .getColumn("nombreProfesor")
+                    ?.setFilterValue(e.target.value)
+                }
+              />
+            </div>
           </div>
-          {/* Filtro tipo */}
-          <div className="flex-[1.5] min-w-[150px] space-y-1">
-            <label className="text-[10px] uppercase font-bold text-muted-foreground">
-              Tipo
+
+          {/* 3. FILTRO TIPO DE PERMISO */}
+          <div className="flex-1 min-w-[150px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">
+              Tipo de Permiso
             </label>
             <Select
+              // Forzamos que si el valor es vacío o undefined, marque "ALL"
               value={
-                table.getColumn("tipo")?.getFilterValue()?.toString() ?? "ALL"
+                table.getColumn("tipo")?.getFilterValue()?.toString() || "ALL"
               }
               onValueChange={(value) =>
                 table
@@ -324,98 +344,80 @@ export function TablaPermisosDirectiva({
                   ?.setFilterValue(value === "ALL" ? "" : Number(value))
               }
             >
-              <SelectTrigger className="h-8 w-full text-xs">
-                <SelectValue placeholder="Todos" />
+              <SelectTrigger className="h-9 w-full text-xs bg-white shadow-sm">
+                <SelectValue placeholder="Todos los tipos" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Todos los tipos</SelectItem>
-                {Object.entries(MAPEO_TIPOS_PERMISOS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
+                {Object.entries(MAPEO_TIPOS_PERMISOS).map(([v, label]) => (
+                  <SelectItem key={v} value={v} className="text-xs">
                     {label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          {/* Filtro Rango - Un poco más pequeño */}
-          {/* Filtro Rango Fechas */}
-          <div className="flex-none space-y-1">
-            <label className="text-[10px] uppercase font-bold text-muted-foreground">
-              Rango Fechas
-            </label>
-            <div className="flex gap-1">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "h-8 w-[200px] justify-start text-left text-[11px] font-normal",
-                      !fechaDesde && !fechaHasta && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-1 h-3 w-3 shrink-0" />
-                    <span className="truncate">
-                      {fechaDesde && fechaHasta
-                        ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(fechaHasta).toLocaleDateString()}`
-                        : "Seleccionar fechas"}
-                    </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    numberOfMonths={2}
-                    locale={es}
-                    selected={{
-                      from: fechaDesde ? new Date(fechaDesde) : undefined,
-                      to: fechaHasta ? new Date(fechaHasta) : undefined,
-                    }}
-                    onSelect={(range) => {
-                      setFechaDesde(
-                        range?.from ? formatLocalDate(range.from) : ""
-                      );
-                      setFechaHasta(range?.to ? formatLocalDate(range.to) : "");
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={limpiarTodosLosFiltros}
-                title="Limpiar filtros"
-              >
-                <Eraser className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-          {/* SECCIÓN FINAL (Switch e Impresora) */}
-          <div className="flex items-center gap-3 ml-auto pl-2 border-l h-8">
-            <div className="flex items-center gap-2 whitespace-nowrap">
+          {/* 4. BOTÓN LIMPIAR */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors shadow-sm"
+                  onClick={limpiarTodosLosFiltros}
+                >
+                  <Eraser className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Limpiar filtros</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {/* 5. SECCIÓN FINAL (SWITCH E INFORMES) */}
+          <div className="flex items-center gap-4 ml-auto pl-4 border-l border-slate-200 h-10">
+            {/* Switch Estado */}
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-100 shadow-sm">
               <Switch
-                className="scale-75" // Un poco más pequeño para ahorrar espacio
-                checked={table.getColumn("estado")?.getFilterValue() === true}
+                id="pendientes-perm"
+                className="scale-75 data-[state=checked]:bg-yellow-600"
+                checked={!!table.getColumn("estado")?.getFilterValue()}
                 onCheckedChange={(checked) =>
                   table
                     .getColumn("estado")
                     ?.setFilterValue(checked ? true : null)
                 }
               />
-              <span className="text-[11px] font-medium">Pendientes</span>
+              <label
+                htmlFor="pendientes-perm"
+                className="text-[11px] font-semibold text-slate-600 cursor-pointer select-none"
+              >
+                Solo Pendientes
+              </label>
             </div>
 
+            {/* Menú Informes */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8">
-                  <Printer className="h-4 w-4" />
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-9 px-3 bg-slate-800 hover:bg-slate-900 shadow-md"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  <span className="text-xs text-white">Informes</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleGenerarPdf}>
-                  <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Listado de permisos por profesor
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem
+                  onClick={handleGenerarPdf}
+                  className="cursor-pointer"
+                >
+                  <FileText className="mr-2 h-4 w-4 text-red-500" /> Listado por
+                  profesor
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -483,52 +485,67 @@ export function TablaPermisosDirectiva({
         </Table>
       </div>
 
-      {/* PAGINACIÓN */}
-      <div className="flex flex-col sm:flex-row items-center py-1 space-y-4 sm:space-y-0 text-xs">
-        <div className="flex-1"></div>
-        <div className="flex items-center justify-center space-x-1 flex-1">
+      {/* PAGINACIÓN ESTILO "BASE" CON NAVEGACIÓN COMPLETA */}
+      <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 bg-white border border-t-0 border-slate-200 rounded-b-xl shadow-sm -mt-1">
+        {/* 1. ESPACIADOR IZQUIERDO */}
+        <div className="hidden sm:block flex-1" />
+
+        {/* 2. PAGINACIÓN CENTRADA CON DOBLE CHEVRON */}
+        <div className="flex items-center space-x-1 flex-1 justify-center">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7 text-slate-500 hover:text-slate-900"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronsLeft className="w-3 h-3" />
+            <ChevronsLeft className="w-4 h-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7 text-slate-500 hover:text-slate-900"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronLeft className="w-3 h-3" />
+            <ChevronLeft className="w-4 h-4" />
           </Button>
-          <span className="px-2 text-muted-foreground">
-            Página {currentPage} de {totalPages}
-          </span>
+
+          <div className="flex items-center justify-center min-w-[85px] text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+            Pág.{" "}
+            <span className="text-slate-900 ml-1">
+              {currentPage} / {totalPages}
+            </span>
+          </div>
+
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7 text-slate-500 hover:text-slate-900"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronRight className="w-3 h-3" />
+            <ChevronRight className="w-4 h-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7 text-slate-500 hover:text-slate-900"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronsRight className="w-3 h-3" />
+            <ChevronsRight className="w-4 h-4" />
           </Button>
         </div>
-        <div className="flex-1 text-right text-xs text-muted-foreground">
-          Total de registros: {table.getFilteredRowModel().rows.length}
+
+        {/* 3. TOTAL REGISTROS A LA DERECHA */}
+        <div className="flex-1 flex justify-end">
+          <div className="text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3 py-1 rounded-md uppercase tracking-tight">
+            Total:{" "}
+            <span className="text-blue-600 font-extrabold">
+              {table.getFilteredRowModel().rows.length}
+            </span>
+          </div>
         </div>
       </div>
 
