@@ -11,13 +11,14 @@
  * Fecha de creación: 2025
  *
  * Descripción:
- * Hook basado en React Query para recuperar la información 
+ * Hook basado en React Query para recuperar la información
  * institucional del centro (nombre, dirección, contacto, etc.)
  * y mantenerla en caché.
  *
  * Uso:
  * const { data: centro, isLoading } = useConfiguracionCentro();
  */
+
 
 import { useQuery } from "@tanstack/react-query";
 
@@ -37,13 +38,11 @@ export function useConfiguracionCentro() {
       }
 
       const data = await res.json();
-      
-      // Retornamos el objeto 'centro' que viene del controlador
       const c = data.centro || {};
 
       return {
         id: c.id,
-        nombreIes: c.nombre_ies || "",
+        nombreIes: c.nombre_ies || import.meta.env.VITE_IES_NAME || "",
         direccionLinea1: c.direccion_linea_1 || "",
         direccionLinea2: c.direccion_linea_2 || "",
         direccionLinea3: c.direccion_linea_3 || "",
@@ -54,11 +53,19 @@ export function useConfiguracionCentro() {
         provincia: c.provincia || "Cáceres",
         codigoPostal: c.codigo_postal || "",
         webUrl: c.web_url || "",
-        logoUrl: c.logo_url || "",
-        updatedAt: c.updated_at
+
+        // Logo de la aplicación (miIES)
+        logoUrl: c.logo_miies_url || "",
+
+        // NUEVO: Logo institucional del centro
+        logoCentroUrl: c.logo_centro_url || "",
+
+        updatedAt: c.updated_at,
       };
     },
-    // Al ser datos que rara vez cambian, ponemos un staleTime alto (1 hora)
-    staleTime: 1000 * 60 * 60, 
+    staleTime: 1000 * 60 * 60,
+    cacheTime: 1000 * 60 * 60 * 24,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 }

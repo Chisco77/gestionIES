@@ -328,14 +328,23 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
             />
           </div>
 
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 text-slate-400"
-            onClick={limpiarTodosLosFiltros}
-          >
-            <Eraser size={14} />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  onClick={limpiarTodosLosFiltros}
+                >
+                  <Eraser className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Limpiar todos los filtros</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           <div className="flex items-center gap-3 ml-auto pl-4 border-l border-slate-200">
             <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-slate-100 shadow-sm">

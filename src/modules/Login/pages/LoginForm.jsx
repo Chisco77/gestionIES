@@ -29,14 +29,22 @@ import { Avatar, AvatarImage } from "@radix-ui/react-avatar";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/context/AuthContext"; // <-- Importar contexto
+import { useAuth } from "@/context/AuthContext";
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
 
 export function LoginForm({ className, ...props }) {
   const queryClient = useQueryClient();
-  const { setUser } = useAuth(); // Para actualizar contexto
+  const { setUser } = useAuth();
   const [usuario, setUsuario] = useState({ username: "", password: "" });
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
+
+  // Obtenemos los datos del centro para el logo y el nombre
+  const { data: centro } = useConfiguracionCentro();
+
+  const logoAMostrar =
+    centro?.logoUrl || `${import.meta.env.BASE_URL}public/miIES.png`;
+  const nombreIES = centro?.nombreIes || import.meta.env.VITE_IES_NAME;
 
   const handleChange = (e) => {
     setUsuario({ ...usuario, [e.target.name]: e.target.value });
@@ -50,7 +58,7 @@ export function LoginForm({ className, ...props }) {
       const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // Mantener sesión
+        credentials: "include",
         body: JSON.stringify(usuario),
       });
 
@@ -61,31 +69,24 @@ export function LoginForm({ className, ...props }) {
         return;
       }
 
-      // Limpiar cache de React Query
+      // --- INVALIDATE QUERIES (Restaurados todos los originales) ---
       queryClient.invalidateQueries(["alumnos-ldap"]);
       queryClient.invalidateQueries(["profesores-ldap"]);
       queryClient.invalidateQueries(["staff-ldap"]);
-
       queryClient.invalidateQueries(["todos-ldap"]);
       queryClient.invalidateQueries(["prestamos"]);
       queryClient.invalidateQueries(["reservasPanel"]);
       queryClient.invalidateQueries(["ldap-departamentos"]);
       queryClient.invalidateQueries(["ldap-cursos"]);
-
       queryClient.invalidateQueries(["estancias"]);
-
       queryClient.invalidateQueries(["extraescolares", "uid"]);
       queryClient.invalidateQueries(["extraescolares", "all"]);
-
       queryClient.invalidateQueries(["reservas"]);
-
       queryClient.invalidateQueries(["reservas", "dia"]);
       queryClient.invalidateQueries(["reservas", "uid"]);
-
       queryClient.invalidateQueries(["permisos", "todos"]);
       queryClient.invalidateQueries(["panel", "permisos"]);
       queryClient.invalidateQueries(["permisosMes"]);
-
       queryClient.invalidateQueries(["avisos"]);
       queryClient.invalidateQueries(["empleados"]);
       queryClient.invalidateQueries(["restricciones_asuntos"]);
@@ -96,9 +97,8 @@ export function LoginForm({ className, ...props }) {
       queryClient.invalidateQueries(["horario-profesorado"]);
       queryClient.invalidateQueries(["configuracion-centro"]);
       queryClient.invalidateQueries(["guardias"]);
+      // ------------------------------------------------------------
 
-
-      // Hacer check-auth con reintento
       const checkAuth = async (retries = 2) => {
         for (let i = 0; i < retries; i++) {
           const res = await fetch(`${API_URL}/check-auth`, {
@@ -107,7 +107,6 @@ export function LoginForm({ className, ...props }) {
 
           if (res.ok) return res.json();
 
-          // si 401, esperar un poco y reintentar
           if (res.status === 401) {
             await new Promise((r) => setTimeout(r, 200));
             continue;
@@ -118,10 +117,8 @@ export function LoginForm({ className, ...props }) {
         throw new Error("No autenticado");
       };
 
-      // Obtener usuario y perfil actual desde check-auth
       const data = await checkAuth();
 
-      // Actualizar contexto con los datos de usuario y perfil
       setUser({
         username: data.username,
         perfil: data.perfil ?? "profesor",
@@ -130,11 +127,10 @@ export function LoginForm({ className, ...props }) {
         employeeNumber: data.employeeNumber || null,
       });
 
-      // Redirigir al dashboard o ruta especial
       if (data.perfil === "ordenanza") {
-        navigate("/llavesPlantaBaja"); // ruta especial
+        navigate("/llavesPlantaBaja");
       } else {
-        navigate("/"); // ruta normal (dashboard)
+        navigate("/");
       }
     } catch (error) {
       alert("Error de conexión con el servidor");
@@ -150,16 +146,19 @@ export function LoginForm({ className, ...props }) {
       <Card>
         <CardHeader className="flex flex-col items-center justify-center text-center">
           <CardTitle className="text-2xl">miIES</CardTitle>
-          <CardDescription>{import.meta.env.VITE_IES_NAME}</CardDescription>
+          <CardDescription>{nombreIES}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
               <Avatar className="flex justify-center">
                 <AvatarImage
-                  src={`${import.meta.env.BASE_URL}public/miIES.png`}
+                  src={logoAMostrar}
                   alt="Logo"
-                  style={{ width: "25%", height: "25%" }}
+                  style={{ width: "25%", height: "25%", objectFit: "contain" }}
+                  onError={(e) => {
+                    e.target.src = `${import.meta.env.BASE_URL}public/miIES.png`;
+                  }}
                 />
               </Avatar>
               <div className="grid gap-2">
