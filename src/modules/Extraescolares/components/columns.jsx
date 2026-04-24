@@ -7,44 +7,28 @@ export const columnsExtraescolares = (cursos, periodos) => [
   {
     accessorKey: "fecha_inicio",
     header: "Inicio",
-    cell: ({ row }) => {
-      const fechaStr = row.original.fecha_inicio?.split(" ")[0]; // solo YYYY-MM-DD
-      return fechaStr ? format(parseISO(fechaStr), "dd/MM/yyyy") : "-";
-    },
-    filterFn: (row, columnId, filterValue) => {
-      if (!filterValue) return true;
-
-      const inicioActStr = row.original.fecha_inicio?.split(" ")[0];
-      const finActStr = row.original.fecha_fin?.split(" ")[0];
-      if (!inicioActStr || !finActStr) return false;
-
-      // Convertimos a Date y normalizamos horas
-      const inicioAct = new Date(inicioActStr);
-      const finAct = new Date(finActStr);
-      inicioAct.setHours(0, 0, 0, 0);
-      finAct.setHours(0, 0, 0, 0);
-
-      const desde = filterValue.desde ? new Date(filterValue.desde) : null;
-      const hasta = filterValue.hasta ? new Date(filterValue.hasta) : null;
-      if (desde) desde.setHours(0, 0, 0, 0);
-      if (hasta) hasta.setHours(0, 0, 0, 0);
-
-      // Solapamiento: mostramos si la actividad toca el rango del filtro
-      if (desde && finAct < desde) return false;  // termina antes del inicio del filtro
-      if (hasta && inicioAct > hasta) return false; // empieza después del fin del filtro
-
-      return true;
-    },
+    filterFn: "dateRange",
+    cell: ({ row }) => (
+      <span className="whitespace-nowrap text-[11px]">
+        {row.original.fecha_inicio
+          ? format(
+              parseISO(row.original.fecha_inicio.split(" ")[0]),
+              "dd/MM/yyyy"
+            )
+          : "-"}
+      </span>
+    ),
   },
-
-  // --- FECHA FIN ---
   {
     accessorKey: "fecha_fin",
     header: "Fin",
-    cell: ({ row }) => {
-      const fechaStr = row.original.fecha_fin?.split(" ")[0];
-      return fechaStr ? format(parseISO(fechaStr), "dd/MM/yyyy") : "-";
-    },
+    cell: ({ row }) => (
+      <span className="whitespace-nowrap text-[11px]">
+        {row.original.fecha_fin
+          ? format(parseISO(row.original.fecha_fin.split(" ")[0]), "dd/MM/yyyy")
+          : "-"}
+      </span>
+    ),
   },
   {
     id: "periodo",

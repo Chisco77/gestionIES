@@ -19,6 +19,7 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import {
   ChevronsLeft,
@@ -30,6 +31,8 @@ import {
   Trash2,
   Printer,
   FileText,
+  Search,
+  MapPin,
 } from "lucide-react";
 
 import {
@@ -65,7 +68,6 @@ import { generateInformeReservasPeriodicas } from "@/Informes/reservas";
 import { generateInformeReservasPeriodicasProfesor } from "@/Informes/reservas";
 import { toast } from "sonner";
 
-
 export function TablaReservasPeriodicas() {
   const [sorting, setSorting] = useState([{ id: "fecha_desde", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -80,36 +82,31 @@ export function TablaReservasPeriodicas() {
   const [reservaEliminar, setReservaEliminar] = useState(null);
 
   const estanciasUnicas = Array.from(
-    new Set(reservas.map((r) => r.descripcion_estancia).filter(Boolean)),
+    new Set(reservas.map((r) => r.descripcion_estancia).filter(Boolean))
   ).sort();
 
   const handleGenerarInformeReservasPeriodicas = () => {
     const filasFiltradas = table
       .getFilteredRowModel()
       .rows.map((row) => row.original);
-
     if (!filasFiltradas.length) {
       toast.info("No hay reservas periódicas que coincidan con los filtros.");
       return;
     }
-
     generateInformeReservasPeriodicas(filasFiltradas, periodosDB);
   };
 
-    const handleGenerarInformeReservasPeriodicasProfesor = () => {
+  const handleGenerarInformeReservasPeriodicasProfesor = () => {
     const filasFiltradas = table
       .getFilteredRowModel()
       .rows.map((row) => row.original);
-
     if (!filasFiltradas.length) {
       toast.info("No hay reservas periódicas que coincidan con los filtros.");
       return;
     }
-
     generateInformeReservasPeriodicasProfesor(filasFiltradas, periodosDB);
   };
 
-  
   const table = useReactTable({
     data: reservas,
     columns: [
@@ -118,7 +115,7 @@ export function TablaReservasPeriodicas() {
         id: "acciones",
         header: "Acciones",
         cell: ({ row }) => (
-          <div className="flex gap-2">
+          <div className="flex gap-1 justify-end">
             {/* EDITAR */}
             <TooltipProvider>
               <Tooltip>
@@ -126,16 +123,16 @@ export function TablaReservasPeriodicas() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="text-blue-600"
+                    className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     onClick={() => {
                       setReservaSeleccionada(row.original);
                       setOpenEditar(true);
                     }}
                   >
-                    <Pencil className="w-4 h-4" />
+                    <Pencil className="w-3.5 h-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="bg-blue-600 text-white">
                   <p>Editar reserva periódica</p>
                 </TooltipContent>
               </Tooltip>
@@ -148,13 +145,13 @@ export function TablaReservasPeriodicas() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="text-red-600"
+                    className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
                     onClick={() => {
                       setReservaEliminar(row.original);
                       setOpenEliminar(true);
                     }}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="bg-red-600 text-white">
@@ -166,10 +163,7 @@ export function TablaReservasPeriodicas() {
         ),
       },
     ],
-    state: {
-      sorting,
-      columnFilters,
-    },
+    state: { sorting, columnFilters },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -177,7 +171,7 @@ export function TablaReservasPeriodicas() {
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
-      pagination: { pageIndex: 0, pageSize: 6 },
+      pagination: { pageIndex: 0, pageSize: 5 },
     },
   });
 
@@ -185,64 +179,72 @@ export function TablaReservasPeriodicas() {
   const totalPages = table.getPageCount();
 
   const limpiarFiltros = () => {
-    table.getAllColumns().forEach((col) => {
-      if (col.getCanFilter()) col.setFilterValue("");
-    });
+    table.resetColumnFilters();
     table.resetSorting();
     table.resetPagination();
+    toast.info("Filtros restablecidos");
   };
 
   if (isLoading) {
     return (
-      <div className="text-sm text-muted-foreground p-4">
+      <div className="text-sm text-muted-foreground p-8 text-center animate-pulse">
         Cargando reservas periódicas…
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      {/* FILTROS */}
-      <div className="p-2 border rounded-md bg-muted/40">
-        <div className="flex flex-wrap gap-4 items-end text-sm">
+    <div className="space-y-1">
+      {/* PANEL DE FILTROS ESTILO CLOUD */}
+      <div className="p-3 border rounded-xl bg-slate-50/50 shadow-sm mb-2">
+        <div className="flex flex-wrap items-end gap-3 w-full">
           {/* Filtro Creada por */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Creada por ...
+          <div className="flex-1 min-w-[140px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">
+              Creada por
             </label>
-            <Input
-              className="h-8 w-[180px] text-sm"
-              placeholder="Buscar solicitante…"
-              value={table.getColumn("nombreCreador")?.getFilterValue() ?? ""}
-              onChange={(e) =>
-                table.getColumn("nombreCreador")?.setFilterValue(e.target.value)
-              }
-            />
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                className="h-9 w-full text-xs bg-white pl-8 shadow-sm"
+                placeholder="Solicitante..."
+                value={table.getColumn("nombreCreador")?.getFilterValue() ?? ""}
+                onChange={(e) =>
+                  table
+                    .getColumn("nombreCreador")
+                    ?.setFilterValue(e.target.value)
+                }
+              />
+            </div>
           </div>
 
           {/* Filtro Creada para */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Creada Para ...
+          <div className="flex-1 min-w-[140px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">
+              Creada para
             </label>
-            <Input
-              className="h-8 w-[180px] text-sm"
-              placeholder="Buscar profesor…"
-              value={table.getColumn("nombreProfesor")?.getFilterValue() ?? ""}
-              onChange={(e) =>
-                table
-                  .getColumn("nombreProfesor")
-                  ?.setFilterValue(e.target.value)
-              }
-            />
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                className="h-9 w-full text-xs bg-white pl-8 shadow-sm"
+                placeholder="Profesor/a..."
+                value={
+                  table.getColumn("nombreProfesor")?.getFilterValue() ?? ""
+                }
+                onChange={(e) =>
+                  table
+                    .getColumn("nombreProfesor")
+                    ?.setFilterValue(e.target.value)
+                }
+              />
+            </div>
           </div>
 
           {/* Filtro Estancia */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Estancia
+          <div className="flex-1 min-w-[160px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">
+              Estancia / Aula
             </label>
-
             <Select
               value={
                 table.getColumn("descripcion_estancia")?.getFilterValue() ??
@@ -254,12 +256,14 @@ export function TablaReservasPeriodicas() {
                   ?.setFilterValue(value === "__all__" ? "" : value)
               }
             >
-              <SelectTrigger className="h-8 w-[180px] text-sm">
-                <SelectValue placeholder="Todas las estancias" />
+              <SelectTrigger className="h-9 w-full text-xs bg-white shadow-sm">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                  <SelectValue placeholder="Todas" />
+                </div>
               </SelectTrigger>
-
               <SelectContent>
-                <SelectItem value="__all__">Todas</SelectItem>
+                <SelectItem value="__all__">Todas las estancias</SelectItem>
                 {estanciasUnicas.map((estancia) => (
                   <SelectItem key={estancia} value={estancia}>
                     {estancia}
@@ -268,154 +272,191 @@ export function TablaReservasPeriodicas() {
               </SelectContent>
             </Select>
           </div>
-          {/* Limpiar filtros */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 px-3 flex items-center gap-2"
-            onClick={limpiarFiltros}
-          >
-            <Eraser className="w-4 h-4" />
-            Limpiar filtros
-          </Button>
-          {/* Botones a la derecha */}
-          <div className="flex items-center gap-2 ml-auto">
-            {/* Impresora / informes */}
+
+          {/* Botón Limpiar */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors shadow-sm"
+                  onClick={limpiarFiltros}
+                >
+                  <Eraser className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Limpiar filtros</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {/* Sección Informes */}
+          <div className="flex items-center gap-2 ml-auto pl-4 border-l border-slate-200 h-10">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8">
-                  <Printer className="h-4 w-4" />
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-9 px-4 bg-slate-800 hover:bg-slate-900 shadow-md"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  <span className="text-xs">Informes</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem
                   onClick={handleGenerarInformeReservasPeriodicas}
+                  className="cursor-pointer"
                 >
                   <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Reservas periódicas por aula
+                  Reservas por aula
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleGenerarInformeReservasPeriodicasProfesor}
+                  className="cursor-pointer"
                 >
-                  <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Reservas periódicas por profesor
-                </DropdownMenuItem>                
+                  <FileText className="mr-2 h-4 w-4 text-blue-500" />
+                  Reservas por profesor
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
       </div>
 
-      {/* TABLA */}
-      <div className="rounded-md border max-h-[288px] overflow-y-auto text-sm">
-        <Table>
-          <TableHeader className="bg-muted/50 sticky top-0 z-10">
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
-                {hg.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="cursor-pointer select-none"
-                  >
-                    <div
-                      onClick={header.column.getToggleSortingHandler()}
-                      className="flex items-center gap-1"
+      {/* TABLA PRINCIPAL */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="max-h-[380px] overflow-y-auto">
+          <Table>
+            <TableHeader className="bg-slate-50/80 sticky top-0 z-10">
+              {table.getHeaderGroups().map((hg) => (
+                <TableRow key={hg.id} className="hover:bg-transparent">
+                  {hg.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className="h-10 text-[11px] font-bold text-slate-600 uppercase"
                     >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                      {{
-                        asc: "↑",
-                        desc: "↓",
-                      }[header.column.getIsSorted()] ?? ""}
-                    </div>
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="h-6">
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="py-0.5 min-h-6 align-middle"
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
+                      <div
+                        onClick={header.column.getToggleSortingHandler()}
+                        className={cn(
+                          "flex items-center gap-1",
+                          header.column.getCanSort() &&
+                            "cursor-pointer select-none"
+                        )}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                        {{ asc: " ↑", desc: " ↓" }[
+                          header.column.getIsSorted()
+                        ] ?? ""}
+                      </div>
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getAllColumns().length}
-                  className="text-center h-24"
-                >
-                  No hay reservas periódicas
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="hover:bg-slate-50/50 transition-colors border-slate-100"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="py-2 px-4 text-[11px] text-slate-700"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={table.getAllColumns().length}
+                    className="h-32 text-center text-slate-400 italic"
+                  >
+                    No se han encontrado reservas periódicas.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
-      {/* PAGINACIÓN */}
-      <div className="flex items-center py-1 text-xs">
-        <div className="flex-1" />
-        <div className="flex items-center space-x-1">
+      {/* PAGINACIÓN ESTILO CLOUD */}
+      <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-2 bg-white border border-t-0 border-slate-200 rounded-b-xl shadow-sm -mt-4">
+        <div className="hidden sm:block flex-1" />
+
+        <div className="flex items-center space-x-1.5 flex-1 justify-center">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7 text-slate-500 hover:text-slate-900"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronsLeft className="w-3 h-3" />
+            <ChevronsLeft className="w-4 h-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7 text-slate-500 hover:text-slate-900"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronLeft className="w-3 h-3" />
+            <ChevronLeft className="w-4 h-4" />
           </Button>
-          <span className="px-2 text-muted-foreground">
-            Página {currentPage} de {totalPages}
-          </span>
+
+          <div className="flex items-center justify-center min-w-[90px] text-[10px] uppercase tracking-wider font-bold text-slate-400">
+            Pág.{" "}
+            <span className="text-slate-900 ml-1">
+              {currentPage} / {totalPages}
+            </span>
+          </div>
+
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7 text-slate-500 hover:text-slate-900"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronRight className="w-3 h-3" />
+            <ChevronRight className="w-4 h-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7 text-slate-500 hover:text-slate-900"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronsRight className="w-3 h-3" />
+            <ChevronsRight className="w-4 h-4" />
           </Button>
         </div>
-        <div className="flex-1 text-right text-muted-foreground">
-          Total: {table.getFilteredRowModel().rows.length}
+
+        <div className="flex-1 flex justify-end">
+          <div className="text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3 py-1 rounded-md uppercase">
+            Total:{" "}
+            <span className="text-blue-600 font-extrabold">
+              {table.getFilteredRowModel().rows.length}
+            </span>
+          </div>
         </div>
       </div>
 
+      {/* MODALES */}
       <DialogoEliminarReservaPeriodica
         open={openEliminar}
         onOpenChange={(v) => {

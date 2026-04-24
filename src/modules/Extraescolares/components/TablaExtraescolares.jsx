@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -24,20 +24,16 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
-  CalendarIcon,
   Check,
   X,
   Pencil,
   Eraser,
+  Search,
+  Printer,
+  FileText,
+  Grid,
 } from "lucide-react";
 
-import { es } from "date-fns/locale";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -45,9 +41,8 @@ import { toast } from "sonner";
 import { columnsExtraescolares } from "./columns";
 
 // Diálogos
-import { DialogoEditarExtraescolar } from "../components/DialogoEditarExtraescolar";
-import { DialogoConfirmacionExtraescolar } from "./DialogoConfirmacionExtraescolar";
-
+import { DialogoEditarExtraescolar } from "@/modules/Extraescolares/components/DialogoEditarExtraescolar";
+import { DialogoConfirmacionExtraescolar } from "@/modules/Extraescolares/components/DialogoConfirmacionExtraescolar";
 import { useCursosLdap } from "@/hooks/useCursosLdap";
 import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
@@ -60,8 +55,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Printer, FileText, Grid } from "lucide-react";
-
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -69,189 +62,152 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-import { generateListadoExtraescolaresPorProfesor } from "@/Informes/extraescolares";
-import { generateListadoExtraescolaresPorFecha } from "@/Informes/extraescolares";
-import { generateListadoExtraescolaresPorDepartamento } from "@/Informes/extraescolares";
-import { generateListadoExtraescolaresPorDepartamentoXLS } from "@/Informes/extraescolares";
-import { generateListadoExtraescolaresMensual } from "@/Informes/extraescolares";
+import {
+  generateListadoExtraescolaresPorProfesor,
+  generateListadoExtraescolaresPorFecha,
+  generateListadoExtraescolaresPorDepartamento,
+  generateListadoExtraescolaresPorDepartamentoXLS,
+  generateListadoExtraescolaresMensual,
+} from "@/Informes/extraescolares";
 
 import { getCursoActual, ddmmyyyyToISO } from "@/utils/fechasHoras";
+import { format } from "date-fns";
 
-export function TablaExtraescolares({ user, fecha }) {
+// Función de filtrado por rango de fechas
+const dateRangeFilter = (row, columnId, value) => {
+  const [desde, hasta] = value || [];
+  if (!desde && !hasta) return true;
+  const fInicioAct = row.original.fecha_inicio?.split(" ")[0];
+  const fFinAct = row.original.fecha_fin?.split(" ")[0] || fInicioAct;
+  if (desde && fFinAct < desde) return false;
+  if (hasta && fInicioAct > hasta) return false;
+  return true;
+};
+
+export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
+  const API_URL = `${import.meta.env.VITE_SERVER_URL}${import.meta.env.VITE_API_URL}`;
+
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
-  //  const API_URL = import.meta.env.VITE_API_URL;
-  const API_URL = `${import.meta.env.VITE_SERVER_URL}${import.meta.env.VITE_API_URL}`;
 
-  // Estados de diálogos
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [dialogConfirmOpen, setDialogConfirmOpen] = useState(false);
   const [seleccionado, setSeleccionado] = useState(null);
   const [accion, setAccion] = useState(null);
 
-  // Hooks de datos
   const { data: departamentos = [] } = useDepartamentosLdap();
   const { data: cursos = [] } = useCursosLdap();
   const { data: periodos = [] } = usePeriodosHorarios();
   const { data: extraescolaresTodas = [] } = useExtraescolaresAll();
 
-  const handleGenerarExtraescolaresProfesor = () => {
-    const filasFiltradas = table
-      .getFilteredRowModel()
-      .rows.map((row) => row.original);
-
-    if (!filasFiltradas.length) {
-      toast.info("No hay actividades que coincidan con los filtros.");
-      return;
+  // Dietas XLS
+  const handleGenerarExcel = async (actividad) => {
+    try {
+      const res = await fetch(`${API_URL}/excel-dietas/generar-excel`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(actividad),
+      });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Dietas.zip`;
+      a.click();
+      toast.success("ZIP generado");
+    } catch (e) {
+      toast.error("Error al generar dietas");
     }
-
-    let desde = fechaDesde;
-    let hasta = fechaHasta;
-
-    // Si el filtro de fechas está vacío, usamos el curso actual
-    if (!desde || !hasta) {
-      const curso = getCursoActual();
-      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
-      hasta = ddmmyyyyToISO(curso.finCurso);
-    }
-
-    generateListadoExtraescolaresPorProfesor(filasFiltradas, {
-      desde,
-      hasta,
-    });
   };
 
-  const handleGenerarExtraescolaresDepartamento = () => {
-    const filasFiltradas = table
-      .getFilteredRowModel()
-      .rows.map((row) => row.original);
-
-    if (!filasFiltradas.length) {
-      toast.info("No hay actividades que coincidan con los filtros.");
-      return;
-    }
-
-    let desde = fechaDesde;
-    let hasta = fechaHasta;
-
-    // Si el filtro de fechas está vacío, usamos el curso actual
-    if (!desde || !hasta) {
-      const curso = getCursoActual();
-      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
-      hasta = ddmmyyyyToISO(curso.finCurso);
-    }
-    // informe
-    generateListadoExtraescolaresPorDepartamento(filasFiltradas, {
-      desde,
-      hasta,
-    });
-  };
-
-  const handleGenerarExtraescolaresDepartamentoXLS = () => {
-    const filasFiltradas = table
-      .getFilteredRowModel()
-      .rows.map((row) => row.original);
-
-    if (!filasFiltradas.length) {
-      toast.info("No hay actividades que coincidan con los filtros.");
-      return;
-    }
-
-    let desde = fechaDesde;
-    let hasta = fechaHasta;
-
-    // Si el filtro de fechas está vacío, usamos el curso actual
-    if (!desde || !hasta) {
-      const curso = getCursoActual();
-      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
-      hasta = ddmmyyyyToISO(curso.finCurso);
-    }
-    // informe
-    generateListadoExtraescolaresPorDepartamentoXLS(filasFiltradas, {
-      desde,
-      hasta,
-    });
-  };
-
-  const handleGenerarExtraescolaresFecha = () => {
-    const filasFiltradas = table
-      .getFilteredRowModel()
-      .rows.map((row) => row.original);
-
-    // informe
-    generateListadoExtraescolaresPorFecha(filasFiltradas);
-  };
-
-  const handleGenerarExtraescolaresMensual = () => {
-    const filasFiltradas = table
-      .getFilteredRowModel()
-      .rows.map((row) => row.original);
-
-    if (!filasFiltradas.length) {
-      toast.info("No hay actividades que coincidan con los filtros.");
-      return;
-    }
-
-    let desde = fechaDesde;
-    let hasta = fechaHasta;
-
-    // Si el filtro de fechas está vacío, usamos el curso actual
-    if (!desde || !hasta) {
-      const curso = getCursoActual();
-      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
-      hasta = ddmmyyyyToISO(curso.finCurso);
-    }
-
-    // informe
-    generateListadoExtraescolaresMensual(filasFiltradas, {
-      desde,
-      hasta,
-    });
-  };
-
-  // Filtramos solo las extraescolares aceptadas
-  const extraescolaresAceptadas = useMemo(
-    () => (extraescolaresTodas || []).filter((a) => a.estado === 1),
-    [extraescolaresTodas]
-  );
-
-  // Tabla
   const table = useReactTable({
-    data: extraescolaresAceptadas,
+    data: extraescolaresTodas,
     columns: [
       ...columnsExtraescolares(cursos, periodos),
       {
         id: "acciones",
         header: "Acciones",
-        cell: ({ row }) => (
-          <div className="flex gap-2">
-            {/* EDITAR */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => {
-                      setEditItem(row.original);
-                      setEditOpen(true);
-                    }}
-                  >
-                    <Pencil className="w-4 h-4 text-blue-600" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="bg-[#1DA1F2] text-white">
-                  <p>Editar/Ver actividad</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        ),
+        cell: ({ row }) => {
+          // Determinamos si es modo "Directiva" (si tiene permisos para aceptar)
+          // O si simplemente quieres mostrar solo editar para usuarios normales
+          const esAdmin = !!row.original.id; // Aquí podrías usar una prop o user.role
+
+          return (
+            <div className="flex gap-1 justify-end">
+              <TooltipProvider>
+                <div className="flex items-center gap-0.5">
+                  {/* BOTONES EXCLUSIVOS DE DIRECTIVA (Aceptar/Rechazar) */}
+                  {soloPendientesInicial && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6 text-green-600 hover:bg-green-50"
+                            onClick={() =>
+                              handleAccion(row.original, "aceptar")
+                            }
+                          >
+                            <Check size={14} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-green-600 text-white text-[10px]">
+                          Aceptar
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6 text-red-600 hover:bg-red-50"
+                            onClick={() =>
+                              handleAccion(row.original, "rechazar")
+                            }
+                          >
+                            <X size={14} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-red-600 text-white text-[10px]">
+                          Rechazar
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
+
+                  {/* BOTÓN COMÚN: EDITAR/VER */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 text-blue-600 hover:bg-blue-50"
+                        onClick={() => {
+                          setEditItem(row.original);
+                          setEditOpen(true);
+                        }}
+                      >
+                        <Pencil size={14} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-blue-600 text-white text-[10px]">
+                      Ver / Editar
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            </div>
+          );
+        },
       },
     ],
+    filterFns: { dateRange: dateRangeFilter },
     state: { sorting, columnFilters },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -262,100 +218,109 @@ export function TablaExtraescolares({ user, fecha }) {
     initialState: { pagination: { pageIndex: 0, pageSize: 6 } },
   });
 
-  // ----- Actualizamos el filtro de rango cuando cambia la prop fecha -----
+  // Filtros iniciales y efectos
+  useEffect(() => {
+    if (soloPendientesInicial) table.getColumn("estado")?.setFilterValue(true);
+  }, [soloPendientesInicial]);
+
   useEffect(() => {
     if (fecha) {
       setFechaDesde(fecha);
       setFechaHasta(fecha);
-    } else {
-      setFechaDesde("");
-      setFechaHasta("");
     }
   }, [fecha]);
 
-  // ----- Aplicamos el filtro de rango a la columna -----
   useEffect(() => {
     table
       .getColumn("fecha_inicio")
-      ?.setFilterValue({ desde: fechaDesde, hasta: fechaHasta });
-  }, [fechaDesde, fechaHasta, table]);
+      ?.setFilterValue(
+        fechaDesde || fechaHasta ? [fechaDesde, fechaHasta] : undefined
+      );
+  }, [fechaDesde, fechaHasta]);
 
-  // ----- Confirmar aceptar / rechazar -----
   const handleAccion = (item, tipo) => {
     setSeleccionado(item);
     setAccion(tipo);
     setDialogConfirmOpen(true);
   };
 
-  const confirmarAccion = async () => {
-    if (!seleccionado) return;
-    const nuevoEstado = accion === "aceptar" ? 1 : 2;
-
-    try {
-      const res = await fetch(
-        `${API_URL}/db/extraescolares/estado/${seleccionado.id}`,
-        {
-          method: "PATCH",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ estado: nuevoEstado }),
-        }
-      );
-      const r = await res.json();
-      if (!res.ok) {
-        toast.error(r.error || "Error al actualizar");
-        return;
-      }
-      toast.success(
-        nuevoEstado === 1 ? "Actividad aceptada" : "Actividad rechazada"
-      );
-      setDialogConfirmOpen(false);
-    } catch (e) {
-      toast.error("Error de conexión");
-    }
+  const getFiltrosFechas = () => {
+    if (fechaDesde && fechaHasta)
+      return { desde: fechaDesde, hasta: fechaHasta };
+    const curso = getCursoActual();
+    return {
+      desde: ddmmyyyyToISO(curso.inicioCurso),
+      hasta: ddmmyyyyToISO(curso.finCurso),
+    };
   };
 
-  const formatLocalDate = (d) => d.toLocaleDateString("sv-SE");
+  const limpiarTodosLosFiltros = () => {
+    setFechaDesde("");
+    setFechaHasta("");
+    table.resetColumnFilters();
+    toast.info("Filtros restablecidos");
+  };
 
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
 
-  const limpiarTodosLosFiltros = () => {
-    // Limpia estados locales
-    setFechaDesde("");
-    setFechaHasta("");
-
-    // Limpia filtros de la tabla
-    table.resetColumnFilters();
-    table.resetGlobalFilter();
-    table.resetSorting(); // Si quieres que también quite la ordenación
-    table.resetPagination(); // Opcional, si quieres volver a la página 1
-  };
-
   return (
-    <div className="space-y-2">
+    <div className="space-y-1 w-full max-w-full overflow-hidden">
       {/* FILTROS */}
-      <div className="p-2 border rounded-md space-y-3 bg-muted/40">
-        <div className="flex flex-wrap gap-4 items-end text-sm">
-          <div>
-            <label className="text-xs font-medium">Profesor</label>
-            <Input
-              className="h-8 text-sm"
-              placeholder="Buscar..."
-              value={table.getColumn("actualizadaPor")?.getFilterValue() ?? ""}
-              onChange={(e) =>
-                table
-                  .getColumn("actualizadaPor")
-                  ?.setFilterValue(e.target.value)
-              }
-            />
+      <div className="p-3 border rounded-xl bg-slate-50/50 shadow-sm mb-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex items-end gap-2 p-1.5 bg-white rounded-lg border border-slate-200 shadow-sm">
+            <div className="space-y-0.5">
+              <label className="block text-[10px] uppercase font-bold text-slate-400 text-center">
+                Desde
+              </label>
+              <Input
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => setFechaDesde(e.target.value)}
+                className="w-[130px] h-7 border-none p-0 text-xs text-center bg-transparent focus-visible:ring-0"
+              />
+            </div>
+            <div className="h-7 w-[1px] bg-slate-100 mx-0.5" />
+            <div className="space-y-0.5">
+              <label className="block text-[10px] uppercase font-bold text-slate-400 text-center">
+                Hasta
+              </label>
+              <Input
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => setFechaHasta(e.target.value)}
+                className="w-[130px] h-7 border-none p-0 text-xs text-center bg-transparent focus-visible:ring-0"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="text-xs font-medium">Título</label>
+          <div className="flex-1 min-w-[140px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">
+              Responsable
+            </label>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                className="h-8 w-full text-[11px] bg-white pl-7 shadow-sm"
+                placeholder="Buscar..."
+                value={table.getColumn("responsables")?.getFilterValue() ?? ""}
+                onChange={(e) =>
+                  table
+                    .getColumn("responsables")
+                    ?.setFilterValue(e.target.value)
+                }
+              />
+            </div>
+          </div>
+
+          <div className="flex-[1.5] min-w-[180px] space-y-1">
+            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">
+              Actividad
+            </label>
             <Input
-              className="h-8 text-sm"
-              placeholder="Buscar..."
+              className="h-8 w-full text-[11px] bg-white shadow-sm"
+              placeholder="Título..."
               value={table.getColumn("titulo")?.getFilterValue() ?? ""}
               onChange={(e) =>
                 table.getColumn("titulo")?.setFilterValue(e.target.value)
@@ -363,90 +328,88 @@ export function TablaExtraescolares({ user, fecha }) {
             />
           </div>
 
-          {/* Rango fechas */}
-          <div>
-            <label className="text-xs font-medium">Rango fechas</label>
-            <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "h-8 w-[240px] justify-start text-left text-sm",
-                      !fechaDesde && !fechaHasta && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {fechaDesde && fechaHasta
-                      ? `${new Date(fechaDesde).toLocaleDateString()} - ${new Date(
-                          fechaHasta
-                        ).toLocaleDateString()}`
-                      : "Seleccionar rango"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="p-0">
-                  <Calendar
-                    mode="range"
-                    numberOfMonths={2}
-                    locale={es}
-                    selected={{
-                      from: fechaDesde ? new Date(fechaDesde) : undefined,
-                      to: fechaHasta ? new Date(fechaHasta) : undefined,
-                    }}
-                    onSelect={(range) => {
-                      setFechaDesde(
-                        range?.from ? formatLocalDate(range.from) : ""
-                      );
-                      setFechaHasta(range?.to ? formatLocalDate(range.to) : "");
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 text-slate-400"
+            onClick={limpiarTodosLosFiltros}
+          >
+            <Eraser size={14} />
+          </Button>
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 text-xs flex items-center gap-2"
-                onClick={limpiarTodosLosFiltros}
+          <div className="flex items-center gap-3 ml-auto pl-4 border-l border-slate-200">
+            <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-slate-100 shadow-sm">
+              <Switch
+                id="pend-ext"
+                className="scale-75 data-[state=checked]:bg-yellow-600"
+                checked={table.getColumn("estado")?.getFilterValue() === true}
+                onCheckedChange={(c) =>
+                  table.getColumn("estado")?.setFilterValue(c ? true : null)
+                }
+              />
+              <label
+                htmlFor="pend-ext"
+                className="text-[10px] font-bold text-slate-600 uppercase cursor-pointer"
               >
-                <Eraser className="w-4 h-4" />
-                Limpiar filtros
-              </Button>
+                Pendientes
+              </label>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3 ml-auto">
-            {/* Menú informes */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8">
-                  <Printer className="h-4 w-4" />
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-8 px-3 bg-slate-800 hover:bg-slate-900 shadow-md"
+                >
+                  <Printer className="h-3.5 w-3.5 mr-2" />{" "}
+                  <span className="text-[11px]">Informes</span>
                 </Button>
               </DropdownMenuTrigger>
-
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleGenerarExtraescolaresMensual}>
-                  <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Agenda extraescolares mensual
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={handleGenerarExtraescolaresProfesor}>
-                  <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Agenda extraescolares por profesor
-                </DropdownMenuItem>
-
+              <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem
-                  onClick={handleGenerarExtraescolaresDepartamento}
+                  onClick={() =>
+                    generateListadoExtraescolaresMensual(
+                      table.getFilteredRowModel().rows.map((r) => r.original),
+                      getFiltrosFechas()
+                    )
+                  }
                 >
-                  <FileText className="mr-2 h-4 w-4 text-red-500" />
-                  Agenda extraescolares por departamento
+                  <FileText className="mr-2 h-4 w-4 text-red-500" /> Agenda
+                  mensual
                 </DropdownMenuItem>
-
                 <DropdownMenuItem
-                  onClick={handleGenerarExtraescolaresDepartamentoXLS}
+                  onClick={() =>
+                    generateListadoExtraescolaresPorProfesor(
+                      table.getFilteredRowModel().rows.map((r) => r.original),
+                      getFiltrosFechas()
+                    )
+                  }
                 >
-                  <Grid className="mr-2 h-4 w-4 text-green-500" />
-                  Agenda extraescolares por departamento (XLS)
+                  <FileText className="mr-2 h-4 w-4 text-blue-500" /> Por
+                  profesor
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    generateListadoExtraescolaresPorDepartamento(
+                      table.getFilteredRowModel().rows.map((r) => r.original),
+                      getFiltrosFechas()
+                    )
+                  }
+                >
+                  <FileText className="mr-2 h-4 w-4 text-orange-500" />{" "}
+                  Departamento (PDF)
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    generateListadoExtraescolaresPorDepartamentoXLS(
+                      table.getFilteredRowModel().rows.map((r) => r.original),
+                      getFiltrosFechas()
+                    )
+                  }
+                >
+                  <Grid className="mr-2 h-4 w-4 text-green-600" /> Departamento
+                  (XLS)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -454,119 +417,140 @@ export function TablaExtraescolares({ user, fecha }) {
         </div>
       </div>
 
-      {/* TABLA */}
-      <div className="rounded-md border max-h-[288px] overflow-y-auto">
-        <Table>
-          <TableHeader className="bg-muted/50 sticky top-0 z-10">
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
-                {hg.headers.map((h) => (
-                  <TableHead key={h.id}>
-                    <div
-                      className="flex items-center gap-1 cursor-pointer select-none"
-                      onClick={h.column.getToggleSortingHandler()}
+      {/* TABLA CON SCROLL HORIZONTAL CONTROLADO */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-slate-50/80">
+              {table.getHeaderGroups().map((hg) => (
+                <TableRow key={hg.id} className="hover:bg-transparent">
+                  {hg.headers.map((h) => (
+                    <TableHead
+                      key={h.id}
+                      className="h-9 text-[10px] font-bold text-slate-500 uppercase tracking-wider"
                     >
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                      {{ asc: "↑", desc: "↓" }[h.column.getIsSorted()] ?? ""}
-                    </div>
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-0.5">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
+                      <div
+                        className={cn(
+                          "flex items-center gap-1",
+                          h.column.getCanSort() && "cursor-pointer"
+                        )}
+                        onClick={h.column.getToggleSortingHandler()}
+                      >
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                        {{ asc: " ↑", desc: " ↓" }[h.column.getIsSorted()] ??
+                          ""}
+                      </div>
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={table.getAllColumns().length}>
-                  No hay actividades extraescolares
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="hover:bg-slate-50/50 transition-colors border-slate-100"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="py-1.5 px-4 text-[11px] text-slate-700 whitespace-nowrap max-w-[250px] overflow-hidden text-ellipsis"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={table.getAllColumns().length}
+                    className="h-32 text-center text-slate-400 italic"
+                  >
+                    No hay resultados.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
-      {/* Paginación */}
-      <div className="flex flex-col sm:flex-row items-center py-1 space-y-4 sm:space-y-0 text-xs">
-        <div className="flex-1"></div>
-
-        <div className="flex items-center justify-center space-x-1 flex-1">
+      {/* PAGINACIÓN */}
+      <div className="flex items-center justify-between px-3 py-2 bg-white border border-t-0 border-slate-200 rounded-b-xl shadow-sm -mt-4">
+        <div className="hidden sm:block flex-1" />
+        <div className="flex items-center space-x-1 flex-1 justify-center">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronsLeft className="w-3 h-3" />
+            <ChevronsLeft size={14} />
           </Button>
-
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronLeft className="w-3 h-3" />
+            <ChevronLeft size={14} />
           </Button>
-
-          <span className="px-2 text-muted-foreground">
-            Página {currentPage} de {totalPages}
-          </span>
-
+          <div className="text-[10px] font-bold text-slate-400 min-w-[70px] text-center uppercase">
+            Pág.{" "}
+            <span className="text-slate-900">
+              {currentPage} / {totalPages}
+            </span>
+          </div>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronRight className="w-3 h-3" />
+            <ChevronRight size={14} />
           </Button>
-
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0"
+            className="h-7 w-7"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronsRight className="w-3 h-3" />
+            <ChevronsRight size={14} />
           </Button>
         </div>
-
-        <div className="flex-1 text-right text-xs text-muted-foreground">
-          Total de registros: {table.getFilteredRowModel().rows.length}
+        <div className="flex-1 flex justify-end">
+          <div className="text-[10px] font-bold text-slate-500 bg-slate-50 border px-3 py-1 rounded-md uppercase">
+            Total:{" "}
+            <span className="text-blue-600 font-black">
+              {table.getFilteredRowModel().rows.length}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* DIÁLOGOS */}
+      {/* MODALES */}
       {editOpen && editItem && (
         <DialogoEditarExtraescolar
           open={editOpen}
-          onClose={() => setEditOpen(false)}
+          onClose={() => {
+            setEditOpen(false);
+            setEditItem(null);
+          }}
           actividad={editItem}
           periodos={periodos}
           departamentos={departamentos}
           cursos={cursos}
         />
       )}
-
       {dialogConfirmOpen && seleccionado && (
         <DialogoConfirmacionExtraescolar
           open={dialogConfirmOpen}
