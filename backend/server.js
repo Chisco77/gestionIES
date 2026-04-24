@@ -64,9 +64,9 @@ async function initServer() {
       })
     );
 
-
-    app.use(express.json());
-
+    app.use(express.json({ limit: "10mb" }));
+    app.use(express.urlencoded({ limit: "10mb", extended: true }));
+    
     app.use(
       session({
         store: new pgSession({
@@ -129,6 +129,5 @@ async function initServer() {
 
 // Inicializa el servidor
 initServer().then((transporter) => {
-  // Si quieres, puedes exportar el transporter globalmente
   app.locals.transporter = transporter;
 });
