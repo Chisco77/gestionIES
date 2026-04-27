@@ -19,7 +19,6 @@
  * const { data: centro, isLoading } = useConfiguracionCentro();
  */
 
-
 import { useQuery } from "@tanstack/react-query";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -55,16 +54,20 @@ export function useConfiguracionCentro() {
         webUrl: c.web_url || "",
 
         // Logo de la aplicación (miIES)
-        logoUrl: c.logo_miies_url || "",
+        logoMiiesUrl: c.logo_miies_url || "",
 
-        // NUEVO: Logo institucional del centro
+        // Logo institucional del centro
         logoCentroUrl: c.logo_centro_url || "",
+
+        // NUEVO: Favicon personalizado del centro
+        faviconUrl: c.favicon_url || "",
 
         updatedAt: c.updated_at,
       };
     },
-    staleTime: 1000 * 60 * 60,
-    cacheTime: 1000 * 60 * 60 * 24,
+    // Configuraciones de React Query (v4/v5)
+    staleTime: 1000 * 60 * 60, // 1 hora
+    cacheTime: 1000 * 60 * 60 * 24, // 24 horas (en v5 se llama gcTime)
     retry: 1,
     refetchOnWindowFocus: false,
   });

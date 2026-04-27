@@ -23,7 +23,7 @@ async function getConfiguracionCentro(req, res) {
       `SELECT 
         id, nombre_ies, direccion_linea_1, direccion_linea_2, 
         direccion_linea_3, telefono, fax, email, localidad, 
-        provincia, codigo_postal, web_url, logo_miies_url, logo_centro_url
+        provincia, codigo_postal, web_url, logo_miies_url, logo_centro_url, favicon_url
        FROM configuracion_centro
        LIMIT 1`
     );
@@ -58,8 +58,9 @@ async function insertConfiguracion(req, res) {
     provincia,
     codigo_postal,
     web_url,
-    logo_miIES_url,
+    logo_miies_url,
     logo_centro_url,
+    favicon_url,
   } = req.body || {};
 
   if (!nombre_ies) {
@@ -73,9 +74,9 @@ async function insertConfiguracion(req, res) {
       `INSERT INTO configuracion_centro (
         nombre_ies, direccion_linea_1, direccion_linea_2, direccion_linea_3,
         telefono, fax, email, localidad, provincia, codigo_postal, web_url, 
-        logo_miies_url, logo_centro_url
+        logo_miies_url, logo_centro_url, favicon_url
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [
         nombre_ies,
@@ -89,8 +90,9 @@ async function insertConfiguracion(req, res) {
         provincia,
         codigo_postal,
         web_url,
-        logo_miIES_url,
+        logo_miies_url,
         logo_centro_url,
+        favicon_url,
       ]
     );
     res.status(201).json({ ok: true, centro: rows[0] });
@@ -117,8 +119,9 @@ async function updateConfiguracion(req, res) {
     provincia,
     codigo_postal,
     web_url,
-    logo_miIES_url,
+    logo_miies_url,
     logo_centro_url,
+    favicon_url,
   } = req.body || {};
 
   try {
@@ -137,6 +140,7 @@ async function updateConfiguracion(req, res) {
            web_url           = COALESCE($12, web_url),
            logo_miies_url    = COALESCE($13, logo_miies_url),
            logo_centro_url   = COALESCE($14, logo_centro_url),
+           favicon_url       = COALESCE($15, favicon_url),
            updated_at        = CURRENT_TIMESTAMP
        WHERE id = $1
        RETURNING *`,
@@ -153,8 +157,9 @@ async function updateConfiguracion(req, res) {
         provincia,
         codigo_postal,
         web_url,
-        logo_miIES_url,
+        logo_miies_url,
         logo_centro_url,
+        favicon_url,
       ]
     );
 

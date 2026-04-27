@@ -53,6 +53,9 @@ import { PanelGuardias } from "./modules/Guardias/pages/PanelGuardias";
 import { PanelProyeccion } from "./modules/Guardias/pages/PanelProyeccion";
 import { GuardiasIndex } from "./modules/Guardias/pages/GuardiasIndex";
 
+import { useConfiguracionCentro } from "./hooks/useConfiguracionCentro";
+import { useEffect } from "react";
+
 const queryClient = new QueryClient();
 
 // Selector de dashboard según perfil
@@ -380,6 +383,41 @@ const router = createBrowserRouter(
   }
 );
 
+function TitleUpdater() {
+  const { data: centro } = useConfiguracionCentro();
+  const APP_NAME = import.meta.env.VITE_APP_NAME || "gestionIES";
+
+  useEffect(() => {
+    if (!centro) return;
+
+    // 1. Actualizar el Título
+    if (centro.nombreIes) {
+      document.title = `${APP_NAME} - ${centro.nombreIes}`;
+    }
+
+    // 2. Actualizar el Favicon
+    // IMPORTANTE: Usamos faviconUrl (camelCase) como definimos en el Hook
+    if (centro.faviconUrl) {
+      // Buscamos cualquier etiqueta de icono existente
+      const existingFavicon = document.querySelector("link[rel*='icon']");
+      
+      if (existingFavicon) {
+        // Si existe, simplemente actualizamos su href
+        existingFavicon.href = centro.faviconUrl;
+      } else {
+        // Si no existe (raro), la creamos
+        const link = document.createElement("link");
+        link.rel = "icon";
+        link.type = "image/x-icon";
+        link.href = centro.faviconUrl;
+        document.head.appendChild(link);
+      }
+    }
+  }, [centro, APP_NAME]); // Se dispara cuando cambian los datos del centro
+
+  return null;
+}
+
 function App() {
   const [tabActivo, setTabActivo] = useState("permisos"); // estado global para tabs directiva
 
@@ -388,6 +426,7 @@ function App() {
       <AuthProvider>
         <TaskProvider>
           <SidebarProviderCustom>
+            <TitleUpdater />
             <Toaster richColors />
             <RouterProvider
               router={router}
