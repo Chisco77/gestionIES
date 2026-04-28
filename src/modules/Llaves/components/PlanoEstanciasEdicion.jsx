@@ -69,6 +69,12 @@ async function apiGuardarEstancia(planta, estancia) {
   return j;
 }
 
+async function apiListarPlanos() {
+  const r = await fetch(`${API_BASE}/planos`, { credentials: "include" });
+  if (!r.ok) throw new Error("Error al cargar planos");
+  return await r.json();
+}
+
 // ------------------- Componente -------------------
 export default function PlanoEstanciasEdicion() {
   const [plantaActual, setPlantaActual] = useState("baja");
@@ -80,6 +86,8 @@ export default function PlanoEstanciasEdicion() {
   const [draw, setDraw] = useState({ activo: false, coordenadas: [] });
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  const [listaPlanos, setListaPlanos] = useState([]);
 
   // Objeto para almacenar la nueva estancia.
   const [nuevo, setNuevo] = useState({
@@ -100,6 +108,22 @@ export default function PlanoEstanciasEdicion() {
   const wrapperRef = useRef(null);
   const imgRef = useRef(null);
   const [size, setSize] = useState({ w: 1015, h: 860 });
+
+  // 3. Efecto de carga inicial de planos
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await apiListarPlanos();
+        setListaPlanos(data);
+        // Si hay planos, seleccionamos el primero por defecto si no hay uno
+        if (data.length > 0 && !plantaActual) {
+          setPlantaActual(data[0].id);
+        }
+      } catch (e) {
+        toast.error("No se pudieron cargar los planos dinámicos");
+      }
+    })();
+  }, []);
 
   // ------------------- Observador de tamaño -------------------
   useEffect(() => {
@@ -146,7 +170,16 @@ export default function PlanoEstanciasEdicion() {
 
   const plano = PLANOS[plantaActual] ?? PLANOS.baja;
 
-  const svgUrl = `${import.meta.env.BASE_URL}${plano.svg}`;
+  // 1. Buscamos el plano activo en la lista dinámica
+  const planoSeleccionado = useMemo(() => {
+    return listaPlanos.find((p) => p.id === plantaActual) || null;
+  }, [listaPlanos, plantaActual]);
+
+  // 2. Generamos la URL del SVG
+  const svgUrl = useMemo(() => {
+    if (!planoSeleccionado?.svg_url) return "";
+    return planoSeleccionado.svg_url;
+  }, [planoSeleccionado]);
 
   // ------------------- Cálculo de estado de estancias -------------------
   const prestamosPorEstancia = useMemo(() => {
@@ -268,16 +301,17 @@ export default function PlanoEstanciasEdicion() {
   // ------------------- Render -------------------
   return (
     <div style={{ padding: 12 }}>
-      {/* Tabs de ShadCN */}
       <Tabs
         value={plantaActual}
         onValueChange={setPlantaActual}
         className="mb-4"
       >
         <TabsList>
-          <TabsTrigger value="baja">Planta Baja</TabsTrigger>
-          <TabsTrigger value="primera">Primera</TabsTrigger>
-          <TabsTrigger value="segunda">Segunda</TabsTrigger>
+          {listaPlanos.map((p) => (
+            <TabsTrigger key={p.id} value={p.id}>
+              {p.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
       </Tabs>
 
@@ -295,12 +329,14 @@ export default function PlanoEstanciasEdicion() {
             overflow: "hidden",
           }}
         >
-          <img
-            ref={imgRef}
-            src={svgUrl}
-            alt={`Plano planta ${plantaActual}`}
-            style={{ width: "100%", height: "auto", display: "block" }}
-          />
+          {planoSeleccionado && (
+            <img
+              ref={imgRef}
+              src={svgUrl} // Esto cargará directamente desde Nginx
+              alt={`Plano ${plano.label}`}
+              style={{ width: "100%", height: "auto", display: "block" }}
+            />
+          )}
           <svg
             style={{
               position: "absolute",

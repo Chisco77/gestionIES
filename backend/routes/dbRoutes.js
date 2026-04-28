@@ -33,6 +33,15 @@ const {
   deletePeriodo,
 } = require("../controllers/db/periodosHorariosController");
 
+// --- Controlador de Planos ---
+const {
+  getPlanos,
+  insertPlano,
+  updatePlano,
+  deletePlano,
+  getEstanciasPorPlano
+} = require("../controllers/db/planosController");
+
 // --- Controlador de Configuración del Centro ---
 const {
   getConfiguracionCentro,
@@ -510,5 +519,34 @@ router.delete(
 
 // guardias enriquecidas
 router.get("/guardias-enriquecidas", getGuardiasEnriquecidas);
+
+// ================================================================
+//   Rutas de Planos (Gestión Dinámica)
+// ================================================================
+/**
+ * GET /planos: Obtiene la lista de planos configurados (baja, primera, etc.)
+ */
+router.get("/planos", getPlanos);
+
+/**
+ * POST /planos: Crea un nuevo plano (subida de SVG y metadatos)
+ */
+router.post("/planos", insertPlano);
+
+/**
+ * PUT /planos/:id: Actualiza nombre o archivo de un plano existente
+ */
+router.put("/planos/:id", updatePlano);
+
+/**
+ * DELETE /planos/:id: Elimina un plano (si no tiene estancias)
+ */
+router.delete("/planos/:id", deletePlano);
+
+/**
+ * GET /planos/:plantaId/estancias: Obtiene todas las estancias de un plano específico
+ * Esta ruta sustituye la lógica estática para el componente interactivo.
+ */
+router.get("/planos/:plantaId/estancias", getEstanciasPorPlano);
 
 module.exports = router;

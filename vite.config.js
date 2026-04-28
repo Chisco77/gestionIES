@@ -1,34 +1,4 @@
-
 /*import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-import fs from 'fs'
-
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  server: {
-    https: {
-      key: fs.readFileSync(path.resolve(__dirname, "./backend/ssl-dev/key.pem")),
-      cert: fs.readFileSync(path.resolve(__dirname, "./backend/ssl-dev/cert.pem")),
-    },
-    proxy: {
-      "/api": {
-        target: "https://localhost:5000",
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
-});
-*/
-
-
-import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
@@ -43,4 +13,34 @@ export default defineConfig({
     },
   },
   // 🎉 ¡Eliminamos la sección 'server' y las dependencias de 'fs' de desarrollo!
+});*/
+
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+
+export default defineConfig({
+  base: '/gestionIES/', 
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  server: {
+    proxy: {
+      // Redirige las llamadas al API al backend (puerto 5000)
+      '/api': {
+        target: 'https://localhost:5000',
+        secure: false, // Si usas certificados auto-firmados
+        changeOrigin: true,
+      },
+      // Redirige las llamadas de imágenes/planos al backend si decides moverlas allí
+      '/uploads': {
+        target: 'https://localhost:5000',
+        secure: false,
+        changeOrigin: true,
+      }
+    }
+  }
 });

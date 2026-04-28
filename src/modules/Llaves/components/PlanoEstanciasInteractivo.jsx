@@ -67,17 +67,8 @@ async function apiListarPrestamosLlaves() {
 
 // ------------------- Componente -------------------
 export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
-  /*const svgUrl =
-    planta === "primera"
-      ? `${import.meta.env.BASE_URL}PLANTA_PRIMERA.svg`
-      : planta === "segunda"
-        ? `${import.meta.env.BASE_URL}PLANTA_SEGUNDA.svg`
-        : `${import.meta.env.BASE_URL}PLANTA_BAJA.svg`;*/
-
-  const plano = PLANOS[planta] ?? PLANOS.baja;
-
-  const svgUrl = `${import.meta.env.BASE_URL}${plano.svg}`;
-
+  
+  const [listaPlanos, setListaPlanos] = useState([]);
   const [estancias, setEstancias] = useState([]);
   const [prestamos, setPrestamos] = useState([]);
   const [cargando, setCargando] = useState(false);
@@ -92,6 +83,31 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   const [size, setSize] = useState({ w: 0, h: 0 });
 
   const { user } = useAuth();
+
+  // Buscamos en la lista de la BD el plano que coincida con la prop "planta"
+  const planoSeleccionado = useMemo(() => {
+    return listaPlanos.find((p) => p.id === planta) || null;
+  }, [listaPlanos, planta]);
+
+  // Obtenemos la URL directamente de la base de datos
+  const svgUrl = useMemo(() => {
+    return planoSeleccionado?.svg_url || "";
+  }, [planoSeleccionado]);
+
+  // traer planos al cargar componente
+  useEffect(() => {
+    const cargarConfiguracion = async () => {
+      try {
+        const r = await fetch(`${API_BASE}/planos`, { credentials: "include" });
+        if (!r.ok) throw new Error("Error al cargar planos");
+        const data = await r.json();
+        setListaPlanos(data);
+      } catch (e) {
+        toast.error("No se pudo cargar la configuración de los planos");
+      }
+    };
+    cargarConfiguracion();
+  }, []);
 
   // Escalado dinámico
   useEffect(() => {
@@ -240,20 +256,27 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
             overflow: "hidden",
           }}
         >
-          <img
-            ref={imgRef}
-            src={svgUrl}
-            alt={`Plano planta ${planta}`}
-            onLoad={() => {
-              if (imgRef.current) {
-                setSize({
-                  w: imgRef.current.clientWidth,
-                  h: imgRef.current.clientHeight,
-                });
-              }
-            }}
-            style={{ width: "100%", height: "auto", display: "block" }}
-          />
+          {/* Solo mostramos la imagen si svgUrl existe */}
+          {svgUrl ? (
+            <img
+              ref={imgRef}
+              src={svgUrl}
+              alt={`Plano ${planoSeleccionado?.label || planta}`}
+              onLoad={() => {
+                if (imgRef.current) {
+                  setSize({
+                    w: imgRef.current.clientWidth,
+                    h: imgRef.current.clientHeight,
+                  });
+                }
+              }}
+              style={{ width: "100%", height: "auto", display: "block" }}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-[400px]">
+              <p className="text-slate-400">Cargando plano dinámico...</p>
+            </div>
+          )}
 
           <svg
             style={{
@@ -269,7 +292,6 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
               {size.w > 0 &&
                 size.h > 0 &&
                 estancias.map((s) => {
-
                   //Si totalllaves es 0, no pintamos absolutamente nada para esta estancia.
                   if (s.totalllaves <= 0) return null;
                   const { prestadas, estado } = estadoEstancia(s);
