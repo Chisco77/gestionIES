@@ -30,8 +30,7 @@
  * - PlanoEstanciasInteractivo.jsx
  */
 
-
-import React from "react";
+/*import React from "react";
 import PlanoEstanciasInteractivo from "../components/PlanoEstanciasInteractivo";
 
 /**
@@ -39,7 +38,20 @@ import PlanoEstanciasInteractivo from "../components/PlanoEstanciasInteractivo";
  * Props:
  *  - planta: "baja" | "primera" | "segunda"
  */
-export function PlanoPlanta({ planta }) {
+/*export function PlanoPlanta({ planta }) {
   return <PlanoEstanciasInteractivo planta={planta} />;
 }
 
+*/
+
+import React from "react";
+import { useParams } from "react-router-dom";
+import PlanoEstanciasInteractivo from "../components/PlanoEstanciasInteractivo";
+
+export function PlanoPlanta() {
+  // Extraemos planoId de la URL
+  const { planoId } = useParams();
+
+
+  return <PlanoEstanciasInteractivo planta={planoId} />;
+}

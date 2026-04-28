@@ -20,11 +20,50 @@
  */
 
 const express = require("express");
+
 const router = express.Router();
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+const uploadPath = path.join(__dirname, "../../public/planos");
 
 // Cerca de los otros require al principio del archivo
 const { validarTokenPublico } = require("../middleware/authPublico");
 
+// 2. Comprobación de seguridad: Si la carpeta no existe, la creamos
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+  console.log("📁 Carpeta creada automáticamente:", uploadPath);
+}
+
+// 3. Configuración de almacenamiento
+const storagePlanos = multer.diskStorage({
+  destination: (req, file, cb) => {
+    // Usamos nuestra variable dinámica
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    // Nombre: timestamp-nombre_original.svg
+    const nombreLimpio =
+      Date.now() + "-" + file.originalname.replace(/\s+/g, "_");
+    cb(null, nombreLimpio);
+  },
+});
+
+const uploadPlano = multer({
+  storage: storagePlanos,
+  fileFilter: (req, file, cb) => {
+    const isSvg =
+      file.mimetype === "image/svg+xml" ||
+      path.extname(file.originalname).toLowerCase() === ".svg";
+    if (isSvg) {
+      cb(null, true);
+    } else {
+      cb(new Error("Es necesario subir un archivo svg"), false);
+    }
+  },
+});
 // --- Controladores ---
 const {
   getPeriodosHorarios,
@@ -39,14 +78,14 @@ const {
   insertPlano,
   updatePlano,
   deletePlano,
-  getEstanciasPorPlano
+  getEstanciasPorPlano,
 } = require("../controllers/db/planosController");
 
 // --- Controlador de Configuración del Centro ---
 const {
   getConfiguracionCentro,
   insertConfiguracion,
-  updateConfiguracion
+  updateConfiguracion,
 } = require("../controllers/db/configuracionCentroController");
 
 // --- Controlador de guardias de profesorado ---
@@ -149,7 +188,6 @@ const {
 
 // --- Controlador de estancias / planos ---
 const {
-  getEstanciasByPlanta,
   getEstanciasByTipoEstancia,
   getAllEstancias,
   insertEstancia,
@@ -217,7 +255,6 @@ const {
 // ================================================================
 //   Rutas de Estancias
 // ================================================================
-router.get("/planos/estancias", getEstanciasByPlanta);
 router.get("/planos/estancias", getEstanciasByTipoEstancia);
 router.post("/planos/estancias", insertEstancia);
 router.put("/estancias/:id", updateEstancia);
@@ -444,9 +481,8 @@ router.post(
   simularReservaEstanciaRepeticion
 );
 
-
 // ================================================================
-//   Rutas de Configuración del Centro 
+//   Rutas de Configuración del Centro
 // ================================================================
 /**
  * GET /configuracion-centro: Obtiene los datos institucionales del IES.
@@ -462,7 +498,6 @@ router.post("/configuracion-centro", insertConfiguracion);
  * PUT /configuracion-centro/:id: Actualización de los datos del centro.
  */
 router.put("/configuracion-centro/:id", updateConfiguracion);
-
 
 // --- Controlador de Notificaciones Directiva ---
 const {
@@ -531,8 +566,7 @@ router.get("/planos", getPlanos);
 /**
  * POST /planos: Crea un nuevo plano (subida de SVG y metadatos)
  */
-router.post("/planos", insertPlano);
-
+router.post("/planos", uploadPlano.single("svg_file"), insertPlano);
 /**
  * PUT /planos/:id: Actualiza nombre o archivo de un plano existente
  */

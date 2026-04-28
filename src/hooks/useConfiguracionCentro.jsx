@@ -59,7 +59,7 @@ export function useConfiguracionCentro() {
         // Logo institucional del centro
         logoCentroUrl: c.logo_centro_url || "",
 
-        // NUEVO: Favicon personalizado del centro
+        // Favicon personalizado del centro
         faviconUrl: c.favicon_url || "",
 
         updatedAt: c.updated_at,

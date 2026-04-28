@@ -6,7 +6,7 @@
  *
  * Descripción:
  * Controlador para la gestión dinámica de planos de las instalaciones.
- * Proporciona operaciones CRUD sobre la tabla "planos" y 
+ * Proporciona operaciones CRUD sobre la tabla "planos" y
  * gestiona la relación con las estancias.
  *
  * Funcionalidades:
@@ -41,26 +41,50 @@ exports.getPlanos = async (req, res) => {
 
 // Insertar un nuevo plano
 exports.insertPlano = async (req, res) => {
-  const { id, label, svg_url, orden } = req.body;
+  // Ahora solo esperamos label y orden del body
+  const { label, orden } = req.body;
 
-  if (!id || !label || !svg_url) {
+  // 1. Verificación de archivo (Multer)
+  if (!req.file) {
     return res.status(400).json({
-      message: 'Los campos "id", "label" y "svg_url" son obligatorios',
+      ok: false,
+      message: "Es necesario subir un archivo SVG.",
     });
   }
 
-  try {
-    const result = await db.query(
-      `INSERT INTO planos (id, label, svg_url, orden) 
-       VALUES ($1, $2, $3, $4) 
-       RETURNING *`,
-      [id, label, svg_url, orden || 0]
-    );
+  // 2. Validación de campo obligatorio
+  if (!label || label.trim() === "") {
+    return res.status(400).json({
+      ok: false,
+      message: "La etiqueta (label) del plano es obligatoria.",
+    });
+  }
 
-    res.status(201).json(result.rows[0]);
+  // 3. URL pública para la base de datos (Nginx/Express servirán desde aquí)
+  const svg_url = `/planos/${req.file.filename}`;
+
+  try {
+    const query = `
+      INSERT INTO planos (label, svg_url, orden) 
+      VALUES ($1, $2, $3) 
+      RETURNING *
+    `;
+
+    const values = [label, svg_url, parseInt(orden) || 0];
+
+    const { rows } = await db.query(query, values);
+
+    // Devolvemos el registro creado (Postgres ya habrá generado el ID)
+    res.status(201).json({
+      ok: true,
+      plano: rows[0],
+    });
   } catch (error) {
     console.error("❌ Error al insertar plano:", error);
-    res.status(500).json({ message: "Error interno al insertar plano" });
+    res.status(500).json({
+      ok: false,
+      message: "Error interno al guardar el plano en la base de datos.",
+    });
   }
 };
 
@@ -93,18 +117,19 @@ exports.updatePlano = async (req, res) => {
 
 // Eliminar un plano
 exports.deletePlano = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // Este id es el entero de la secuencia
 
   try {
-    // 1. Validar si existen estancias asociadas a esta planta
+    // 1. Validar si existen estancias asociadas al plano
     const estanciasAsociadas = await db.query(
-      "SELECT COUNT(*) FROM estancias WHERE planta = $1",
+      "SELECT COUNT(*) FROM estancias WHERE idplano = $1",
       [id]
     );
 
     if (parseInt(estanciasAsociadas.rows[0].count, 10) > 0) {
       return res.status(400).json({
-        message: "No se puede eliminar el plano porque tiene estancias asociadas. Borre las estancias primero.",
+        message:
+          "No se puede eliminar el plano porque tiene estancias asociadas. Por seguridad, debe borrar o reasignar las estancias primero.",
       });
     }
 
@@ -115,10 +140,11 @@ exports.deletePlano = async (req, res) => {
       return res.status(404).json({ message: "Plano no encontrado" });
     }
 
+    // Si todo va bien, devolvemos 204 No Content
     res.sendStatus(204);
   } catch (error) {
     console.error("❌ Error al eliminar plano:", error);
-    res.status(500).json({ message: "Error interno al eliminar plano" });
+    res.status(500).json({ message: "Error interno al eliminar el plano" });
   }
 };
 
@@ -127,22 +153,25 @@ exports.deletePlano = async (req, res) => {
  * Se usa para alimentar el componente PlanoEstanciasEdicion.jsx
  */
 exports.getEstanciasPorPlano = async (req, res) => {
-  const { plantaId } = req.params;
+  const { plantaId } = req.params; // Este vendrá como número del frontend
 
   try {
     const query = `
       SELECT 
-        id, planta, codigo, descripcion, totalllaves, 
+        id, idplano, codigo, descripcion, totalllaves, 
         coordenadas_json, armario, codigollave, 
         reservable, tipoestancia, numero_ordenadores
       FROM estancias
-      WHERE planta = $1
+      WHERE idplano = $1  
       ORDER BY codigo ASC
     `;
     const result = await db.query(query, [plantaId]);
     res.json(result.rows);
   } catch (error) {
-    console.error(`❌ Error al obtener estancias de la planta ${plantaId}:`, error);
-    res.status(500).json({ message: "Error al obtener estancias del plano" });
+    console.error(
+      `❌ Error al obtener estancias del plano ${plantaId}:`,
+      error
+    );
+    res.status(500).json({ message: "Error al obtener estancias" });
   }
 };

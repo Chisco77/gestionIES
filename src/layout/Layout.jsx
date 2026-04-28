@@ -52,6 +52,8 @@ import { DialogoLlavesRestricciones } from "@/modules/Llaves/components/DialogoL
 import { DialogoConfiguracionCentro } from "@/modules/DatosCentro/components/DialogoConfiguracionCentro";
 import { DialogoImportarHorariosUNTIS } from "@/modules/HorariosProfesorado/components/DialogoImportarHorariosUNTIS";
 
+import { usePlanos } from "@/hooks/usePlanos";
+
 export default function Layout(props) {
   const [openEtiquetas, setOpenEtiquetas] = useState(false);
   const [openRestricciones, setOpenRestricciones] = useState(false);
@@ -62,10 +64,12 @@ export default function Layout(props) {
 
   const [tabActivo, setTabActivo] = useState("permisos");
 
+  const { data: planos = [] } = usePlanos(); // Cargamos los planos disponibles
   const location = useLocation();
   const { setTituloActivo } = useSidebarContext();
 
   useEffect(() => {
+    // Mapa de rutas estáticas 
     const pathToTitleMap = {
       "/": "Inicio",
       "/alumnos": "Alumnos",
@@ -75,14 +79,11 @@ export default function Layout(props) {
       "/cursos": "Cursos",
       "/libros": "Libros",
       "/materias": "Materias",
-      "/perfilesUsuario": "Administrar  Usuarios",
+      "/perfilesUsuario": "Administrar Usuarios",
       "/prestamos": "Préstamos Alumnos",
       "/prestamosProfesores": "Préstamos Profesores",
       "/reservasEstancias": "Reservas de Aulas",
       "/llavesPrestadas": "Llaves Prestadas",
-      "/llavesPlantaBaja": "Llaves Planta Baja",
-      "/llavesPlantaPrimera": "Llaves Planta Primera",
-      "/llavesPlantaSegunda": "Llaves Planta Segunda",
       "/permisos": "Permisos",
       "/asuntos": "Asuntos Propios",
       "/extraescolares": "Actividades Extraescolares",
@@ -94,13 +95,28 @@ export default function Layout(props) {
       "/ausencias-profesorado": "Ausencias del Profesorado",
       "/guardias-profesorado": "Histórico de guardias del Profesorado",
       "/panel-guardias": "Panel de Guardias",
+      "/edicionPlanos": "Edición de Planos",
     };
 
-    const titulo = pathToTitleMap[location.pathname];
+    let titulo = pathToTitleMap[location.pathname];
+
+    // Lógica para títulos dinámicos de Planos
+    if (!titulo && location.pathname.startsWith("/planos/")) {
+      // Extraemos el id de la URL 
+      const planoId = location.pathname.split("/").pop();
+      // Buscamos en la lista de planos cargados
+      const planoEncontrado = planos.find((p) => p.id === planoId);
+
+      if (planoEncontrado) {
+        titulo = `Llaves ${planoEncontrado.label}`;
+      }
+    }
+
+    // Aplicar el título
     if (titulo) {
       setTituloActivo(titulo);
     }
-  }, [location.pathname, setTituloActivo]);
+  }, [location.pathname, planos, setTituloActivo]);
 
   return (
     <SidebarProvider>

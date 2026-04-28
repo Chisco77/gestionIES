@@ -77,7 +77,8 @@ export function NavMain({ items }) {
           return (
             <SidebarMenuItem key={item.title}>
               {item.items?.length > 0 ? (
-                <Collapsible defaultOpen={isItemActive}>
+                <Collapsible defaultOpen={item.isActive || isItemActive}>
+                  {" "}
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton
                       tooltip={item.title}
@@ -100,7 +101,6 @@ export function NavMain({ items }) {
                       />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
-
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {item.items.map((subItem) => {

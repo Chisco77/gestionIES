@@ -395,7 +395,7 @@ export function DataTable({
         <TabsList className="@4xl/main:flex hidden">
           <TabsTrigger value="outline">Outline</TabsTrigger>
           <TabsTrigger value="past-performance" className="gap-1">
-            Past Performance{" "}
+            Past Performance
             <Badge
               variant="secondary"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30">
@@ -403,7 +403,7 @@ export function DataTable({
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="key-personnel" className="gap-1">
-            Key Personnel{" "}
+            Key Personnel
             <Badge
               variant="secondary"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30">

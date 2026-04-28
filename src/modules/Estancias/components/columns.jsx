@@ -53,20 +53,7 @@ export const columns = [
       !filterValue ||
       row.getValue(columnId)?.toLowerCase().includes(filterValue.toLowerCase()),
   },
-  {
-    accessorKey: "planta",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Planta
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    enableSorting: true,
-    sortingFn: "alphanumeric",
-  },
+
   {
     accessorKey: "totalllaves",
     header: ({ column }) => (

@@ -27,6 +27,7 @@ import { AlumnosIndex } from "./modules/Usuarios/pages/AlumnosIndex";
 import { ProfesoresIndex } from "./modules/Usuarios/pages/ProfesoresIndex";
 import { TodosIndex } from "./modules/Usuarios/pages/TodosIndex";
 import { CursosIndex } from "./modules/Cursos/pages/CursosIndex";
+import { PlanosConfigIndex } from "./modules/Planos/pages/PlanosConfigIndex";
 import { LibrosIndex } from "./modules/Libros/pages/LibrosIndex";
 import { PrestamosAlumnosIndex } from "./modules/Prestamos/pages/PrestamosAlumnosIndex";
 import { PrestamosProfesoresIndex } from "./modules/Prestamos/pages/PrestamosProfesoresIndex";
@@ -54,9 +55,27 @@ import { PanelProyeccion } from "./modules/Guardias/pages/PanelProyeccion";
 import { GuardiasIndex } from "./modules/Guardias/pages/GuardiasIndex";
 
 import { useConfiguracionCentro } from "./hooks/useConfiguracionCentro";
+import { usePlanos } from "./hooks/usePlanos";
+import { Navigate } from "react-router-dom";
+
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
+
+function OrdenanzaRedirect() {
+  const { data: planos = [], isLoading } = usePlanos();
+
+  if (isLoading) return <div>Cargando...</div>;
+
+  // Buscamos el plano con orden 0
+  const planoInicial = planos.find((p) => p.orden === 0) || planos[0];
+
+  if (planoInicial) {
+    return <Navigate to={`/planos/${planoInicial.id}`} replace />;
+  }
+
+  return <Navigate to="/" replace />;
+}
 
 // Selector de dashboard según perfil
 function DashboardSelector() {
@@ -232,6 +251,15 @@ const router = createBrowserRouter(
           ),
         },
         {
+          path: "planos",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador"]}>
+              {" "}
+              <PlanosConfigIndex />
+            </ProtectedRoute>
+          ),
+        },
+        {
           path: "llavesPrestadas",
           element: (
             <ProtectedRoute
@@ -252,32 +280,20 @@ const router = createBrowserRouter(
           ),
         },
         {
-          path: "llavesPlantaBaja",
+          path: "ordenanza-home",
           element: (
-            <ProtectedRoute
-              perfilesPermitidos={["administrador", "directiva", "ordenanza"]}
-            >
-              <PlanoPlanta planta="baja" />{" "}
+            <ProtectedRoute>
+              <OrdenanzaRedirect />
             </ProtectedRoute>
           ),
         },
         {
-          path: "llavesPlantaPrimera",
+          path: "planos/:planoId",
           element: (
             <ProtectedRoute
               perfilesPermitidos={["administrador", "directiva", "ordenanza"]}
             >
-              <PlanoPlanta planta="primera" />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "llavesPlantaSegunda",
-          element: (
-            <ProtectedRoute
-              perfilesPermitidos={["administrador", "directiva", "ordenanza"]}
-            >
-              <PlanoPlanta planta="segunda" />
+              <PlanoPlanta />
             </ProtectedRoute>
           ),
         },
@@ -400,7 +416,7 @@ function TitleUpdater() {
     if (centro.faviconUrl) {
       // Buscamos cualquier etiqueta de icono existente
       const existingFavicon = document.querySelector("link[rel*='icon']");
-      
+
       if (existingFavicon) {
         // Si existe, simplemente actualizamos su href
         existingFavicon.href = centro.faviconUrl;

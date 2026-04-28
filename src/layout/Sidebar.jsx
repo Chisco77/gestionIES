@@ -20,7 +20,7 @@
  */
 
 import { useAuth } from "@/context/AuthContext";
-import React from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -59,6 +59,8 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 
+import { usePlanos } from "@/hooks/usePlanos";
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 const MODULO_GUARDIAS =
@@ -73,9 +75,24 @@ function SidebarComponent({
   ...props
 }) {
   const navigate = useNavigate();
-  const { user, setUser, loading } = useAuth();
+  const { user, setUser, loading: authLoading } = useAuth();
 
-  // Menús por perfil con iconos mejorados
+  // 1. Cargamos los planos desde el Hook
+  const { data: planos = [], isLoading: planosLoading } = usePlanos();
+
+  // 2. Generamos los items dinámicos para los planos
+  const itemsPlanosDinamicos = useMemo(() => {
+    return planos
+      .filter((p) => p.activo)
+      .sort((a, b) => a.orden - b.orden)
+      .map((p) => ({
+        title: p.label,
+        url: `/planos/${p.id}`,
+        icon: KeySquare,
+      }));
+  }, [planos]);
+
+  // 3. Menús por perfil (Restaurados fielmente a tu código original)
   const menusPorPerfil = {
     directiva: [
       {
@@ -91,7 +108,6 @@ function SidebarComponent({
           { title: "Alumnos", url: "/alumnos", icon: GraduationCap },
           { title: "Profesores", url: "/profesores", icon: UserCheck },
           { title: "Personal no docente", url: "/staff", icon: UserCheck },
-          //{ title: "Todos", url: "/todos", icon: User },
         ],
       },
       {
@@ -100,7 +116,6 @@ function SidebarComponent({
         icon: CalendarCheck,
         items: [
           { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
-
           {
             title: "Extraescolares",
             url: "/extraescolares",
@@ -157,7 +172,7 @@ function SidebarComponent({
                   url: "/ausencias-profesorado",
                   icon: CalendarOff,
                 },
-                 {
+                {
                   title: "Histórico Guardias",
                   url: "/guardias-profesorado",
                   icon: CalendarOff,
@@ -172,7 +187,6 @@ function SidebarComponent({
         icon: Library,
         items: [
           { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
-          //{ title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
           { title: "Cursos", url: "/cursos", icon: BookOpen },
           { title: "Materias", url: "/materias", icon: BookOpen },
           { title: "Libros", url: "/libros", icon: BookMarked },
@@ -261,7 +275,6 @@ function SidebarComponent({
         icon: CalendarCheck,
         items: [
           { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
-
           {
             title: "Extraescolares",
             url: "/extraescolares",
@@ -296,7 +309,7 @@ function SidebarComponent({
                   url: "/ausencias-profesorado",
                   icon: CalendarOff,
                 },
-                 {
+                {
                   title: "Mis guardias",
                   url: "/guardias-profesorado",
                   icon: CalendarOff,
@@ -330,7 +343,6 @@ function SidebarComponent({
         icon: Library,
         items: [
           { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
-          // { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
           { title: "Libros", url: "/libros", icon: BookMarked },
           { title: "Cursos", url: "/cursos", icon: BookOpen },
         ],
@@ -355,7 +367,6 @@ function SidebarComponent({
         icon: CalendarCheck,
         items: [
           { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
-
           {
             title: "Extraescolares",
             url: "/extraescolares",
@@ -395,27 +406,27 @@ function SidebarComponent({
         title: "Préstamo Llaves",
         url: "#",
         icon: KeySquare,
-        isActive: true,
+        isActive: true, // Esto ahora activará el defaultOpen en NavMain
         items: [
           {
             title: "Llaves prestadas",
             url: "/llavesPrestadas",
             icon: KeyRound,
           },
-          { title: "Planta BAJA", url: "/llavesPlantaBaja", icon: KeySquare },
-          {
-            title: "Planta PRIMERA",
-            url: "/llavesPlantaPrimera",
-            icon: KeySquare,
-          },
-          {
-            title: "Planta SEGUNDA",
-            url: "/llavesPlantaSegunda",
-            icon: KeySquare,
-          },
+          ...itemsPlanosDinamicos.map((item) => {
+            const planoOriginal = planos.find(
+              (p) => p.id === item.url.split("/").pop()
+            );
+            return {
+              ...item,
+              // Marcamos como activo el plano de orden 0
+              isActive: planoOriginal?.orden === 0,
+            };
+          }),
         ],
       },
     ],
+
     administrador: [
       {
         title: "Inicio",
@@ -453,6 +464,7 @@ function SidebarComponent({
         icon: ShieldCheck,
         items: [
           { title: "Avisos", url: "/avisos", icon: Info },
+          { title: "Alta de Planos", url: "/planos", icon: Building2 },
           { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
           { title: "Estancias", url: "/estancias", icon: Building2 },
           {
@@ -488,7 +500,6 @@ function SidebarComponent({
         icon: CalendarCheck,
         items: [
           { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
-
           {
             title: "Extraescolares",
             url: "/extraescolares",
@@ -512,7 +523,6 @@ function SidebarComponent({
         icon: Library,
         items: [
           { title: "Alumnos", url: "/prestamos", icon: GraduationCap },
-          // { title: "Profesores", url: "/prestamosProfesores", icon: UserCheck },
           { title: "Libros", url: "/libros", icon: BookMarked },
           { title: "Cursos", url: "/cursos", icon: BookOpen },
         ],
@@ -521,15 +531,16 @@ function SidebarComponent({
   };
 
   const navMain = user ? (menusPorPerfil[user.perfil] ?? []) : [];
+  const loading = authLoading || planosLoading;
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader />
       <SidebarContent>
         {loading ? (
-          <div>Cargando...</div>
+          <div className="p-4 text-xs">Cargando...</div>
         ) : !user ? (
-          <div>No autenticado</div>
+          <div className="p-4 text-xs text-red-500">No autenticado</div>
         ) : (
           <NavMain items={navMain} />
         )}

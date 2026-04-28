@@ -97,6 +97,8 @@ export function LoginForm({ className, ...props }) {
       queryClient.invalidateQueries(["horario-profesorado"]);
       queryClient.invalidateQueries(["configuracion-centro"]);
       queryClient.invalidateQueries(["guardias"]);
+      queryClient.invalidateQueries(["planos-centro"]);
+
       // ------------------------------------------------------------
 
       const checkAuth = async (retries = 2) => {
@@ -128,7 +130,7 @@ export function LoginForm({ className, ...props }) {
       });
 
       if (data.perfil === "ordenanza") {
-        navigate("/llavesPlantaBaja");
+        navigate("/ordenanza-home");
       } else {
         navigate("/");
       }

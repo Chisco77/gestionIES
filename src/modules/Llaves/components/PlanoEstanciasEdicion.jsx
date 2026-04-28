@@ -26,6 +26,7 @@ import { Switch } from "@/components/ui/switch";
 
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { usePlanos } from "@/hooks/usePlanos";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -42,8 +43,8 @@ async function parseListResponse(resp) {
   throw new Error("Formato de respuesta desconocido");
 }
 
-async function apiListarEstancias(planta) {
-  const url = `${API_BASE}/planos/estancias?planta=${encodeURIComponent(planta)}`;
+async function apiListarEstancias(plantaId) {
+  const url = `${API_BASE}/planos/${plantaId}/estancias`;
   const r = await fetch(url, { credentials: "include" });
   if (!r.ok) {
     const text = await r.text().catch(() => "");
@@ -52,32 +53,26 @@ async function apiListarEstancias(planta) {
   return parseListResponse(r);
 }
 
-async function apiGuardarEstancia(planta, estancia) {
+async function apiGuardarEstancia(idplano, estancia) {
   const url = `${API_BASE}/planos/estancias`;
   const r = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ planta, ...estancia }),
+    // Enviamos idplano
+    body: JSON.stringify({ idplano, ...estancia }),
   });
   if (!r.ok) {
     const txt = await r.text().catch(() => "");
     throw new Error(`Error guardando estancia (${r.status}) ${txt}`);
   }
-  const j = await r.json().catch(() => null);
-  if (!j) throw new Error("Respuesta inválida al guardar");
-  return j;
-}
-
-async function apiListarPlanos() {
-  const r = await fetch(`${API_BASE}/planos`, { credentials: "include" });
-  if (!r.ok) throw new Error("Error al cargar planos");
   return await r.json();
 }
 
 // ------------------- Componente -------------------
 export default function PlanoEstanciasEdicion() {
-  const [plantaActual, setPlantaActual] = useState("baja");
+  const { data: listaPlanos = [], isLoading: cargandoPlanos } = usePlanos();
+  const [plantaActual, setPlantaActual] = useState(null);
   const [estancias, setEstancias] = useState([]);
   const [prestamos, setPrestamos] = useState([]);
   const [cargando, setCargando] = useState(false);
@@ -86,8 +81,6 @@ export default function PlanoEstanciasEdicion() {
   const [draw, setDraw] = useState({ activo: false, coordenadas: [] });
   const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  const [listaPlanos, setListaPlanos] = useState([]);
 
   // Objeto para almacenar la nueva estancia.
   const [nuevo, setNuevo] = useState({
@@ -109,21 +102,14 @@ export default function PlanoEstanciasEdicion() {
   const imgRef = useRef(null);
   const [size, setSize] = useState({ w: 1015, h: 860 });
 
-  // 3. Efecto de carga inicial de planos
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await apiListarPlanos();
-        setListaPlanos(data);
-        // Si hay planos, seleccionamos el primero por defecto si no hay uno
-        if (data.length > 0 && !plantaActual) {
-          setPlantaActual(data[0].id);
-        }
-      } catch (e) {
-        toast.error("No se pudieron cargar los planos dinámicos");
-      }
-    })();
-  }, []);
+  // Buscamos el objeto plano completo basándonos en el ID seleccionado
+  const planoSeleccionado = useMemo(() => {
+    if (!plantaActual) return null;
+    // Usamos == para comparar string con número sin dramas
+    return (
+      listaPlanos.find((p) => String(p.id) === String(plantaActual)) || null
+    );
+  }, [listaPlanos, plantaActual]);
 
   // ------------------- Observador de tamaño -------------------
   useEffect(() => {
@@ -138,14 +124,16 @@ export default function PlanoEstanciasEdicion() {
     return () => ro.disconnect();
   }, []);
 
-  // ------------------- Carga de estancias y préstamos según planta -------------------
   useEffect(() => {
+    if (!planoSeleccionado) return;
+
     let cancelado = false;
     (async () => {
       setCargando(true);
       setError("");
       try {
-        const dataEstancias = await apiListarEstancias(plantaActual);
+        // Usamos el ID real de la base de datos
+        const dataEstancias = await apiListarEstancias(planoSeleccionado.id);
         const normal = dataEstancias.map((r) => ({
           id: r.id,
           codigo: r.codigo,
@@ -157,8 +145,7 @@ export default function PlanoEstanciasEdicion() {
         }));
         if (!cancelado) setEstancias(normal);
       } catch (e) {
-        if (!cancelado) setError(e?.message || "Error cargando datos");
-        console.error(e);
+        if (!cancelado) setError(e?.message || "Error cargando estancias");
       } finally {
         if (!cancelado) setCargando(false);
       }
@@ -166,20 +153,30 @@ export default function PlanoEstanciasEdicion() {
     return () => {
       cancelado = true;
     };
-  }, [plantaActual]);
+  }, [planoSeleccionado]);
+
+  useEffect(() => {
+    if (listaPlanos.length > 0 && !plantaActual) {
+      setPlantaActual(String(listaPlanos[0].id));
+    }
+  }, [listaPlanos, plantaActual]);
 
   const plano = PLANOS[plantaActual] ?? PLANOS.baja;
 
-  // 1. Buscamos el plano activo en la lista dinámica
-  const planoSeleccionado = useMemo(() => {
-    return listaPlanos.find((p) => p.id === plantaActual) || null;
-  }, [listaPlanos, plantaActual]);
-
   // 2. Generamos la URL del SVG
+  const SERVIDOR_URL = API_BASE.replace("/db", "");
+
   const svgUrl = useMemo(() => {
-    if (!planoSeleccionado?.svg_url) return "";
-    return planoSeleccionado.svg_url;
-  }, [planoSeleccionado]);
+    if (!planoSeleccionado?.svgUrl) return ""; // Nota: svgUrl con U mayúscula (del hook)
+
+    // Si la URL ya empieza por http, la usamos tal cual
+    if (planoSeleccionado.svgUrl.startsWith("http"))
+      return planoSeleccionado.svgUrl;
+
+    // Si no, le pegamos la base del servidor
+    const base = API_BASE.replace("/db", "");
+    return `${base}${planoSeleccionado.svgUrl}`;
+  }, [planoSeleccionado, API_BASE]);
 
   // ------------------- Cálculo de estado de estancias -------------------
   const prestamosPorEstancia = useMemo(() => {
@@ -220,7 +217,6 @@ export default function PlanoEstanciasEdicion() {
       return;
     }
 
-    // finalizado el polígono que define la estancia, enviamos los datos introducidos en los inputs al objeto
     const estNueva = {
       codigo: nuevo.codigo,
       descripcion: nuevo.descripcion,
@@ -235,8 +231,8 @@ export default function PlanoEstanciasEdicion() {
 
     try {
       setCargando(true);
-      setError("");
-      const guardada = await apiGuardarEstancia(plantaActual, estNueva);
+      // Enviamos el id del plano seleccionado
+      const guardada = await apiGuardarEstancia(planoSeleccionado.id, estNueva);
       toast.success(`Estancia "${nuevo.codigo}" creada correctamente`);
       queryClient.invalidateQueries({ queryKey: ["estancias"] });
 
@@ -302,13 +298,13 @@ export default function PlanoEstanciasEdicion() {
   return (
     <div style={{ padding: 12 }}>
       <Tabs
-        value={plantaActual}
+        value={String(plantaActual)}
         onValueChange={setPlantaActual}
         className="mb-4"
       >
         <TabsList>
           {listaPlanos.map((p) => (
-            <TabsTrigger key={p.id} value={p.id}>
+            <TabsTrigger key={p.id} value={String(p.id)}>
               {p.label}
             </TabsTrigger>
           ))}
@@ -332,8 +328,8 @@ export default function PlanoEstanciasEdicion() {
           {planoSeleccionado && (
             <img
               ref={imgRef}
-              src={svgUrl} // Esto cargará directamente desde Nginx
-              alt={`Plano ${plano.label}`}
+              src={svgUrl}
+              alt={`Plano ${planoSeleccionado.label}`}
               style={{ width: "100%", height: "auto", display: "block" }}
             />
           )}

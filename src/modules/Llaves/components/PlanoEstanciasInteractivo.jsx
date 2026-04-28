@@ -22,6 +22,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DialogoGestionLlaves } from "./DialogoGestionLlaves";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { usePlanos } from "@/hooks/usePlanos";
 
 import {
   Tooltip,
@@ -47,8 +48,8 @@ async function parseListResponse(resp) {
   throw new Error("Formato de respuesta desconocido");
 }
 
-async function apiListarEstancias(planta) {
-  const url = `${API_BASE}/planos/estancias?planta=${encodeURIComponent(planta)}`;
+async function apiListarEstancias(plantaId) {
+  const url = `${API_BASE}/planos/${plantaId}/estancias`;
   const r = await fetch(url, { credentials: "include" });
   if (!r.ok) {
     const text = await r.text().catch(() => "");
@@ -67,8 +68,9 @@ async function apiListarPrestamosLlaves() {
 
 // ------------------- Componente -------------------
 export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
-  
-  const [listaPlanos, setListaPlanos] = useState([]);
+  // Usamos el hook en lugar del estado manual ---
+  const { data: listaPlanos = [], isLoading: cargandoPlanos } = usePlanos();
+
   const [estancias, setEstancias] = useState([]);
   const [prestamos, setPrestamos] = useState([]);
   const [cargando, setCargando] = useState(false);
@@ -78,36 +80,22 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
     open: false,
     estancia: null,
   });
+
   const wrapperRef = useRef(null);
   const imgRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
   const { user } = useAuth();
 
-  // Buscamos en la lista de la BD el plano que coincida con la prop "planta"
+  // planos del hook
   const planoSeleccionado = useMemo(() => {
-    return listaPlanos.find((p) => p.id === planta) || null;
+    // Convertimos ambos a String para asegurar la comparación
+    return listaPlanos.find((p) => String(p.id) === String(planta)) || null;
   }, [listaPlanos, planta]);
 
-  // Obtenemos la URL directamente de la base de datos
   const svgUrl = useMemo(() => {
-    return planoSeleccionado?.svg_url || "";
+    return planoSeleccionado?.svgUrl || "";
   }, [planoSeleccionado]);
-
-  // traer planos al cargar componente
-  useEffect(() => {
-    const cargarConfiguracion = async () => {
-      try {
-        const r = await fetch(`${API_BASE}/planos`, { credentials: "include" });
-        if (!r.ok) throw new Error("Error al cargar planos");
-        const data = await r.json();
-        setListaPlanos(data);
-      } catch (e) {
-        toast.error("No se pudo cargar la configuración de los planos");
-      }
-    };
-    cargarConfiguracion();
-  }, []);
 
   // Escalado dinámico
   useEffect(() => {
@@ -124,14 +112,25 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
   }, [planta]);
 
   // ------------------- Carga de datos -------------------
+  // ------------------- Carga de datos -------------------
   useEffect(() => {
+    // Si aún no tenemos el plano seleccionado (porque usePlanos está cargando), no hacemos nada
+    if (!planoSeleccionado) return;
+
     let cancelado = false;
     (async () => {
       setCargando(true);
       setError("");
       try {
-        const dataEstancias = await apiListarEstancias(planta);
-        console.log("Data estancias: ", dataEstancias);
+        // PASO CLAVE: Usamos el ID numérico real del plano encontrado
+        const dataEstancias = await apiListarEstancias(planoSeleccionado.id);
+
+        console.log(
+          "Data estancias para plano ID:",
+          planoSeleccionado.id,
+          dataEstancias
+        );
+
         const normal = dataEstancias.map((r) => ({
           id: r.id,
           codigo: r.codigo,
@@ -142,9 +141,12 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
           codigollave: r.codigollave,
           reservable: r.reservable,
         }));
-        if (!cancelado) setEstancias(normal);
-        const dataPrestamos = await apiListarPrestamosLlaves();
-        if (!cancelado) setPrestamos(dataPrestamos);
+
+        if (!cancelado) {
+          setEstancias(normal);
+          const dataPrestamos = await apiListarPrestamosLlaves();
+          setPrestamos(dataPrestamos);
+        }
       } catch (e) {
         if (!cancelado) setError(e?.message || "Error cargando datos");
         console.error(e);
@@ -152,10 +154,11 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
         if (!cancelado) setCargando(false);
       }
     })();
+
     return () => {
       cancelado = true;
     };
-  }, [planta]);
+  }, [planoSeleccionado]); 
 
   // ------------------- Lógica de préstamos -------------------
   const prestamosPorEstancia = useMemo(() => {
