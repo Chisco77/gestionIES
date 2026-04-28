@@ -37,7 +37,7 @@ async function getPrestamosLlavesAgrupados(req, res) {
     // consulta ordenada
     const { rows: prestamos } = await pool.query(`
       SELECT pl.id, pl.idestancia, pl.uid, pl.unidades, pl.fechaentrega, pl.fechadevolucion, pl.devuelta,
-             e.codigo AS codigo_estancia, e.planta as planta, e.descripcion AS nombre_estancia, e.codigollave as codigollave, e.armario as armario
+             e.codigo AS codigo_estancia, e.descripcion AS nombre_estancia, e.codigollave as codigollave, e.armario as armario
       FROM prestamos_llaves pl
       JOIN estancias e ON e.id = pl.idestancia
       ORDER BY pl.devuelta ASC, pl.fechaentrega DESC
@@ -74,7 +74,6 @@ async function getPrestamosLlavesAgrupados(req, res) {
         fechaentrega: p.fechaentrega,
         fechadevolucion: p.fechadevolucion,
         devuelta: p.devuelta,
-        planta: p.planta,
       });
     }
 

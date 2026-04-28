@@ -82,6 +82,7 @@ export default function PlanoEstanciasEdicion() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+
   // Objeto para almacenar la nueva estancia.
   const [nuevo, setNuevo] = useState({
     codigo: "",
@@ -161,22 +162,25 @@ export default function PlanoEstanciasEdicion() {
     }
   }, [listaPlanos, plantaActual]);
 
-  const plano = PLANOS[plantaActual] ?? PLANOS.baja;
-
-  // 2. Generamos la URL del SVG
+  // Generamos la URL del SVG
   const SERVIDOR_URL = API_BASE.replace("/db", "");
 
+  // Generamos la URL del SVG
+
   const svgUrl = useMemo(() => {
-    if (!planoSeleccionado?.svgUrl) return ""; // Nota: svgUrl con U mayúscula (del hook)
+    if (!planoSeleccionado?.svgUrl) return "";
 
-    // Si la URL ya empieza por http, la usamos tal cual
-    if (planoSeleccionado.svgUrl.startsWith("http"))
-      return planoSeleccionado.svgUrl;
+    // Eliminamos rutas absolutas de desarrollo y normalizamos
+    let path = planoSeleccionado.svgUrl
+      .replace("/gestionIES/public", "")
+      .replace("/public", "");
 
-    // Si no, le pegamos la base del servidor
-    const base = API_BASE.replace("/db", "");
-    return `${base}${planoSeleccionado.svgUrl}`;
-  }, [planoSeleccionado, API_BASE]);
+    if (!path.startsWith("/")) path = "/" + path;
+
+    // Usamos la base de Vite (ej: /gestionIES) y añadimos el path del archivo
+    const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+    return `${baseUrl}${path}`;
+  }, [planoSeleccionado]);
 
   // ------------------- Cálculo de estado de estancias -------------------
   const prestamosPorEstancia = useMemo(() => {
@@ -278,6 +282,21 @@ export default function PlanoEstanciasEdicion() {
   };
 
   const cancelDraw = () => setDraw({ activo: false, coordenadas: [] });
+  const abrirModalLlaves = (estancia) => {
+    setModalLlaves({
+      open: true,
+      estancia: estancia,
+    });
+  };
+
+  const cerrarModalLlaves = () => {
+    setModalLlaves({ open: false, estancia: null });
+  };
+
+  const refrescarPrestamos = () => {
+    // Aquí puedes disparar la recarga de datos si usas react-query
+    queryClient.invalidateQueries({ queryKey: ["estancias"] });
+  };
 
   // ------------------- SVG helpers -------------------
   const polyToPath = (pts) =>
@@ -287,12 +306,14 @@ export default function PlanoEstanciasEdicion() {
   const scalePoints = (pts) => pts.map(([x, y]) => [x * size.w, y * size.h]);
 
   const esFormularioValido = useMemo(() => {
-    return (
-      nuevo.codigo.trim() !== "" &&
-      nuevo.descripcion.trim() !== "" &&
-      nuevo.tipoestancia.trim() !== ""
-    );
-  }, [nuevo]);
+    // Verificamos que los campos tengan contenido real
+    const tieneCodigo = nuevo.codigo && nuevo.codigo.trim().length > 0;
+    const tieneDesc = nuevo.descripcion && nuevo.descripcion.trim().length > 0;
+    const tieneTipo =
+      nuevo.tipoestancia && nuevo.tipoestancia.trim().length > 0;
+
+    return tieneCodigo && tieneDesc && tieneTipo;
+  }, [nuevo.codigo, nuevo.descripcion, nuevo.tipoestancia]);
 
   // ------------------- Render -------------------
   return (
@@ -325,14 +346,47 @@ export default function PlanoEstanciasEdicion() {
             overflow: "hidden",
           }}
         >
-          {planoSeleccionado && (
+          {/* --- INICIO BLOQUE SUSTITUIDO --- */}
+          {svgUrl ? (
             <img
               ref={imgRef}
               src={svgUrl}
-              alt={`Plano ${planoSeleccionado.label}`}
-              style={{ width: "100%", height: "auto", display: "block" }}
+              alt="Plano de planta"
+              onLoad={(e) => {
+
+                if (imgRef.current) {
+                  setSize({
+                    w: imgRef.current.clientWidth,
+                    h: imgRef.current.clientHeight,
+                  });
+                }
+              }}
+              onError={(e) => {
+                console.error(
+                  "4. ¡ERROR! El navegador no encuentra el archivo en:",
+                  e.target.src,
+                );
+              }}
+              style={{
+                width: "100%",
+                height: "auto",
+                display: "block",
+                border: "2px solid red", // Si ves un marco rojo vacío, es que el hueco existe pero la imagen falla
+              }}
             />
+          ) : (
+            <div
+              style={{
+                padding: "20px",
+                background: "#fee2e2",
+                color: "#991b1b",
+              }}
+            >
+              DEBUG: svgUrl está vacío. Comprueba la consola.
+            </div>
           )}
+          {/* --- FIN BLOQUE SUSTITUIDO --- */}
+
           <svg
             style={{
               position: "absolute",
@@ -341,12 +395,9 @@ export default function PlanoEstanciasEdicion() {
               width: "100%",
               height: "100%",
               pointerEvents: "auto",
+              cursor: modoEdicion ? "crosshair" : "pointer",
             }}
             onClick={startOrAddPoint}
-            onDoubleClick={(e) => {
-              e.preventDefault();
-              finishPolygon();
-            }}
           >
             {estancias.map((s) => {
               const { prestadas, estado } = estadoEstancia(s);
