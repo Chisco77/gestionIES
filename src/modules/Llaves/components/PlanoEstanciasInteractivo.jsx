@@ -31,8 +31,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { PLANOS } from "@/config/planos";
-
 const API_URL = import.meta.env.VITE_API_URL || "";
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
@@ -111,7 +109,6 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
     return () => ro.disconnect();
   }, [planta]);
 
-  // ------------------- Carga de datos -------------------
   // ------------------- Carga de datos -------------------
   useEffect(() => {
     // Si aún no tenemos el plano seleccionado (porque usePlanos está cargando), no hacemos nada
@@ -507,7 +504,7 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
                     {p.profesor}
                   </div>
                   <div style={{ fontSize: 13, color: "#334155" }}>
-                    {p.nombreEstancia + " - " + p.planta + " planta" || "—"}
+                    {p.nombreEstancia + " - " + p.labelPlano || "—"}
                   </div>
                 </div>
               ))

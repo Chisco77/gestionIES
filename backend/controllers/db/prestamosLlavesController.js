@@ -34,20 +34,25 @@ async function getPrestamosLlavesAgrupados(req, res) {
     const ldapSession = req.session?.ldap;
     if (!ldapSession) return res.status(401).json({ error: "No autenticado" });
 
-    // consulta ordenada
+    // Consulta con doble JOIN para llegar hasta la tabla planos
     const { rows: prestamos } = await pool.query(`
-      SELECT pl.id, pl.idestancia, pl.uid, pl.unidades, pl.fechaentrega, pl.fechadevolucion, pl.devuelta,
-             e.codigo AS codigo_estancia, e.descripcion AS nombre_estancia, e.codigollave as codigollave, e.armario as armario
+      SELECT 
+        pl.id, pl.idestancia, pl.uid, pl.unidades, pl.fechaentrega, pl.fechadevolucion, pl.devuelta,
+        e.codigo AS codigo_estancia, 
+        e.descripcion AS nombre_estancia, 
+        e.codigollave AS codigollave, 
+        e.armario AS armario,
+        p.label AS label_plano -- Obtenemos la label del plano
       FROM prestamos_llaves pl
       JOIN estancias e ON e.id = pl.idestancia
+      JOIN planos p ON e.idplano = p.id -- Segundo JOIN para conectar estancia con su plano
       ORDER BY pl.devuelta ASC, pl.fechaentrega DESC
     `);
 
-    const agrupado = new Map(); //Map para mantener orden de inserción
+    const agrupado = new Map();
 
     for (const p of prestamos) {
       if (!agrupado.has(p.uid)) {
-        // Buscamos nombre del profesor
         const nombre = await new Promise((resolve) => {
           buscarPorUid(ldapSession, p.uid, (err, datos) => {
             if (!err && datos)
@@ -70,6 +75,7 @@ async function getPrestamosLlavesAgrupados(req, res) {
         codigoEstancia: p.codigo_estancia,
         codigollave: p.codigollave,
         armario: p.armario,
+        labelPlano: p.label_plano, // Añadimos la label al objeto que va al frontend
         unidades: p.unidades,
         fechaentrega: p.fechaentrega,
         fechadevolucion: p.fechadevolucion,
@@ -77,10 +83,8 @@ async function getPrestamosLlavesAgrupados(req, res) {
       });
     }
 
-    // Map a array manteniendo el orden original de aparición
     const resultado = Array.from(agrupado.values());
 
-    // para que cada grupo interno también respete el orden SQL
     resultado.forEach((grupo) => {
       grupo.prestamos.sort((a, b) => {
         if (a.devuelta === b.devuelta) {

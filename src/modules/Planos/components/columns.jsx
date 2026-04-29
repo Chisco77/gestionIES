@@ -3,10 +3,6 @@ import { Button } from "@/components/ui/button";
 
 export const columns = [
   {
-    accessorKey: "id",
-    header: "ID Técnico",
-  },
-  {
     accessorKey: "label",
     header: ({ column }) => (
       <Button

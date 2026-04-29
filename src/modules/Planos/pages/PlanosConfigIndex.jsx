@@ -26,15 +26,6 @@ export function PlanosConfigIndex() {
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-blue-900">
-          Configuración de Planos
-        </h2>
-        {isLoading && (
-          <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-        )}
-      </div>
-
       <TablaPlanos
         columns={columns}
         data={planos} // Ahora usamos directamente la data del hook

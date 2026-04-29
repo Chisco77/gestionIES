@@ -464,7 +464,7 @@ function SidebarComponent({
         icon: ShieldCheck,
         items: [
           { title: "Avisos", url: "/avisos", icon: Info },
-          { title: "Alta de Planos", url: "/planos", icon: Building2 },
+          { title: "Planos", url: "/planos", icon: Building2 },
           { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
           { title: "Estancias", url: "/estancias", icon: Building2 },
           {

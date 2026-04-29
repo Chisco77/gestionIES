@@ -34,22 +34,26 @@ export function DialogoPlanoEstancia({ open, onClose, estancia }) {
         onInteractOutside={(e) => e.preventDefault()}
         className="p-0 overflow-hidden rounded-lg max-w-6xl w-[92vw] h-[90vh] max-h-[90vh] flex flex-col border-none shadow-2xl bg-white"
       >
-        {/* Cabecera */}
-        <DialogHeader className="bg-green-600 text-white flex flex-col items-center justify-center py-2 px-8 border-b border-green-700 shrink-0">
-          <DialogTitle className="text-xl font-bold tracking-tight text-center leading-none">
+        <DialogHeader className="bg-green-600 text-white flex flex-col items-center justify-center py-3 px-8 border-b border-green-700 shrink-0">
+          <DialogTitle className="text-xl font-bold tracking-tight text-center">
             {estancia.descripcion}
           </DialogTitle>
-          {estancia.numero_ordenadores > 0 && (
-            <div className="flex items-center gap-1.5 bg-black/20 px-2 py-0.5 rounded-full h-4 mt-1">
-              <Monitor className="w-3 h-3 text-blue-300" />
-              <span className="text-[9px] font-bold uppercase">
-                {estancia.numero_ordenadores} PC
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-3 mt-1">
+            {/* Mostramos el label del plano si viene en la estancia */}
+            <span className="text-[10px] font-black uppercase bg-white/20 px-2 py-0.5 rounded text-green-50">
+              {estancia.label_plano || "Plano del Centro"}
+            </span>
+            {estancia.numero_ordenadores > 0 && (
+              <div className="flex items-center gap-1.5 bg-black/20 px-2 py-0.5 rounded text-blue-100">
+                <Monitor className="w-3 h-3" />
+                <span className="text-[9px] font-bold uppercase">
+                  {estancia.numero_ordenadores} PC
+                </span>
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
-        {/* Cuerpo: El plano se adaptará al espacio blanco */}
         <div className="flex-1 min-h-0 w-full p-2 md:p-4 bg-slate-50 flex flex-col overflow-hidden">
           <div className="flex-1 min-h-0 w-full bg-white rounded-xl shadow-inner border border-slate-200 p-2 overflow-hidden">
             <PlanoEstanciaResaltada estancia={estancia} />

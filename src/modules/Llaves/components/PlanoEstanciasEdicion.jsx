@@ -1,5 +1,5 @@
 /**
- * PlanoEstanciasInteractivo.jsx - Plano interactivo de estancias con gestión de llaves
+ * PlanoEstanciasEdicion.jsx - Plano interactivo de estancias con gestión de llaves
  *
  * Adaptado para usar Tabs de ShadCN y seleccionar planta dentro del componente.
  */

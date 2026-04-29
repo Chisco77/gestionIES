@@ -41,9 +41,7 @@ exports.getPlanos = async (req, res) => {
 
 // Insertar un nuevo plano
 exports.insertPlano = async (req, res) => {
-  // Ahora solo esperamos label y orden del body
   const { label, orden } = req.body;
-  const filename = req.file.filename;
 
   // 1. Verificación de archivo (Multer)
   if (!req.file) {
@@ -53,7 +51,9 @@ exports.insertPlano = async (req, res) => {
     });
   }
 
-  // 2. Validación de campo obligatorio
+  const filename = req.file.filename;
+
+  // 2. Validación de campos obligatorios
   if (!label || label.trim() === "") {
     return res.status(400).json({
       ok: false,
@@ -61,20 +61,32 @@ exports.insertPlano = async (req, res) => {
     });
   }
 
-  // 3. URL pública para la base de datos (Nginx/Express servirán desde aquí)
-  const svg_url = `/gestionIES/public/planos/${filename}`;
+  const ordenNum = parseInt(orden) || 0;
+
   try {
+    // VALIDACIÓN DE ORDEN ---
+    const checkQuery = "SELECT id FROM planos WHERE orden = $1";
+    const { rowCount } = await db.query(checkQuery, [ordenNum]);
+
+    if (rowCount > 0) {
+      return res.status(400).json({
+        ok: false,
+        message: `Ya existe un plano con el orden ${ordenNum}. Por favor, elige una posición diferente.`,
+      });
+    }
+    // ---------------------------------
+
+    const svg_url = `/gestionIES/public/planos/${filename}`;
+
     const query = `
       INSERT INTO planos (label, svg_url, orden) 
       VALUES ($1, $2, $3) 
       RETURNING *
     `;
 
-    const values = [label, svg_url, parseInt(orden) || 0];
-
+    const values = [label, svg_url, ordenNum];
     const { rows } = await db.query(query, values);
 
-    // Devolvemos el registro creado (Postgres ya habrá generado el ID)
     res.status(201).json({
       ok: true,
       plano: rows[0],
@@ -101,7 +113,7 @@ exports.updatePlano = async (req, res) => {
            orden = $3 
        WHERE id = $4 
        RETURNING *`,
-      [label, svg_url, orden, id],
+      [label, svg_url, orden, id]
     );
 
     if (result.rowCount === 0) {
@@ -123,7 +135,7 @@ exports.deletePlano = async (req, res) => {
     // 1. Validar si existen estancias asociadas al plano
     const estanciasAsociadas = await db.query(
       "SELECT COUNT(*) FROM estancias WHERE idplano = $1",
-      [id],
+      [id]
     );
 
     if (parseInt(estanciasAsociadas.rows[0].count, 10) > 0) {
@@ -170,7 +182,7 @@ exports.getEstanciasPorPlano = async (req, res) => {
   } catch (error) {
     console.error(
       `❌ Error al obtener estancias del plano ${plantaId}:`,
-      error,
+      error
     );
     res.status(500).json({ message: "Error al obtener estancias" });
   }

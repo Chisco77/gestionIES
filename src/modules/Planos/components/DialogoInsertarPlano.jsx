@@ -70,21 +70,25 @@ export function DialogoInsertarPlano({ open, onOpenChange, onSuccess }) {
         credentials: "include",
       });
 
-      if (!res.ok) throw new Error("Error al subir el plano");
+      if (!res.ok) {
+        // Intentamos leer el mensaje de error enviado por el backend
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Error al subir el plano");
+      }
+      // -------------------
+
       return res.json();
     },
     onSuccess: () => {
       toast.success("Plano guardado con éxito");
       queryClient.invalidateQueries(["planos-centro"]);
-
-      // Ejecutamos la función del padre si existe
       if (onSuccess) onSuccess();
-
       resetForm();
-      // Forzamos el cierre a través de la prop del padre
       onOpenChange(false);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => {
+      toast.error(err.message);
+    },
   });
 
   const handleSave = () => {
@@ -110,7 +114,10 @@ export function DialogoInsertarPlano({ open, onOpenChange, onSuccess }) {
         onOpenChange(v);
       }}
     >
-      <DialogContent className="p-0 rounded-lg max-w-md flex flex-col border-none shadow-2xl">
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="p-0 rounded-lg max-w-md flex flex-col border-none shadow-2xl"
+      >
         <input
           type="file"
           ref={fileInputRef}
@@ -119,7 +126,7 @@ export function DialogoInsertarPlano({ open, onOpenChange, onSuccess }) {
           onChange={handleFileChange}
         />
 
-        <DialogHeader className="bg-slate-900 text-white py-5 px-6 rounded-t-lg">
+        <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <div className="flex items-center gap-3">
             <Map className="w-6 h-6 text-blue-400" />
             <DialogTitle className="text-xl font-bold">
@@ -155,7 +162,7 @@ export function DialogoInsertarPlano({ open, onOpenChange, onSuccess }) {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-[11px] font-bold uppercase flex items-center gap-2">
-                  <Type className="w-3.5 h-3.5" /> Etiqueta
+                  <Type className="w-3.5 h-3.5" /> Nombre
                 </Label>
                 <Input
                   name="label"
@@ -165,6 +172,7 @@ export function DialogoInsertarPlano({ open, onOpenChange, onSuccess }) {
                   className="h-11"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label className="text-[11px] font-bold uppercase flex items-center gap-2">
                   <Hash className="w-3.5 h-3.5" /> Orden
@@ -176,6 +184,11 @@ export function DialogoInsertarPlano({ open, onOpenChange, onSuccess }) {
                   onChange={handleChange}
                   className="h-11"
                 />
+                {/* Texto explicativo elegante */}
+                <p className="text-[11px] text-slate-500 italic leading-tight pl-1">
+                  Define la posición de este plano en los menús y pestañas de la
+                  aplicación.
+                </p>
               </div>
             </div>
           </CardContent>
@@ -192,9 +205,9 @@ export function DialogoInsertarPlano({ open, onOpenChange, onSuccess }) {
           <Button
             onClick={handleSave}
             disabled={guardarMutation.isLoading}
-            className="bg-blue-600 hover:bg-blue-700 min-w-[120px]"
+            className="bg-blue-500 hover:bg-blue-600 min-w-[120px]"
           >
-            {guardarMutation.isLoading ? "Subiendo..." : "Guardar Planta"}
+            {guardarMutation.isLoading ? "Subiendo..." : "Guardar Plano"}
           </Button>
         </DialogFooter>
       </DialogContent>
