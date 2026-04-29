@@ -267,41 +267,34 @@ export function CuadranteGuardiasIndex() {
     const claveDestino = `${hIndex}-${dIndex}`;
     const tipo = e.dataTransfer.getData("tipo");
 
-    // 🟦 CASO 1: arrastre desde lista izquierda
-    if (tipo !== "interna") {
-      const profesor = JSON.parse(e.dataTransfer.getData("profesor"));
+    // 1. Identificar al profesor y su origen
+    let profesor;
+    let origenClave = null;
 
-      if (disponibilidad[profesor.uid]?.has(claveDestino)) {
-        toast.error(
-          `Conflicto: ${nombreProfesor(profesor)} ya tiene clase o guardia en esta hora.`
-        );
-        return;
-      }
+    if (tipo === "interna") {
+      const data = JSON.parse(e.dataTransfer.getData("guardiaInterna"));
+      profesor = data.profesor;
+      origenClave = data.origenClave;
+    } else {
+      profesor = JSON.parse(e.dataTransfer.getData("profesor"));
+    }
 
-      const nuevo = {
-        ...guardias,
-        [claveDestino]: [
-          ...(guardias[claveDestino] || []),
-          {
-            ...profesor,
-            tipo: "guardia",
-          },
-        ],
-      };
+    // 2. Si es arrastre interno y cae en la misma celda, no hacemos nada
+    if (tipo === "interna" && origenClave === claveDestino) return;
 
-      setGuardias(nuevo);
-      sincronizarConBD(nuevo);
+    // 3. VALIDACIÓN 1: ¿Ya está el profesor en esta celda específica?
+    // Esto evita duplicados si arrastras dos veces al mismo desde la izquierda
+    const yaEstaEnCelda = guardias[claveDestino]?.some(
+      (p) => p.uid === profesor.uid
+    );
+    if (yaEstaEnCelda) {
+      toast.warning(
+        `${nombreProfesor(profesor)} ya está asignado a esta hora.`
+      );
       return;
     }
 
-    // 🟨 CASO 2: arrastre interno entre celdas
-    const data = JSON.parse(e.dataTransfer.getData("guardiaInterna"));
-    const { profesor, origenClave } = data;
-
-    // Si suelta en la misma celda → no hacer nada
-    if (origenClave === claveDestino) return;
-
-    // Validación de disponibilidad
+    // 4. VALIDACIÓN 2: Disponibilidad (clases u otras actividades)
     if (disponibilidad[profesor.uid]?.has(claveDestino)) {
       toast.error(
         `Conflicto: ${nombreProfesor(profesor)} ya tiene clase o guardia en esta hora.`
@@ -309,15 +302,18 @@ export function CuadranteGuardiasIndex() {
       return;
     }
 
-    // 🔥 mover profesor
+    // 5. Ejecutar el movimiento en el estado
     const nuevo = { ...guardias };
 
-    // quitar del origen
-    nuevo[origenClave] = (nuevo[origenClave] || []).filter(
-      (p) => p.id_registro !== profesor.id_registro
-    );
+    // Si es interno, lo borramos de la celda antigua usando el UID
+    // (Usar UID es vital porque los elementos recién creados no tienen id_registro aún)
+    if (tipo === "interna" && origenClave) {
+      nuevo[origenClave] = (nuevo[origenClave] || []).filter(
+        (p) => p.uid !== profesor.uid
+      );
+    }
 
-    // añadir al destino
+    // Añadir a la nueva celda
     if (!nuevo[claveDestino]) nuevo[claveDestino] = [];
 
     nuevo[claveDestino].push({
@@ -325,6 +321,7 @@ export function CuadranteGuardiasIndex() {
       tipo: "guardia",
     });
 
+    // 6. Actualizar y persistir
     setGuardias(nuevo);
     sincronizarConBD(nuevo);
   }

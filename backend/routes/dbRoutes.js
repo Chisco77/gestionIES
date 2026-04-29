@@ -28,6 +28,12 @@ const fs = require("fs");
 
 const { validarTokenPublico } = require("../middleware/authPublico");
 
+function check(fn, name) {
+  if (typeof fn !== "function") {
+    console.error(`❌ ERROR: ${name} es undefined`);
+  }
+}
+
 /**
  * LÓGICA AUTOMÁTICA HACIA PUBLIC
  * __dirname está en: /app/backend/routes (en Docker) o ./backend/routes (en local)
@@ -78,6 +84,14 @@ const {
   updatePeriodo,
   deletePeriodo,
 } = require("../controllers/db/periodosHorariosController");
+
+// --- Controlador de tokens de acceso (Proyecciones) ---
+const {
+  getTokens,
+  insertToken,
+  updateToken,
+  deleteToken,
+} = require("../controllers/db/accessTokensController");
 
 // --- Controlador de Planos ---
 const {
@@ -259,6 +273,11 @@ const {
   deleteAsuntoPermitido,
 } = require("../controllers/db/asuntosPermitidosController");
 
+const {
+  getPanelReservas,
+} = require("../controllers/db/panelReservasController");
+router.get("/panel/reservas", getPanelReservas);
+
 // ================================================================
 //   Rutas de Estancias
 // ================================================================
@@ -408,10 +427,6 @@ router.delete("/libros/:id", deleteLibro);
 router.get("/libros/disponibles/:curso/:uid", getLibrosDisponibles);
 
 // ================================================================
-const {
-  getPanelReservas,
-} = require("../controllers/db/panelReservasController");
-router.get("/panel/reservas", getPanelReservas);
 
 // ================================================================
 //   Rutas de Actividades Extraescolares
@@ -589,5 +604,16 @@ router.delete("/planos/:id", deletePlano);
  * Esta ruta sustituye la lógica estática para el componente interactivo.
  */
 router.get("/planos/:plantaId/estancias", getEstanciasPorPlano);
+
+
+// Rutas de Tokens de Acceso (Proyecciones / Pantallas) 
+//  /** * GET /access-tokens: Obtiene la lista de tokens configurados para proyecciones. */ 
+router.get("/access-tokens", getTokens); 
+/** * POST /access-tokens: Registra un nuevo token con sus credenciales LDAP. */ 
+router.post("/access-tokens", insertToken); 
+/** * PUT /access-tokens/:id: Actualiza la configuración de un token o sus credenciales. */ 
+router.put("/access-tokens/:id", updateToken); 
+/** * DELETE /access-tokens/:id: Elimina un token de acceso. */ 
+router.delete("/access-tokens/:id", deleteToken);
 
 module.exports = router;

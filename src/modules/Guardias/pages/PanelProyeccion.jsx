@@ -59,7 +59,7 @@ export function PanelProyeccion() {
           </div>
         </div>
 
-        {/* CENTRO: Reloj de Periodo (Asegúrate de que RelojPeriodo use text-white) */}
+        {/* CENTRO: Reloj de Periodo  */}
         <div className="flex-1 flex justify-center">
           <div className="bg-white/10 px-6 py-2 rounded-2xl backdrop-blur-md border border-white/10">
             <RelojPeriodo periodos={periodosDB} />
