@@ -26,16 +26,22 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-//const uploadPath = path.join(__dirname, "../../public/planos");
-const uploadPath = path.join(process.cwd(), "uploads/planos");
-
-// Cerca de los otros require al principio del archivo
 const { validarTokenPublico } = require("../middleware/authPublico");
 
-// 2. Comprobación de seguridad: Si la carpeta no existe, la creamos
+/**
+ * LÓGICA AUTOMÁTICA HACIA PUBLIC
+ * __dirname está en: /app/backend/routes (en Docker) o ./backend/routes (en local)
+ * "../../" nos sube a la raíz del proyecto.
+ * Luego entramos en "public/planos".
+ */
+const rootPath = path.resolve(__dirname, "../../");
+const uploadPath = path.join(rootPath, "public", "planos");
+
+// DEBUG para confirmar en consola durante el arranque
+console.log("📍 Los planos se guardarán en:", uploadPath);
+
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
-  console.log("📁 Carpeta creada automáticamente:", uploadPath);
 }
 
 // 3. Configuración de almacenamiento
