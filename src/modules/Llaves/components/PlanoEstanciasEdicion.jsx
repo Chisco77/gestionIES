@@ -323,9 +323,40 @@ export default function PlanoEstanciasEdicion() {
     return tieneCodigo && tieneDesc && tieneTipo;
   }, [nuevo.codigo, nuevo.descripcion, nuevo.tipoestancia]);
 
+  if (!cargandoPlanos && listaPlanos.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] p-8 text-center border-2 border-dashed rounded-lg m-4">
+        <div className="bg-slate-100 p-4 rounded-full mb-4">
+          {/* Icono simple de mapa o similar */}
+          <svg
+            className="w-12 h-12 text-slate-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m6 13l5.447-2.724A1 1 0 0021 16.382V5.618a1 1 0 00-1.447-.894L15 7m0 13V7m0 13l-6-3m6-3l-6 3m0-13V4m0 0L9 7m0-3L5 7"
+            />
+          </svg>
+        </div>
+        <h3 className="text-xl font-semibold text-slate-700">
+          No hay planos configurados
+        </h3>
+        <p className="text-slate-500 max-w-sm mt-2">
+          Actualmente no existen planos cargados en el sistema. Contacta con el
+          administrador para subir los archivos SVG.
+        </p>
+      </div>
+    );
+  }
+
   // ------------------- Render -------------------
   return (
     <div style={{ padding: 12 }}>
+      {/* Selector de plantas */}
       <Tabs
         value={String(plantaActual)}
         onValueChange={setPlantaActual}
@@ -341,178 +372,185 @@ export default function PlanoEstanciasEdicion() {
       </Tabs>
 
       <div style={{ display: "flex", flexDirection: "row", gap: 12 }}>
-        {/* Plano */}
+        {/* Contenedor del Plano */}
         <div
           ref={wrapperRef}
           style={{
             position: "relative",
             flex: 1,
             maxWidth: "1110px",
+            minHeight: "500px", // Altura mínima para que no colapse si no hay imagen
             maxHeight: "860px",
             border: "1px solid #e5e7eb",
             borderRadius: 8,
             overflow: "hidden",
+            background: "#f8fafc",
           }}
         >
           {svgUrl ? (
-            <img
-              ref={imgRef}
-              src={svgUrl}
-              alt="Plano de planta"
-              onLoad={(e) => {
-                if (imgRef.current) {
-                  setSize({
-                    w: imgRef.current.clientWidth,
-                    h: imgRef.current.clientHeight,
-                  });
-                }
-              }}
-              onError={(e) => {
-                console.error(
-                  "4. ¡ERROR! El navegador no encuentra el archivo en:",
-                  e.target.src
-                );
-              }}
-              style={{
-                width: "100%",
-                height: "auto",
-                display: "block",
-                border: "2px solid red", // Si ves un marco rojo vacío, es que el hueco existe pero la imagen falla
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                padding: "20px",
-                background: "#fee2e2",
-                color: "#991b1b",
-              }}
-            >
-              DEBUG: svgUrl está vacío. Comprueba la consola.
-            </div>
-          )}
+            <>
+              <img
+                ref={imgRef}
+                src={svgUrl}
+                alt="Plano de planta"
+                onLoad={() => {
+                  if (imgRef.current) {
+                    setSize({
+                      w: imgRef.current.clientWidth,
+                      h: imgRef.current.clientHeight,
+                    });
+                  }
+                }}
+                onError={(e) => {
+                  console.error("Error al cargar SVG:", e.target.src);
+                }}
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
+                }}
+              />
 
-          <svg
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              width: "100%",
-              height: "100%",
-              pointerEvents: "auto",
-              cursor: modoEdicion ? "crosshair" : "pointer",
-            }}
-            onClick={startOrAddPoint}
-          >
-            {estancias.map((s) => {
-              const { prestadas, estado } = estadoEstancia(s);
-              const absPts = scalePoints(s.coordenadas);
-              const color =
-                estado === "none"
-                  ? "rgba(200,200,200,0.95)"
-                  : estado === "partial"
-                    ? "rgba(250,200,80,0.95)"
-                    : "rgba(250,80,80,0.95)";
-              return (
-                <g
-                  key={s.id}
-                  onClick={(e) => {
-                    if (!modoEdicion) {
-                      e.stopPropagation();
-                      abrirModalLlaves(s);
-                    }
-                  }}
-                >
-                  <path
-                    d={polyToPath(absPts)}
-                    fill="white"
-                    fillOpacity={0.35}
-                    stroke="#0ea5e9"
-                    strokeWidth={2}
-                  />
-                  {(() => {
-                    const xs = absPts.map((p) => p[0]);
-                    const ys = absPts.map((p) => p[1]);
-                    const maxX = Math.max(...xs);
-                    const maxY = Math.max(...ys);
-                    const offset = 30;
-                    const circleX = maxX - offset;
-                    const circleY = maxY - offset;
-                    return (
-                      <>
-                        <circle
-                          cx={circleX}
-                          cy={circleY}
-                          r={16}
-                          fill={color}
-                          stroke="#374151"
-                          strokeWidth={1}
-                        />
-                        <text
-                          x={circleX}
-                          y={circleY + 4}
-                          fontSize={12}
-                          textAnchor="middle"
-                          fill="#071130"
-                          pointerEvents="none"
-                        >
-                          {prestadas}
-                        </text>
-                      </>
-                    );
-                  })()}
-                </g>
-              );
-            })}
-
-            {draw.activo && draw.coordenadas.length > 0 && (
-              <g>
-                {(() => {
-                  const absDrawPts = scalePoints(draw.coordenadas);
+              {/* Capa SVG para polígonos */}
+              <svg
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  width: "100%",
+                  height: "100%",
+                  pointerEvents: "auto",
+                  cursor: modoEdicion ? "crosshair" : "pointer",
+                }}
+                onClick={startOrAddPoint}
+              >
+                {estancias.map((s) => {
+                  const { prestadas, estado } = estadoEstancia(s);
+                  const absPts = scalePoints(s.coordenadas);
+                  const color =
+                    estado === "none"
+                      ? "rgba(200,200,200,0.95)"
+                      : estado === "partial"
+                        ? "rgba(250,200,80,0.95)"
+                        : "rgba(250,80,80,0.95)";
                   return (
-                    <>
+                    <g
+                      key={s.id}
+                      onClick={(e) => {
+                        if (!modoEdicion) {
+                          e.stopPropagation();
+                          abrirModalLlaves(s);
+                        }
+                      }}
+                    >
                       <path
-                        d={polyToPath(absDrawPts)}
-                        fill="rgba(16,185,129,0.18)"
-                        stroke="#059669"
-                        strokeDasharray="6 4"
+                        d={polyToPath(absPts)}
+                        fill="white"
+                        fillOpacity={0.35}
+                        stroke="#0ea5e9"
                         strokeWidth={2}
                       />
-                      {absDrawPts.map((p, i) => (
-                        <circle
-                          key={i}
-                          cx={p[0]}
-                          cy={p[1]}
-                          r={4}
-                          fill="#059669"
-                        />
-                      ))}
-                    </>
+                      {(() => {
+                        const xs = absPts.map((p) => p[0]);
+                        const ys = absPts.map((p) => p[1]);
+                        const maxX = Math.max(...xs);
+                        const maxY = Math.max(...ys);
+                        const offset = 30;
+                        const circleX = maxX - offset;
+                        const circleY = maxY - offset;
+                        return (
+                          <>
+                            <circle
+                              cx={circleX}
+                              cy={circleY}
+                              r={16}
+                              fill={color}
+                              stroke="#374151"
+                              strokeWidth={1}
+                            />
+                            <text
+                              x={circleX}
+                              y={circleY + 4}
+                              fontSize={12}
+                              textAnchor="middle"
+                              fill="#071130"
+                              pointerEvents="none"
+                            >
+                              {prestadas}
+                            </text>
+                          </>
+                        );
+                      })()}
+                    </g>
                   );
-                })()}
-              </g>
-            )}
-          </svg>
+                })}
+
+                {draw.activo && draw.coordenadas.length > 0 && (
+                  <g>
+                    {(() => {
+                      const absDrawPts = scalePoints(draw.coordenadas);
+                      return (
+                        <>
+                          <path
+                            d={polyToPath(absDrawPts)}
+                            fill="rgba(16,185,129,0.18)"
+                            stroke="#059669"
+                            strokeDasharray="6 4"
+                            strokeWidth={2}
+                          />
+                          {absDrawPts.map((p, i) => (
+                            <circle
+                              key={i}
+                              cx={p[0]}
+                              cy={p[1]}
+                              r={4}
+                              fill="#059669"
+                            />
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </g>
+                )}
+              </svg>
+            </>
+          ) : (
+            /* Mensaje si la planta existe pero no tiene archivo SVG */
+            <div className="flex flex-col items-center justify-center h-full p-10 text-center">
+              <div className="text-amber-500 mb-2 font-semibold">
+                ⚠️ Archivo no encontrado
+              </div>
+              <p className="text-slate-500 text-sm">
+                No hay una imagen asociada a la planta{" "}
+                <strong>{planoSeleccionado?.label}</strong>.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Panel lateral */}
         <div className="w-80">
           {(user?.perfil === "administrador" ||
             user?.perfil === "directiva") && (
-            <Card className="mt-3 border border-slate-300 shadow-sm">
-              <CardHeader>
+            <Card className="border border-slate-300 shadow-sm">
+              <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
                   <Checkbox
+                    id="modo-edicion"
                     checked={modoEdicion}
                     onCheckedChange={(v) => setModoEdicion(Boolean(v))}
                   />
-                  <CardTitle className="text-base">Modo edición</CardTitle>
+                  <Label
+                    htmlFor="modo-edicion"
+                    className="text-base font-bold cursor-pointer"
+                  >
+                    Modo edición
+                  </Label>
                 </div>
               </CardHeader>
 
               {modoEdicion && (
                 <CardContent className="space-y-3">
-                  {/* Código */}
                   <div className="space-y-1">
                     <Label className="text-sm">Código de la estancia</Label>
                     <Input
@@ -524,7 +562,6 @@ export default function PlanoEstanciasEdicion() {
                     />
                   </div>
 
-                  {/* Descripción */}
                   <div className="space-y-1">
                     <Label className="text-sm">Descripción</Label>
                     <Input
@@ -536,7 +573,6 @@ export default function PlanoEstanciasEdicion() {
                     />
                   </div>
 
-                  {/* Tipo de estancia */}
                   <div className="space-y-1">
                     <Label className="text-sm">Tipo de estancia</Label>
                     <Select
@@ -558,11 +594,9 @@ export default function PlanoEstanciasEdicion() {
                         <SelectItem value="Almacen">Almacén</SelectItem>
                         <SelectItem value="Armario">Armario</SelectItem>
                         <SelectItem value="Aula">Aula</SelectItem>
-
                         <SelectItem value="Aula Polivalente">
                           Aula Polivalente
                         </SelectItem>
-
                         <SelectItem value="Departamento">
                           Departamento
                         </SelectItem>
@@ -575,34 +609,47 @@ export default function PlanoEstanciasEdicion() {
                     </Select>
                   </div>
 
-                  {/* Reservable */}
-                  <div className="flex items-center justify-between border rounded-md p-3 mt-2">
+                  <div className="flex items-center justify-between border rounded-md p-3 mt-2 bg-slate-50">
                     <Label className="text-sm font-medium">Reservable</Label>
                     <Switch
                       checked={nuevo.reservable}
                       onCheckedChange={(v) =>
-                        setNuevo((n) => ({
-                          ...n,
-                          reservable: v,
-                        }))
+                        setNuevo((n) => ({ ...n, reservable: v }))
                       }
                     />
                   </div>
 
-                  {/* Total llaves */}
-                  <div className="space-y-1">
-                    <Label className="text-sm">Total llaves</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={nuevo.totalllaves}
-                      onChange={(e) =>
-                        setNuevo((n) => ({ ...n, totalllaves: e.target.value }))
-                      }
-                    />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-sm">Total llaves</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={nuevo.totalllaves}
+                        onChange={(e) =>
+                          setNuevo((n) => ({
+                            ...n,
+                            totalllaves: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm">Ordenadores</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={nuevo.numero_ordenadores}
+                        onChange={(e) =>
+                          setNuevo((n) => ({
+                            ...n,
+                            numero_ordenadores: Number(e.target.value),
+                          }))
+                        }
+                      />
+                    </div>
                   </div>
 
-                  {/* Código de llave */}
                   <div className="space-y-1">
                     <Label className="text-sm">Código de la llave</Label>
                     <Input
@@ -614,7 +661,6 @@ export default function PlanoEstanciasEdicion() {
                     />
                   </div>
 
-                  {/* Llavera */}
                   <div className="space-y-1">
                     <Label className="text-sm">Llavera</Label>
                     <Select
@@ -637,37 +683,19 @@ export default function PlanoEstanciasEdicion() {
                     </Select>
                   </div>
 
-                  {/* Número de ordenadores */}
-                  <div className="space-y-1">
-                    <Label className="text-sm">Número de ordenadores</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={nuevo.numero_ordenadores}
-                      onChange={(e) =>
-                        setNuevo((n) => ({
-                          ...n,
-                          numero_ordenadores: Number(e.target.value),
-                        }))
-                      }
-                    />
-                  </div>
-
-                  {/* Botones */}
                   <div className="flex gap-2 pt-2">
                     <Button
-                      className="w-full"
+                      className="flex-1"
                       disabled={
                         draw.coordenadas.length < 3 || !esFormularioValido
                       }
                       onClick={finishPolygon}
                     >
-                      Guardar polígono
+                      Guardar
                     </Button>
-
                     <Button
-                      variant="secondary"
-                      className="w-full"
+                      variant="outline"
+                      className="flex-1"
                       onClick={cancelDraw}
                     >
                       Cancelar
@@ -690,8 +718,20 @@ export default function PlanoEstanciasEdicion() {
         />
       )}
 
-      {cargando && <p>Cargando...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {/* Indicadores de estado flotantes para no romper el layout */}
+      <div className="fixed bottom-4 right-4 flex flex-col gap-2">
+        {cargando && (
+          <div className="bg-white/80 backdrop-blur-sm border px-4 py-2 rounded-full shadow-lg text-sm flex items-center gap-2">
+            <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent animate-spin rounded-full"></div>
+            Cargando...
+          </div>
+        )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-full shadow-lg text-sm">
+            {error}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
