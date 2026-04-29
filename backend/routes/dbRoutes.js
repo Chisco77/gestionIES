@@ -26,7 +26,8 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-const uploadPath = path.join(__dirname, "../../public/planos");
+//const uploadPath = path.join(__dirname, "../../public/planos");
+const uploadPath = path.join(process.cwd(), "uploads/planos");
 
 // Cerca de los otros require al principio del archivo
 const { validarTokenPublico } = require("../middleware/authPublico");
