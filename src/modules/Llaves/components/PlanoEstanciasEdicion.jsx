@@ -82,7 +82,6 @@ export default function PlanoEstanciasEdicion() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-
   // Objeto para almacenar la nueva estancia.
   const [nuevo, setNuevo] = useState({
     codigo: "",
@@ -170,16 +169,25 @@ export default function PlanoEstanciasEdicion() {
   const svgUrl = useMemo(() => {
     if (!planoSeleccionado?.svgUrl) return "";
 
-    // Eliminamos rutas absolutas de desarrollo y normalizamos
-    let path = planoSeleccionado.svgUrl
-      .replace("/gestionIES/public", "")
-      .replace("/public", "");
+    // Si la ruta ya empieza por http o https, la usamos tal cual
+    if (planoSeleccionado.svgUrl.startsWith("http")) {
+      return planoSeleccionado.svgUrl;
+    }
 
-    if (!path.startsWith("/")) path = "/" + path;
+    // Si la ruta viene de la DB como /gestionIES/public/planos/...
+    // Y tu BASE_URL de Vite ya es /gestionIES
+    // Solo necesitamos asegurarnos de que no duplicamos el prefijo.
 
-    // Usamos la base de Vite (ej: /gestionIES) y añadimos el path del archivo
-    const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
-    return `${baseUrl}${path}`;
+    const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, ""); // ej: /gestionIES
+
+    // Limpiamos el path para que no tenga el prefijo de la base si ya lo trae
+    let cleanPath = planoSeleccionado.svgUrl;
+    if (cleanPath.startsWith(baseUrl)) {
+      cleanPath = cleanPath.substring(baseUrl.length);
+    }
+
+    // Resultado: /gestionIES + /public/planos/archivo.svg
+    return `${baseUrl}${cleanPath.startsWith("/") ? "" : "/"}${cleanPath}`;
   }, [planoSeleccionado]);
 
   // ------------------- Cálculo de estado de estancias -------------------
@@ -346,14 +354,12 @@ export default function PlanoEstanciasEdicion() {
             overflow: "hidden",
           }}
         >
-          {/* --- INICIO BLOQUE SUSTITUIDO --- */}
           {svgUrl ? (
             <img
               ref={imgRef}
               src={svgUrl}
               alt="Plano de planta"
               onLoad={(e) => {
-
                 if (imgRef.current) {
                   setSize({
                     w: imgRef.current.clientWidth,
@@ -364,7 +370,7 @@ export default function PlanoEstanciasEdicion() {
               onError={(e) => {
                 console.error(
                   "4. ¡ERROR! El navegador no encuentra el archivo en:",
-                  e.target.src,
+                  e.target.src
                 );
               }}
               style={{
@@ -385,7 +391,6 @@ export default function PlanoEstanciasEdicion() {
               DEBUG: svgUrl está vacío. Comprueba la consola.
             </div>
           )}
-          {/* --- FIN BLOQUE SUSTITUIDO --- */}
 
           <svg
             style={{
