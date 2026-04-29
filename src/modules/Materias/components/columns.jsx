@@ -5,14 +5,15 @@ export const columns = [
   {
     accessorKey: "nombre",
     header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
         Nombre
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    filterFn: (row, columnId, filterValue) => {
-      if (!filterValue || filterValue.length === 0) return true;
-      return filterValue.includes(row.getValue(columnId));
-    },
+
+    filterFn: "includesString",
   },
 ];

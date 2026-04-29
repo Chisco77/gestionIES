@@ -59,7 +59,6 @@ export function TablaPrestamosLlaves({
 }) {
   const [columnFilters, setColumnFilters] = useState([]);
   const [textoFiltro, setTextoFiltro] = useState("");
-  const [filtroPlanta, setFiltroPlanta] = useState("");
   const [filtroDevuelta, setFiltroDevuelta] = useState("");
   const [filtroEstancia, setFiltroEstancia] = useState(""); // valor seleccionado (exacto) aplicado como filtro
   const [queryEstancia, setQueryEstancia] = useState(""); // texto que escribe el usuario
@@ -94,9 +93,7 @@ export function TablaPrestamosLlaves({
     table.getColumn("profesor")?.setFilterValue(textoFiltro || undefined);
   }, [textoFiltro]);
 
-  useEffect(() => {
-    table.getColumn("planta")?.setFilterValue(filtroPlanta || undefined);
-  }, [filtroPlanta]);
+
 
   useEffect(() => {
     const valor = filtroDevuelta === "" ? undefined : filtroDevuelta === "true";
@@ -155,7 +152,6 @@ export function TablaPrestamosLlaves({
   const limpiarTodosLosFiltros = () => {
     // Limpia estados locales
     setTextoFiltro("");
-    setFiltroPlanta("");
     setFiltroDevuelta("");
     setFiltroEstancia("");
     setQueryEstancia("");
@@ -171,21 +167,6 @@ export function TablaPrestamosLlaves({
     <div>
       {/* Filtros */}
       <div className="flex flex-wrap gap-4 py-2 text-sm text-muted-foreground items-end">
-        <div className="space-y-1">
-          <label className="block font-medium text-xs">Planta</label>
-          <select
-            className="border p-2 rounded text-sm"
-            value={filtroPlanta}
-            onChange={(e) => setFiltroPlanta(e.target.value)}
-          >
-            <option value="">Todas</option>
-            {plantas.map((planta, idx) => (
-              <option key={idx} value={planta}>
-                {planta}
-              </option>
-            ))}
-          </select>
-        </div>
 
         {/* Buscador de Estancia con autocompletado */}
         <div className="space-y-1 relative" ref={suggestionsRef}>

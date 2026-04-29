@@ -1,8 +1,7 @@
 /**
  * TablaMaterias.jsx - Tabla interactiva de materias
- *
  * ------------------------------------------------------------
- * Adaptada a materias sin curso (solo nombre)
+ * Con filtro de búsqueda por texto.
  */
 
 import {
@@ -23,12 +22,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MultiSelect } from "@/components/ui/multiselect";
+import { Input } from "@/components/ui/input"; 
 import {
   ChevronsLeft,
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
+  Search, // Opcional: Icono de búsqueda
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -59,35 +59,28 @@ export function TablaMaterias({ columns, data, onFilteredChange, acciones }) {
     onFilteredChange?.(filtered);
   }, [columnFilters, data]);
 
-  const getUniqueValues = (columnId) =>
-    Array.from(
-      new Set(
-        table.getPreFilteredRowModel().rows.map((row) => row.getValue(columnId))
-      )
-    )
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b));
-
   const currentPage = table.getState().pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
 
   return (
     <div>
-      {/* Filtro por nombre de materia */}
-      <div className="flex flex-wrap items-end gap-3 py-2 text-sm text-muted-foreground">
-        <div className="space-y-1">
-          <label className="block font-medium text-xs">Materia</label>
-          <MultiSelect
-            values={table.getColumn("nombre")?.getFilterValue() ?? []}
-            onChange={(value) =>
-              table.getColumn("nombre")?.setFilterValue(value)
-            }
-            options={getUniqueValues("nombre").map((v) => ({
-              value: v,
-              label: v,
-            }))}
-            placeholder="Filtrar materias"
-          />
+      {/* FILTRO POR TEXTO  */}
+      <div className="flex flex-wrap items-end gap-3 py-4 text-sm text-muted-foreground">
+        <div className="relative w-full max-w-sm">
+          <label className="block font-medium text-xs mb-1">
+            Filtrar por nombre
+          </label>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Escribe todo o parte del nombre de la materia..."
+              value={table.getColumn("nombre")?.getFilterValue() ?? ""}
+              onChange={(event) =>
+                table.getColumn("nombre")?.setFilterValue(event.target.value)
+              }
+              className="pl-9 w-full"
+            />
+          </div>
         </div>
       </div>
 
@@ -116,8 +109,8 @@ export function TablaMaterias({ columns, data, onFilteredChange, acciones }) {
                 <TableRow
                   key={row.id}
                   className={`cursor-pointer ${
-                    row.getIsSelected() ? "bg-blue-100" : ""
-                  } hover:bg-gray-100 transition-colors`}
+                    row.getIsSelected() ? "bg-blue-100 dark:bg-blue-900/30" : ""
+                  } hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors`}
                   onClick={() => {
                     row.toggleSelected();
                     setSelectedId(row.original.id);
@@ -125,14 +118,20 @@ export function TablaMaterias({ columns, data, onFilteredChange, acciones }) {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No hay resultados.
                 </TableCell>
               </TableRow>
