@@ -47,18 +47,43 @@
  * ------------------------------------------------------------
  */
 
-import logo from "/src/images/logo.png";
 
 /**
  * Añade una nueva página y dibuja la cabecera reseteando dimensiones internas
  * @param {jsPDF} doc - Instancia del documento
  * @param {string} titulo - Título de la cabecera
  * @param {string} orientacion - 'p' para vertical, 'l' para horizontal
+ *
+ *
  */
-export function addPageWithHeader(doc, titulo, orientacion = "l") {
+
+/**
+ * Función auxiliar para resolver la ruta del logo
+ */
+export function resolverRutaLogo(urlDb) {
+  if (!urlDb) return DEFAULT_LOGO;
+  if (urlDb.startsWith("http")) return urlDb;
+
+  const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+  let cleanPath = urlDb;
+
+  if (cleanPath.startsWith(baseUrl) && baseUrl !== "") {
+    cleanPath = cleanPath.substring(baseUrl.length);
+  }
+
+  return `${baseUrl}${cleanPath.startsWith("/") ? "" : "/"}${cleanPath}`;
+}
+
+/**
+ * Añade una nueva página y dibuja la cabecera
+ * @param {jsPDF} doc
+ * @param {string} titulo
+ * @param {string} logoUrl - URL resuelta del logo
+ * @param {string} orientacion
+ */
+export function addPageWithHeader(doc, titulo, logoUrl, orientacion = "l") {
   doc.addPage(orientacion, "a4");
 
-  // Sincronización manual de dimensiones para evitar el "desplazamiento" del header
   if (orientacion === "p") {
     doc.internal.pageSize.width = 210;
     doc.internal.pageSize.height = 297;
@@ -67,48 +92,55 @@ export function addPageWithHeader(doc, titulo, orientacion = "l") {
     doc.internal.pageSize.height = 210;
   }
 
-  // Importante: resetear fuente antes de dibujar el header para evitar efectos raros
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
 
-  return drawHeader(doc, titulo);
+  return drawHeader(doc, titulo, logoUrl);
 }
 
 /**
- * Dibuja la cabecera común del informe
- * Devuelve la Y inicial del contenido
+ * Dibuja la cabecera con el logo pasado por parámetro
  */
-export function drawHeader(doc, titulo) {
-  // Forzamos a que lea el ancho real de la página actual
+export function drawHeader(doc, titulo, logoUrl) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const marginLeft = 15;
   const marginRight = 15;
-
   const logoWidth = 25;
   const logoHeight = 18;
   const headerTop = 10;
   const headerBottomY = headerTop + logoHeight + 1;
 
-  // --- Forzar color y fuente base ---
   doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "normal");
 
-  // --- Logo ---
-  doc.addImage(logo, "PNG", marginLeft, headerTop, logoWidth, logoHeight);
+  // --- Uso del logo dinámico ---
+  // Nota: logoUrl debe ser una imagen ya cargada o una URL accesible
+  try {
+    const imgType = logoUrl.toLowerCase().includes(".png") ? "PNG" : "JPEG";
+    doc.addImage(
+      logoUrl,
+      imgType,
+      marginLeft,
+      headerTop,
+      logoWidth,
+      logoHeight
+    );
+  } catch (error) {
+    console.error("Error al añadir logo al PDF, usando default", error);
+    // Fallback silencioso si la imagen falla
+  }
 
-  // Ajuste de fuente para que no herede tamaños raros
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12); // Bajamos a 12 para que quepa mejor en vertical
+  doc.setFontSize(12);
 
   const titleX = marginLeft + logoWidth + 8;
   const titleY = headerTop + logoHeight / 2 + 2;
-
-  // Usamos un ancho máximo para el texto para que no se solape
   const maxTitleWidth = pageWidth - titleX - marginRight;
+
   doc.text(titulo, titleX, titleY, {
     align: "left",
     baseline: "middle",
-    maxWidth: maxTitleWidth, // Esto evita que el título se desparrame
+    maxWidth: maxTitleWidth,
   });
 
   doc.setLineWidth(0.3);
@@ -118,7 +150,7 @@ export function drawHeader(doc, titulo) {
 }
 
 /**
- * Dibuja el pie de página en todas las páginas
+ * Dibuja el pie de página (Se mantiene igual)
  */
 export function drawFooter(doc) {
   const pageCount = doc.getNumberOfPages();
@@ -131,11 +163,8 @@ export function drawFooter(doc) {
 
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-
-    // ESTA LÍNEA ES LA CLAVE: Lee el ancho REAL de la página donde estás parado
     const currentWidth = doc.internal.pageSize.getWidth();
     const currentHeight = doc.internal.pageSize.getHeight();
-
     const marginLeft = 15;
     const marginRight = 15;
     const footerY = currentHeight - 15;
@@ -144,7 +173,6 @@ export function drawFooter(doc) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
 
-    // Línea del pie adaptada al ancho actual (210 o 297)
     doc.setLineWidth(0.3);
     doc.line(marginLeft, footerY - 5, currentWidth - marginRight, footerY - 5);
 
@@ -153,9 +181,7 @@ export function drawFooter(doc) {
       `Página ${i} de ${pageCount}`,
       currentWidth - marginRight,
       footerY,
-      {
-        align: "right",
-      }
+      { align: "right" }
     );
   }
 }

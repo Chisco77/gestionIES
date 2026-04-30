@@ -6,7 +6,8 @@ export async function generarPdfControlGuardias(
   horarios,
   guardiasRealizadas,
   periodos,
-  cursoLabel
+  cursoLabel,
+  logoUrl
 ) {
   const yearInicio = parseInt(cursoLabel.split("-")[0]);
 
@@ -70,7 +71,8 @@ export async function generarPdfControlGuardias(
 
     let currentY = drawHeader(
       doc,
-      `CONTROL DE GUARDIAS - ${nombreDia.toUpperCase()} (Curso ${cursoLabel})`
+      `CONTROL DE GUARDIAS - ${nombreDia.toUpperCase()} (Curso ${cursoLabel})`,
+      logoUrl
     );
 
     const diaSemanaLdap = indexDia + 1;
@@ -139,6 +141,7 @@ export async function generarPdfControlGuardias(
         currentY = addPageWithHeader(
           doc,
           `CONTROL DE GUARDIAS - ${nombreDia.toUpperCase()} (Cont.)`,
+          logoUrl, // <--- Ojo al orden de parámetros según tu utils
           "l"
         );
       }
@@ -197,7 +200,11 @@ export async function generarPdfControlGuardias(
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0);
 
-  let yFinal = drawHeader(doc, "RESUMEN TOTAL DE GUARDIAS POR PROFESOR");
+  let yFinal = drawHeader(
+    doc,
+    "RESUMEN TOTAL DE GUARDIAS POR PROFESOR",
+    logoUrl
+  );
 
   const listaRanking = [];
   const uidsProcesados = new Set();
@@ -218,8 +225,12 @@ export async function generarPdfControlGuardias(
   listaRanking.forEach((item, index) => {
     // Control de límite para página A4 vertical
     if (yTable > 265) {
-      yTable = addPageWithHeader(doc, "RESUMEN TOTAL DE GUARDIAS (Cont.)", "p");
-
+      yTable = addPageWithHeader(
+        doc,
+        "RESUMEN TOTAL DE GUARDIAS (Cont.)",
+        logoUrl,
+        "p"
+      );
       // Aseguramos fuente tras el header de la nueva página
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);

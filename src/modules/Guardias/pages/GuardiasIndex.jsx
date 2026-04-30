@@ -20,6 +20,9 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+import { resolverRutaLogo } from "@/Informes/utils";
+
 export function GuardiasIndex() {
   const { user } = useAuth();
   const { data: guardias, isLoading, error } = useGuardias();
@@ -28,6 +31,7 @@ export function GuardiasIndex() {
   const esDirectiva = user?.perfil === "directiva";
 
   const columns = useMemo(() => getColumnsGuardias(esDirectiva), [esDirectiva]);
+  const { data: centro } = useConfiguracionCentro(); // Traemos los datos del centro
 
   const guardiasVisibles = useMemo(() => {
     if (!guardias) return [];
@@ -79,11 +83,14 @@ export function GuardiasIndex() {
         a.inicio.localeCompare(b.inicio)
       );
 
+      const urlParaPdf = resolverRutaLogo(centro?.logoCentroUrl);
+
       await generarPdfControlGuardias(
         horariosSoloGuardia,
         guardiasVisibles,
         periodosOrdenados,
-        curso.label
+        curso.label,
+        urlParaPdf // <--- PASAMOS LA URL RESUELTA
       );
     } catch (err) {
       console.error(err);
