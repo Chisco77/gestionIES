@@ -81,7 +81,7 @@ export function resolverRutaLogo(urlDb) {
  * @param {string} logoUrl - URL resuelta del logo
  * @param {string} orientacion
  */
-export function addPageWithHeader(doc, titulo, logoUrl, orientacion = "l") {
+export function addPageWithHeader(doc, titulo, logoUrl, orientacion = "p") {
   doc.addPage(orientacion, "a4");
 
   if (orientacion === "p") {

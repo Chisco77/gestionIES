@@ -78,6 +78,9 @@ import { generateListadoExtraescolaresMensual } from "@/Informes/extraescolares"
 import { getCursoActual, ddmmyyyyToISO } from "@/utils/fechasHoras";
 import { format } from "date-fns";
 
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+import { resolverRutaLogo } from "@/Informes/utils";
+
 // Definimos la función de filtrado
 const dateRangeFilter = (row, columnId, value) => {
   const [desde, hasta] = value || [];
@@ -118,8 +121,10 @@ export function TablaExtraescolaresDirectiva({
   const { data: cursos = [] } = useCursosLdap();
   const { data: periodos = [] } = usePeriodosHorarios();
   const { data: extraescolaresTodas = [] } = useExtraescolaresAll();
+  const { data: centro } = useConfiguracionCentro();
 
-  console.log("Extraescolares: ", extraescolaresTodas);
+  // Resolvemos la URL una sola vez para usarla en todos los botones
+  const urlLogoParaInformes = resolverRutaLogo(centro?.logoCentroUrl);
 
   const handleGenerarExcel = async (actividad) => {
     try {
@@ -175,10 +180,11 @@ export function TablaExtraescolaresDirectiva({
       hasta = ddmmyyyyToISO(curso.finCurso);
     }
 
-    generateListadoExtraescolaresPorProfesor(filasFiltradas, {
-      desde,
-      hasta,
-    });
+    generateListadoExtraescolaresPorProfesor(
+      filasFiltradas,
+      { desde, hasta },
+      urlLogoParaInformes
+    );
   };
 
   const handleGenerarExtraescolaresDepartamento = () => {
@@ -201,10 +207,11 @@ export function TablaExtraescolaresDirectiva({
       hasta = ddmmyyyyToISO(curso.finCurso);
     }
     // informe
-    generateListadoExtraescolaresPorDepartamento(filasFiltradas, {
-      desde,
-      hasta,
-    });
+    generateListadoExtraescolaresPorDepartamento(
+      filasFiltradas,
+      { desde, hasta },
+      urlLogoParaInformes
+    );
   };
 
   const handleGenerarExtraescolaresDepartamentoXLS = () => {
@@ -242,6 +249,7 @@ export function TablaExtraescolaresDirectiva({
     generateListadoExtraescolaresPorFecha(filasFiltradas, {
       desde: fechaDesde,
       hasta: fechaHasta,
+      urlLogoParaInformes,
     });
   };
 
@@ -266,10 +274,11 @@ export function TablaExtraescolaresDirectiva({
     }
 
     // informe
-    generateListadoExtraescolaresMensual(filasFiltradas, {
-      desde,
-      hasta,
-    });
+    generateListadoExtraescolaresMensual(
+      filasFiltradas,
+      { desde, hasta },
+      urlLogoParaInformes
+    );
   };
   // Tabla
   const table = useReactTable({
