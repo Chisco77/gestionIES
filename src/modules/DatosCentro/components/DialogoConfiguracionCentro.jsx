@@ -65,6 +65,13 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
     favicon_url: "",
   });
 
+  // Añade este estado al principio del componente para guardar los archivos seleccionados
+  const [selectedFiles, setSelectedFiles] = useState({
+    logo_miies: null,
+    logo_centro: null,
+    favicon: null,
+  });
+
   // Sincronizar datos cuando el diálogo se abre o los datos cargan
   useEffect(() => {
     if (centro && open) {
@@ -96,34 +103,47 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
   const handleFileChange = (e, field) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith("image/"))
-      return toast.error("El archivo debe ser una imagen");
 
-    // Límite de 1.5MB para evitar payloads excesivos en la BD
-    if (file.size > 1.5 * 1024 * 1024)
-      return toast.error("La imagen es demasiado pesada (Máx 1.5MB)");
+    // Guardamos el archivo para el FormData usando el nombre base (ej: logo_miies)
+    setSelectedFiles((prev) => ({ ...prev, [field]: file }));
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData((prev) => ({ ...prev, [field]: reader.result }));
-      toast.info("Imagen cargada en el formulario");
-    };
-    reader.readAsDataURL(file);
+    // Generamos la URL de previsualización
+    const previewUrl = URL.createObjectURL(file);
+
+    // Actualizamos la URL en formData para que el <img src={formData.logo_miies_url} /> funcione
+    setFormData((prev) => ({
+      ...prev,
+      [`${field}_url`]: previewUrl, // Ahora sí: logo_miies + _url = logo_miies_url
+    }));
   };
 
   const guardarMutation = useMutation({
     mutationFn: async (payload) => {
-      const esUpdate = !!payload.id;
-      const url = esUpdate
-        ? `${API_BASE}/configuracion-centro/${payload.id}`
-        : `${API_BASE}/configuracion-centro`;
+      const data = new FormData();
 
-      const res = await fetch(url, {
-        method: esUpdate ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
+      // 1. Añadimos todos los campos de texto
+      // Excluimos las URLs actuales para no enviarlas como string si vamos a subir archivos
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] !== null && !key.endsWith("_url")) {
+          data.append(key, payload[key]);
+        }
       });
+
+      // 2. Añadimos los archivos binarios si el usuario seleccionó alguno nuevo
+      if (selectedFiles.logo_miies)
+        data.append("logo_miies", selectedFiles.logo_miies);
+      if (selectedFiles.logo_centro)
+        data.append("logo_centro", selectedFiles.logo_centro);
+      if (selectedFiles.favicon) data.append("favicon", selectedFiles.favicon);
+
+      const res = await fetch(
+        `${API_BASE}/configuracion-centro/${payload.id}`,
+        {
+          method: "PUT",
+          body: data, // IMPORTANTE: No pongas headers de Content-Type, el navegador lo hace solo con FormData
+          credentials: "include",
+        }
+      );
 
       if (!res.ok) throw new Error("Error al guardar la configuración");
       return res.json();
@@ -154,21 +174,21 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
           ref={fileInputAppRef}
           className="hidden"
           accept="image/*"
-          onChange={(e) => handleFileChange(e, "logo_miies_url")}
+          onChange={(e) => handleFileChange(e, "logo_miies")} // quitamos _url
         />
         <input
           type="file"
           ref={fileInputCentroRef}
           className="hidden"
           accept="image/*"
-          onChange={(e) => handleFileChange(e, "logo_centro_url")}
+          onChange={(e) => handleFileChange(e, "logo_centro")} // quitamos _url
         />
         <input
           type="file"
           ref={fileInputFaviconRef}
           className="hidden"
           accept="image/*"
-          onChange={(e) => handleFileChange(e, "favicon_url")}
+          onChange={(e) => handleFileChange(e, "favicon")} // quitamos _url
         />
 
         <DialogHeader className="bg-green-600 text-white rounded-t-lg py-4 px-8 shadow-md">

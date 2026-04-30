@@ -16,7 +16,6 @@
 const db = require("../../db");
 
 // GET: /db/configuracion-centro
-// Devuelve la configuración del centro (incluyendo ambos logos)
 async function getConfiguracionCentro(req, res) {
   try {
     const { rows } = await db.query(
@@ -33,41 +32,35 @@ async function getConfiguracionCentro(req, res) {
         .status(404)
         .json({ ok: false, error: "No hay configuración definida" });
     }
-
     res.json({ ok: true, centro: rows[0] });
   } catch (err) {
     console.error("[getConfiguracionCentro] Error:", err);
-    res.status(500).json({
-      ok: false,
-      error: "Error obteniendo la configuración del centro",
-    });
+    res
+      .status(500)
+      .json({ ok: false, error: "Error obteniendo la configuración" });
   }
 }
 
-// POST: /db/configuracion-centro
+// POST: /db/configuracion-centro (Inserción inicial con archivos)
 async function insertConfiguracion(req, res) {
-  const {
-    nombre_ies,
-    direccion_linea_1,
-    direccion_linea_2,
-    direccion_linea_3,
-    telefono,
-    fax,
-    email,
-    localidad,
-    provincia,
-    codigo_postal,
-    web_url,
-    logo_miies_url,
-    logo_centro_url,
-    favicon_url,
-  } = req.body || {};
+  const body = req.body;
 
-  if (!nombre_ies) {
+  if (!body.nombre_ies) {
     return res
       .status(400)
       .json({ ok: false, error: "El nombre del IES es obligatorio" });
   }
+
+  // Extraemos rutas de archivos si existen en la creación
+  const logo_miies_url = req.files?.["logo_miies"]
+    ? `/gestionIES/public/logos/${req.files["logo_miies"][0].filename}`
+    : null;
+  const logo_centro_url = req.files?.["logo_centro"]
+    ? `/gestionIES/public/logos/${req.files["logo_centro"][0].filename}`
+    : null;
+  const favicon_url = req.files?.["favicon"]
+    ? `/gestionIES/public/logos/${req.files["favicon"][0].filename}`
+    : null;
 
   try {
     const { rows } = await db.query(
@@ -79,17 +72,17 @@ async function insertConfiguracion(req, res) {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [
-        nombre_ies,
-        direccion_linea_1,
-        direccion_linea_2,
-        direccion_linea_3,
-        telefono,
-        fax,
-        email,
-        localidad,
-        provincia,
-        codigo_postal,
-        web_url,
+        body.nombre_ies,
+        body.direccion_linea_1,
+        body.direccion_linea_2,
+        body.direccion_linea_3,
+        body.telefono,
+        body.fax,
+        body.email,
+        body.localidad,
+        body.provincia,
+        body.codigo_postal,
+        body.web_url,
         logo_miies_url,
         logo_centro_url,
         favicon_url,
@@ -107,22 +100,18 @@ async function insertConfiguracion(req, res) {
 // PUT: /db/configuracion-centro/:id
 async function updateConfiguracion(req, res) {
   const id = req.params.id;
-  const {
-    nombre_ies,
-    direccion_linea_1,
-    direccion_linea_2,
-    direccion_linea_3,
-    telefono,
-    fax,
-    email,
-    localidad,
-    provincia,
-    codigo_postal,
-    web_url,
-    logo_miies_url,
-    logo_centro_url,
-    favicon_url,
-  } = req.body || {};
+  const body = req.body;
+
+  // Lógica de archivos: solo generamos la ruta si Multer ha recibido un archivo nuevo
+  const logo_miies_url = req.files?.["logo_miies"]
+    ? `/gestionIES/public/logos/${req.files["logo_miies"][0].filename}`
+    : null;
+  const logo_centro_url = req.files?.["logo_centro"]
+    ? `/gestionIES/public/logos/${req.files["logo_centro"][0].filename}`
+    : null;
+  const favicon_url = req.files?.["favicon"]
+    ? `/gestionIES/public/logos/${req.files["favicon"][0].filename}`
+    : null;
 
   try {
     const { rows } = await db.query(
@@ -146,24 +135,24 @@ async function updateConfiguracion(req, res) {
        RETURNING *`,
       [
         id,
-        nombre_ies,
-        direccion_linea_1,
-        direccion_linea_2,
-        direccion_linea_3,
-        telefono,
-        fax,
-        email,
-        localidad,
-        provincia,
-        codigo_postal,
-        web_url,
+        body.nombre_ies,
+        body.direccion_linea_1,
+        body.direccion_linea_2,
+        body.direccion_linea_3,
+        body.telefono,
+        body.fax,
+        body.email,
+        body.localidad,
+        body.provincia,
+        body.codigo_postal,
+        body.web_url,
         logo_miies_url,
         logo_centro_url,
         favicon_url,
       ]
     );
 
-    if (!rows[0]) {
+    if (rows.length === 0) {
       return res
         .status(404)
         .json({ ok: false, error: "Configuración no encontrada" });

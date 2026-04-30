@@ -77,6 +77,27 @@ const uploadPlano = multer({
     }
   },
 });
+
+// 4. Configuración para Logos del Centro
+const logosPath = path.join(rootPath, "public", "logos");
+if (!fs.existsSync(logosPath)) {
+  fs.mkdirSync(logosPath, { recursive: true });
+}
+
+const storageLogos = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, logosPath);
+  },
+  filename: (req, file, cb) => {
+    // Usamos el fieldname (logo_centro, logo_miies, etc) para que sea descriptivo
+    const ext = path.extname(file.originalname);
+    const nombreLimpio = `${file.fieldname}-${Date.now()}${ext}`;
+    cb(null, nombreLimpio);
+  },
+});
+
+const uploadLogos = multer({ storage: storageLogos });
+
 // --- Controladores ---
 const {
   getPeriodosHorarios,
@@ -519,7 +540,19 @@ router.post("/configuracion-centro", insertConfiguracion);
 /**
  * PUT /configuracion-centro/:id: Actualización de los datos del centro.
  */
-router.put("/configuracion-centro/:id", updateConfiguracion);
+//router.put("/configuracion-centro/:id", updateConfiguracion);
+/**
+ * PUT /configuracion-centro/:id: Actualización de los datos del centro e imágenes.
+ */
+router.put(
+  "/configuracion-centro/:id",
+  uploadLogos.fields([
+    { name: "logo_miies", maxCount: 1 },
+    { name: "logo_centro", maxCount: 1 },
+    { name: "favicon", maxCount: 1 },
+  ]),
+  updateConfiguracion
+);
 
 // --- Controlador de Notificaciones Directiva ---
 const {
@@ -605,15 +638,14 @@ router.delete("/planos/:id", deletePlano);
  */
 router.get("/planos/:plantaId/estancias", getEstanciasPorPlano);
 
-
-// Rutas de Tokens de Acceso (Proyecciones / Pantallas) 
-//  /** * GET /access-tokens: Obtiene la lista de tokens configurados para proyecciones. */ 
-router.get("/access-tokens", getTokens); 
-/** * POST /access-tokens: Registra un nuevo token con sus credenciales LDAP. */ 
-router.post("/access-tokens", insertToken); 
-/** * PUT /access-tokens/:id: Actualiza la configuración de un token o sus credenciales. */ 
-router.put("/access-tokens/:id", updateToken); 
-/** * DELETE /access-tokens/:id: Elimina un token de acceso. */ 
+// Rutas de Tokens de Acceso (Proyecciones / Pantallas)
+//  /** * GET /access-tokens: Obtiene la lista de tokens configurados para proyecciones. */
+router.get("/access-tokens", getTokens);
+/** * POST /access-tokens: Registra un nuevo token con sus credenciales LDAP. */
+router.post("/access-tokens", insertToken);
+/** * PUT /access-tokens/:id: Actualiza la configuración de un token o sus credenciales. */
+router.put("/access-tokens/:id", updateToken);
+/** * DELETE /access-tokens/:id: Elimina un token de acceso. */
 router.delete("/access-tokens/:id", deleteToken);
 
 module.exports = router;

@@ -95,7 +95,6 @@ async function initServer() {
     app.use("/api/excel-dietas", excelDietasRoutes);
     app.use("/api/import", importHorariosRoutes);
 
-    //app.use('/uploads/alumnos', express.static(path.join(__dirname, 'uploads/alumnos')));
     app.use(
       "/uploads/alumnos",
       cors({

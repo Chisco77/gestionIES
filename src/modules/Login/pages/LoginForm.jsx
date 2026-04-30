@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage } from "@radix-ui/react-avatar";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
@@ -39,11 +39,27 @@ export function LoginForm({ className, ...props }) {
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // Obtenemos los datos del centro para el logo y el nombre
   const { data: centro } = useConfiguracionCentro();
 
-  const logoAMostrar =
-    centro?.logoUrl || `${import.meta.env.BASE_URL}public/miIES.png`;
+  // Resolución de la URL del logo respetando la configuración del centro
+  const logoAMostrar = useMemo(() => {
+    if (!centro?.logoMiiesUrl) {
+      return `${import.meta.env.BASE_URL}public/miIES.png`.replace(/\/+/g, "/");
+    }
+
+    const urlDb = centro.logoMiiesUrl;
+    if (urlDb.startsWith("http")) return urlDb;
+
+    const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+    let cleanPath = urlDb;
+
+    if (cleanPath.startsWith(baseUrl) && baseUrl !== "") {
+      cleanPath = cleanPath.substring(baseUrl.length);
+    }
+
+    return `${baseUrl}${cleanPath.startsWith("/") ? "" : "/"}${cleanPath}`;
+  }, [centro]);
+
   const nombreIES = centro?.nombreIes || import.meta.env.VITE_IES_NAME;
 
   const handleChange = (e) => {
@@ -54,7 +70,6 @@ export function LoginForm({ className, ...props }) {
     e.preventDefault();
 
     try {
-      // Intentar login
       const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,51 +84,41 @@ export function LoginForm({ className, ...props }) {
         return;
       }
 
-      // --- INVALIDATE QUERIES (Restaurados todos los originales) ---
-      queryClient.invalidateQueries(["alumnos-ldap"]);
-      queryClient.invalidateQueries(["profesores-ldap"]);
-      queryClient.invalidateQueries(["staff-ldap"]);
-      queryClient.invalidateQueries(["todos-ldap"]);
-      queryClient.invalidateQueries(["prestamos"]);
-      queryClient.invalidateQueries(["reservasPanel"]);
-      queryClient.invalidateQueries(["ldap-departamentos"]);
-      queryClient.invalidateQueries(["ldap-cursos"]);
-      queryClient.invalidateQueries(["estancias"]);
-      queryClient.invalidateQueries(["extraescolares", "uid"]);
-      queryClient.invalidateQueries(["extraescolares", "all"]);
-      queryClient.invalidateQueries(["reservas"]);
-      queryClient.invalidateQueries(["reservas", "dia"]);
-      queryClient.invalidateQueries(["reservas", "uid"]);
-      queryClient.invalidateQueries(["permisos", "todos"]);
-      queryClient.invalidateQueries(["panel", "permisos"]);
-      queryClient.invalidateQueries(["permisosMes"]);
-      queryClient.invalidateQueries(["avisos"]);
-      queryClient.invalidateQueries(["empleados"]);
-      queryClient.invalidateQueries(["restricciones_asuntos"]);
-      queryClient.invalidateQueries(["asuntos_permitidos", "uid"]);
-      queryClient.invalidateQueries(["reservas-periodicas-directiva"]);
-      queryClient.invalidateQueries(["notificacionesDirectiva"]);
-      queryClient.invalidateQueries(["ausencias"]);
-      queryClient.invalidateQueries(["horario-profesorado"]);
-      queryClient.invalidateQueries(["configuracion-centro"]);
-      queryClient.invalidateQueries(["guardias"]);
-      queryClient.invalidateQueries(["planos-centro"]);
-
-      // ------------------------------------------------------------
+      // Invalidación de caché para todos los módulos
+      const keys = [
+        "alumnos-ldap",
+        "profesores-ldap",
+        "staff-ldap",
+        "todos-ldap",
+        "prestamos",
+        "reservasPanel",
+        "ldap-departamentos",
+        "ldap-cursos",
+        "estancias",
+        "extraescolares",
+        "reservas",
+        "permisos",
+        "panel",
+        "avisos",
+        "empleados",
+        "ausencias",
+        "horario-profesorado",
+        "configuracion-centro",
+        "guardias",
+        "planos-centro",
+      ];
+      keys.forEach((k) => queryClient.invalidateQueries([k]));
 
       const checkAuth = async (retries = 2) => {
         for (let i = 0; i < retries; i++) {
           const res = await fetch(`${API_URL}/check-auth`, {
             credentials: "include",
           });
-
           if (res.ok) return res.json();
-
           if (res.status === 401) {
             await new Promise((r) => setTimeout(r, 200));
             continue;
           }
-
           throw new Error("Error en check-auth");
         }
         throw new Error("No autenticado");
@@ -169,25 +174,28 @@ export function LoginForm({ className, ...props }) {
                   id="username"
                   name="username"
                   type="text"
-                  onChange={handleChange}
-                  value={usuario.username}
+                  placeholder="Usuario"
                   required
+                  value={usuario.username}
+                  onChange={handleChange}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center">
+                  <Label htmlFor="password">Contraseña</Label>
+                </div>
                 <Input
                   id="password"
                   name="password"
                   type="password"
-                  onChange={handleChange}
-                  value={usuario.password}
                   required
+                  value={usuario.password}
+                  onChange={handleChange}
                 />
               </div>
               <Button
                 type="submit"
-                className="w-full bg-[#1DA1F2] text-white hover:bg-[#0d8ddb]"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white"
               >
                 Acceder
               </Button>
