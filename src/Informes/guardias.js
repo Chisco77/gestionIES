@@ -154,7 +154,7 @@ export async function generarPdfControlGuardias(
         const totalGuardias = statsProfes[profe.uid] || 0;
         doc.setFont("helvetica", "normal");
         doc.text(
-          `${profe.nombreProfesor.substring(0, 18)} (${totalGuardias})`,
+          `${profe.nombreProfesor.substring(0, 30)} (${totalGuardias})`,
           margin + colHoraWidth + 2,
           yFila + 4
         );
