@@ -82,18 +82,6 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
 
     const where = filtros.length ? "WHERE " + filtros.join(" AND ") : "";
 
-    // Consulta principal
-    /*  const { rows } = await db.query(
-      `SELECT h.*, 
-              m.nombre AS materia_nombre,
-              e.descripcion AS estancia_descripcion
-       FROM horario_profesorado h
-       LEFT JOIN materias m ON h.idmateria = m.id
-       LEFT JOIN estancias e ON h.idestancia = e.id
-       ${where}
-       ORDER BY h.uid, h.dia_semana, h.idperiodo ASC`,
-      vals,
-    );*/
 
     // Consulta principal con ordenación cronológica real
     const { rows } = await db.query(
