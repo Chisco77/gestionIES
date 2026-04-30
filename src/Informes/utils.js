@@ -50,10 +50,27 @@
 import logo from "/src/images/logo.png";
 
 /**
- * Añade una nueva página y dibuja la cabecera
+ * Añade una nueva página y dibuja la cabecera reseteando dimensiones internas
+ * @param {jsPDF} doc - Instancia del documento
+ * @param {string} titulo - Título de la cabecera
+ * @param {string} orientacion - 'p' para vertical, 'l' para horizontal
  */
-export function addPageWithHeader(doc, titulo) {
-  doc.addPage();
+export function addPageWithHeader(doc, titulo, orientacion = "l") {
+  doc.addPage(orientacion, "a4");
+
+  // Sincronización manual de dimensiones para evitar el "desplazamiento" del header
+  if (orientacion === "p") {
+    doc.internal.pageSize.width = 210;
+    doc.internal.pageSize.height = 297;
+  } else {
+    doc.internal.pageSize.width = 297;
+    doc.internal.pageSize.height = 210;
+  }
+
+  // Importante: resetear fuente antes de dibujar el header para evitar efectos raros
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+
   return drawHeader(doc, titulo);
 }
 
@@ -62,8 +79,8 @@ export function addPageWithHeader(doc, titulo) {
  * Devuelve la Y inicial del contenido
  */
 export function drawHeader(doc, titulo) {
+  // Forzamos a que lea el ancho real de la página actual
   const pageWidth = doc.internal.pageSize.getWidth();
-
   const marginLeft = 15;
   const marginRight = 15;
 
@@ -79,24 +96,24 @@ export function drawHeader(doc, titulo) {
   // --- Logo ---
   doc.addImage(logo, "PNG", marginLeft, headerTop, logoWidth, logoHeight);
 
-  // --- Título ---
+  // Ajuste de fuente para que no herede tamaños raros
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14); // un poco más pequeño
+  doc.setFontSize(12); // Bajamos a 12 para que quepa mejor en vertical
 
-  // Texto a la derecha del logo, con margen de 8 mm
   const titleX = marginLeft + logoWidth + 8;
-  const titleY = headerTop + logoHeight / 2 + 2; // centrado verticalmente respecto al logo
+  const titleY = headerTop + logoHeight / 2 + 2;
 
+  // Usamos un ancho máximo para el texto para que no se solape
+  const maxTitleWidth = pageWidth - titleX - marginRight;
   doc.text(titulo, titleX, titleY, {
     align: "left",
     baseline: "middle",
+    maxWidth: maxTitleWidth, // Esto evita que el título se desparrame
   });
 
-  // --- Línea inferior ---
-  doc.setLineWidth(0.3); // más fina
+  doc.setLineWidth(0.3);
   doc.line(marginLeft, headerBottomY, pageWidth - marginRight, headerBottomY);
 
-  // Retornamos el Y inicial del contenido con un poco de aire debajo de la cabecera
   return headerBottomY + 14;
 }
 
@@ -105,35 +122,40 @@ export function drawHeader(doc, titulo) {
  */
 export function drawFooter(doc) {
   const pageCount = doc.getNumberOfPages();
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-
-  const marginLeft = 15;
-  const marginRight = 15;
-  const footerY = pageHeight - 15;
-
   const now = new Date();
   const fecha = now.toLocaleDateString("es-ES");
-  const hora = now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  const hora = now.toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
 
-    // --- Forzar estilo del footer ---
+    // ESTA LÍNEA ES LA CLAVE: Lee el ancho REAL de la página donde estás parado
+    const currentWidth = doc.internal.pageSize.getWidth();
+    const currentHeight = doc.internal.pageSize.getHeight();
+
+    const marginLeft = 15;
+    const marginRight = 15;
+    const footerY = currentHeight - 15;
+
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
 
-    // Línea superior del pie 
+    // Línea del pie adaptada al ancho actual (210 o 297)
     doc.setLineWidth(0.3);
-    doc.line(marginLeft, footerY - 5, pageWidth - marginRight, footerY - 5);
+    doc.line(marginLeft, footerY - 5, currentWidth - marginRight, footerY - 5);
 
-    // Izquierda: fecha + hora
     doc.text(`Informe generado el ${fecha} a las ${hora}`, marginLeft, footerY);
-
-    // Derecha: página X de Y
-    doc.text(`Página ${i} de ${pageCount}`, pageWidth - marginRight, footerY, {
-      align: "right",
-    });
+    doc.text(
+      `Página ${i} de ${pageCount}`,
+      currentWidth - marginRight,
+      footerY,
+      {
+        align: "right",
+      }
+    );
   }
 }
