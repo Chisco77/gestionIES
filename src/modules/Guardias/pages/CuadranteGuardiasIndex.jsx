@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { Label } from "@/components/ui/label";
-import { Search, X, Wand2, Trash2, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { Button } from "@/components/ui/button";
@@ -39,6 +38,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+import { Loader2, Search, X, Wand2, Trash2, Printer } from "lucide-react";
 
 const dias = ["L", "M", "X", "J", "V"];
 
@@ -326,13 +327,6 @@ export function CuadranteGuardiasIndex() {
     sincronizarConBD(nuevo);
   }
 
-  function limpiarCuadrante() {
-    // Al poner guardias como objeto vacío, el debounce enviará {} a la BD
-    // y el backend ejecutará el DELETE de todo el curso.
-    setGuardias({});
-    sincronizarConBD({}, "El cuadrante ha sido borrado por completo.");
-  }
-
   function getNumGuardiasCelda(clave) {
     return numPorCelda[clave] ?? numPorHora;
   }
@@ -478,8 +472,29 @@ export function CuadranteGuardiasIndex() {
     return totales;
   }, [guardias]);
 
-  if (isLoading || loadingPeriodos || cargandoCuadrante)
-    return <div>Cargando datos...</div>;
+  function limpiarCuadrante() {
+    setGuardias({});
+    // Reseteamos los contadores personalizados de cada celda al valor general
+    setNumPorCelda({});
+    sincronizarConBD({}, "El cuadrante y los contadores han sido borrados.");
+  }
+
+  // Pantalla de carga
+  if (isLoading || loadingPeriodos || cargandoCuadrante) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen w-full gap-4 bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        <div className="space-y-1 text-center">
+          <p className="text-lg font-semibold text-foreground animate-pulse">
+            Preparando cuadrante...
+          </p>
+          <p className="text-sm text-muted-foreground">
+            gestionIES está cargando los horarios
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-5 p-5">

@@ -30,20 +30,28 @@ export function GuardiasIndex() {
   const { user } = useAuth();
   const { data: guardias, isLoading, error } = useGuardias();
   const esDirectiva = user?.perfil === "directiva";
-  const hoyStr = format(new Date(), "yyyy-MM-dd");
 
-  // Columnas dinámicas según perfil
+  // Columnas dinámicas (Asegúrate de que getColumnsGuardias no incluya 'confirmada' ni 'estado')
   const columns = useMemo(() => getColumnsGuardias(esDirectiva), [esDirectiva]);
 
-  // Filtrado inicial (el profesor solo ve lo suyo)
+  // FILTRADO CRÍTICO: Solo guardias efectivas
   const guardiasVisibles = useMemo(() => {
     if (!guardias) return [];
-    if (esDirectiva) return guardias;
-    return guardias.filter((g) => g.uid_profesor_cubridor === user?.username);
+
+    // 1. Filtramos primero por la lógica de "Guardia Realizada"
+    const efectivas = guardias.filter(
+      (g) => g.confirmada === true && g.estado === "activa"
+    );
+
+    // 2. Luego aplicamos la restricción de visibilidad por perfil
+    if (esDirectiva) return efectivas;
+
+    return efectivas.filter((g) => g.uid_profesor_cubridor === user?.username);
   }, [guardias, user, esDirectiva]);
 
   return (
     <div className="container mx-auto py-10 p-12 space-y-6">
+
       {isLoading ? (
         <div className="flex justify-center py-24">
           <Loader className="h-10 w-10 animate-spin text-primary" />

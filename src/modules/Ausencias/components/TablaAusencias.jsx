@@ -112,6 +112,12 @@ export function TablaAusencias({
     }
   }, [fechaInicio, fechaFin]);
 
+  const handleLimpiar = () => {
+    setFechaInicio(""); // Limpia el input de fecha inicio
+    setFechaFin(""); // Limpia el input de fecha fin
+    table.resetColumnFilters(); // Limpia los filtros de las columnas (incluyendo profesor)
+  };
+
   return (
     <div className="space-y-4">
       <Card className="p-4 shadow-none">
@@ -167,7 +173,7 @@ export function TablaAusencias({
             variant="outline"
             size="sm"
             className="h-8 px-3 text-xs flex items-center gap-2"
-            onClick={() => table.resetColumnFilters()}
+            onClick={handleLimpiar}
           >
             <Eraser className="w-4 h-4" /> Limpiar filtros
           </Button>
@@ -175,14 +181,19 @@ export function TablaAusencias({
           {informes && <div className="ml-auto">{informes}</div>}
         </div>
       </Card>
-
-      <div className="rounded-md border overflow-auto">
+      <div className="rounded-md border border-slate-200 overflow-hidden bg-white">
         <Table className="text-sm">
-          <TableHeader className="bg-muted/50">
+          <TableHeader className="bg-slate-50">
             {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
+              <TableRow
+                key={hg.id}
+                className="hover:bg-transparent border-b border-slate-200"
+              >
                 {hg.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    className="font-semibold text-slate-700 h-10"
+                  >
                     {flexRender(
                       header.column.columnDef.header,
                       header.getContext()
@@ -203,24 +214,22 @@ export function TablaAusencias({
                 return (
                   <TableRow
                     key={row.id}
-                    // Eliminamos el border-l del TableRow porque falla en muchos navegadores
                     className={`cursor-pointer transition-colors
-            ${row.getIsSelected() ? "bg-blue-100 hover:bg-blue-200" : ""} 
-            ${!row.getIsSelected() && activaHoy ? "bg-amber-50/40 hover:bg-amber-100/50" : "hover:bg-gray-100"}
-          `}
+                      ${row.getIsSelected() ? "bg-blue-50 hover:bg-blue-100" : ""} 
+                      ${!row.getIsSelected() && activaHoy ? "bg-amber-50/40 hover:bg-amber-100/50" : "hover:bg-slate-50"}
+                    `}
                     onClick={() => row.toggleSelected()}
                   >
                     {row.getVisibleCells().map((cell, index) => (
                       <TableCell
                         key={cell.id}
-                        className={`py-1 px-2 
-                ${
-                  /* Si es la primera celda (index 0) y está activa hoy, ponemos el borde */
-                  index === 0 && activaHoy
-                    ? "border-l-4 border-l-orange-500"
-                    : "border-l-4 border-l-transparent"
-                }
-              `}
+                        className={`py-2 px-3 
+                          ${
+                            index === 0 && activaHoy
+                              ? "border-l-4 border-l-orange-500"
+                              : "border-l-4 border-l-transparent"
+                          }
+                        `}
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
@@ -249,9 +258,11 @@ export function TablaAusencias({
         <div className="flex gap-2">{acciones(selectedItem)}</div>
         <div className="flex-1"></div>
         <div className="flex items-center justify-center space-x-1 flex-1">
+          {/* Botones de paginación  */}
           <Button
             variant="outline"
             size="icon"
+            className="h-8 w-8"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
@@ -260,17 +271,19 @@ export function TablaAusencias({
           <Button
             variant="outline"
             size="icon"
+            className="h-8 w-8"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <span className="px-2 text-muted-foreground">
+          <span className="px-3 font-medium text-slate-600">
             Página {currentPage} de {totalPages}
           </span>
           <Button
             variant="outline"
             size="icon"
+            className="h-8 w-8"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
@@ -279,13 +292,14 @@ export function TablaAusencias({
           <Button
             variant="outline"
             size="icon"
+            className="h-8 w-8"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >
             <ChevronsRight className="w-4 h-4" />
           </Button>
         </div>
-        <div className="flex-1 text-right text-xs text-muted-foreground">
+        <div className="flex-1 text-right font-medium text-slate-500">
           Total de registros: {table.getFilteredRowModel().rows.length}
         </div>
       </div>

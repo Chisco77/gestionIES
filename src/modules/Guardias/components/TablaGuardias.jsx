@@ -175,7 +175,7 @@ export function TablaGuardias({
             variant="outline"
             size="sm"
             className="h-8 px-3 text-xs flex items-center gap-2"
-            onClick={() => table.resetColumnFilters()}
+            onClick={handleLimpiar}
           >
             <Eraser className="w-4 h-4" /> Limpiar
           </Button>

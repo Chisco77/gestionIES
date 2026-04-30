@@ -253,10 +253,7 @@ function SidebarComponent({
           },
 
           { title: "Avisos", url: "/avisos", icon: Info },
-          { title: "Cursos", url: "/cursos", icon: BookOpen },
           { title: "Estancias", url: "/estancias", icon: Building2 },
-          { title: "Libros", url: "/libros", icon: BookMarked },
-          { title: "Materias", url: "/materias", icon: BookOpen },
           { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
 
           {
