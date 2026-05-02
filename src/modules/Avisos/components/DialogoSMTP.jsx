@@ -1,3 +1,24 @@
+/**
+ * DialogoSMTP.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente de diálogo para la configuración de envío de correos
+ * mediante SMTP dentro del módulo de avisos.
+ * 
+ * Permite consultar, crear y actualizar la configuración SMTP
+ * (email de origen y contraseña de aplicación), gestionando la
+ * persistencia de los datos en el backend y sincronizando el
+ * estado mediante React Query.
+ *
+ */
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {

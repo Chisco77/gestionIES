@@ -1,3 +1,22 @@
+/**
+ * DialogoEditarTareas.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente de diálogo para la gestión de tareas/instrucciones
+ *     asociadas a una ausencia.
+ * 
+ * Permite añadir o editar las indicaciones para el profesorado
+ * de guardia, actualizando la información en el backend.
+ *
+ */
+
 import { useState, useEffect } from "react";
 import {
   Dialog,

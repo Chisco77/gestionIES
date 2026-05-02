@@ -1,3 +1,39 @@
+/**
+ * ============================================
+ *  TABLA DE GESTIÓN DE GUARDIAS
+ * ============================================
+ *
+ * Este componente renderiza una tabla avanzada basada en @tanstack/react-table
+ * para la visualización, filtrado y selección de registros de guardias.
+ *
+ *  RESPONSABILIDADES PRINCIPALES
+ * --------------------------------------------
+ * - Mostrar listado de guardias (filtrado previamente en el padre)
+ * - Permitir selección de una fila (single select)
+ * - Gestión de paginación, ordenación y filtros avanzados
+ * - Filtrado por rango de fechas (custom filter)
+ * - Filtrado por profesor ausente y profesor cubridor
+ * - Resaltar registros del día actual
+ * - Integración con acciones externas (botones del módulo padre)
+ * - Inyección de controles de informes (dropdowns o botones externos)
+ *
+ *  FILTRADO DE FECHAS
+ * --------------------------------------------
+ * Se utiliza un filtro personalizado (dateRangeFilter) basado en date-fns:
+ * - Permite rango abierto (solo inicio o solo fin)
+ * - Normaliza fechas con startOfDay para evitar problemas de horas
+ * - Se aplica sobre la columna "fecha"
+ *
+ *  NOTAS DE DISEÑO
+ * --------------------------------------------
+ * - Optimizada para densidad de información media-alta
+ * - UI basada en shadcn/ui + Tailwind
+ * - Pensada para trabajo diario de gestión de guardias
+ * - El filtrado pesado se delega al backend en módulos superiores
+ *
+ * ============================================
+ */
+
 import {
   flexRender,
   getCoreRowModel,

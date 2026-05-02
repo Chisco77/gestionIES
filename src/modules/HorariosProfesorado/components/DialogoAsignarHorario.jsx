@@ -1,3 +1,38 @@
+/**
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ *  DIÁLOGO ASIGNAR HORARIO
+ * ============================================
+ *
+ * Componente encargado de duplicar el horario completo
+ * de un profesor origen a otro profesor destino.
+ *
+ *  FUNCIONALIDAD
+ * - Selección de profesor destino
+ * - Selección de curso académico
+ * - Confirmación previa antes de sobrescribir datos
+ * - Llamada al endpoint de duplicación de horarios
+ *
+ *  FLUJO PRINCIPAL
+ * 1. Selección de profesor destino
+ * 2. Confirmación de la acción
+ * 3. Ejecución de duplicación en backend
+ * 4. Feedback mediante toast
+ *
+ *  NOTAS
+ * - Evita duplicación sobre el mismo profesor
+ * - Curso académico inicializado automáticamente
+ * - Acción protegida con confirmación obligatoria
+ *
+ * ============================================
+ */
+
 import { useState, useMemo, useEffect } from "react";
 import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 import {

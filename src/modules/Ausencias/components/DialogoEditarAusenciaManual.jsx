@@ -1,3 +1,23 @@
+/**
+ * DialogoEditarAusenciaManual.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente de diálogo para la edición de ausencias manuales
+ *     del profesorado.
+ * 
+ * Permite modificar los datos de una ausencia previamente registrada,
+ * incluyendo tipo, fechas, tramos horarios y observaciones, con
+ * actualización en backend y refresco automático de datos.
+ *
+ */
+
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import {

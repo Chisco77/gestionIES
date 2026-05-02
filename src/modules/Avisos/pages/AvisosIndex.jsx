@@ -1,3 +1,29 @@
+/**
+ * AvisosIndex.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente principal de gestión de avisos del sistema.
+ * 
+ * Este módulo permite visualizar y administrar los avisos
+ * registrados en la aplicación, incluyendo la creación de
+ * nuevos avisos, edición y eliminación de los existentes.
+ * También integra la configuración de envío de correos
+ * mediante SMTP, accesible únicamente para usuarios con
+ * perfil de administrador.
+ *
+ * Utiliza React Query para la obtención de datos y mantiene
+ * la sincronización del estado tras cada operación mediante
+ * invalidación de queries.
+ *
+ */
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, Mail } from "lucide-react";

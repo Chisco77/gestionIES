@@ -1,3 +1,22 @@
+/**
+ * DialogoSeleccionarFechaParte.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente de diálogo para la selección de un rango de fechas
+ *     para la generación de partes de ausencias.
+ * 
+ * Permite elegir un intervalo de fechas y lanzar el proceso de
+ * generación de informes en PDF.
+ *
+ */
+
 import { useState } from "react";
 import {
   Dialog,

@@ -1,3 +1,21 @@
+/**
+ * DialogoEliminarAusencia.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente de diálogo para la eliminación de ausencias manuales.
+ * 
+ * Permite confirmar la eliminación de un registro de ausencia,
+ * ejecutando la operación en backend y actualizando los datos.
+ *
+ */
+
 import {
   Dialog,
   DialogContent,

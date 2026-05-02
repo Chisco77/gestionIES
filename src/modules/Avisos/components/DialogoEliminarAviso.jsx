@@ -1,3 +1,22 @@
+/**
+ * DialogoEliminarAviso.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente de diálogo para la eliminación de avisos del sistema.
+ * 
+ * Permite confirmar y ejecutar la eliminación de un aviso,
+ * realizando la petición al backend y actualizando la caché
+ * de datos mediante React Query.
+ *
+ */
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,

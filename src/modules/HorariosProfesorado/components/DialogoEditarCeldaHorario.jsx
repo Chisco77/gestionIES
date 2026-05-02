@@ -1,3 +1,24 @@
+/**
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * DialogoEditarCeldaHorario.jsx
+ *
+ * Componente de edición de una celda del horario del profesor.
+ *
+ * Permite:
+ * - Modificar tipo de sesión (lectiva, guardia, reuniones)
+ * - Gestionar materia asociada
+ * - Añadir/eliminar múltiples grupos
+ * - Asignar o cambiar estancia/aula
+ * - Guardar cambios en backend
+ */
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react"; // Importamos icono para borrar

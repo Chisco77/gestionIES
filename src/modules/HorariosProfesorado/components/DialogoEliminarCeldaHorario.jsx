@@ -1,3 +1,31 @@
+/**
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ * DIÁLOGO ELIMINAR CELDA DE HORARIO
+ *
+ * Componente encargado de confirmar y ejecutar la eliminación
+ * de una sesión concreta del horario de un profesor.
+ *
+ * FUNCIONALIDAD
+ * - Muestra confirmación antes de eliminar
+ * - Ejecuta DELETE contra el backend
+ * - Notifica resultado mediante toast
+ * - Notifica al componente padre para refrescar datos
+ *
+ * NOTAS
+ * - Requiere que se pase una celda válida con su id
+ * - Evita renderizado si no existe celda seleccionada
+ * - Acción irreversible
+ *
+ * ------------------------------------------------------------
+ */
+
 import {
   AlertDialog,
   AlertDialogAction,

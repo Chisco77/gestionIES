@@ -1,3 +1,75 @@
+/**
+ * ============================================================
+ * 🧭 MÓDULO: Cuadrante de Guardias (GuardiasIndex)
+ * ============================================================
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * Este módulo es el núcleo central del sistema de gestión de
+ * guardias del centro.
+ *
+ * Permite visualizar, editar, generar y sincronizar en tiempo real
+ * la asignación de guardias del profesorado.
+ *
+ * ------------------------------------------------------------
+ * FUNCIONALIDADES PRINCIPALES
+ * ------------------------------------------------------------
+ *
+ * 1.  Carga de datos
+ *    - Obtiene horarios enriquecidos del profesorado desde backend
+ *    - Filtra únicamente registros de tipo "guardia"
+ *    - Construye estructura inicial del cuadrante (periodo × día)
+ *
+ * 2.  Asignación manual
+ *    - Drag & drop de profesores a celdas del cuadrante
+ *    - Reasignación entre celdas
+ *    - Eliminación de asignaciones individuales
+ *
+ * 3.  Asignación automática
+ *    - Generación inteligente de cuadrante completo
+ *    - Respeta disponibilidad real del profesorado
+ *    - Evita conflictos con clases u otras actividades
+ *    - Optimiza distribución de carga horaria
+ *    - Prioriza contigüidad de horarios y equidad
+ *
+ * 4.  Control de carga
+ *    - Límite configurable de guardias por profesor/semana
+ *    - Contador dinámico de asignaciones
+ *    - Visualización de saturación por docente
+ *
+ * 5.  Configuración dinámica
+ *    - Número de guardias por celda configurable
+ *    - Ajustes globales y por celda
+ *    - Reglas de distribución en tiempo real
+ *
+ * 6.  Persistencia
+ *    - Sincronización completa del estado con backend
+ *    - El backend actúa como espejo del cuadrante actual
+ *    - Cada cambio (manual o automático) se guarda inmediatamente
+ *
+ * 7.  Exportación
+ *    - Generación de informes PDF del cuadrante
+ *    - Visualización imprimible del estado actual
+ *
+ *
+ * ------------------------------------------------------------
+ * NOTAS DE ARQUITECTURA
+ * ------------------------------------------------------------
+ *
+ * - El frontend es responsable de la lógica de asignación
+ * - El backend actúa como persistencia de estado completo
+ * - El sistema prioriza consistencia sobre rendimiento parcial
+ * - Todas las modificaciones sincronizan el estado global
+ *
+ *
+ * ============================================================
+ */
+
 import { useState, useMemo } from "react";
 import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 import {

@@ -1,3 +1,31 @@
+/**
+ * DialogoInsertarAusenciaManual.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente de diálogo para el registro manual de ausencias
+ *     imprevistas del profesorado.
+ * 
+ *
+ * Funcionalidades:
+ *  - Permite seleccionar el profesor afectado.
+ *  - Registro de ausencias de día completo o por tramos horarios.
+ *  - Selección de rango de fechas (inicio y fin).
+ *  - Selección del tipo de aviso (telefónico, presencial, emergencia, etc.).
+ *  - Introducción de observaciones o detalles adicionales.
+ *  - Validación de datos antes del envío.
+ *  - Envío de datos al backend mediante React Query (mutations).
+ *  - Actualización automática de datos relacionados (ausencias, guardias).
+ *  - Feedback visual al usuario mediante notificaciones (toast).
+ *
+ */
+
 import { useEffect, useState, useMemo } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";

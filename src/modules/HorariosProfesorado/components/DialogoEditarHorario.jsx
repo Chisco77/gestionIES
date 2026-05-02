@@ -1,10 +1,22 @@
 /**
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
  * DialogoEditarHorario.jsx
  *
- * ------------------------------------------------------------
- * Componente que muestra un cuadro de diálogo para visualizar/editar
- * el horario de un profesor.
+ * Componente que muestra un cuadro de diálogo para visualizar
+ * y gestionar el horario de un profesor.
  *
+ * Permite:
+ * - Ver el horario semanal por periodos y días
+ * - Insertar, editar y eliminar celdas del horario
+ * - Visualizar estancias asociadas
+ * - Gestión dinámica de datos desde backend
  */
 
 import {

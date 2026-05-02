@@ -1,3 +1,32 @@
+/**
+ * TablaAusencias.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente de tabla reutilizable para la visualización de ausencias
+ *     del profesorado.
+ * 
+ *
+ * Funcionalidades:
+ *  - Muestra las ausencias en formato tabla usando TanStack Table.
+ *  - Filtrado por rango de fechas con lógica de solapamiento de ausencias.
+ *  - Filtrado por profesor (solo disponible para perfil directiva).
+ *  - Ordenación y paginación de los datos.
+ *  - Selección de fila única con resaltado visual.
+ *  - Resaltado automático de ausencias activas en el día actual.
+ *  - Control de visibilidad de columnas según el perfil del usuario.
+ *  - Integración de acciones externas (editar, eliminar, tareas, etc.).
+ *  - Integración opcional de generación de informes.
+ *  - Sincronización de datos filtrados con componentes padre.
+ *
+ */
+
 import {
   flexRender,
   getCoreRowModel,

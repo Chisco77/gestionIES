@@ -1,3 +1,21 @@
+/**
+ * columns-ausencias.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Definición de columnas para la tabla de ausencias.
+ * 
+ * Configura la visualización, ordenación y filtrado de los datos,
+ * incluyendo formato de fechas, periodos horarios y descripciones.
+ *
+ */
+
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

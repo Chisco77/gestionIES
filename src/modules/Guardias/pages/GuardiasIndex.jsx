@@ -1,3 +1,27 @@
+/**
+ * GuardiasIndex.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente principal del módulo de gestión de guardias del centro.
+ * 
+ * Este módulo constituye una de las piezas clave de la aplicación,
+ * permitiendo la visualización y control de las guardias asignadas,
+ * su filtrado según el perfil del usuario y la generación de informes
+ * oficiales en formato PDF para el control del servicio de guardias.
+ * 
+ * Integra información del horario del profesorado, configuración del
+ * centro y datos de guardias confirmadas, combinándolos para ofrecer
+ * una visión completa del sistema de cobertura.
+ *
+ */
+
 import { useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useGuardias } from "@/hooks/useGuardias";

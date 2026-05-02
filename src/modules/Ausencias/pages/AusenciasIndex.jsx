@@ -1,3 +1,29 @@
+/**
+ * AusenciasIndex.jsx
+ *
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ * 
+ * Componente principal para la gestión y visualización de ausencias
+ *     del profesorado.
+ * 
+ *
+ * Funcionalidades:
+ *  - Muestra las ausencias en una tabla con filtrado inteligente según perfil.
+ *  - Permite a la directiva ver todas las ausencias y gestionarlas.
+ *  - Permite a los profesores ver únicamente sus ausencias futuras o actuales.
+ *  - Generación de partes diarios de ausencias en PDF por rango de fechas.
+ *  - Registro manual de ausencias imprevistas.
+ *  - Edición y eliminación de ausencias manuales.
+ *  - Gestión de instrucciones de guardia asociadas a una ausencia.
+ *
+ */
+
 import { useState, useMemo } from "react";
 import { columnsAusencias } from "../components/columns-ausencias";
 import { TablaAusencias } from "../components/TablaAusencias";

@@ -1,3 +1,34 @@
+/**
+ * ------------------------------------------------------------
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ *
+ *  DIÁLOGO INSERTAR CELDA DE HORARIO
+ *
+ * Componente encargado de crear una nueva sesión en el
+ * horario de un profesor dentro de una celda concreta.
+ *
+ *  FUNCIONALIDAD
+ * - Selección de tipo de sesión (lectiva, guardia, reunión…)
+ * - Asignación de materia (si aplica)
+ * - Selección múltiple de grupos
+ * - Asignación de aula o ubicación
+ * - Envío de datos al backend para persistencia
+ *
+ *  NOTAS
+ * - Soporta múltiples grupos por sesión
+ * - Valida obligatoriedad de grupos en sesiones lectivas
+ * - Los tipos "libres" (guardia/tutoría/departamento) no requieren materia ni grupo
+ * - Devuelve datos normalizados al componente padre
+ *
+ * ============================================
+ */
+
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
