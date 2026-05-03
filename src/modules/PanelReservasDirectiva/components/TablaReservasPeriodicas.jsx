@@ -1,4 +1,56 @@
-// src/components/reservas/TablaReservasPeriodicas.jsx
+/**
+ * TablaReservasPeriodicas.jsx
+ *
+ * Componente principal para la gestión y visualización de reservas periódicas.
+ * Una reserva periódica, en general, es creada por la directiva a principio de curso y 
+ * determina el uso que se le va a dar a un aula durante todo el curso.
+ *
+ * FUNCIONALIDAD PRINCIPAL:
+ * - Muestra un listado de reservas periódicas en formato tabla usando TanStack Table.
+ * - Permite ordenar, filtrar y paginar los datos de forma eficiente.
+ * - Incluye acciones sobre cada reserva:
+ *    - Editar reserva periódica
+ *    - Eliminar reserva periódica
+ *
+ * FILTROS DISPONIBLES:
+ * - Por creador de la reserva
+ * - Por profesor destinatario
+ * - Por estancia/aula
+ * - Opción de limpiar todos los filtros activos
+ *
+ * INFORMES:
+ * - Generación de informes en PDF:
+ *    - Reservas por aula
+ *    - Reservas por profesor
+ * - Solo se generan con los datos filtrados actualmente en la tabla
+ *
+ * UI / UX:
+ * - Diseño tipo "cloud" con filtros compactos y accesibles
+ * - Tabla con cabecera fija y scroll interno
+ * - Tooltips informativos en acciones
+ * - Paginación personalizada con navegación rápida
+ * - Indicador de total de resultados filtrados
+ *
+ * MODALES INTEGRADOS:
+ * - DialogoEditarReservaPeriodica → edición de reservas
+ * - DialogoEliminarReservaPeriodica → confirmación de borrado
+ *
+ * HOOKS UTILIZADOS:
+ * - useReservasPeriodicasTodas → carga de datos desde backend
+ * - usePeriodosHorarios → obtención de periodos lectivos
+ *
+ * NOTAS:
+ * - La tabla se basa en columnas dinámicas (columnsReservasPeriodicas)
+ * - El estado de la tabla (sorting, filtros, paginación) está controlado manualmente
+ * - Los informes se generan a partir del estado filtrado de la tabla
+ *
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * Centro: IES Francisco de Orellana - Trujillo
+ */
+
 import {
   flexRender,
   getCoreRowModel,

@@ -1,7 +1,35 @@
 /**
- * PlanoEstanciasEdicion.jsx - Plano interactivo de estancias con gestión de llaves
+ * ------------------------------------------------------------
+ * Componente: PlanoEstanciasEdicion.jsx
  *
- * Adaptado para usar Tabs de ShadCN y seleccionar planta dentro del componente.
+ * Descripción:
+ * Plano interactivo basado en SVG que permite visualizar y gestionar
+ * estancias dentro de un centro educativo. Incluye funcionalidad de:
+ * - Visualización de estancias sobre plano
+ * - Estado de ocupación (llaves prestadas)
+ * - Creación de nuevas estancias mediante dibujo de polígonos
+ * - Gestión de llaves asociadas a cada estancia
+ *
+ * Características:
+ * - Coordenadas normalizadas para adaptarse a cualquier resolución
+ * - Renderizado dinámico sobre imagen SVG
+ * - Modo edición con dibujo interactivo
+ * - Integración con backend (API REST)
+ * - Uso de React Query para sincronización de datos
+ * - Control de acceso según perfil de usuario
+ *
+ * Dependencias principales:
+ * - React
+ * - ShadCN UI
+ * - @tanstack/react-query
+ * - Sonner (notificaciones)
+ *
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * Centro: IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
  */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -21,7 +49,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { PLANOS } from "@/config/planos";
 import { Switch } from "@/components/ui/switch";
 
 import { useQueryClient } from "@tanstack/react-query";

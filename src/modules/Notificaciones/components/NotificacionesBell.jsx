@@ -1,3 +1,31 @@
+/**
+ * ------------------------------------------------------------
+ * Componente: NotificacionesBell.jsx
+ *
+ * Descripción:
+ * Componente visual que representa una campana de notificaciones.
+ * Muestra un indicador numérico con el total de notificaciones
+ * pendientes y un efecto visual de "ping" cuando hay elementos.
+ *
+ * Funcionalidad:
+ * - Renderiza un icono de campana
+ * - Muestra contador de notificaciones si total > 0
+ * - Incluye animación para llamar la atención del usuario
+ *
+ * Props:
+ * - total (number): número total de notificaciones pendientes
+ *
+ * Dependencias principales:
+ * - Lucide-react (icono Bell)
+ *
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * Centro: IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ */
+
 
 import { Bell } from "lucide-react";
 

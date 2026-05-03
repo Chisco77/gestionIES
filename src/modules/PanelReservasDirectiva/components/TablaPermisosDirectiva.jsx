@@ -1,4 +1,62 @@
-// src/components/asuntos/TablaPermisosDirectiva.jsx
+/**
+ * TablaPermisosDirectiva.jsx
+ *
+ * Componente de gestión de permisos (asuntos propios) para el equipo directivo.
+ *
+ * FUNCIONALIDAD PRINCIPAL:
+ * - Visualiza todos los permisos registrados en formato tabla (TanStack Table).
+ * - Permite gestionar solicitudes mediante acciones:
+ *    - Aceptar permiso
+ *    - Rechazar permiso
+ * - Actualiza el estado del permiso en backend mediante petición PATCH.
+ *
+ * FILTROS DISPONIBLES:
+ * - Rango de fechas (desde / hasta)
+ * - Profesor solicitante
+ * - Tipo de permiso (según MAPEO_TIPOS_PERMISOS)
+ * - Estado:
+ *    - Switch para mostrar solo permisos pendientes
+ * - Opción para limpiar todos los filtros
+ *
+ * COMPORTAMIENTO ESPECIAL:
+ * - Puede inicializarse mostrando solo pendientes mediante la prop:
+ *    → soloPendientesInicial
+ * - Puede sincronizarse con una fecha externa (prop `fecha`)
+ *   para filtrar automáticamente por día concreto.
+ *
+ * INFORMES:
+ * - Generación de listado PDF de permisos por profesor
+ * - Basado en los datos actualmente filtrados en la tabla
+ *
+ * UI / UX:
+ * - Panel de filtros estilo "cloud" compacto y visual
+ * - Tabla con cabecera fija y scroll vertical
+ * - Tooltips en acciones (aceptar/rechazar)
+ * - Paginación completa con navegación rápida
+ * - Indicador de total de registros filtrados
+ *
+ * MODALES:
+ * - DialogoConfirmacion → confirma acciones de aceptar/rechazar
+ *
+ * HOOKS UTILIZADOS:
+ * - usePermisosTodos → carga de permisos desde backend
+ *
+ * NOTAS TÉCNICAS:
+ * - El filtrado por fechas se realiza enviando un objeto { desde, hasta }
+ *   a la columna "fecha" del table model
+ * - El estado del permiso:
+ *    0 → pendiente
+ *    1 → aceptado
+ *    2 → rechazado
+ * - La tabla está completamente controlada (sorting, filtros, paginación)
+ *
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * Centro: IES Francisco de Orellana - Trujillo
+ */
+
 import {
   flexRender,
   getCoreRowModel,

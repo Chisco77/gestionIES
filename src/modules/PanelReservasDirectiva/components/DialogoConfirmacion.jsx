@@ -1,3 +1,61 @@
+/**
+ * -----------------------------------------------------------------------------
+ * Componente: DialogoConfirmacion
+ * -----------------------------------------------------------------------------
+ * Descripción:
+ * Diálogo modal de confirmación utilizado por el equipo directivo para aceptar
+ * o rechazar solicitudes de permisos o asuntos propios o extraescolares.
+ *
+ * Este componente muestra información detallada del asunto seleccionado:
+ * - Profesor solicitante
+ * - Fecha o rango de fechas
+ * - Horario (periodos o jornada completa)
+ * - Tipo de permiso (con icono asociado)
+ * - Descripción adicional (si existe)
+ *
+ * Funcionalidades principales:
+ * - Confirmación de acción (aceptar o rechazar)
+ * - Actualización del estado en backend mediante React Query (mutation)
+ * - Feedback visual mediante notificaciones (toast)
+ * - Refresco automático de datos relevantes invalidando queries:
+ *    • Listado de asuntos propios (general y por usuario)
+ *    • Notificaciones de directiva
+ *    • Asuntos del mes correspondiente
+ *
+ * El componente adapta dinámicamente estilos, textos y comportamiento
+ * en función de la acción (aceptar / rechazar).
+ *
+ * -----------------------------------------------------------------------------
+ * Props:
+ * @param {boolean} open - Controla la visibilidad del diálogo
+ * @param {function} setOpen - Función para abrir/cerrar el diálogo
+ * @param {object|null} asunto - Objeto con la información del permiso/asunto
+ * @param {"aceptar"|"rechazar"} accion - Acción a confirmar
+ * @param {function} onSuccess - Callback opcional tras operación exitosa
+ *
+ * -----------------------------------------------------------------------------
+ * Hooks utilizados:
+ * - useMutation (React Query) → Gestión de la actualización del estado
+ * - useQueryClient → Invalidación de caché tras cambios
+ * - useAuth → Obtiene información del usuario autenticado
+ * - usePeriodosHorarios → Obtiene los periodos para construir el horario
+ *
+ * -----------------------------------------------------------------------------
+ * Utilidades externas:
+ * - textoTipoPermiso → Traducción del tipo de permiso a texto legible
+ * - getIconoTipo → Devuelve el icono asociado al tipo de permiso
+ *
+ * -----------------------------------------------------------------------------
+ * Autor:
+ * - Nombre: Francisco Damian Mendez Palma
+ * - Email: adminies.franciscodeorellana@educarex.es
+ * - GitHub: https://github.com/Chisco77
+ * - Repositorio: https://github.com/Chisco77/gestionIES.git
+ * - Centro: IES Francisco de Orellana - Trujillo
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 import {
   Dialog,
   DialogContent,

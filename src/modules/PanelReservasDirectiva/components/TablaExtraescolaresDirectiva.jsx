@@ -1,3 +1,52 @@
+/**
+ * -----------------------------------------------------------------------------
+ * Componente: TablaExtraescolaresDirectiva
+ * -----------------------------------------------------------------------------
+ * Descripción:
+ * Tabla avanzada para la gestión de actividades extraescolares desde el panel
+ * de dirección. Permite visualizar, filtrar, ordenar y gestionar (aceptar,
+ * rechazar, editar) las actividades registradas en el sistema.
+ *
+ * Incluye funcionalidades como:
+ * - Filtrado por rango de fechas, profesor responsable y título de actividad
+ * - Filtro rápido de actividades pendientes
+ * - Generación de informes en distintos formatos (PDF y XLS):
+ *    • Agenda mensual
+ *    • Listado por profesor
+ *    • Listado por departamento
+ * - Generación de documentos Excel de dietas por actividad
+ * - Edición de actividades mediante diálogo modal
+ * - Confirmación de acciones (aceptar/rechazar)
+ * - Integración con datos externos (LDAP, configuración del centro, periodos)
+ *
+ * Este componente utiliza @tanstack/react-table junto con componentes UI
+ * personalizados (ShadCN) para ofrecer una experiencia de usuario moderna,
+ * eficiente y altamente interactiva.
+ *
+ * -----------------------------------------------------------------------------
+ * Props:
+ * @param {string} fecha - Fecha inicial para filtrar actividades (formato ISO)
+ * @param {boolean} soloPendientesInicial - Si es true, muestra solo actividades pendientes al iniciar
+ *
+ * -----------------------------------------------------------------------------
+ * Hooks utilizados:
+ * - useExtraescolaresAll → Obtiene todas las actividades extraescolares
+ * - useDepartamentosLdap → Obtiene departamentos desde LDAP
+ * - useCursosLdap → Obtiene cursos desde LDAP
+ * - usePeriodosHorarios → Obtiene periodos horarios
+ * - useConfiguracionCentro → Obtiene datos del centro (logo, etc.)
+ *
+ * -----------------------------------------------------------------------------
+ * Autor:
+ * - Nombre: Francisco Damian Mendez Palma
+ * - Email: adminies.franciscodeorellana@educarex.es
+ * - GitHub: https://github.com/Chisco77
+ * - Repositorio: https://github.com/Chisco77/gestionIES.git
+ * - Centro: IES Francisco de Orellana - Trujillo
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 import {
   flexRender,
   getCoreRowModel,

@@ -1,3 +1,39 @@
+/**
+ * ------------------------------------------------------------
+ * Componente: NotificacionesPopover.jsx
+ *
+ * Descripción:
+ * Componente que muestra un popover con el resumen de notificaciones
+ * pendientes para el usuario (equipo directivo). Desde este popover
+ * se puede acceder a un cuadro de diálogo con el detalle completo
+ * de cada tipo de notificación.
+ *
+ * Funcionalidad:
+ * - Muestra el número total de notificaciones en un icono (campana)
+ * - Despliega un popover con:
+ *    - Permisos pendientes
+ *    - Actividades extraescolares pendientes
+ * - Permite abrir un diálogo modal con tablas detalladas
+ * - Cierra automáticamente el popover al abrir el diálogo
+ *
+ * Componentes relacionados:
+ * - NotificacionesBell
+ * - TablaPermisosDirectiva
+ * - TablaExtraescolaresDirectiva
+ *
+ * Dependencias principales:
+ * - React (useState)
+ * - ShadCN UI (Popover, Dialog, Button)
+ * - Lucide-react (iconos)
+ *
+ * Autor: Francisco Damian Mendez Palma
+ * Email: adminies.franciscodeorellana@educarex.es
+ * GitHub: https://github.com/Chisco77
+ * Repositorio: https://github.com/Chisco77/gestionIES.git
+ * Centro: IES Francisco de Orellana - Trujillo
+ * ------------------------------------------------------------
+ */
+
 import { useState } from "react";
 import {
   Popover,

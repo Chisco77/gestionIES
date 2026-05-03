@@ -9,7 +9,7 @@
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
  * 
- * Componente que muestra tabla de permisos y actividades extraescolares
+ * Componente que muestra tabla de permisos actividades extraescolares y reservas periódicas
  *     para la directiva.
  * 
  *
