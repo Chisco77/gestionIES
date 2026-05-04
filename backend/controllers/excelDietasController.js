@@ -100,20 +100,28 @@ const generarDocumentoExcel = async (req, res) => {
   try {
     const actividad = req.body;
     // Necesitamos la sesión LDAP para buscar en el directorio
-    const ldapSession = req.session?.ldapUser; 
-    console.log ("Usuario: ", req.session?.ldapUser);
-    console.log ("Sesion: ", ldapSession);
-    
+    const ldapSession = req.session?.ldap;
 
-    if (!actividad || !actividad.responsables || !Array.isArray(actividad.responsables)) {
-      return res.status(400).json({ error: "La actividad no tiene responsables válidos" });
+    if (!ldapSession)
+      return res.status(401).json({ ok: false, error: "No autenticado" });
+
+    if (
+      !actividad ||
+      !actividad.responsables ||
+      !Array.isArray(actividad.responsables)
+    ) {
+      return res
+        .status(400)
+        .json({ error: "La actividad no tiene responsables válidos" });
     }
 
     // --- 1. OBTENER DATOS DE LA DIRECTORA ---
     let nombreDirectora = "";
     try {
       // Buscamos el UID en la base de datos
-      const { rows } = await db.query("SELECT uid_directora FROM configuracion_centro LIMIT 1");
+      const { rows } = await db.query(
+        "SELECT uid_directora FROM configuracion_centro LIMIT 1"
+      );
       const uidDirectora = rows[0]?.uid_directora;
 
       if (uidDirectora && ldapSession) {
@@ -129,16 +137,21 @@ const generarDocumentoExcel = async (req, res) => {
           nombreDirectora = `${directoraLdap.givenName} ${directoraLdap.sn}`;
         }
 
-        console.log ("Directora: ", nombreDirectora);
+        console.log("Directora: ", nombreDirectora);
       }
     } catch (err) {
-      console.error("⚠️ No se pudo obtener el nombre de la directora:", err.message);
+      console.error(
+        "⚠️ No se pudo obtener el nombre de la directora:",
+        err.message
+      );
       // No bloqueamos el proceso, simplemente J33 quedará vacío o con un aviso
     }
 
     const plantillaPath = path.resolve(__dirname, "../uploads/DIETAS.xlsx");
     if (!fs.existsSync(plantillaPath)) {
-      return res.status(500).json({ error: "No se encontró la plantilla Excel" });
+      return res
+        .status(500)
+        .json({ error: "No se encontró la plantilla Excel" });
     }
 
     const archive = archiver("zip", { zlib: { level: 9 } });
@@ -158,7 +171,11 @@ const generarDocumentoExcel = async (req, res) => {
         const cuerpo = profesor.cuerpo || "";
         const dni = profesor.dni || "";
         const tipoEmpleado = profesor.tipo_empleado || "";
-        const letraVinculacion = tipoEmpleado.toLowerCase().includes("funcionario") ? "F" : "L";
+        const letraVinculacion = tipoEmpleado
+          .toLowerCase()
+          .includes("funcionario")
+          ? "F"
+          : "L";
 
         // Datos del profesor
         hoja.getCell("K3").value = profesor.nombre || "Sin nombre";
