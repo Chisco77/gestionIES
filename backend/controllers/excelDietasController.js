@@ -126,6 +126,8 @@ const generarDocumentoExcel = async (req, res) => {
         if (directoraLdap) {
           nombreDirectora = `${directoraLdap.givenName} ${directoraLdap.sn}`;
         }
+
+        console.log ("Directora: ", nombreDirectora);
       }
     } catch (err) {
       console.error("⚠️ No se pudo obtener el nombre de la directora:", err.message);
