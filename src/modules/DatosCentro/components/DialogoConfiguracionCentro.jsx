@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -31,16 +32,17 @@ import {
   Upload,
   Fingerprint,
   Save,
-  X,
+  UserCheck,
+  Palette,
 } from "lucide-react";
 import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+import { SelectProfesoresSimple } from "@/modules/Utilidades/components/SelectProfesoresSimple";
 
 export function DialogoConfiguracionCentro({ open, onOpenChange }) {
   const API_URL = import.meta.env.VITE_API_URL;
   const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
   const queryClient = useQueryClient();
 
-  // Referencias para los inputs de archivos
   const fileInputAppRef = useRef(null);
   const fileInputCentroRef = useRef(null);
   const fileInputFaviconRef = useRef(null);
@@ -63,16 +65,16 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
     logo_miies_url: "",
     logo_centro_url: "",
     favicon_url: "",
+    uid_directora: null,
+    uid_secretaria: null,
   });
 
-  // Añade este estado al principio del componente para guardar los archivos seleccionados
   const [selectedFiles, setSelectedFiles] = useState({
     logo_miies: null,
     logo_centro: null,
     favicon: null,
   });
 
-  // Sincronizar datos cuando el diálogo se abre o los datos cargan
   useEffect(() => {
     if (centro && open) {
       setFormData({
@@ -91,6 +93,8 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
         logo_miies_url: centro.logoMiiesUrl || "",
         logo_centro_url: centro.logoCentroUrl || "",
         favicon_url: centro.faviconUrl || "",
+        uid_directora: centro.uidDirectora || null,
+        uid_secretaria: centro.uidSecretaria || null,
       });
     }
   }, [centro, open]);
@@ -103,33 +107,22 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
   const handleFileChange = (e, field) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    // Guardamos el archivo para el FormData usando el nombre base (ej: logo_miies)
     setSelectedFiles((prev) => ({ ...prev, [field]: file }));
-
-    // Generamos la URL de previsualización
     const previewUrl = URL.createObjectURL(file);
-
-    // Actualizamos la URL en formData para que el <img src={formData.logo_miies_url} /> funcione
     setFormData((prev) => ({
       ...prev,
-      [`${field}_url`]: previewUrl, // Ahora sí: logo_miies + _url = logo_miies_url
+      [`${field}_url`]: previewUrl,
     }));
   };
 
   const guardarMutation = useMutation({
     mutationFn: async (payload) => {
       const data = new FormData();
-
-      // 1. Añadimos todos los campos de texto
-      // Excluimos las URLs actuales para no enviarlas como string si vamos a subir archivos
       Object.keys(payload).forEach((key) => {
         if (payload[key] !== null && !key.endsWith("_url")) {
           data.append(key, payload[key]);
         }
       });
-
-      // 2. Añadimos los archivos binarios si el usuario seleccionó alguno nuevo
       if (selectedFiles.logo_miies)
         data.append("logo_miies", selectedFiles.logo_miies);
       if (selectedFiles.logo_centro)
@@ -140,7 +133,7 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
         `${API_BASE}/configuracion-centro/${payload.id}`,
         {
           method: "PUT",
-          body: data, // IMPORTANTE: No pongas headers de Content-Type, el navegador lo hace solo con FormData
+          body: data,
           credentials: "include",
         }
       );
@@ -166,7 +159,7 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 rounded-lg max-w-2xl flex flex-col max-h-[95vh]"
+        className="p-0 rounded-lg max-w-2xl flex flex-col max-h-[90vh]"
       >
         {/* Inputs de Archivo Ocultos */}
         <input
@@ -174,283 +167,273 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
           ref={fileInputAppRef}
           className="hidden"
           accept="image/*"
-          onChange={(e) => handleFileChange(e, "logo_miies")} // quitamos _url
+          onChange={(e) => handleFileChange(e, "logo_miies")}
         />
         <input
           type="file"
           ref={fileInputCentroRef}
           className="hidden"
           accept="image/*"
-          onChange={(e) => handleFileChange(e, "logo_centro")} // quitamos _url
+          onChange={(e) => handleFileChange(e, "logo_centro")}
         />
         <input
           type="file"
           ref={fileInputFaviconRef}
           className="hidden"
           accept="image/*"
-          onChange={(e) => handleFileChange(e, "favicon")} // quitamos _url
+          onChange={(e) => handleFileChange(e, "favicon")}
         />
 
-        <DialogHeader className="bg-green-600 text-white rounded-t-lg py-4 px-8 shadow-md">
+        <DialogHeader className="bg-green-600 text-white rounded-t-lg py-4 px-8">
           <div className="flex items-center gap-3">
             <Building2 className="w-6 h-6" />
-            <DialogTitle className="text-xl font-bold tracking-tight">
-              Datos del centro
+            <DialogTitle className="text-xl font-bold">
+              Configuración del Centro
             </DialogTitle>
           </div>
         </DialogHeader>
 
-        <div className="overflow-y-auto">
-          <Card className="border-none shadow-none bg-transparent">
-            <CardContent className="py-6 px-8 space-y-6">
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <Tabs defaultValue="identidad" className="flex-1 flex flex-col">
+            <TabsList className="grid grid-cols-3 mx-8 mt-4 bg-slate-100">
+              <TabsTrigger value="identidad" className="gap-2">
+                <Palette className="w-4 h-4" /> Identidad
+              </TabsTrigger>
+              <TabsTrigger value="contacto" className="gap-2">
+                <MapPin className="w-4 h-4" /> Dirección
+              </TabsTrigger>
+              <TabsTrigger value="directiva" className="gap-2">
+                <UserCheck className="w-4 h-4" /> Directiva
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="flex-1 overflow-y-auto px-8 py-4">
               {isLoading ? (
-                <div className="py-20 text-center text-gray-500 animate-pulse italic">
-                  Cargando configuración...
+                <div className="py-20 text-center animate-pulse italic">
+                  Cargando...
                 </div>
               ) : (
                 <>
-                  {/* SECCIÓN DE IDENTIDAD VISUAL (3 COLUMNAS) */}
-                  <div className="grid grid-cols-3 gap-4">
-                    {/* Logo Aplicación */}
-                    <div className="flex flex-col items-center p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300 gap-2">
-                      <Label className="text-slate-500 font-bold uppercase text-[9px] tracking-widest text-center">
-                        Logo App
-                      </Label>
-                      <div
-                        onClick={() => fileInputAppRef.current.click()}
-                        className="relative w-20 h-20 bg-white rounded-lg border border-slate-200 cursor-pointer overflow-hidden group hover:border-green-500 transition-all shadow-sm"
-                      >
-                        {formData.logo_miies_url ? (
-                          <img
-                            src={formData.logo_miies_url}
-                            alt="App"
-                            className="w-full h-full object-contain p-2"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
-                            <ImageIcon className="w-7 h-7" />
+                  {/* TAB: IDENTIDAD VISUAL */}
+                  <TabsContent value="identidad" className="space-y-6 mt-0">
+                    <div className="grid grid-cols-3 gap-4">
+                      {/* Logo App */}
+                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300 gap-2">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500">
+                          Logo App
+                        </Label>
+                        <div
+                          onClick={() => fileInputAppRef.current.click()}
+                          className="relative w-24 h-24 bg-white rounded-lg border cursor-pointer overflow-hidden group hover:border-green-500 transition-all"
+                        >
+                          {formData.logo_miies_url ? (
+                            <img
+                              src={formData.logo_miies_url}
+                              className="w-full h-full object-contain p-2"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
+                              <ImageIcon />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <Upload className="text-white w-6 h-6" />
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Upload className="text-white w-6 h-6" />
+                        </div>
+                      </div>
+                      {/* Logo Centro */}
+                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300 gap-2">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500">
+                          Logo Centro
+                        </Label>
+                        <div
+                          onClick={() => fileInputCentroRef.current.click()}
+                          className="relative w-24 h-24 bg-white rounded-lg border cursor-pointer overflow-hidden group hover:border-blue-500 transition-all"
+                        >
+                          {formData.logo_centro_url ? (
+                            <img
+                              src={formData.logo_centro_url}
+                              className="w-full h-full object-contain p-2"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
+                              <Building2 />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <Upload className="text-white w-6 h-6" />
+                          </div>
+                        </div>
+                      </div>
+                      {/* Favicon */}
+                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300 gap-2">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500">
+                          Favicon
+                        </Label>
+                        <div
+                          onClick={() => fileInputFaviconRef.current.click()}
+                          className="relative w-24 h-24 bg-white rounded-lg border cursor-pointer overflow-hidden group hover:border-amber-500 transition-all"
+                        >
+                          {formData.favicon_url ? (
+                            <img
+                              src={formData.favicon_url}
+                              className="w-full h-full object-contain p-4"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
+                              <Fingerprint />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <Upload className="text-white w-6 h-6" />
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Logo Centro */}
-                    <div className="flex flex-col items-center p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300 gap-2">
-                      <Label className="text-slate-500 font-bold uppercase text-[9px] tracking-widest text-center">
-                        Logo Centro
-                      </Label>
-                      <div
-                        onClick={() => fileInputCentroRef.current.click()}
-                        className="relative w-20 h-20 bg-white rounded-lg border border-slate-200 cursor-pointer overflow-hidden group hover:border-blue-500 transition-all shadow-sm"
-                      >
-                        {formData.logo_centro_url ? (
-                          <img
-                            src={formData.logo_centro_url}
-                            alt="Centro"
-                            className="w-full h-full object-contain p-2"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
-                            <Building2 className="w-7 h-7" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Upload className="text-white w-6 h-6" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Favicon */}
-                    <div className="flex flex-col items-center p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300 gap-2">
-                      <Label className="text-slate-500 font-bold uppercase text-[9px] tracking-widest text-center">
-                        Favicon (Tab)
-                      </Label>
-                      <div
-                        onClick={() => fileInputFaviconRef.current.click()}
-                        className="relative w-20 h-20 bg-white rounded-lg border border-slate-200 cursor-pointer overflow-hidden group hover:border-amber-500 transition-all shadow-sm"
-                      >
-                        {formData.favicon_url ? (
-                          <img
-                            src={formData.favicon_url}
-                            alt="Favicon"
-                            className="w-full h-full object-contain p-4"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
-                            <Fingerprint className="w-7 h-7" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Upload className="text-white w-6 h-6" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Nombre del Centro */}
-                  <div className="space-y-2">
-                    <Label className="text-green-800 font-bold text-xs flex items-center gap-2">
-                      NOMBRE del centro
-                    </Label>
-                    <Input
-                      name="nombre_ies"
-                      value={formData.nombre_ies}
-                      onChange={handleChange}
-                      placeholder="Ej: IES Francisco de Orellana"
-                      className="border-green-100 focus:ring-green-500 h-10 font-medium"
-                    />
-                  </div>
-
-                  {/* Bloque de Dirección */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="space-y-2 col-span-2">
-                      <Label className="text-[11px] font-bold flex items-center gap-2 text-slate-600 uppercase tracking-tighter">
-                        <MapPin className="w-3 h-3 text-red-500" /> Dirección
-                        Principal (Calle, Número)
-                      </Label>
-                      <Input
-                        name="direccion_linea_2"
-                        value={formData.direccion_linea_2}
-                        onChange={handleChange}
-                        className="h-10"
-                      />
-                    </div>
                     <div className="space-y-2">
-                      <Label className="text-[11px] text-slate-500 font-semibold uppercase">
-                        Línea Secundaria
+                      <Label className="text-green-800 font-bold">
+                        Nombre Oficial del IES
                       </Label>
                       <Input
-                        name="direccion_linea_1"
-                        value={formData.direccion_linea_1}
+                        name="nombre_ies"
+                        value={formData.nombre_ies}
                         onChange={handleChange}
-                        className="h-9 bg-slate-50/50"
+                        className="border-green-100 h-11 text-lg font-semibold"
                       />
                     </div>
+                  </TabsContent>
+
+                  {/* TAB: UBICACIÓN Y CONTACTO */}
+                  <TabsContent value="contacto" className="space-y-6 mt-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2 col-span-2">
+                        <Label className="text-xs font-bold uppercase text-slate-500">
+                          Calle / Número
+                        </Label>
+                        <Input
+                          name="direccion_linea_2"
+                          value={formData.direccion_linea_2}
+                          onChange={handleChange}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-slate-500">
+                          Código Postal
+                        </Label>
+                        <Input
+                          name="codigo_postal"
+                          value={formData.codigo_postal}
+                          onChange={handleChange}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-slate-500">
+                          Localidad
+                        </Label>
+                        <Input
+                          name="localidad"
+                          value={formData.localidad}
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-blue-700 flex items-center gap-2">
+                          <Phone className="w-3 h-3" /> Teléfono
+                        </Label>
+                        <Input
+                          name="telefono"
+                          value={formData.telefono}
+                          onChange={handleChange}
+                          className="bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-blue-700 flex items-center gap-2">
+                          <Mail className="w-3 h-3" /> Email
+                        </Label>
+                        <Input
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          className="bg-white"
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <Label className="text-[11px] text-slate-500 font-semibold uppercase">
-                        Línea Adicional
+                      <Label className="text-xs font-bold uppercase text-slate-500 flex items-center gap-2">
+                        <Globe className="w-3 h-3" /> Web Institucional
                       </Label>
                       <Input
-                        name="direccion_linea_3"
-                        value={formData.direccion_linea_3}
+                        name="web_url"
+                        value={formData.web_url}
                         onChange={handleChange}
-                        className="h-9 bg-slate-50/50"
+                        placeholder="https://..."
                       />
                     </div>
-                  </div>
+                  </TabsContent>
 
-                  {/* Datos de Localización y Contacto */}
-                  <div className="grid grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase text-slate-400 font-black">
-                        C. Postal
-                      </Label>
-                      <Input
-                        name="codigo_postal"
-                        value={formData.codigo_postal}
-                        onChange={handleChange}
-                        className="h-9 bg-white"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase text-slate-400 font-black">
-                        Localidad
-                      </Label>
-                      <Input
-                        name="localidad"
-                        value={formData.localidad}
-                        onChange={handleChange}
-                        className="h-9 bg-white"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase text-slate-400 font-black">
-                        Provincia
-                      </Label>
-                      <Input
-                        name="provincia"
-                        value={formData.provincia}
-                        onChange={handleChange}
-                        className="h-9 bg-white"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase text-slate-400 font-black flex items-center gap-1">
-                        <Phone className="w-2.5 h-2.5" /> Teléfono
-                      </Label>
-                      <Input
-                        name="telefono"
-                        value={formData.telefono}
-                        onChange={handleChange}
-                        className="h-9 bg-white"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase text-slate-400 font-black">
-                        Fax
-                      </Label>
-                      <Input
-                        name="fax"
-                        value={formData.fax}
-                        onChange={handleChange}
-                        className="h-9 bg-white"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase text-slate-400 font-black flex items-center gap-1">
-                        <Mail className="w-2.5 h-2.5" /> Email
-                      </Label>
-                      <Input
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="h-9 bg-white"
-                      />
-                    </div>
-                  </div>
+                  {/* TAB: DIRECTIVA */}
+                  <TabsContent
+                    value="directiva"
+                    className="space-y-8 mt-0 py-4"
+                  >
+                    <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-6">
+                      <div className="space-y-3">
+                        <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                          <UserCheck className="w-4 h-4 text-green-600" />{" "}
+                          Director / Directora
+                        </Label>
+                        <SelectProfesoresSimple
+                          value={formData.uid_directora}
+                          onChange={(val) =>
+                            setFormData((p) => ({ ...p, uid_directora: val }))
+                          }
+                        />
+                        <p className="text-[11px] text-slate-400">
+                          Este usuario aparecerá como firmante en documentos
+                          oficiales.
+                        </p>
+                      </div>
 
-                  {/* Web Institucional */}
-                  <div className="space-y-2 pb-2">
-                    <Label className="flex items-center gap-2 text-[11px] font-bold text-slate-600 uppercase">
-                      <Globe className="w-3 h-3 text-blue-500" /> Web del Centro
-                    </Label>
-                    <Input
-                      name="web_url"
-                      value={formData.web_url}
-                      onChange={handleChange}
-                      placeholder="https://iesfranciscodeorellana.educarex.es"
-                      className="h-10 border-blue-50"
-                    />
-                  </div>
+                      <div className="space-y-3">
+                        <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                          <UserCheck className="w-4 h-4 text-blue-600" />{" "}
+                          Secretario / Secretaria
+                        </Label>
+                        <SelectProfesoresSimple
+                          value={formData.uid_secretaria}
+                          onChange={(val) =>
+                            setFormData((p) => ({ ...p, uid_secretaria: val }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
                 </>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </Tabs>
         </div>
 
-        <DialogFooter className="px-8 py-4 bg-gray-50 rounded-b-lg border-t gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="text-slate-500 hover:bg-slate-100"
-          >
+        <DialogFooter className="px-8 py-4 bg-slate-50 border-t flex justify-end gap-3">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
-            disabled={guardarMutation.isLoading || isLoading}
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white min-w-[140px] shadow-sm flex gap-2"
+            disabled={guardarMutation.isLoading}
+            className="bg-green-600 hover:bg-green-700 min-w-[150px]"
           >
             {guardarMutation.isLoading ? (
               "Guardando..."
             ) : (
               <>
-                <Save className="w-4 h-4" /> Guardar Configuración
+                <Save className="w-4 h-4 mr-2" /> Guardar Todo
               </>
             )}
           </Button>

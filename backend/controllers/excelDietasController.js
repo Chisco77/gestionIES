@@ -1,4 +1,4 @@
-const path = require("path");
+/*const path = require("path");
 const fs = require("fs");
 const ExcelJS = require("exceljs");
 const archiver = require("archiver");
@@ -82,6 +82,102 @@ const generarDocumentoExcel = async (req, res) => {
       res.status(500).json({ error: "Error interno al generar el ZIP" });
     } else {
       res.end();
+    }
+  }
+};
+
+module.exports = { generarDocumentoExcel };
+*/
+
+const path = require("path");
+const fs = require("fs");
+const ExcelJS = require("exceljs");
+const archiver = require("archiver");
+const db = require("../db"); // Importar tu conexión a DB
+const { buscarPorUid } = require("./ldap/usuariosController");
+
+const generarDocumentoExcel = async (req, res) => {
+  try {
+    const actividad = req.body;
+    // Necesitamos la sesión LDAP para buscar en el directorio
+    console.log ("Sesion: ", req.session);
+    const ldapSession = req.session?.ldapUser; 
+
+    if (!actividad || !actividad.responsables || !Array.isArray(actividad.responsables)) {
+      return res.status(400).json({ error: "La actividad no tiene responsables válidos" });
+    }
+
+    // --- 1. OBTENER DATOS DE LA DIRECTORA ---
+    let nombreDirectora = "";
+    try {
+      // Buscamos el UID en la base de datos
+      const { rows } = await db.query("SELECT uid_directora FROM configuracion_centro LIMIT 1");
+      const uidDirectora = rows[0]?.uid_directora;
+
+      if (uidDirectora && ldapSession) {
+        // Promisificamos la función de búsqueda LDAP
+        const directoraLdap = await new Promise((resolve, reject) => {
+          buscarPorUid(ldapSession, uidDirectora, (err, user) => {
+            if (err) reject(err);
+            else resolve(user);
+          });
+        });
+
+        if (directoraLdap) {
+          nombreDirectora = `${directoraLdap.givenName} ${directoraLdap.sn}`;
+        }
+      }
+    } catch (err) {
+      console.error("⚠️ No se pudo obtener el nombre de la directora:", err.message);
+      // No bloqueamos el proceso, simplemente J33 quedará vacío o con un aviso
+    }
+
+    const plantillaPath = path.resolve(__dirname, "../uploads/DIETAS.xlsx");
+    if (!fs.existsSync(plantillaPath)) {
+      return res.status(500).json({ error: "No se encontró la plantilla Excel" });
+    }
+
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", 'attachment; filename="Dietas.zip"');
+    archive.pipe(res);
+
+    // ==========================================
+    // Procesar cada responsable
+    // ==========================================
+    for (const profesor of actividad.responsables) {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(plantillaPath);
+      const hoja = workbook.getWorksheet("Anverso");
+
+      if (hoja) {
+        const cuerpo = profesor.cuerpo || "";
+        const dni = profesor.dni || "";
+        const tipoEmpleado = profesor.tipo_empleado || "";
+        const letraVinculacion = tipoEmpleado.toLowerCase().includes("funcionario") ? "F" : "L";
+
+        // Datos del profesor
+        hoja.getCell("K3").value = profesor.nombre || "Sin nombre";
+        hoja.getCell("K4").value = cuerpo;
+        hoja.getCell("O4").value = letraVinculacion;
+        hoja.getCell("Q4").value = dni;
+        hoja.getCell("Q3").value = 15;
+
+        // --- 2. ASIGNAR NOMBRE DE LA DIRECTORA ---
+        hoja.getCell("J33").value = nombreDirectora;
+      }
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      archive.append(buffer, {
+        name: `${profesor.uid || "profesor"}_DIETAS.xlsx`,
+      });
+    }
+
+    await archive.finalize();
+  } catch (error) {
+    console.error("❌ Error crítico:", error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Error interno" });
     }
   }
 };

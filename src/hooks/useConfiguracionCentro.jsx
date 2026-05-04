@@ -62,12 +62,16 @@ export function useConfiguracionCentro() {
         // Favicon personalizado del centro
         faviconUrl: c.favicon_url || "",
 
+        // Cargos directivos (Nuevos campos)
+        uidDirectora: c.uid_directora || null,
+        uidSecretaria: c.uid_secretaria || null,
+
         updatedAt: c.updated_at,
       };
     },
     // Configuraciones de React Query (v4/v5)
     staleTime: 1000 * 60 * 60, // 1 hora
-    cacheTime: 1000 * 60 * 60 * 24, // 24 horas (en v5 se llama gcTime)
+    gcTime: 1000 * 60 * 60 * 24, // 24 horas (Nota: cacheTime en v4, gcTime en v5)
     retry: 1,
     refetchOnWindowFocus: false,
   });

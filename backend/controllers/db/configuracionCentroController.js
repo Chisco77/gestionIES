@@ -6,7 +6,7 @@
  *
  * Descripción:
  * Controlador para la gestión de los datos del IES
- * (Nombre, dirección, teléfonos, etc. Incluye logos en Base64)
+ * (Nombre, dirección, teléfonos, etc. Incluye logos y cargos directivos)
  *
  * Autor: Francisco Damian Mendez Palma
  * IES Francisco de Orellana - Trujillo
@@ -22,7 +22,8 @@ async function getConfiguracionCentro(req, res) {
       `SELECT 
         id, nombre_ies, direccion_linea_1, direccion_linea_2, 
         direccion_linea_3, telefono, fax, email, localidad, 
-        provincia, codigo_postal, web_url, logo_miies_url, logo_centro_url, favicon_url
+        provincia, codigo_postal, web_url, logo_miies_url, 
+        logo_centro_url, favicon_url, uid_directora, uid_secretaria
        FROM configuracion_centro
        LIMIT 1`
     );
@@ -67,9 +68,9 @@ async function insertConfiguracion(req, res) {
       `INSERT INTO configuracion_centro (
         nombre_ies, direccion_linea_1, direccion_linea_2, direccion_linea_3,
         telefono, fax, email, localidad, provincia, codigo_postal, web_url, 
-        logo_miies_url, logo_centro_url, favicon_url
+        logo_miies_url, logo_centro_url, favicon_url, uid_directora, uid_secretaria
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
        RETURNING *`,
       [
         body.nombre_ies,
@@ -86,6 +87,8 @@ async function insertConfiguracion(req, res) {
         logo_miies_url,
         logo_centro_url,
         favicon_url,
+        body.uid_directora || null,
+        body.uid_secretaria || null,
       ]
     );
     res.status(201).json({ ok: true, centro: rows[0] });
@@ -130,6 +133,8 @@ async function updateConfiguracion(req, res) {
            logo_miies_url    = COALESCE($13, logo_miies_url),
            logo_centro_url   = COALESCE($14, logo_centro_url),
            favicon_url       = COALESCE($15, favicon_url),
+           uid_directora     = $16,
+           uid_secretaria    = $17,
            updated_at        = CURRENT_TIMESTAMP
        WHERE id = $1
        RETURNING *`,
@@ -149,6 +154,8 @@ async function updateConfiguracion(req, res) {
         logo_miies_url,
         logo_centro_url,
         favicon_url,
+        body.uid_directora, // Permitimos que venga null si se desea limpiar el cargo
+        body.uid_secretaria,
       ]
     );
 
