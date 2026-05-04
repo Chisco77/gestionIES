@@ -10,3 +10,5 @@ deploy_gestionIES.sh
 !backend/.env
 backend/uploads/
 backend/tmp
+public/logos/
+public/planos/
