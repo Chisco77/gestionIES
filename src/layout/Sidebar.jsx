@@ -63,9 +63,6 @@ import { usePlanos } from "@/hooks/usePlanos";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-const MODULO_GUARDIAS =
-  (import.meta.env.VITE_MODULO_GUARDIAS ?? "false") === "true";
-
 function SidebarComponent({
   onOpenRestricciones,
   onOpenEtiquetas,
@@ -133,64 +130,56 @@ function SidebarComponent({
           },
         ],
       },
-      ...(MODULO_GUARDIAS
-        ? [
-            {
-              title: "Guardias",
-              url: "#",
-              icon: CalendarCheck,
-              items: [
-                {
-                  title: "Panel de Guardias",
-                  url: "/panel-guardias",
-                  icon: ClipboardCheck,
-                },
-                {
-                  title: "Mis ausencias",
-                  url: "/ausencias-profesorado",
-                  icon: CalendarOff,
-                },
-                {
-                  title: "Mis guardias",
-                  url: "/guardias-profesorado",
-                  icon: CalendarOff,
-                },
-              ],
-            },
-          ]
-        : []),
+      {
+        title: "Guardias",
+        url: "#",
+        icon: CalendarCheck,
+        items: [
+          {
+            title: "Panel de Guardias",
+            url: "/panel-guardias",
+            icon: ClipboardCheck,
+          },
+          {
+            title: "Mis ausencias",
+            url: "/ausencias-profesorado",
+            icon: CalendarOff,
+          },
+          {
+            title: "Mis guardias",
+            url: "/guardias-profesorado",
+            icon: CalendarOff,
+          },
+        ],
+      },
 
-      ...(MODULO_GUARDIAS
-        ? [
-            {
-              title: "Guardias-GESTIÓN",
-              url: "#",
-              icon: CalendarCheck,
-              items: [
-                {
-                  title: "Horarios profesores",
-                  url: "/horarios",
-                  icon: Calendar,
-                },
-                {
-                  title: "Cuadrante guardias",
-                  url: "/cuadrante-guardias",
-                  icon: Calendar,
-                },
-                {
-                  title: "Ausencias",
-                  url: "/ausencias-profesorado",
-                  icon: CalendarOff,
-                },
-                {
-                  title: "Histórico Guardias",
-                  url: "/guardias-profesorado",
-                  icon: CalendarOff,
-                },
-              ],
-            },
-          ]
-        : []),
+      {
+        title: "Guardias-GESTIÓN",
+        url: "#",
+        icon: CalendarCheck,
+        items: [
+          {
+            title: "Horarios profesores",
+            url: "/horarios",
+            icon: Calendar,
+          },
+          {
+            title: "Cuadrante guardias",
+            url: "/cuadrante-guardias",
+            icon: Calendar,
+          },
+          {
+            title: "Ausencias",
+            url: "/ausencias-profesorado",
+            icon: CalendarOff,
+          },
+          {
+            title: "Histórico Guardias",
+            url: "/guardias-profesorado",
+            icon: CalendarOff,
+          },
+        ],
+      },
       {
         title: "Préstamo Libros",
         url: "#",
@@ -299,34 +288,29 @@ function SidebarComponent({
           },
         ],
       },
-      ...(MODULO_GUARDIAS
-        ? [
-            {
-              title: "Guardias",
-              url: "#",
-              icon: CalendarCheck,
-              items: [
-                {
-                  title: "Panel de Guardias",
-                  url: "/panel-guardias",
-                  icon: ClipboardCheck,
-                },
-                {
-                  title: "Mis ausencias",
-                  url: "/ausencias-profesorado",
-                  icon: CalendarOff,
-                },
-                {
-                  title: "Mis guardias",
-                  url: "/guardias-profesorado",
-                  icon: CalendarOff,
-                },
-              ],
-            },
-          ]
-        : []),
+      {
+        title: "Guardias",
+        url: "#",
+        icon: CalendarCheck,
+        items: [
+          {
+            title: "Panel de Guardias",
+            url: "/panel-guardias",
+            icon: ClipboardCheck,
+          },
+          {
+            title: "Mis ausencias",
+            url: "/ausencias-profesorado",
+            icon: CalendarOff,
+          },
+          {
+            title: "Mis guardias",
+            url: "/guardias-profesorado",
+            icon: CalendarOff,
+          },
+        ],
+      },
     ],
-
     administrativo: [
       {
         title: "Inicio",
@@ -391,32 +375,28 @@ function SidebarComponent({
           },
         ],
       },
-      ...(MODULO_GUARDIAS
-        ? [
-            {
-              title: "Guardias",
-              url: "#",
-              icon: CalendarCheck,
-              items: [
-                {
-                  title: "Panel de Guardias",
-                  url: "/panel-guardias",
-                  icon: ClipboardCheck,
-                },
-                {
-                  title: "Mis ausencias",
-                  url: "/ausencias-profesorado",
-                  icon: CalendarOff,
-                },
-                {
-                  title: "Mis guardias",
-                  url: "/guardias-profesorado",
-                  icon: CalendarOff,
-                },
-              ],
-            },
-          ]
-        : []),
+      {
+        title: "Guardias",
+        url: "#",
+        icon: CalendarCheck,
+        items: [
+          {
+            title: "Panel de Guardias",
+            url: "/panel-guardias",
+            icon: ClipboardCheck,
+          },
+          {
+            title: "Mis ausencias",
+            url: "/ausencias-profesorado",
+            icon: CalendarOff,
+          },
+          {
+            title: "Mis guardias",
+            url: "/guardias-profesorado",
+            icon: CalendarOff,
+          },
+        ],
+      },
     ],
     ordenanza: [
       {

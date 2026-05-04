@@ -627,3 +627,198 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
 
   doc.save(`Parte_Ausencias_${format(fecha, "yyyy-MM-dd")}.pdf`);
 }
+
+/**
+ * Genera el PDF del "Parte Mensual de Ausencias" (Formato Oficial Junta de Extremadura)
+ * @param {Array} datos - Lista de ausencias enriquecidas del mes
+ * @param {Object} meta - Datos del encabezado { centro, cursoAcademico, mesNombre, fechaRemision }
+ */
+
+export async function generarParteMensualAusencias(datos, meta) {
+  // 1. ORDENACIÓN: Apellidos (Nombre) y luego Fecha Inicio
+  const datosOrdenados = [...datos].sort((a, b) => {
+    // Comparar por nombre/apellidos
+    const nombreA = a.nombre.toLowerCase();
+    const nombreB = b.nombre.toLowerCase();
+
+    if (nombreA < nombreB) return -1;
+    if (nombreA > nombreB) return 1;
+
+    // Si el nombre es el mismo, comparamos por fecha
+    return new Date(a.fechaInicio) - new Date(b.fechaInicio);
+  });
+
+  // 2. Configuración Landscape
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
+  const margin = 10;
+  const pageWidth = doc.internal.pageSize.getWidth(); // 297mm
+  const pageHeight = doc.internal.pageSize.getHeight(); // 210mm
+  const tableWidth = pageWidth - margin * 2;
+
+  // --- CONFIGURACIÓN DE COLUMNAS ---
+  const col = {
+    nombre: 65,
+    dni: 25,
+    fecha: 22,
+    tipo: 12,
+    periodos: 15,
+    total: 12,
+    motivo: 15,
+    justificada: 28,
+    acumuladas: 22,
+  };
+
+  const drawHeadersTabla = (yPos) => {
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.setFillColor(240, 240, 240);
+
+    // FILA 1: AGRUPADORES
+    doc.rect(margin, yPos, col.nombre + col.dni, 12, "FD");
+    doc.text(
+      "DATOS PERSONALES",
+      margin + (col.nombre + col.dni) / 2,
+      yPos + 7,
+      { align: "center" }
+    );
+
+    let x = margin + col.nombre + col.dni;
+    const anchoAusencia =
+      col.fecha * 2 + col.tipo + col.periodos + col.total + col.motivo;
+    doc.rect(x, yPos, anchoAusencia, 6, "FD");
+    doc.text("DATOS DE LA AUSENCIA", x + anchoAusencia / 2, yPos + 4.5, {
+      align: "center",
+    });
+
+    x += anchoAusencia;
+    doc.rect(x, yPos, col.justificada, 12, "FD");
+    doc.text("Sólo no\njustificadas", x + col.justificada / 2, yPos + 5, {
+      align: "center",
+    });
+
+    x += col.justificada;
+    doc.rect(x, yPos, col.acumuladas, 12, "FD");
+    doc.text("Total\nPeriodos\nacumuladas", x + col.acumuladas / 2, yPos + 4, {
+      align: "center",
+    });
+
+    // FILA 2: SUBTÍTULOS
+    doc.setFontSize(6);
+    const y2 = yPos + 6;
+    let x2 = margin + col.nombre + col.dni;
+
+    doc.rect(x2, y2, col.fecha, 6, "S");
+    doc.text("Fecha\ncomienzo", x2 + 2, y2 + 2.5);
+    x2 += col.fecha;
+    doc.rect(x2, y2, col.fecha, 6, "S");
+    doc.text("Fecha\nfin", x2 + 2, y2 + 2.5);
+    x2 += col.fecha;
+    doc.rect(x2, y2, col.tipo, 6, "S");
+    doc.text("Tipo", x2 + 2, y2 + 4);
+    x2 += col.tipo;
+    doc.rect(x2, y2, col.periodos, 6, "S");
+    doc.text("Periodos", x2 + 2, y2 + 4);
+    x2 += col.periodos;
+    doc.rect(x2, y2, col.total, 6, "S");
+    doc.text("Total", x2 + 2, y2 + 4);
+    x2 += col.total;
+    doc.rect(x2, y2, col.motivo, 6, "S");
+    doc.text("Motivo", x2 + 2, y2 + 4);
+
+    doc.text("Nombre", margin + 2, yPos + 10);
+    doc.text("Documento", margin + col.nombre + 2, yPos + 10);
+
+    return yPos + 12;
+  };
+
+  // --- INICIO RENDERIZADO ---
+  let y = 15;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text(meta.centro, margin, y);
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    `Año académico: ${meta.cursoAcademico}    Mes: ${meta.mesNombre}`,
+    margin,
+    y + 7
+  );
+  doc.text(
+    `Fecha de remisión: ${meta.fechaRemision}`,
+    pageWidth - margin - 40,
+    y + 7
+  );
+
+  y += 15;
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("PARTE MENSUAL DE AUSENCIAS DEL PROFESORADO", pageWidth / 2, y, {
+    align: "center",
+  });
+
+  y += 6;
+  y = drawHeadersTabla(y);
+
+  // --- CUERPO (Usando datosOrdenados) ---
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+
+  datosOrdenados.forEach((item) => {
+    const rowH = 8;
+    // Si vamos a saltar de página, forzamos "landscape" en addPage para evitar errores
+    if (y + rowH > pageHeight - 20) {
+      doc.addPage("landscape");
+      y = 20;
+      y = drawHeadersTabla(y);
+    }
+
+    let cx = margin;
+    const drawCell = (width, text) => {
+      doc.rect(cx, y, width, rowH, "S");
+      doc.text(String(text || ""), cx + 2, y + 5);
+      cx += width;
+    };
+
+    drawCell(col.nombre, item.nombre.substring(0, 40));
+    drawCell(col.dni, item.documento);
+    drawCell(col.fecha, format(new Date(item.fechaInicio), "dd/MM/yyyy"));
+    drawCell(col.fecha, format(new Date(item.fechaFin), "dd/MM/yyyy"));
+    drawCell(col.tipo, "01");
+    drawCell(
+      col.periodos,
+      `${item.periodosLectivos || 0} | ${item.periodosNoLectivos || 0} | 00`
+    );
+    drawCell(col.total, item.totalPeriodos || 0);
+    drawCell(col.motivo, item.motivoCodigo || "");
+    drawCell(col.justificada, "");
+    drawCell(col.acumuladas, item.totalAcumulado || "");
+
+    y += rowH;
+  });
+
+  // --- RESUMEN FINAL ---
+  if (y + 40 > pageHeight) {
+    doc.addPage("landscape");
+    y = 20;
+  }
+  y += 5;
+  doc.setFont("helvetica", "bold");
+  doc.setFillColor(250, 250, 250);
+  doc.rect(margin, y, tableWidth, 18, "FD");
+  doc.text("Resumen estadístico del mes", margin + 2, y + 5);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+  doc.text(
+    `Número total de profesores/as del Centro pertenecientes al Claustro: ____`,
+    margin + 2,
+    y + 10
+  );
+  doc.text(
+    `Número total de ausencias registradas: ${datosOrdenados.length}`,
+    margin + 2,
+    y + 14
+  );
+
+  doc.save(`Parte_Mensual_${meta.mesNombre}.pdf`);
+}

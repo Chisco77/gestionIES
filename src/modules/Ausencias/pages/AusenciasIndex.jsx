@@ -8,10 +8,10 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Componente principal para la gestión y visualización de ausencias
  *     del profesorado.
- * 
+ *
  *
  * Funcionalidades:
  *  - Muestra las ausencias en una tabla con filtrado inteligente según perfil.
@@ -54,11 +54,13 @@ import {
 import { getCursoActual } from "@/utils/fechasHoras";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { DialogoSeleccionarFechaParte } from "../components/DialogoSeleccionarFechaParte";
+import { DialogoSeleccionarMes } from "../components/DialogoSeleccionarMes";
 import { DialogoInsertarAusenciaManual } from "../components/DialogoInsertarAusenciaManual";
 import { DialogoEditarAusenciaManual } from "../components/DialogoEditarAusenciaManual";
 import { DialogoEliminarAusencia } from "../components/DialogoEliminarAusencia";
 import { DialogoEditarTareas } from "../components/DialogoEditarTareas";
 import { generarParteDiarioAusencias } from "@/Informes/horarios";
+import { generarParteMensualAusencias } from "@/Informes/horarios";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { eachDayOfInterval } from "date-fns";
@@ -68,6 +70,8 @@ import { useAuth } from "@/context/AuthContext";
 export function AusenciasIndex() {
   const { user } = useAuth(); // Extraemos el usuario actual
   const [abrirDialogoFecha, setAbrirDialogoFecha] = useState(false);
+
+  const [abrirDialogoMes, setAbrirDialogoMes] = useState(false);
   const [abrirInsertar, setAbrirInsertar] = useState(false);
   const [ausenciaSeleccionada, setAusenciaSeleccionada] = useState(null);
   const [abrirEliminar, setAbrirEliminar] = useState(false);
@@ -109,6 +113,83 @@ export function AusenciasIndex() {
     setAusenciaSeleccionada(sel);
     // setAbrirEliminar(true); // Cuando tengas el de eliminar listo
     alert(`Eliminando: ${sel.id}`);
+  };
+
+  /**
+   * handleConfirmarGenerarPdfAusenciasMes
+   * Procesa la generación de informes mensuales basados en la selección.
+   */
+
+  const handleConfirmarGenerarPdfAusenciasMes = async (mesesSeleccionados) => {
+    const nombresMeses = {
+      9: "Septiembre",
+      10: "Octubre",
+      11: "Noviembre",
+      12: "Diciembre",
+      1: "Enero",
+      2: "Febrero",
+      3: "Marzo",
+      4: "Abril",
+      5: "Mayo",
+      6: "Junio",
+    };
+
+    const hoy = new Date();
+    const cursoInicio =
+      hoy.getMonth() + 1 >= 9 ? hoy.getFullYear() : hoy.getFullYear() - 1;
+    const cursoTexto = `${cursoInicio}/${cursoInicio + 1}`;
+
+    try {
+      for (const mesId of mesesSeleccionados) {
+        const anioParaFiltro = mesId >= 9 ? cursoInicio : cursoInicio + 1;
+
+        // 1. CREAR EL FILTRO ESTRICTO DEL MES
+        // Queremos que la ausencia pertenezca al mes si su FECHA DE INICIO está en ese mes
+        const ausenciasDelMes = (ausencias || []).filter((a) => {
+          const fechaInicioDoc = new Date(a.fecha_inicio);
+          // month en JS es 0-11, por eso sumamos 1
+          const mesAusencia = fechaInicioDoc.getMonth() + 1;
+          const anioAusencia = fechaInicioDoc.getFullYear();
+
+          return mesAusencia === mesId && anioAusencia === anioParaFiltro;
+        });
+
+        if (ausenciasDelMes.length === 0) {
+          toast.info(
+            `No hay ausencias registradas para ${nombresMeses[mesId]}`
+          );
+          continue;
+        }
+
+        // 2. MAPEAR SOLO LOS DATOS FILTRADOS
+        const datosParaInforme = ausenciasDelMes.map((a) => ({
+          nombre: a.nombreProfesor,
+          documento: a.dni || "---",
+          fechaInicio: a.fecha_inicio,
+          fechaFin: a.fecha_fin || a.fecha_inicio,
+          periodosLectivos: a.periodos_lectivos || 0,
+          periodosNoLectivos: a.periodos_no_lectivos || 0,
+          totalPeriodos:
+            Number(a.periodos_lectivos || 0) +
+            Number(a.periodos_no_lectivos || 0),
+          motivoCodigo: a.idpermiso || "---",
+          totalAcumulado: a.total_ausencias_acumuladas || 0, // Si lo tienes en el hook
+        }));
+
+        const metadatos = {
+          centro: "10005701 - I.E.S. Francisco de Orellana",
+          cursoAcademico: cursoTexto,
+          mesNombre: nombresMeses[mesId],
+          fechaRemision: format(new Date(), "dd/MM/yyyy"),
+        };
+
+        // 3. GENERAR EL PDF CON EL FILTRO APLICADO
+        await generarParteMensualAusencias(datosParaInforme, metadatos);
+      }
+    } catch (error) {
+      console.error("Error al filtrar/generar informes:", error);
+      toast.error("Error al procesar el mes");
+    }
   };
 
   const handleConfirmarGenerarPdf = async (fechaInicio, fechaFin) => {
@@ -248,7 +329,12 @@ export function AusenciasIndex() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => setAbrirDialogoFecha(true)}>
-                    <CalendarOff className="mr-2 h-4 w-4" /> Parte de Ausencias
+                    <CalendarOff className="mr-2 h-4 w-4" /> Parte diario de
+                    Ausencias
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setAbrirDialogoMes(true)}>
+                    <CalendarOff className="mr-2 h-4 w-4" /> Parte mensual de
+                    Ausencias
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -373,6 +459,12 @@ export function AusenciasIndex() {
         open={abrirDialogoFecha}
         onOpenChange={setAbrirDialogoFecha}
         onConfirmar={handleConfirmarGenerarPdf}
+      />
+
+      <DialogoSeleccionarMes
+        open={abrirDialogoMes}
+        onOpenChange={setAbrirDialogoMes}
+        onConfirmar={handleConfirmarGenerarPdfAusenciasMes}
       />
 
       {/* Diálogo para Insertar Ausencia Manual */}

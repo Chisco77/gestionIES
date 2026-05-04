@@ -33,7 +33,6 @@
  * - Se emplea flexbox con gap para distribuir los elementos horizontalmente.
  */
 
-
 import React, { useState, useEffect } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -74,13 +73,11 @@ export default function Header({ setTabActivo }) {
 
   const [abrirHorario, setAbrirHorario] = useState(false);
 
-  const MODULO_HORARIO =
-    (import.meta.env.VITE_MODULO_GUARDIAS ?? "false") === "true";
+
 
   // --- React Query hook para notificaciones ---
   const { permisos, extraescolares, total, isLoading, isError, error } =
     useNotificaciones();
-
 
   const handleClickLogout = () => {
     fetch(`${API_URL}/logout`, {
@@ -149,21 +146,19 @@ export default function Header({ setTabActivo }) {
           <RelojPeriodo periodos={periodosDB} />
         </div>
 
-        {MODULO_HORARIO && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <CalendarClock
-                  className="h-5 w-5 text-white cursor-pointer"
-                  onClick={() => setAbrirHorario(true)}
-                />
-              </TooltipTrigger>
-              <TooltipContent className="bg-blue-500 text-white">
-                Ver mi horario
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <CalendarClock
+                className="h-5 w-5 text-white cursor-pointer"
+                onClick={() => setAbrirHorario(true)}
+              />
+            </TooltipTrigger>
+            <TooltipContent className="bg-blue-500 text-white">
+              Ver mi horario
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       <div className="ml-auto flex items-center gap-4">
         {/* Campana + notificaciones */}
@@ -217,14 +212,13 @@ export default function Header({ setTabActivo }) {
         </TooltipProvider>
       </div>
       {/* Dialogo horario */}
-      {MODULO_HORARIO && (
-        <DialogoEditarHorario
-          open={abrirHorario}
-          onClose={() => setAbrirHorario(false)}
-          usuarioSeleccionado={user ? { ...user, uid: user.username } : null}
-          esAlumno={false}
-        />
-      )}
+      <DialogoEditarHorario
+        open={abrirHorario}
+        onClose={() => setAbrirHorario(false)}
+        usuarioSeleccionado={user ? { ...user, uid: user.username } : null}
+        esAlumno={false}
+      />
+
       <DialogoEditarUsuario
         open={abrirPerfil}
         onClose={() => setAbrirPerfil(false)}
