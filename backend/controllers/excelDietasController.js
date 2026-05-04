@@ -186,6 +186,7 @@ const generarDocumentoExcel = async (req, res) => {
 
         // --- 2. ASIGNAR NOMBRE DE LA DIRECTORA ---
         hoja.getCell("J33").value = nombreDirectora;
+        hoja.getCell("H43").value = nombreDirectora;
       }
 
       const buffer = await workbook.xlsx.writeBuffer();
