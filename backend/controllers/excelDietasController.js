@@ -194,6 +194,7 @@ const generarDocumentoExcel = async (req, res) => {
       if (hojaReverso) {
         // Asignar nombre de la directora en la celda E50 del Reverso
         hojaReverso.getCell("E50").value = nombreDirectora;
+        hojaReverso.getCell("H30").value = profesor.nombre;
       }
 
       const buffer = await workbook.xlsx.writeBuffer();
