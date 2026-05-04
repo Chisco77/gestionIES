@@ -165,9 +165,10 @@ const generarDocumentoExcel = async (req, res) => {
     for (const profesor of actividad.responsables) {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.readFile(plantillaPath);
-      const hoja = workbook.getWorksheet("Anverso");
 
-      if (hoja) {
+      const hojaAnverso = workbook.getWorksheet("Anverso");
+      const hojaReverso = workbook.getWorksheet("Reverso");
+      if (hojaAnverso) {
         const cuerpo = profesor.cuerpo || "";
         const dni = profesor.dni || "";
         const tipoEmpleado = profesor.tipo_empleado || "";
@@ -178,15 +179,15 @@ const generarDocumentoExcel = async (req, res) => {
           : "L";
 
         // Datos del profesor
-        hoja.getCell("K3").value = profesor.nombre || "Sin nombre";
-        hoja.getCell("K4").value = cuerpo;
-        hoja.getCell("O4").value = letraVinculacion;
-        hoja.getCell("Q4").value = dni;
-        hoja.getCell("Q3").value = 15;
+        hojaAnverso.getCell("K3").value = profesor.nombre || "Sin nombre";
+        hojaAnverso.getCell("K4").value = cuerpo;
+        hojaAnverso.getCell("O4").value = letraVinculacion;
+        hojaAnverso.getCell("Q4").value = dni;
+        hojaAnverso.getCell("Q3").value = 15;
 
         // --- 2. ASIGNAR NOMBRE DE LA DIRECTORA ---
-        hoja.getCell("J33").value = nombreDirectora;
-        hoja.getCell("H43").value = nombreDirectora;
+        hojaAnverso.getCell("J33").value = nombreDirectora;
+        hojaAnverso.getCell("H43").value = nombreDirectora;
       }
 
       // --- PROCESAR REVERSO ---
