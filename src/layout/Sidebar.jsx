@@ -67,6 +67,7 @@ function SidebarComponent({
   onOpenRestricciones,
   onOpenEtiquetas,
   onOpenLlavesRestricciones,
+  onOpenAccessTokens,
   onOpenConfiguracionCentro,
   onOpenImportarHorariosUNTIS,
   ...props
@@ -455,6 +456,7 @@ function SidebarComponent({
           },
         ],
       },
+     
       {
         title: "Administrador",
         url: "#",
@@ -468,6 +470,12 @@ function SidebarComponent({
             title: "Horarios UNTIS",
             url: "#",
             onClick: () => onOpenImportarHorariosUNTIS(),
+            icon: Wrench,
+          },
+                   {
+            title: "Token Proyección",
+            url: "#",
+            onClick: () => onOpenAccessTokens(),
             icon: Wrench,
           },
           { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },

@@ -49,6 +49,7 @@ import { useSidebarContext } from "@/context/SidebarContext";
 
 import { DialogoAsuntosRestricciones } from "../modules/AsuntosPropios/components/DialogoAsuntosRestricciones";
 import { DialogoLlavesRestricciones } from "@/modules/Llaves/components/DialogoLlavesRestricciones";
+import { DialogoAccessTokens } from "@/modules/Ausencias/components/DialogoAccessTokens";
 import { DialogoConfiguracionCentro } from "@/modules/DatosCentro/components/DialogoConfiguracionCentro";
 import { DialogoImportarHorariosUNTIS } from "@/modules/HorariosProfesorado/components/DialogoImportarHorariosUNTIS";
 
@@ -58,6 +59,7 @@ export default function Layout(props) {
   const [openEtiquetas, setOpenEtiquetas] = useState(false);
   const [openRestricciones, setOpenRestricciones] = useState(false);
   const [openLlavesRestricciones, setOpenLlavesRestricciones] = useState(false);
+  const [openAccessTokens, setOpenAccessTokens] = useState(false);
   const [openConfiguracionCentro, setOpenConfiguracionCentro] = useState(false);
   const [openImportarHorariosUNTIS, setOpenImportarHorariosUNTIS] =
     useState(false);
@@ -69,7 +71,7 @@ export default function Layout(props) {
   const { setTituloActivo } = useSidebarContext();
 
   useEffect(() => {
-    // Mapa de rutas estáticas 
+    // Mapa de rutas estáticas
     const pathToTitleMap = {
       "/": "Inicio",
       "/alumnos": "Alumnos",
@@ -102,7 +104,7 @@ export default function Layout(props) {
 
     // Lógica para títulos dinámicos de Planos
     if (!titulo && location.pathname.startsWith("/planos/")) {
-      // Extraemos el id de la URL 
+      // Extraemos el id de la URL
       const planoId = location.pathname.split("/").pop();
       // Buscamos en la lista de planos cargados
       const planoEncontrado = planos.find((p) => p.id === planoId);
@@ -124,6 +126,7 @@ export default function Layout(props) {
         onOpenRestricciones={() => setOpenRestricciones(true)}
         onOpenEtiquetas={() => setOpenEtiquetas(true)}
         onOpenLlavesRestricciones={() => setOpenLlavesRestricciones(true)}
+        onOpenAccessTokens={() => setOpenAccessTokens(true)}
         onOpenConfiguracionCentro={() => setOpenConfiguracionCentro(true)}
         onOpenImportarHorariosUNTIS={() => setOpenImportarHorariosUNTIS(true)}
       />
@@ -139,6 +142,11 @@ export default function Layout(props) {
         <DialogoLlavesRestricciones
           open={openLlavesRestricciones}
           onOpenChange={setOpenLlavesRestricciones}
+        />
+
+        <DialogoAccessTokens
+          open={openAccessTokens}
+          onOpenChange={setOpenAccessTokens}
         />
 
         <DialogoEtiquetasGenericas
