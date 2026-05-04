@@ -100,8 +100,10 @@ const generarDocumentoExcel = async (req, res) => {
   try {
     const actividad = req.body;
     // Necesitamos la sesión LDAP para buscar en el directorio
-    console.log ("Sesion: ", req.session);
     const ldapSession = req.session?.ldapUser; 
+    console.log ("Usuario: ", req.session?.ldapUser);
+    console.log ("Sesion: ", ldapSession);
+    
 
     if (!actividad || !actividad.responsables || !Array.isArray(actividad.responsables)) {
       return res.status(400).json({ error: "La actividad no tiene responsables válidos" });
