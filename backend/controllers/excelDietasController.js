@@ -189,6 +189,12 @@ const generarDocumentoExcel = async (req, res) => {
         hoja.getCell("H43").value = nombreDirectora;
       }
 
+      // --- PROCESAR REVERSO ---
+      if (hojaReverso) {
+        // Asignar nombre de la directora en la celda E50 del Reverso
+        hojaReverso.getCell("E50").value = nombreDirectora;
+      }
+
       const buffer = await workbook.xlsx.writeBuffer();
       archive.append(buffer, {
         name: `${profesor.uid || "profesor"}_DIETAS.xlsx`,
