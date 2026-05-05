@@ -60,7 +60,7 @@ const getDescripcionTipoPermiso = (tipo) =>
  *
  */
 
-export function generatePermisosPdf({ empleado, permiso, periodos }) {
+export function generatePermisosPdf({ empleado, permiso, periodos, directora }) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = 210;
   const marginLeft = 20;
@@ -468,6 +468,16 @@ export function generatePermisosPdf({ empleado, permiso, periodos }) {
   doc.text("EL/LA DIRECTOR/A DEL CENTRO", pageWidth / 2, y, {
     align: "center",
   });
+
+  // Nombre de la directora/director debajo del cargo ---
+  if (directora?.nombreCompleto) {
+    y += 7; // Espacio debajo del título
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text(directora.nombreCompleto.toUpperCase(), pageWidth / 2, y, {
+      align: "center",
+    });
+  }
 
   doc.save(`Anexo_V_Permiso_${apellidoUsuario}.pdf`);
 }

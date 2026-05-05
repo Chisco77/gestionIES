@@ -15,6 +15,7 @@ import { generatePermisosPdf } from "@/Informes/permisos";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
 import { SelectorFecha } from "@/modules/Comunes/SelectorFecha";
 
 import { format } from "date-fns";
@@ -50,6 +51,7 @@ export function DialogoInsertarPermiso({
   const queryClient = useQueryClient();
 
   const { data: periodos = [] } = usePeriodosHorarios();
+  const { data: configuracion } = useConfiguracionCentro(); // Obtener configuración del centro
 
   // Reset en carga de diálogo
   useEffect(() => {
@@ -140,7 +142,12 @@ export function DialogoInsertarPermiso({
         sn: user.sn,
         nombre_completo: `${user.givenName} ${user.sn}`,
       };
-      await generatePermisosPdf({ empleado, permiso: permisoCreado, periodos });
+      await generatePermisosPdf({
+        empleado,
+        permiso: permisoCreado,
+        periodos,
+        directora: configuracion?.directora,
+      });
       setShowPdfDialog(false);
       onClose();
     } catch (error) {

@@ -129,14 +129,11 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
         data.append("logo_centro", selectedFiles.logo_centro);
       if (selectedFiles.favicon) data.append("favicon", selectedFiles.favicon);
 
-      const res = await fetch(
-        `${API_BASE}/configuracion-centro/${payload.id}`,
-        {
-          method: "PUT",
-          body: data,
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_BASE}/configuracion-centro`, {
+        method: "POST",
+        body: data,
+        credentials: "include",
+      });
 
       if (!res.ok) throw new Error("Error al guardar la configuración");
       return res.json();
@@ -150,6 +147,8 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
   });
 
   const handleSave = () => {
+    console.log("🧾 formData ANTES de enviar:", formData);
+
     if (!formData.nombre_ies)
       return toast.error("El nombre del centro es obligatorio");
     guardarMutation.mutate(formData);

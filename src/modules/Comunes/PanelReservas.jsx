@@ -38,6 +38,7 @@ import { useAuth } from "@/context/AuthContext";
 import { DialogoEliminarPermiso } from "../Permisos/components/DialogoEliminarPermiso";
 import { DialogoEditarPermiso } from "../Permisos/components/DialogoEditarPermiso";
 import { useMemo } from "react";
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
 
 import {
   Tooltip,
@@ -148,6 +149,7 @@ export function PanelReservas({ uid, loading = false }) {
   const { data: reservas = [] } = useReservasUid(uid);
   const { data: asuntos = [] } = usePermisosUid(uid);
   const { data: extraescolares = [] } = useExtraescolaresUid(uid);
+  const { data: configuracion } = useConfiguracionCentro(); // Obtener configuración del centro
 
   const { user } = useAuth();
 
@@ -195,6 +197,7 @@ export function PanelReservas({ uid, loading = false }) {
         empleado,
         permiso: asunto,
         periodos,
+        directora: configuracion?.directora,
       });
     } catch (err) {
       console.error("Error generando PDF:", err);

@@ -111,7 +111,7 @@ export function TablaAusencias({
     getSortedRowModel: getSortedRowModel(),
     enableRowSelection: true,
     enableMultiRowSelection: false,
-    initialState: { pagination: { pageIndex: 0, pageSize: 12 } },
+    initialState: { pagination: { pageIndex: 0, pageSize: 11 } },
   });
 
   useEffect(() => {

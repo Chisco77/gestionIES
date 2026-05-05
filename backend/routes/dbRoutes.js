@@ -772,8 +772,7 @@ const {
 
 const {
   getConfiguracionCentro,
-  insertConfiguracion,
-  updateConfiguracion,
+  saveConfiguracionCentro,
 } = require("../controllers/db/configuracionCentroController");
 
 const {
@@ -1087,7 +1086,7 @@ router.delete("/cursos/:id", deleteCurso);
 
 router.get("/materias", getMaterias);
 router.post("/materias", insertMateria);
-router.put("/materias/:id", updateMateria); 
+router.put("/materias/:id", updateMateria);
 router.delete("/materias/:id", deleteMateria);
 
 // --- Libros ---
@@ -1115,15 +1114,14 @@ router.put("/avisos/smtp/:id", updateAvisoSMTP);
 
 // --- Configuración del Centro ---
 router.get("/configuracion-centro", getConfiguracionCentro);
-router.post("/configuracion-centro", insertConfiguracion);
-router.put(
-  "/configuracion-centro/:id",
+router.post(
+  "/configuracion-centro",
   uploadLogos.fields([
     { name: "logo_miies", maxCount: 1 },
     { name: "logo_centro", maxCount: 1 },
     { name: "favicon", maxCount: 1 },
   ]),
-  updateConfiguracion
+  saveConfiguracionCentro
 );
 
 // --- Notificaciones Directiva ---

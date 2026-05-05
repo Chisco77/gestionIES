@@ -22,38 +22,47 @@
  * - @tanstack/react-query
  */
 
+/**
+ * useStaffesLdap.jsx - Hook para obtener y cachear profesores LDAP.
+ * ------------------------------------------------------------
+ * Filtrado: Solo devuelve usuarios donde baja === false.
+ */
+
 import { useQuery } from "@tanstack/react-query";
 
 const API_URL = import.meta.env.VITE_API_URL;
-// Login externo o interno
 
 export function useStaffLdap() {
   return useQuery({
     queryKey: ["staff-ldap"],
     queryFn: async () => {
-      // Traemos los profesores desde LDAP
       const res = await fetch(`${API_URL}/ldap/usuarios?tipo=staff`, {
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Error al obtener personal no docente desde LDAP");
+
+      if (!res.ok)
+        throw new Error("Error al obtener personal no docente desde LDAP");
+
       const staffLDAP = await res.json();
 
-      // Para cada staff de LDAP, traemos los datos de empleados de postgresql
       const staffEnriquecidos = await Promise.all(
         staffLDAP.map(async (staff) => {
           try {
             const resEmp = await fetch(`${API_URL}/db/empleados/${staff.uid}`, {
               credentials: "include",
             });
-            if (!resEmp.ok) return staff; // si no existe, devolvemos solo LDAP
+            if (!resEmp.ok) return staff;
             const empleado = await resEmp.json();
             return { ...staff, ...empleado };
           } catch {
-            return staff; // en caso de error, devolvemos solo LDAP
+            return staff;
           }
         })
       );
-      return staffEnriquecidos;
+
+      // --- FILTRO APLICADO AQUÍ ---
+      // Solo devolvemos aquellos cuyo atributo 'baja' sea estrictamente false
+      return staffEnriquecidos.filter((empleado) => empleado.baja === false);
     },
     staleTime: 1000 * 60 * 5, // 5 minutos
   });

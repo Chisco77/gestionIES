@@ -23,7 +23,6 @@ import { useQuery } from "@tanstack/react-query";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
-
 export function useConfiguracionCentro() {
   return useQuery({
     queryKey: ["configuracion-centro"],
@@ -53,25 +52,40 @@ export function useConfiguracionCentro() {
         codigoPostal: c.codigo_postal || "",
         webUrl: c.web_url || "",
 
-        // Logo de la aplicación (miIES)
+        // Logos
         logoMiiesUrl: c.logo_miies_url || "",
-
-        // Logo institucional del centro
         logoCentroUrl: c.logo_centro_url || "",
-
-        // Favicon personalizado del centro
         faviconUrl: c.favicon_url || "",
 
-        // Cargos directivos (Nuevos campos)
+        // 🔹 UID (mantener por compatibilidad)
         uidDirectora: c.uid_directora || null,
         uidSecretaria: c.uid_secretaria || null,
+
+        // 🔥 NUEVO: datos enriquecidos
+        directora: c.directora
+          ? {
+              uid: c.directora.uid,
+              nombre: c.directora.nombre,
+              apellidos: c.directora.apellidos,
+              nombreCompleto: c.directora.nombreCompleto,
+            }
+          : null,
+
+        secretaria: c.secretaria
+          ? {
+              uid: c.secretaria.uid,
+              nombre: c.secretaria.nombre,
+              apellidos: c.secretaria.apellidos,
+              nombreCompleto: c.secretaria.nombreCompleto,
+            }
+          : null,
 
         updatedAt: c.updated_at,
       };
     },
-    // Configuraciones de React Query (v4/v5)
-    staleTime: 1000 * 60 * 60, // 1 hora
-    gcTime: 1000 * 60 * 60 * 24, // 24 horas (Nota: cacheTime en v4, gcTime en v5)
+
+    staleTime: 1000 * 60 * 60,
+    gcTime: 1000 * 60 * 60 * 24,
     retry: 1,
     refetchOnWindowFocus: false,
   });

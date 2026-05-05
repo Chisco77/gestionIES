@@ -161,6 +161,7 @@ export default function DialogoEditarUsuario({
       // Importante: Volvemos a marcar las queries como "viejas" para que se recarguen
       queryClient.invalidateQueries({ queryKey: ["empleados"] });
       queryClient.invalidateQueries({ queryKey: ["profesores-ldap"] });
+      queryClient.invalidateQueries({ queryKey: ["staff-ldap"] });
 
       toast.success("Usuario actualizado correctamente");
       onClose(); // Cerramos el diálogo

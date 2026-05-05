@@ -14,10 +14,17 @@
  */
 
 const db = require("../../db");
+const { buscarPorUid } = require("../ldap/usuariosController");
+
 
 // GET: /db/configuracion-centro
 async function getConfiguracionCentro(req, res) {
   try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession) {
+      return res.status(401).json({ ok: false, error: "No autenticado" });
+    }
+
     const { rows } = await db.query(
       `SELECT 
         id, nombre_ies, direccion_linea_1, direccion_linea_2, 
@@ -33,7 +40,53 @@ async function getConfiguracionCentro(req, res) {
         .status(404)
         .json({ ok: false, error: "No hay configuración definida" });
     }
-    res.json({ ok: true, centro: rows[0] });
+
+    const centro = rows[0];
+
+    // 🔥 En paralelo (manteniendo tu estilo con Promise inline)
+    const [directora, secretaria] = await Promise.all([
+      new Promise((resolve) => {
+        if (!centro.uid_directora) return resolve(null);
+
+        buscarPorUid(ldapSession, centro.uid_directora, (err, datos) => {
+          if (!err && datos) resolve(datos);
+          else resolve(null);
+        });
+      }),
+      new Promise((resolve) => {
+        if (!centro.uid_secretaria) return resolve(null);
+
+        buscarPorUid(ldapSession, centro.uid_secretaria, (err, datos) => {
+          if (!err && datos) resolve(datos);
+          else resolve(null);
+        });
+      }),
+    ]);
+
+    // 🧠 Enriquecimiento final
+    const centroEnriquecido = {
+      ...centro,
+      directora: directora
+        ? {
+            uid: directora.uid,
+            nombre: directora.givenName,
+            apellidos: directora.sn,
+            nombreCompleto:
+              `${directora.givenName || ""} ${directora.sn || ""}`.trim(),
+          }
+        : null,
+      secretaria: secretaria
+        ? {
+            uid: secretaria.uid,
+            nombre: secretaria.givenName,
+            apellidos: secretaria.sn,
+            nombreCompleto:
+              `${secretaria.givenName || ""} ${secretaria.sn || ""}`.trim(),
+          }
+        : null,
+    };
+
+    res.json({ ok: true, centro: centroEnriquecido });
   } catch (err) {
     console.error("[getConfiguracionCentro] Error:", err);
     res
@@ -43,7 +96,7 @@ async function getConfiguracionCentro(req, res) {
 }
 
 // POST: /db/configuracion-centro (Inserción inicial con archivos)
-async function insertConfiguracion(req, res) {
+/*async function insertConfiguracion(req, res) {
   const body = req.body;
 
   if (!body.nombre_ies) {
@@ -172,10 +225,93 @@ async function updateConfiguracion(req, res) {
       .status(500)
       .json({ ok: false, error: "Error actualizando la configuración" });
   }
+}*/
+
+async function saveConfiguracionCentro(req, res) {
+  const body = req.body;
+
+  if (!body.nombre_ies) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "El nombre del IES es obligatorio" });
+  }
+
+  // 📁 Archivos (igual que ya tienes)
+  const logo_miies_url = req.files?.["logo_miies"]
+    ? `/gestionIES/public/logos/${req.files["logo_miies"][0].filename}`
+    : null;
+
+  const logo_centro_url = req.files?.["logo_centro"]
+    ? `/gestionIES/public/logos/${req.files["logo_centro"][0].filename}`
+    : null;
+
+  const favicon_url = req.files?.["favicon"]
+    ? `/gestionIES/public/logos/${req.files["favicon"][0].filename}`
+    : null;
+
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO configuracion_centro (
+        id,
+        nombre_ies, direccion_linea_1, direccion_linea_2, direccion_linea_3,
+        telefono, fax, email, localidad, provincia, codigo_postal, web_url,
+        logo_miies_url, logo_centro_url, favicon_url,
+        uid_directora, uid_secretaria
+      )
+      VALUES (
+        1,
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+        $12, $13, $14, $15, $16
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        nombre_ies        = EXCLUDED.nombre_ies,
+        direccion_linea_1 = EXCLUDED.direccion_linea_1,
+        direccion_linea_2 = EXCLUDED.direccion_linea_2,
+        direccion_linea_3 = EXCLUDED.direccion_linea_3,
+        telefono          = EXCLUDED.telefono,
+        fax               = EXCLUDED.fax,
+        email             = EXCLUDED.email,
+        localidad         = EXCLUDED.localidad,
+        provincia         = EXCLUDED.provincia,
+        codigo_postal     = EXCLUDED.codigo_postal,
+        web_url           = EXCLUDED.web_url,
+        logo_miies_url    = COALESCE(EXCLUDED.logo_miies_url, configuracion_centro.logo_miies_url),
+        logo_centro_url   = COALESCE(EXCLUDED.logo_centro_url, configuracion_centro.logo_centro_url),
+        favicon_url       = COALESCE(EXCLUDED.favicon_url, configuracion_centro.favicon_url),
+        uid_directora     = EXCLUDED.uid_directora,
+        uid_secretaria    = EXCLUDED.uid_secretaria,
+        updated_at        = CURRENT_TIMESTAMP
+      RETURNING *`,
+      [
+        body.nombre_ies,
+        body.direccion_linea_1,
+        body.direccion_linea_2,
+        body.direccion_linea_3,
+        body.telefono,
+        body.fax,
+        body.email,
+        body.localidad,
+        body.provincia,
+        body.codigo_postal,
+        body.web_url,
+        logo_miies_url,
+        logo_centro_url,
+        favicon_url,
+        body.uid_directora || null,
+        body.uid_secretaria || null,
+      ]
+    );
+
+    res.json({ ok: true, centro: rows[0] });
+  } catch (err) {
+    console.error("[saveConfiguracionCentro] Error:", err);
+    res
+      .status(500)
+      .json({ ok: false, error: "Error guardando la configuración" });
+  }
 }
 
 module.exports = {
   getConfiguracionCentro,
-  insertConfiguracion,
-  updateConfiguracion,
+  saveConfiguracionCentro,
 };
