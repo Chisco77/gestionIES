@@ -1,14 +1,23 @@
 // src/modules/horarios.js
 import jsPDF from "jspdf";
 import { getCursoActual } from "@/utils/fechasHoras";
-import { drawHeader } from "./utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { MAPEO_TIPOS_PERMISOS } from "@/utils/mapeoTiposPermisos";
+import { drawHeader, drawFooter, addPageWithHeader } from "./utils"; // Importamos tus funciones estándar
 
+/**
+ * Genera el PDF de Horarios de Profesores
+ * @param {Array} horarios - Datos de los horarios
+ * @param {Array} periodos - Periodos horarios
+ * @param {string} nombrePdf - Nombre del archivo
+ * @param {string} logoUrl - URL del logo del centro
+ */
 export async function generarPdfHorariosProfesores(
   horarios,
   periodos,
-  nombrePdf = "horarios_profesores"
+  nombrePdf = "horarios_profesores",
+  logoUrl // Nuevo parámetro[cite: 2]
 ) {
   if (!horarios || !horarios.length) {
     alert("No hay horarios para generar el informe.");
@@ -22,7 +31,6 @@ export async function generarPdfHorariosProfesores(
 
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 10;
   const colWidth = (pageWidth - margin * 2) / 6;
   const rowHeight = 15;
@@ -64,22 +72,22 @@ export async function generarPdfHorariosProfesores(
     if (indexProfesor > 0) doc.addPage();
 
     const datosProfesor = horariosPorProfesor[uid][0];
-    let y = 15;
+    const tituloInforme = `HORARIO: ${datosProfesor.nombreProfesor || uid}`;
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text(`Horario de: ${datosProfesor.nombreProfesor || uid}`, margin, y);
+    // --- CABECERA ESTÁNDAR ---
+    // Usamos drawHeader para consistencia
+    let y = drawHeader(doc, tituloInforme, logoUrl);
 
-    y += 6;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
     doc.text(
       `Curso Académico: ${datosProfesor.curso_academico || "---"}`,
       margin,
       y
     );
 
-    y += 10;
+    y += 8;
 
     // Cabecera de tabla
     doc.setFillColor(230, 230, 230);
@@ -89,6 +97,7 @@ export async function generarPdfHorariosProfesores(
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0); // Forzar negro para el texto de cabecera[cite: 2]
     doc.text("Periodo", margin + 2, y + rowHeight / 2 + 2);
 
     diasNombres.forEach((dia, i) => {
@@ -98,11 +107,11 @@ export async function generarPdfHorariosProfesores(
     y += rowHeight;
 
     periodos.forEach((p) => {
-      // Columna Periodo
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       doc.setFillColor(245, 245, 245);
       doc.rect(margin, y, colWidth, rowHeight, "FD");
+      doc.setTextColor(0, 0, 0);
       doc.text(p.nombre, margin + 2, y + 6);
       doc.setFont("helvetica", "normal");
       doc.text(`${p.inicio} - ${p.fin}`, margin + 2, y + 11);
@@ -120,14 +129,13 @@ export async function generarPdfHorariosProfesores(
           const color = configuracionColores[h.tipo] || [255, 255, 255];
           doc.setFillColor(...color);
           doc.rect(posX + 0.5, y + 0.5, colWidth - 1, rowHeight - 1, "F");
+          doc.setTextColor(0, 0, 0);
 
           const textMaxWidth = colWidth - 4;
 
-          // --- LÓGICA DE CONTENIDO SEGÚN TIPO ---
           if (h.tipo === "guardia") {
             doc.setFont("helvetica", "bold");
             doc.setFontSize(8);
-            // Centrar el texto "GUARDIA" horizontalmente en la celda
             const txt = "GUARDIA";
             const txtWidth = doc.getTextWidth(txt);
             doc.text(
@@ -136,7 +144,6 @@ export async function generarPdfHorariosProfesores(
               y + rowHeight / 2 + 1
             );
           } else {
-            // Comportamiento normal para Lectivas, Reuniones, etc.
             doc.setFont("helvetica", "bold");
             doc.setFontSize(7);
             const materiaTexto = h.materia_nombre || h.materia || "";
@@ -161,6 +168,7 @@ export async function generarPdfHorariosProfesores(
     let xLeyenda = margin;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
+    doc.setTextColor(0, 0, 0);
     doc.text("LEYENDA:", xLeyenda, y + 3);
     xLeyenda += 18;
 
@@ -418,8 +426,13 @@ export function generarPdfCuadrante(guardias, periodos) {
  * Genera el PDF del "Parte de Faltas Diario"
  * @param {Array} datosProcesados - Lista de objetos { periodo, filas: [{profesor, asignatura, curso, observaciones}] }
  * @param {Date} fecha - La fecha del parte
+ * @param {string} logoUrl - URL del logo del centro
  */
-export async function generarParteDiarioAusencias(datosProcesados, fecha) {
+export async function generarParteDiarioAusencias(
+  datosProcesados,
+  fecha,
+  logoUrl
+) {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const margin = 15;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -435,8 +448,10 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
 
   const opcionesFecha = { day: "numeric", month: "long", year: "numeric" };
   const tituloCompleto = `Parte diario de Ausencias del ${fecha.toLocaleDateString("es-ES", opcionesFecha)}`;
+
   // --- CABECERA ---
-  let y = drawHeader(doc, tituloCompleto);
+  // Pasamos logoUrl a drawHeader[cite: 2]
+  let y = drawHeader(doc, tituloCompleto, logoUrl);
 
   // Subimos el contenido para eliminar el aire innecesario
   y -= 8;
@@ -459,6 +474,7 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
   doc.rect(margin, y, tableWidth, 9, "F");
   doc.rect(margin, y, tableWidth, 9, "S");
   doc.setFontSize(8);
+  doc.setTextColor(0, 0, 0); // Aseguramos texto negro[cite: 2]
   doc.text("HORAS", margin + 2, y + 6);
   doc.text("PROFESORES\nAUSENTES", margin + colHorasW + 2, y + 4.5);
   doc.text("ASIGNATURA", margin + colHorasW + colProfW + 2, y + 6);
@@ -473,13 +489,9 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
 
   // --- CUERPO DINÁMICO ---
   datosProcesados.forEach((p) => {
-    // Calculamos altura con control de desbordamiento de texto
     const subfilasConAltura = p.filas.map((f) => {
-      // Determinamos qué texto mostrar en la columna Asignatura
       const textoAsignatura =
         f.tipo === "guardia" ? "GUARDIA" : f.asignatura || "";
-
-      // Si es guardia y hay estancia, la añadimos a las observaciones de esa fila
       let textoObs = "";
       const estanciaValida =
         f.estancia &&
@@ -501,7 +513,7 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
         String(f.curso || ""),
         colCursoW - 2
       ).length;
-      const lineasObs = doc.splitTextToSize(textoObs, colObsW - 4).length; // Calculamos líneas de obs
+      const lineasObs = doc.splitTextToSize(textoObs, colObsW - 4).length;
 
       const maxLineas = Math.max(
         lineasAsig,
@@ -514,7 +526,7 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
       return {
         ...f,
         textoAsignatura,
-        textoObs, // Guardamos el texto procesado
+        textoObs,
         altura: Math.max(7, maxLineas * 4 + 1),
       };
     });
@@ -524,14 +536,12 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
         ? subfilasConAltura.reduce((acc, curr) => acc + curr.altura, 0)
         : 7;
 
-    // Salto de página preventivo (ajustado a 280mm para máxima seguridad)
     if (y + alturaTotalBloque > 280) {
       doc.addPage();
-      y = drawHeader(doc, tituloCompleto);
+      y = drawHeader(doc, tituloCompleto, logoUrl); // Repetir cabecera con logo[cite: 2]
       y += 10;
     }
 
-    // 1. Celdas Estáticas del bloque (Hora, Observaciones, Firma)
     doc.setFont("helvetica", "bold");
     doc.rect(margin, y, colHorasW, alturaTotalBloque, "S");
     doc.text(
@@ -551,7 +561,6 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
       "S"
     );
 
-    // 2. Celdas de Contenido
     let currentSubY = y;
     if (subfilasConAltura.length > 0) {
       subfilasConAltura.forEach((f) => {
@@ -566,8 +575,6 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
           "S"
         );
 
-        // IMPORTANTE: Dibujamos el rectángulo de observaciones por CADA fila interna
-        // para que el texto de la estancia quede alineado con su profesor
         const xObs = sX + colProfW + colAsigW + colCursoW;
         doc.rect(xObs, currentSubY, colObsW, f.altura, "S");
         doc.rect(
@@ -581,7 +588,6 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
 
-        // Dibujamos el texto limitando líneas para evitar que pisen el borde inferior
         const limitLines = Math.floor(f.altura / 4);
 
         const profLines = doc
@@ -594,13 +600,11 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
           .slice(0, limitLines);
         doc.text(asigLines, sX + colProfW + 2, currentSubY + 4);
 
-        // Curso
         const cursoLines = doc
           .splitTextToSize(String(f.curso || ""), colCursoW - 2)
           .slice(0, limitLines);
         doc.text(cursoLines, sX + colProfW + colAsigW + 2, currentSubY + 4);
 
-        // Imprimir OBSERVACIONES (con la estancia incluida)
         const obsLines = doc
           .splitTextToSize(f.textoObs, colObsW - 4)
           .slice(0, limitLines);
@@ -625,200 +629,163 @@ export async function generarParteDiarioAusencias(datosProcesados, fecha) {
     y = currentSubY;
   });
 
+  // --- PIE DE PÁGINA ---
+  drawFooter(doc); // Añadimos el pie de página antes de guardar[cite: 2]
+
   doc.save(`Parte_Ausencias_${format(fecha, "yyyy-MM-dd")}.pdf`);
 }
 
 /**
- * Genera el PDF del "Parte Mensual de Ausencias" (Formato Oficial Junta de Extremadura)
- * @param {Array} datos - Lista de ausencias enriquecidas del mes
- * @param {Object} meta - Datos del encabezado { centro, cursoAcademico, mesNombre, fechaRemision }
+ * Genera el PDF del Parte Mensual de Ausencias
+ * @param {Array} datos - Lista de ausencias
+ * @param {Object} meta - Metadatos (mes, curso, etc.)
+ * @param {String} logoUrl - URL del logo resuelta
  */
+export async function generarParteMensualAusencias(
+  datos,
+  meta,
+  logoUrl,
+  periodosHorarios = []
+) {
+  // 1. Identificar IDs de periodos que son recreos
+  const idsRecreos = periodosHorarios
+    .filter((p) => p.nombre.toLowerCase().includes("recreo"))
+    .map((p) => p.id);
 
-export async function generarParteMensualAusencias(datos, meta) {
-  // 1. ORDENACIÓN: Apellidos (Nombre) y luego Fecha Inicio
   const datosOrdenados = [...datos].sort((a, b) => {
-    // Comparar por nombre/apellidos
     const nombreA = a.nombre.toLowerCase();
     const nombreB = b.nombre.toLowerCase();
-
-    if (nombreA < nombreB) return -1;
-    if (nombreA > nombreB) return 1;
-
-    // Si el nombre es el mismo, comparamos por fecha
+    if (nombreA !== nombreB) return nombreA.localeCompare(nombreB);
     return new Date(a.fechaInicio) - new Date(b.fechaInicio);
   });
 
-  // 2. Configuración Landscape
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
-  const margin = 10;
-  const pageWidth = doc.internal.pageSize.getWidth(); // 297mm
-  const pageHeight = doc.internal.pageSize.getHeight(); // 210mm
-  const tableWidth = pageWidth - margin * 2;
+  const margin = 15;
+  const pageWidth = doc.internal.pageSize.getWidth();
 
-  // --- CONFIGURACIÓN DE COLUMNAS ---
   const col = {
-    nombre: 65,
+    nombre: 60,
     dni: 25,
     fecha: 22,
-    tipo: 12,
-    periodos: 15,
-    total: 12,
-    motivo: 15,
-    justificada: 28,
-    acumuladas: 22,
+    periodos: 33,
+    motivo: 105,
   };
 
   const drawHeadersTabla = (yPos) => {
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "bold");
-    doc.setFillColor(240, 240, 240);
+    let x = margin;
+    const headers = [
+      { w: col.nombre, t: "Nombre y Apellidos" },
+      { w: col.dni, t: "DNI" },
+      { w: col.fecha, t: "F. Inicio" },
+      { w: col.fecha, t: "F. Fin" },
+      { w: col.periodos, t: "Periodos / Jornada" },
+      { w: col.motivo, t: "Motivo (Art. Permiso o Descripción)" },
+    ];
 
-    // FILA 1: AGRUPADORES
-    doc.rect(margin, yPos, col.nombre + col.dni, 12, "FD");
-    doc.text(
-      "DATOS PERSONALES",
-      margin + (col.nombre + col.dni) / 2,
-      yPos + 7,
-      { align: "center" }
-    );
+    headers.forEach((h) => {
+      // 1. FORZAR COLOR DE FONDO (Gris claro)
+      doc.setDrawColor(0);
+      doc.setFillColor(240, 240, 240);
+      doc.rect(x, yPos, h.w, 8, "FD");
 
-    let x = margin + col.nombre + col.dni;
-    const anchoAusencia =
-      col.fecha * 2 + col.tipo + col.periodos + col.total + col.motivo;
-    doc.rect(x, yPos, anchoAusencia, 6, "FD");
-    doc.text("DATOS DE LA AUSENCIA", x + anchoAusencia / 2, yPos + 4.5, {
-      align: "center",
+      // 2. FORZAR COLOR DE TEXTO (Negro absoluto)
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "bold"); // Negrita para el encabezado[cite: 2]
+      doc.setFontSize(8);
+
+      // 3. DIBUJAR EL TEXTO
+      doc.text(h.t, x + 2, yPos + 5.5);
+
+      x += h.w;
     });
 
-    x += anchoAusencia;
-    doc.rect(x, yPos, col.justificada, 12, "FD");
-    doc.text("Sólo no\njustificadas", x + col.justificada / 2, yPos + 5, {
-      align: "center",
-    });
+    // --- CORRECCIÓN AQUÍ ---
+    // Reseteamos a estilo 'normal' para que el resto de la tabla NO salga en negrita[cite: 2]
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(0, 0, 0);
 
-    x += col.justificada;
-    doc.rect(x, yPos, col.acumuladas, 12, "FD");
-    doc.text("Total\nPeriodos\nacumuladas", x + col.acumuladas / 2, yPos + 4, {
-      align: "center",
-    });
-
-    // FILA 2: SUBTÍTULOS
-    doc.setFontSize(6);
-    const y2 = yPos + 6;
-    let x2 = margin + col.nombre + col.dni;
-
-    doc.rect(x2, y2, col.fecha, 6, "S");
-    doc.text("Fecha\ncomienzo", x2 + 2, y2 + 2.5);
-    x2 += col.fecha;
-    doc.rect(x2, y2, col.fecha, 6, "S");
-    doc.text("Fecha\nfin", x2 + 2, y2 + 2.5);
-    x2 += col.fecha;
-    doc.rect(x2, y2, col.tipo, 6, "S");
-    doc.text("Tipo", x2 + 2, y2 + 4);
-    x2 += col.tipo;
-    doc.rect(x2, y2, col.periodos, 6, "S");
-    doc.text("Periodos", x2 + 2, y2 + 4);
-    x2 += col.periodos;
-    doc.rect(x2, y2, col.total, 6, "S");
-    doc.text("Total", x2 + 2, y2 + 4);
-    x2 += col.total;
-    doc.rect(x2, y2, col.motivo, 6, "S");
-    doc.text("Motivo", x2 + 2, y2 + 4);
-
-    doc.text("Nombre", margin + 2, yPos + 10);
-    doc.text("Documento", margin + col.nombre + 2, yPos + 10);
-
-    return yPos + 12;
+    return yPos + 8;
   };
 
-  // --- INICIO RENDERIZADO ---
-  let y = 15;
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text(meta.centro, margin, y);
+  const tituloHeader = `PARTE MENSUAL DE AUSENCIAS - ${meta.mesNombre.toUpperCase()} (Curso ${meta.cursoAcademico})`;
+  let currentY = drawHeader(doc, tituloHeader, logoUrl);
 
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.text(
-    `Año académico: ${meta.cursoAcademico}    Mes: ${meta.mesNombre}`,
-    margin,
-    y + 7
-  );
-  doc.text(
-    `Fecha de remisión: ${meta.fechaRemision}`,
-    pageWidth - margin - 40,
-    y + 7
-  );
-
-  y += 15;
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text("PARTE MENSUAL DE AUSENCIAS DEL PROFESORADO", pageWidth / 2, y, {
-    align: "center",
-  });
-
-  y += 6;
-  y = drawHeadersTabla(y);
-
-  // --- CUERPO (Usando datosOrdenados) ---
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
+  currentY = drawHeadersTabla(currentY);
 
   datosOrdenados.forEach((item) => {
     const rowH = 8;
-    // Si vamos a saltar de página, forzamos "landscape" en addPage para evitar errores
-    if (y + rowH > pageHeight - 20) {
-      doc.addPage("landscape");
-      y = 20;
-      y = drawHeadersTabla(y);
+
+    if (currentY + rowH > 180) {
+      currentY = addPageWithHeader(doc, tituloHeader, logoUrl, "l");
+      currentY = drawHeadersTabla(currentY);
+      doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(0);
     }
 
+    // --- LÓGICA DE CONTEO DE PERIODOS (EXCLUYENDO RECREOS) ---
+    let textoPeriodos = "Jornada completa";
+    if (item.idperiodo_inicio) {
+      const pInicio = Number(item.idperiodo_inicio);
+      const pFin = Number(item.idperiodo_fin) || pInicio;
+
+      // Contamos cuántos IDs en el rango NO son recreos
+      let contadorReal = 0;
+      for (let i = pInicio; i <= pFin; i++) {
+        if (!idsRecreos.includes(i)) {
+          contadorReal++;
+        }
+      }
+      textoPeriodos = `${contadorReal} per. (${pInicio}º a ${pFin}º)`;
+    }
+
+    const textoMotivo = item.esPermiso
+      ? MAPEO_TIPOS_PERMISOS[item.tipoPermiso] || "Permiso"
+      : item.descripcionAusencia || "Aviso";
+
     let cx = margin;
-    const drawCell = (width, text) => {
-      doc.rect(cx, y, width, rowH, "S");
-      doc.text(String(text || ""), cx + 2, y + 5);
-      cx += width;
-    };
+    const rowData = [
+      { w: col.nombre, t: item.nombre },
+      { w: col.dni, t: item.documento },
+      { w: col.fecha, t: format(new Date(item.fechaInicio), "dd/MM/yyyy") },
+      { w: col.fecha, t: format(new Date(item.fechaFin), "dd/MM/yyyy") },
+      { w: col.periodos, t: textoPeriodos },
+      { w: col.motivo, t: textoMotivo },
+    ];
 
-    drawCell(col.nombre, item.nombre.substring(0, 40));
-    drawCell(col.dni, item.documento);
-    drawCell(col.fecha, format(new Date(item.fechaInicio), "dd/MM/yyyy"));
-    drawCell(col.fecha, format(new Date(item.fechaFin), "dd/MM/yyyy"));
-    drawCell(col.tipo, "01");
-    drawCell(
-      col.periodos,
-      `${item.periodosLectivos || 0} | ${item.periodosNoLectivos || 0} | 00`
-    );
-    drawCell(col.total, item.totalPeriodos || 0);
-    drawCell(col.motivo, item.motivoCodigo || "");
-    drawCell(col.justificada, "");
-    drawCell(col.acumuladas, item.totalAcumulado || "");
+    rowData.forEach((cell) => {
+      doc.setDrawColor(0);
+      doc.rect(cx, currentY, cell.w, rowH, "S");
+      doc.setTextColor(0, 0, 0); // Texto siempre negro[cite: 2]
+      const safeText = doc.splitTextToSize(String(cell.t), cell.w - 2);
+      doc.text(safeText[0], cx + 2, currentY + 5);
+      cx += cell.w;
+    });
 
-    y += rowH;
+    currentY += rowH;
   });
 
-  // --- RESUMEN FINAL ---
-  if (y + 40 > pageHeight) {
-    doc.addPage("landscape");
-    y = 20;
+  // Resumen final
+  if (currentY + 30 > 185) {
+    currentY = addPageWithHeader(doc, tituloHeader, logoUrl, "l");
+    currentY += 15;
   }
-  y += 5;
-  doc.setFont("helvetica", "bold");
-  doc.setFillColor(250, 250, 250);
-  doc.rect(margin, y, tableWidth, 18, "FD");
-  doc.text("Resumen estadístico del mes", margin + 2, y + 5);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
+
+  currentY += 10;
+  doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(0);
+  doc.text("Resumen del mes:", margin, currentY);
+  doc.setFont("helvetica", "normal").setFontSize(8);
   doc.text(
-    `Número total de profesores/as del Centro pertenecientes al Claustro: ____`,
-    margin + 2,
-    y + 10
+    `Total de incidencias registradas: ${datosOrdenados.length}`,
+    margin,
+    currentY + 6
   );
   doc.text(
-    `Número total de ausencias registradas: ${datosOrdenados.length}`,
-    margin + 2,
-    y + 14
+    `Número de profesores afectados: ${new Set(datosOrdenados.map((d) => d.documento)).size}`,
+    margin,
+    currentY + 11
   );
 
-  doc.save(`Parte_Mensual_${meta.mesNombre}.pdf`);
+  drawFooter(doc);
+  doc.save(
+    `Parte_Mensual_Ausencias_${meta.mesNombre}_${meta.cursoAcademico.replace("/", "-")}.pdf`
+  );
 }

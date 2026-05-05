@@ -66,6 +66,8 @@ import { toast } from "sonner";
 import { eachDayOfInterval } from "date-fns";
 
 import { useAuth } from "@/context/AuthContext";
+import { resolverRutaLogo } from "@/Informes/utils";
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
 
 export function AusenciasIndex() {
   const { user } = useAuth(); // Extraemos el usuario actual
@@ -80,6 +82,8 @@ export function AusenciasIndex() {
 
   // Usamos refetch para actualizar la tabla tras insertar
   const { data: ausencias, isLoading, error, refetch } = useAusencias();
+  const { data: centro } = useConfiguracionCentro(); // Traemos los datos del centro
+
   const { data: periodos = [] } = usePeriodosHorarios();
   const esDirectiva = user?.perfil === "directiva";
   const hoyStr = format(new Date(), "yyyy-MM-dd");
@@ -119,7 +123,6 @@ export function AusenciasIndex() {
    * handleConfirmarGenerarPdfAusenciasMes
    * Procesa la generación de informes mensuales basados en la selección.
    */
-
   const handleConfirmarGenerarPdfAusenciasMes = async (mesesSeleccionados) => {
     const nombresMeses = {
       9: "Septiembre",
@@ -135,56 +138,68 @@ export function AusenciasIndex() {
     };
 
     const hoy = new Date();
-    const cursoInicio =
+    // Usamos let si planeamos cambiar el valor, aunque aquí con const debería bastar
+    // si solo se calcula una vez por ejecución.
+    const cursoInicioAnio =
       hoy.getMonth() + 1 >= 9 ? hoy.getFullYear() : hoy.getFullYear() - 1;
-    const cursoTexto = `${cursoInicio}/${cursoInicio + 1}`;
+    const cursoTexto = `${cursoInicioAnio}/${cursoInicioAnio + 1}`;
 
     try {
-      for (const mesId of mesesSeleccionados) {
-        const anioParaFiltro = mesId >= 9 ? cursoInicio : cursoInicio + 1;
+      // 1. Resolvemos el logo una sola vez
+      const urlParaPdf =
+        typeof resolverRutaLogo === "function"
+          ? resolverRutaLogo(centro?.logoCentroUrl)
+          : centro?.logoCentroUrl;
 
-        // 1. CREAR EL FILTRO ESTRICTO DEL MES
-        // Queremos que la ausencia pertenezca al mes si su FECHA DE INICIO está en ese mes
+      for (const mesId of mesesSeleccionados) {
+        // Determinamos el año real del mes seleccionado (ej: enero es cursoInicio + 1)
+        const anioParaFiltro =
+          mesId >= 9 ? cursoInicioAnio : cursoInicioAnio + 1;
+
         const ausenciasDelMes = (ausencias || []).filter((a) => {
           const fechaInicioDoc = new Date(a.fecha_inicio);
-          // month en JS es 0-11, por eso sumamos 1
           const mesAusencia = fechaInicioDoc.getMonth() + 1;
           const anioAusencia = fechaInicioDoc.getFullYear();
 
-          return mesAusencia === mesId && anioAusencia === anioParaFiltro;
+          return (
+            mesAusencia === mesId &&
+            anioAusencia === anioParaFiltro &&
+            a.tipo_ausencia !== "extraescolar" &&
+            !a.idextraescolar
+          );
         });
 
         if (ausenciasDelMes.length === 0) {
-          toast.info(
-            `No hay ausencias registradas para ${nombresMeses[mesId]}`
-          );
+          toast.info(`No hay faltas para ${nombresMeses[mesId]}`);
           continue;
         }
 
-        // 2. MAPEAR SOLO LOS DATOS FILTRADOS
         const datosParaInforme = ausenciasDelMes.map((a) => ({
           nombre: a.nombreProfesor,
           documento: a.dni || "---",
           fechaInicio: a.fecha_inicio,
           fechaFin: a.fecha_fin || a.fecha_inicio,
-          periodosLectivos: a.periodos_lectivos || 0,
-          periodosNoLectivos: a.periodos_no_lectivos || 0,
-          totalPeriodos:
-            Number(a.periodos_lectivos || 0) +
-            Number(a.periodos_no_lectivos || 0),
-          motivoCodigo: a.idpermiso || "---",
-          totalAcumulado: a.total_ausencias_acumuladas || 0, // Si lo tienes en el hook
+          idperiodo_inicio: a.idperiodo_inicio,
+          idperiodo_fin: a.idperiodo_fin,
+          esPermiso: a.idpermiso !== null && a.permiso !== null,
+          tipoPermiso: a.permiso?.tipo || null,
+          descripcionAusencia: a.descripcion,
         }));
 
         const metadatos = {
-          centro: "10005701 - I.E.S. Francisco de Orellana",
+          centro: centro?.nombre || "I.E.S. Francisco de Orellana",
           cursoAcademico: cursoTexto,
           mesNombre: nombresMeses[mesId],
           fechaRemision: format(new Date(), "dd/MM/yyyy"),
         };
 
-        // 3. GENERAR EL PDF CON EL FILTRO APLICADO
-        await generarParteMensualAusencias(datosParaInforme, metadatos);
+        // 2. Pasamos TODOS los argumentos necesarios, incluyendo periodosHorarios
+        await generarParteMensualAusencias(
+          datosParaInforme,
+          metadatos,
+          urlParaPdf,
+          periodos || []
+        );
       }
     } catch (error) {
       console.error("Error al filtrar/generar informes:", error);
@@ -193,7 +208,13 @@ export function AusenciasIndex() {
   };
 
   const handleConfirmarGenerarPdf = async (fechaInicio, fechaFin) => {
-    // 1. Generamos el array de todos los días incluidos en el rango
+    // 1. Resolvemos el logo una sola vez para todo el proceso
+    const urlParaPdf =
+      typeof resolverRutaLogo === "function"
+        ? resolverRutaLogo(centro?.logoCentroUrl)
+        : centro?.logoCentroUrl;
+
+    // 2. Generamos el array de todos los días incluidos en el rango
     const diasAProcesar = eachDayOfInterval({
       start: fechaInicio,
       end: fechaFin,
@@ -202,7 +223,7 @@ export function AusenciasIndex() {
     let generadosExitosos = 0;
     let diasSinAusencias = 0;
 
-    // 2. Iteramos sobre cada día del rango
+    // 3. Iteramos sobre cada día del rango
     for (const fechaSeleccionada of diasAProcesar) {
       const diaSemana = fechaSeleccionada.getDay();
 
@@ -212,7 +233,7 @@ export function AusenciasIndex() {
       const curso = getCursoActual(fechaSeleccionada).label;
       const fechaFormateada = format(fechaSeleccionada, "yyyy-MM-dd");
 
-      // 3. Filtramos las ausencias que caen en este día específico
+      // 4. Filtramos las ausencias que caen en este día específico
       const ausenciasDia = (ausencias || []).filter((a) => {
         return (
           fechaFormateada >= a.fecha_inicio &&
@@ -220,13 +241,11 @@ export function AusenciasIndex() {
         );
       });
 
-      // Si no hay ausencias este día, pasamos al siguiente
       if (ausenciasDia.length === 0) {
         diasSinAusencias++;
         continue;
       }
 
-      // 4. Obtenemos UIDs únicos para la consulta al horario
       const uids = [...new Set(ausenciasDia.map((a) => a.uid_profesor))];
 
       try {
@@ -243,18 +262,15 @@ export function AusenciasIndex() {
         const data = await res.json();
         const horarios = data.horario || [];
 
-        // 5. Construimos los datos del informe para este día
         const datosInforme = periodos.map((p) => {
           const filasFiltradas = ausenciasDia
             .map((a) => {
-              // Validación de rango horario (periodos)
               if (a.idperiodo_inicio && a.idperiodo_fin) {
                 if (p.id < a.idperiodo_inicio || p.id > a.idperiodo_fin) {
                   return null;
                 }
               }
 
-              // Cruce con horario (Lectivas o Guardias)
               const h = horarios.find(
                 (slot) =>
                   slot.uid === a.uid_profesor &&
@@ -278,12 +294,15 @@ export function AusenciasIndex() {
           return { horaLabel: p.nombre, filas: filasFiltradas };
         });
 
-        // 6. Llamamos a la generación del PDF para este día concreto
-        // Solo generamos si hay al menos una fila con datos en los periodos
         const tieneContenido = datosInforme.some((d) => d.filas.length > 0);
 
         if (tieneContenido) {
-          await generarParteDiarioAusencias(datosInforme, fechaSeleccionada);
+          // 5. Pasamos el logo como tercer argumento
+          await generarParteDiarioAusencias(
+            datosInforme,
+            fechaSeleccionada,
+            urlParaPdf
+          );
           generadosExitosos++;
         }
       } catch (err) {
@@ -292,7 +311,6 @@ export function AusenciasIndex() {
       }
     }
 
-    // 7. Feedback final al usuario
     if (generadosExitosos > 0) {
       toast.success(
         `Proceso finalizado. ${generadosExitosos} partes de ausencias generados.`

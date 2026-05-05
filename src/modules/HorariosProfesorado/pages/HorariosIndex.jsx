@@ -36,6 +36,8 @@ import { columns } from "../../Usuarios/components/colums";
 import { TablaUsuarios } from "../../Usuarios/components/TablaUsuarios";
 import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+import { resolverRutaLogo } from "@/Informes/utils";
 //import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 import {
   Loader,
@@ -67,6 +69,7 @@ export function HorariosIndex() {
   const [abrirAsignarHorario, setAbrirAsignarHorario] = useState(false);
 
   const { data: periodos } = usePeriodosHorarios();
+  const { data: centro } = useConfiguracionCentro();
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -111,6 +114,12 @@ export function HorariosIndex() {
     }
 
     try {
+      // 1. Resolvemos el logo antes de empezar[cite: 1, 2]
+      const urlParaPdf =
+        typeof resolverRutaLogo === "function"
+          ? resolverRutaLogo(centro?.logoCentroUrl)
+          : centro?.logoCentroUrl;
+
       const uids = profesoresFiltrados.map((p) => p.uid).filter(Boolean);
       const query = new URLSearchParams();
       uids.forEach((uid) => query.append("uid", uid));
@@ -124,30 +133,26 @@ export function HorariosIndex() {
         return;
       }
 
-      // --- ORDENACIÓN EN EL FRONTEND ---
       const horarioOrdenado = [...data.horario].sort((a, b) => {
-        // Usamos localeCompare para que ignore tildes y mayúsculas
-        // Como nombreProfesor ya viene como "Apellido, Nombre", el peso cae en el Apellido
         const comparacionNombres = a.nombreProfesor.localeCompare(
           b.nombreProfesor,
           "es",
-          {
-            sensitivity: "base",
-          }
+          { sensitivity: "base" }
         );
-
-        // Si es el mismo profesor, ordenamos por día y periodo para no romper su tabla
         if (comparacionNombres === 0) {
           if (a.dia_semana !== b.dia_semana) return a.dia_semana - b.dia_semana;
           return a.idperiodo - b.idperiodo;
         }
-
         return comparacionNombres;
       });
-      // ---------------------------------
 
-      // Enviamos los datos ya ordenados al PDF
-      generarPdfHorariosProfesores(horarioOrdenado, periodos);
+      // 2. Enviamos el logo resuelto como cuarto parámetro[cite: 2]
+      generarPdfHorariosProfesores(
+        horarioOrdenado,
+        periodos,
+        "horarios_profesores",
+        urlParaPdf
+      );
     } catch (err) {
       console.error("[ERROR] Excepción generando informe de horarios:", err);
       alert("Error generando el informe de horarios.");

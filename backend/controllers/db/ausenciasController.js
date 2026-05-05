@@ -47,7 +47,7 @@ async function verificarColision(
 }
 
 /**
- * Obtener ausencias enriquecidas (Se mantiene igual que tu código original)
+ * Obtener ausencias enriquecidas (Versión corregida manteniendo lógica original)
  */
 async function getAusenciasEnriquecidas(req, res) {
   try {
@@ -69,18 +69,22 @@ async function getAusenciasEnriquecidas(req, res) {
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
 
+    // 1. Consulta SQL original (sin joins que rompan los periodos)
     const { rows: ausencias } = await db.query(
       `SELECT a.id, a.uid_profesor, 
         TO_CHAR(a.fecha_inicio, 'YYYY-MM-DD') AS fecha_inicio,
         TO_CHAR(a.fecha_fin, 'YYYY-MM-DD') AS fecha_fin,
         a.idperiodo_inicio, a.idperiodo_fin, a.tipo_ausencia,
-        a.descripcion, a.creada_en, a.creada_por, a.idpermiso, a.idextraescolar, a.observaciones_guardia
+        a.descripcion, a.creada_en, a.creada_por, a.idpermiso, a.idextraescolar, a.observaciones_guardia,
+        e.dni -- <--- Capturamos el DNI de la tabla empleados
       FROM ausencias_profesorado a
+      LEFT JOIN empleados e ON a.uid_profesor = e.uid
       ${where}
       ORDER BY a.fecha_inicio DESC`,
       vals
     );
 
+    // 2. Enriquecimiento LDAP (Original)
     const uidsUnicos = [
       ...new Set([
         ...ausencias.map((a) => a.uid_profesor),
@@ -98,6 +102,7 @@ async function getAusenciasEnriquecidas(req, res) {
       });
     }
 
+    // 3. Enriquecimiento de Periodos (Original)
     const periodosIds = [
       ...new Set(
         ausencias
@@ -117,6 +122,39 @@ async function getAusenciasEnriquecidas(req, res) {
       }, {});
     }
 
+    // --- NUEVO: Enriquecimiento de Permisos (Siguiendo tu lógica) ---
+    const permisosIds = [
+      ...new Set(ausencias.map((a) => a.idpermiso).filter(Boolean)),
+    ];
+    let permisosMap = {};
+    if (permisosIds.length > 0) {
+      const { rows: permisos } = await db.query(
+        `SELECT * FROM permisos WHERE id = ANY($1)`,
+        [permisosIds]
+      );
+      permisosMap = permisos.reduce((acc, p) => {
+        acc[p.id] = p;
+        return acc;
+      }, {});
+    }
+
+    // --- NUEVO: Enriquecimiento de Extraescolares (Siguiendo tu lógica) ---
+    const extraIds = [
+      ...new Set(ausencias.map((a) => a.idextraescolar).filter(Boolean)),
+    ];
+    let extraMap = {};
+    if (extraIds.length > 0) {
+      const { rows: extras } = await db.query(
+        `SELECT * FROM extraescolares WHERE id = ANY($1)`,
+        [extraIds]
+      );
+      extraMap = extras.reduce((acc, e) => {
+        acc[e.id] = e;
+        return acc;
+      }, {});
+    }
+
+    // 4. Mapeo Final (Respetando estructura original y añadiendo los nuevos)
     const ausenciasEnriquecidas = ausencias.map((a) => ({
       ...a,
       nombreProfesor: nombreMap[a.uid_profesor] || "Desconocido",
@@ -125,6 +163,9 @@ async function getAusenciasEnriquecidas(req, res) {
         ? periodosMap[a.idperiodo_inicio]
         : null,
       periodo_fin: a.idperiodo_fin ? periodosMap[a.idperiodo_fin] : null,
+      permiso: a.idpermiso ? permisosMap[a.idpermiso] : null,
+      extraescolar: a.idextraescolar ? extraMap[a.idextraescolar] : null,
+      dni: a.dni || "---", 
     }));
 
     res.json({ ok: true, ausencias: ausenciasEnriquecidas });
@@ -198,7 +239,7 @@ async function insertAusencia(req, res) {
 async function updateAusencia(req, res) {
   const { id } = req.params;
   const campos = req.body;
-  const usuarioSesion = req.session?.user; 
+  const usuarioSesion = req.session?.user;
 
   try {
     // 1. Obtener datos actuales
@@ -215,12 +256,10 @@ async function updateAusencia(req, res) {
 
     // 2. Control de Permisos
     if (!esDirectiva && !esPropietario) {
-      return res
-        .status(403)
-        .json({
-          ok: false,
-          error: "No tienes permiso para modificar esta ausencia",
-        });
+      return res.status(403).json({
+        ok: false,
+        error: "No tienes permiso para modificar esta ausencia",
+      });
     }
 
     // Definimos qué campos puede tocar cada uno
@@ -242,12 +281,10 @@ async function updateAusencia(req, res) {
     );
 
     if (camposAActualizar.length === 0) {
-      return res
-        .status(400)
-        .json({
-          ok: false,
-          error: "No se han enviado campos válidos para actualizar",
-        });
+      return res.status(400).json({
+        ok: false,
+        error: "No se han enviado campos válidos para actualizar",
+      });
     }
 
     // 3. Validación de colisión (SOLO si se cambian fechas o periodos)
