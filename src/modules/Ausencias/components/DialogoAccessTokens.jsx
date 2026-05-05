@@ -46,7 +46,7 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
   const [cargando, setCargando] = useState(false);
 
   // Valores fijos según requerimiento
-  const NOMBRE_FIJO = "panel-sala-profesores";
+  const NOMBRE_FIJO = "Pantalla Sala Profesores";
   const ROL_FIJO = "viewer";
 
   // Cargar datos al abrir
@@ -59,12 +59,12 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
   const fetchTokenConfig = async () => {
     try {
       setCargando(true);
-      const res = await fetch(`${API_URL}/access-tokens`, {
+      const res = await fetch(`${API_URL}/db/access-tokens`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Error al obtener tokens");
       const data = await res.json();
-
+      console.log("Tokens: ", data);
       // Buscamos si ya existe la configuración de la sala de profesores
       const config = data.find((t) => t.nombre === NOMBRE_FIJO);
 
@@ -99,8 +99,8 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
       };
 
       const url = idExistente
-        ? `${API_URL}/access-tokens/${idExistente}`
-        : `${API_URL}/access-tokens`;
+        ? `${API_URL}/db/access-tokens/${idExistente}`
+        : `${API_URL}/db/access-tokens`;
 
       const method = idExistente ? "PUT" : "POST";
 
@@ -125,6 +125,14 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
     onError: (err) => toast.error(err.message),
   });
 
+  const copiarUrlAlPortapapeles = () => {
+    // Construimos la URL completa
+    const urlCompleta = `${window.location.origin}/gestionIES/public-panel/${token}`;
+
+    navigator.clipboard.writeText(urlCompleta);
+    toast.success("Enlace copiado: " + urlCompleta); // Opcional: mostrar la URL en el toast para confirmar
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -133,14 +141,14 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
       >
         <DialogHeader className="bg-green-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-700 rounded-lg">
-              <Monitor className="h-6 w-6 text-indigo-400" />
+            <div className="p-2 rounded-lg">
+              <Monitor className="h-6 w-6" />
             </div>
             <div>
               <DialogTitle className="text-lg font-semibold text-center leading-snug">
                 Configuración de Proyección
               </DialogTitle>
-              <p className="text-slate-400 text-xs uppercase tracking-widest mt-1">
+              <p className="text-xs uppercase tracking-widest mt-1">
                 Modo TV - Sala de Profesores
               </p>
             </div>
@@ -183,7 +191,7 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
                   placeholder="Introduce el token alfanumérico"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  className="pl-10 h-11 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+                  className="pl-10 h-11 border-slate-200 focus:border-green-500 focus:ring-green-500"
                 />
                 <KeyRound className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
               </div>
@@ -193,14 +201,20 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-slate-500 uppercase">
-                  Usuario LDAP
+                  Usuario LDAP (DN Completo)
                 </Label>
                 <Input
-                  placeholder="Usuario"
+                  placeholder="uid=usuario,ou=People,dc=..."
                   value={ldapUser}
                   onChange={(e) => setLdapUser(e.target.value)}
-                  className="h-10 bg-slate-50/50"
+                  className="h-10 bg-slate-50/50 font-mono text-[11px]"
                 />
+                <p className="text-[10px] text-slate-400 leading-tight italic">
+                  Ejemplo:{" "}
+                  <span className="select-all">
+                    uid=pantalla_sala_profesores,ou=People,dc=instituto,dc=extremadura,dc=es
+                  </span>
+                </p>
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-slate-500 uppercase">
@@ -217,16 +231,37 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
             </div>
 
             {/* Aviso informativo */}
-            <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 text-amber-600" />
-                <p className="text-xs text-amber-800 leading-tight">
-                  Este token permite la visualización pública de datos en
-                  pantallas del centro. Asegúrate de que el rol sea{" "}
-                  <strong>{ROL_FIJO}</strong>.
+            {/* Sección de URL de acceso (Solo se muestra si hay un token escrito) */}
+            {token && (
+              <div className="bg-green-50 border border-green-100 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2 text-green-700">
+                  <ShieldCheck className="h-5 w-5" />
+                  <span className="text-xs font-bold uppercase tracking-wider">
+                    Enlace de visualización pública
+                  </span>
+                </div>
+
+                <p className="text-[13px] text-slate-600 leading-relaxed">
+                  Este enlace permite visualizar el panel de ausencias y
+                  guardias.
                 </p>
+
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex-1 bg-white border border-green-200 rounded px-3 py-2 text-xs font-mono text-green-600 truncate">
+                    {`${window.location.origin}/gestionIES/public-panel/${token}`}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={copiarUrlAlPortapapeles}
+                    className="h-8 border-green-200 text-green-600 hover:bg-green-100"
+                  >
+                    Copiar
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -235,7 +270,7 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="text-slate-500 hover:text-slate-700"
+            className="text-slate-500"
           >
             <X className="h-4 w-4 mr-2" />
             Cerrar
@@ -244,7 +279,7 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
           <Button
             onClick={() => guardarMutation.mutate()}
             disabled={guardarMutation.isLoading || cargando || !token}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[140px] shadow-lg shadow-indigo-100 transition-all active:scale-[0.98]"
+            className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px] shadow-sm"
           >
             {guardarMutation.isLoading ? (
               "Procesando..."

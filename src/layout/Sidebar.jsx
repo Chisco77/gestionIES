@@ -57,6 +57,7 @@ import {
   Calendar,
   CalendarOff,
   ClipboardCheck,
+  Monitor,
 } from "lucide-react";
 
 import { usePlanos } from "@/hooks/usePlanos";
@@ -473,10 +474,10 @@ function SidebarComponent({
             icon: Wrench,
           },
                    {
-            title: "Token Proyección",
+            title: "Proyección Guardias",
             url: "#",
             onClick: () => onOpenAccessTokens(),
-            icon: Wrench,
+            icon: Monitor,
           },
           { title: "Perfiles de Usuario", url: "/perfiles", icon: IdCard },
           {
