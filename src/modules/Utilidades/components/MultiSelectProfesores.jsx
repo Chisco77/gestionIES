@@ -13,7 +13,6 @@ export function MultiSelectProfesores({ value, onChange }) {
 
   return (
     <div className="space-y-2">
-      <Label>Profesores responsables</Label>
       <MultiSelect
         values={value}
         onChange={onChange}

@@ -1,5 +1,5 @@
 // DialogoInsertarPerfil.jsx
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,14 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label"; // Añadido para mejor semántica
 import { toast } from "sonner";
 import { useProfesoresStaff } from "@/hooks/useProfesoresStaff";
+import { SelectEntidadSimple } from "@/modules/Utilidades/components/SelectEntidadSimple";
 
 export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
-  const [uidsSeleccionados, setUidsSeleccionados] = useState([]);
+  // Ahora manejamos un único UID seleccionado para mantener la coherencia con el Select
+  const [uidSeleccionado, setUidSeleccionado] = useState("");
   const [perfil, setPerfil] = useState("");
-  const [busqueda, setBusqueda] = useState("");
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -36,28 +37,13 @@ export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
     "administrativo",
   ];
 
-  // Usamos hook para obtener profesores y staff activos
-  const { data: usuarios = [], isLoading, error, refetch } = useProfesoresStaff();
-
-  // Filtrado por búsqueda, memoizado para rendimiento
-  const usuariosFiltrados = useMemo(() => {
-    if (!usuarios.length) return [];
-    const q = busqueda.toLowerCase();
-    return usuarios.filter(
-      (u) =>
-        `${u.givenName ?? ""} ${u.sn ?? ""} ${u.uid}`.toLowerCase().includes(q)
-    );
-  }, [usuarios, busqueda]);
-
-  const handleToggleUid = (uid) => {
-    setUidsSeleccionados((prev) =>
-      prev.includes(uid) ? prev.filter((u) => u !== uid) : [...prev, uid]
-    );
-  };
+  // Usamos tu hook combinado
+  const { data: usuarios = [], isLoading, error } = useProfesoresStaff();
 
   const handleGuardar = async () => {
-    if (uidsSeleccionados.length === 0 || !perfil) {
-      toast.error("Debes seleccionar al menos un usuario y un perfil");
+    // Validamos que haya selección
+    if (!uidSeleccionado || !perfil) {
+      toast.error("Debes seleccionar un usuario y un perfil");
       return;
     }
 
@@ -66,15 +52,15 @@ export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ uids: uidsSeleccionados, perfil }),
+        // Enviamos el UID como array para mantener compatibilidad con tu backend
+        body: JSON.stringify({ uids: [uidSeleccionado], perfil }),
       });
 
       if (!res.ok) throw new Error("Error al insertar perfil");
 
       toast.success("Perfil asignado correctamente");
-      setUidsSeleccionados([]);
+      setUidSeleccionado("");
       setPerfil("");
-      setBusqueda("");
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -95,64 +81,54 @@ export function DialogoInsertarPerfil({ open, onClose, onSuccess }) {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col space-y-4 p-6">
-          <Input
-            placeholder="Buscar por nombre, apellidos o UID"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="mb-2"
-          />
-
-          <div className="max-h-64 overflow-y-auto border p-2 rounded mb-2">
-            {isLoading && <p className="text-sm">Cargando usuarios...</p>}
+        <div className="flex flex-col space-y-5 p-6">
+          {/* SELECCIÓN DE USUARIO (Nuevo componente) */}
+          <div className="space-y-2">
+            <Label className="text-xs font-bold text-slate-500 uppercase">
+              Usuario
+            </Label>
+            <SelectEntidadSimple
+              value={uidSeleccionado}
+              onChange={setUidSeleccionado}
+              options={usuarios}
+              isLoading={isLoading}
+              placeholder="Buscar usuario ..."
+            />
             {error && (
-              <p className="text-sm text-red-500">
-                Error al cargar usuarios.{" "}
-                <button className="underline" onClick={() => refetch()}>
-                  Reintentar
-                </button>
-              </p>
-            )}
-
-            {usuariosFiltrados.map((u) => (
-              <label
-                key={u.uid}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={uidsSeleccionados.includes(u.uid)}
-                  onChange={() => handleToggleUid(u.uid)}
-                />
-                <span>
-                  {u.givenName} {u.sn} ({u.uid})
-                </span>
-              </label>
-            ))}
-
-            {!isLoading && usuariosFiltrados.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No se encontraron usuarios
+              <p className="text-[10px] text-red-500">
+                Error al cargar la lista de usuarios.
               </p>
             )}
           </div>
 
-          <Select value={perfil} onValueChange={setPerfil}>
-            <SelectTrigger className="w-full mb-2">
-              <SelectValue placeholder="Selecciona un perfil" />
-            </SelectTrigger>
-            <SelectContent>
-              {opcionesPerfiles.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p.charAt(0).toUpperCase() + p.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* SELECCIÓN DE PERFIL */}
+          <div className="space-y-2">
+            <Label className="text-xs font-bold text-slate-500 uppercase">
+              Perfil a asignar
+            </Label>
+            <Select value={perfil} onValueChange={setPerfil}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecciona un perfil" />
+              </SelectTrigger>
+              <SelectContent>
+                {opcionesPerfiles.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <DialogFooter className="px-6 py-4 bg-gray-50">
-          <Button variant="outline" onClick={handleGuardar}>
+        <DialogFooter className="px-6 py-4 bg-gray-50 border-t">
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleGuardar}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
             Guardar
           </Button>
         </DialogFooter>

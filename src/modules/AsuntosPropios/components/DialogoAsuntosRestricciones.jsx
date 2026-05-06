@@ -18,7 +18,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, CalendarIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -48,10 +48,14 @@ import {
 
 import { DialogoEliminarRango } from "./DialogoEliminarRango";
 import { DialogoEliminarAutorizacion } from "./DialogoEliminarAutorizacion";
+import { SelectProfesoresSimple } from "@/modules/Utilidades/components/SelectProfesoresSimple";
 
 export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
   const API_URL = import.meta.env.VITE_API_URL;
   const queryClient = useQueryClient();
+
+  const [showFormRango, setShowFormRango] = useState(false);
+  const [showFormPermitido, setShowFormPermitido] = useState(false);
 
   const [restricciones, setRestricciones] = useState({
     asuntosDisponibles: 0,
@@ -250,11 +254,18 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     setRestricciones((prev) => ({ ...prev, [field]: value }));
   const handleGuardar = () =>
     guardarRestriccionesMutation.mutate(restricciones);
+
   const handleAddRango = () => {
     if (!nuevoRango.inicio || !nuevoRango.fin) {
       toast.error("Debes indicar fechas de inicio y fin");
       return;
     }
+
+    if (!nuevoRango.motivo.trim()) {
+      toast.error("Debes indicar un motivo");
+      return;
+    }
+
     addRangoMutation.mutate(nuevoRango);
   };
 
@@ -270,7 +281,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
 
   const handleAddPermitido = () => {
     if (!nuevoPermitido.uid || !nuevoPermitido.fecha) {
-      toast.error("Debes indicar usuario y fecha");
+      toast.error("Debes indicar profesor y fecha");
       return;
     }
     addAsuntoPermitidoMutation.mutate(nuevoPermitido);
@@ -280,35 +291,42 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 rounded-lg h-[700px] w-[900px] flex flex-col"
+        className="p-0 rounded-lg h-[750px] w-[900px] flex flex-col overflow-hidden"
       >
-        <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+        {/* HEADER: Fijo arriba */}
+        <DialogHeader className="bg-green-500 text-white flex items-center justify-center py-4 px-6 shrink-0">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Restricciones de Asuntos Propios
           </DialogTitle>
         </DialogHeader>
 
-        <Card className="border-none shadow-none bg-transparent flex-1 overflow-hidden">
-          <CardContent className="space-y-5 pt-4 flex flex-col h-full overflow-hidden">
-            <Tabs
-              defaultValue="restricciones"
-              className="flex-1 flex flex-col overflow-hidden"
-            >
-              <TabsList className="justify-start">
-                <TabsTrigger value="restricciones">Restricciones</TabsTrigger>
-                <TabsTrigger value="rangos">Fechas bloqueadas</TabsTrigger>
-                <TabsTrigger value="permitidos">Autorizar fechas</TabsTrigger>
-              </TabsList>
+        {/* CONTENEDOR PRINCIPAL: Sin Card, usando flex-1 para ocupar el resto */}
+        <Tabs
+          defaultValue="restricciones"
+          className="flex-1 flex flex-col overflow-hidden"
+        >
+          {/* LISTA DE TABS: Con padding lateral para alinear con el contenido */}
+          <div className="px-6 pt-4 bg-slate-50/50 border-b shrink-0">
+            <TabsList className="justify-start mb-2">
+              <TabsTrigger value="restricciones">Restricciones</TabsTrigger>
+              <TabsTrigger value="rangos">Fechas bloqueadas</TabsTrigger>
+              <TabsTrigger value="permitidos">Autorizar fechas</TabsTrigger>
+            </TabsList>
+          </div>
 
-              {/* --- Tab: Restricciones --- */}
-              <TabsContent
-                value="restricciones"
-                className="flex-1 overflow-auto space-y-5"
-              >
+          {/* CONTENIDO DE TABS: Aquí gestionamos el scroll de forma independiente */}
+          <div className="flex-1 overflow-hidden relative">
+            {/* --- Tab: Restricciones --- */}
+            <TabsContent
+              value="restricciones"
+              className="h-full overflow-y-auto p-6 m-0 space-y-3 focus-visible:outline-none data-[state=inactive]:hidden"
+            >
+              {/* Asuntos Disponibles */}
+              <div className="flex flex-col space-y-2">
                 <div className="flex items-center justify-between">
                   <Label
                     htmlFor="asuntosDisponibles"
-                    className="text-sm font-medium"
+                    className="text-sm font-semibold"
                   >
                     Asuntos propios disponibles
                   </Label>
@@ -322,9 +340,16 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                     className="w-28 text-right"
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Establece el cupo anual de días de libre disposición asignados
+                  a cada docente.
+                </p>
+              </div>
 
+              {/* Máximo por día */}
+              <div className="flex flex-col space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="maxPorDia" className="text-sm font-medium">
+                  <Label htmlFor="maxPorDia" className="text-sm font-semibold">
                     Máximo de peticiones por día
                   </Label>
                   <Input
@@ -337,69 +362,66 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                     className="w-28 text-right"
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Cupo máximo de ausencias simultáneas permitidas en el centro.
+                </p>
+              </div>
 
-                <div className="flex items-center justify-between">
-                  <Label
-                    htmlFor="antelacionMinima"
-                    className="text-sm font-medium"
-                  >
-                    Antelación mínima (días)
-                  </Label>
-                  <Input
-                    id="antelacionMinima"
-                    type="number"
-                    value={restricciones.antelacionMinima}
-                    onChange={(e) =>
-                      handleChange("antelacionMinima", Number(e.target.value))
-                    }
-                    className="w-28 text-right"
-                  />
+              {/* Plazos con diseño mejorado */}
+              <div className="space-y-4 rounded-xl border p-4 bg-slate-50/30">
+                <Label className="text-sm font-bold">
+                  Plazos de solicitud (Antelación)
+                </Label>
+                <div className="grid gap-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Antelación mínima</span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={restricciones.antelacionMinima}
+                        onChange={(e) =>
+                          handleChange(
+                            "antelacionMinima",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-24 text-right"
+                      />
+                      <span className="text-xs text-muted-foreground w-8">
+                        días
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Antelación máxima</span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={restricciones.antelacionMaxima}
+                        onChange={(e) =>
+                          handleChange(
+                            "antelacionMaxima",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-24 text-right"
+                      />
+                      <span className="text-xs text-muted-foreground w-8">
+                        días
+                      </span>
+                    </div>
+                  </div>
                 </div>
+              </div>
 
-                {/* ✅ Nuevo input: Antelación máxima */}
-                <div className="flex items-center justify-between">
-                  <Label
-                    htmlFor="antelacionMaxima"
-                    className="text-sm font-medium"
-                  >
-                    Antelación máxima (días)
-                  </Label>
-                  <Input
-                    id="antelacionMaxima"
-                    type="number"
-                    value={restricciones.antelacionMaxima}
-                    onChange={(e) =>
-                      handleChange("antelacionMaxima", Number(e.target.value))
-                    }
-                    className="w-28 text-right"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label
-                    htmlFor="maxConsecutivos"
-                    className="text-sm font-medium"
-                  >
-                    Máximo de días consecutivos
-                  </Label>
-                  <Input
-                    id="maxConsecutivos"
-                    type="number"
-                    value={restricciones.maxConsecutivos}
-                    onChange={(e) =>
-                      handleChange("maxConsecutivos", Number(e.target.value))
-                    }
-                    className="w-28 text-right"
-                  />
-                </div>
-                <Separator />
-
+              {/* Transparencia */}
+              <div className="flex flex-col space-y-3 pt-2">
                 <div className="flex items-center justify-between">
                   <Label
                     htmlFor="mostrarPeticionesDia"
-                    className="text-sm font-medium"
+                    className="text-sm font-semibold"
                   >
-                    Mostrar información de todas las peticiones de APs en un día
+                    Transparencia de solicitudes
                   </Label>
                   <Switch
                     id="mostrarPeticionesDia"
@@ -409,246 +431,327 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                     }
                   />
                 </div>
-
-                <Separator />
-              </TabsContent>
-
-              {/* --- Tab: Rangos bloqueados --- */}
-              <TabsContent
-                value="rangos"
-                className="flex-1 overflow-auto space-y-4"
-              >
-                <p className="text-sm text-muted-foreground mb-3">
-                  Define periodos en los que no se podrán solicitar días de
-                  asuntos propios.
+                <p className="text-xs text-muted-foreground italic bg-amber-50 p-2 rounded border border-amber-100">
+                  Permite que los docentes consulten el volumen de solicitudes
+                  de forma anonimizada.
                 </p>
+              </div>
+            </TabsContent>
 
-                <div className="flex-1 overflow-auto space-y-2 mb-3">
-                  {cargandoRangos ? (
-                    <p className="text-sm text-muted-foreground">Cargando...</p>
-                  ) : rangos.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No hay rangos bloqueados actualmente.
-                    </p>
-                  ) : (
-                    rangos.map((r, i) => {
-                      const inicioStr = new Date(r.inicio).toLocaleDateString(
-                        "es-ES"
-                      );
-                      const finStr = new Date(r.fin).toLocaleDateString(
-                        "es-ES"
-                      );
-
-                      return (
-                        <Card
-                          key={i}
-                          className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative"
-                        >
-                          <div className="flex items-center justify-between text-sm">
-                            <div>
-                              <span>
-                                {inicioStr} → {finStr}
-                              </span>
-                              {r.motivo && (
-                                <div className="text-muted-foreground ml-0">
-                                  ({r.motivo})
-                                </div>
-                              )}
-                            </div>
-                            <Button
-                              className="text-red-500 hover:text-red-700 flex-shrink-0"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteRango(r)}
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </Button>
-                          </div>
-                        </Card>
-                      );
-                    })
-                  )}
+            {/* --- Tab: Rangos bloqueados --- */}
+            <TabsContent
+              value="rangos"
+              className="h-full flex flex-col p-6 m-0 space-y-3 focus-visible:outline-none data-[state=inactive]:hidden"
+            >
+              <div className="flex items-center justify-between px-1 shrink-0">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">
+                    Periodos restringidos
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Fechas bloqueadas para petición de Asuntos Propios
+                  </p>
                 </div>
+                <Button
+                  variant={showFormRango ? "ghost" : "outline"}
+                  size="sm"
+                  onClick={() => setShowFormRango(!showFormRango)}
+                  className={
+                    showFormRango
+                      ? "text-slate-500"
+                      : "border-slate-800 text-slate-800 border-2 font-bold"
+                  }
+                >
+                  {showFormRango ? "Cancelar" : "Nuevo Rango ..."}
+                </Button>
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-                  <Input
-                    type="date"
-                    value={nuevoRango.inicio}
-                    onChange={(e) =>
-                      setNuevoRango((p) => ({ ...p, inicio: e.target.value }))
-                    }
-                  />
-                  <Input
-                    type="date"
-                    value={nuevoRango.fin}
-                    onChange={(e) =>
-                      setNuevoRango((p) => ({ ...p, fin: e.target.value }))
-                    }
-                  />
-                  <Input
-                    placeholder="Motivo (opcional)"
-                    value={nuevoRango.motivo}
-                    onChange={(e) =>
-                      setNuevoRango((p) => ({ ...p, motivo: e.target.value }))
-                    }
-                  />
-                </div>
-
-                <div className="flex justify-end">
-                  <Button variant="secondary" onClick={handleAddRango}>
-                    Añadir rango
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent
-                value="permitidos"
-                className="flex-1 overflow-auto space-y-4"
-              >
-                {/* --- Formulario para añadir permiso --- */}
-                <div className="space-y-4">
-                  {/* Profesor */}
-                  <div className="flex flex-col space-y-2">
-                    <Label>Profesor</Label>
-
-                    <Input
-                      placeholder="Buscar por nombre, apellidos o UID"
-                      value={busquedaProfesor}
-                      onChange={(e) => setBusquedaProfesor(e.target.value)}
-                      className="mb-2"
-                    />
-
-                    <div className="max-h-48 overflow-y-auto border rounded p-2">
-                      {isLoading && (
-                        <p className="text-sm text-muted-foreground">
-                          Cargando profesores...
-                        </p>
-                      )}
-
-                      {error && (
-                        <p className="text-sm text-red-500">
-                          Error al cargar profesores LDAP
-                        </p>
-                      )}
-
-                      {!isLoading &&
-                        !error &&
-                        profesoresFiltrados.length === 0 && (
-                          <p className="text-sm text-muted-foreground">
-                            No se encontraron profesores
-                          </p>
-                        )}
-
-                      {!isLoading &&
-                        !error &&
-                        profesoresFiltrados.map((p) => (
-                          <label
-                            key={p.uid}
-                            className="flex items-center gap-2 cursor-pointer"
-                          >
-                            <input
-                              type="radio"
-                              name="profesor-permitido"
-                              value={p.uid}
-                              checked={nuevoPermitido.uid === p.uid}
-                              onChange={() =>
-                                setNuevoPermitido((prev) => ({
-                                  ...prev,
-                                  uid: p.uid,
-                                }))
-                              }
-                            />
-                            <span>
-                              {p.givenName} {p.sn} ({p.uid})
-                            </span>
-                          </label>
-                        ))}
+              {/* Formulario Colapsable */}
+              {showFormRango && (
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 animate-in fade-in slide-in-from-top-2 duration-200 shrink-0">
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-slate-400">
+                        Inicio
+                      </Label>
+                      <Input
+                        type="date"
+                        value={nuevoRango.inicio}
+                        onChange={(e) =>
+                          setNuevoRango({
+                            ...nuevoRango,
+                            inicio: e.target.value,
+                          })
+                        }
+                        className="h-9 bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-slate-400">
+                        Fin
+                      </Label>
+                      <Input
+                        type="date"
+                        value={nuevoRango.fin}
+                        onChange={(e) =>
+                          setNuevoRango({ ...nuevoRango, fin: e.target.value })
+                        }
+                        className="h-9 bg-white"
+                      />
                     </div>
                   </div>
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-slate-400">
+                        Motivo
+                      </Label>
+                      <Input
+                        placeholder="Ej: Evaluaciones"
+                        value={nuevoRango.motivo}
+                        onChange={(e) =>
+                          setNuevoRango({
+                            ...nuevoRango,
+                            motivo: e.target.value,
+                          })
+                        }
+                        className="h-9 bg-white"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => {
+                        handleAddRango();
+                        setShowFormRango(false);
+                      }}
+                      className="bg-slate-800 h-9 px-6"
+                    >
+                      Guardar
+                    </Button>
+                  </div>
+                </div>
+              )}
 
-                  {/* Fecha + botón */}
-                  <div className="flex flex-col sm:flex-row gap-2 items-end">
-                    <div className="flex-1">
-                      <Label>Fecha</Label>
+              {/* Listado de Rangos - Estilo unificado */}
+
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                    Bloqueos de fechas activos
+                  </h4>
+                  <div className="h-px flex-1 mx-4 bg-slate-100"></div>
+                  <span className="text-[11px] font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                    {rangos.length} ACTIVAS
+                  </span>
+                </div>
+
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                  {cargandoRangos ? (
+                    <div className="flex justify-center py-10">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-400"></div>
+                    </div>
+                  ) : rangos.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-xl border-slate-100 bg-slate-50/30">
+                      <p className="text-sm text-slate-400">
+                        No hay restricciones temporales configuradas.
+                      </p>
+                    </div>
+                  ) : (
+                    rangos.map((r, i) => (
+                      <div
+                        key={i}
+                        className="group flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-slate-300 hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="h-10 w-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 group-hover:bg-red-50 group-hover:text-red-500 group-hover:border-red-100 transition-colors">
+                            <CalendarIcon className="w-5 h-5" />
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-slate-700">
+                                {new Date(r.inicio).toLocaleDateString("es-ES")}
+                              </span>
+                              <span className="text-slate-400 text-[10px] font-bold">
+                                AL
+                              </span>
+                              <span className="text-sm font-bold text-slate-700">
+                                {new Date(r.fin).toLocaleDateString("es-ES")}
+                              </span>
+                            </div>
+                            {r.motivo && (
+                              <span className="text-xs text-slate-500 mt-0.5 italic flex items-center gap-1">
+                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                {r.motivo}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteRango(r)}
+                          className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* --- Tab: Autorizar (Permitidos) --- */}
+            <TabsContent
+              value="permitidos"
+              className="h-full flex flex-col p-6 m-0 space-y-3 focus-visible:outline-none data-[state=inactive]:hidden"
+            >
+              <div className="flex items-center justify-between px-1 shrink-0">
+                <div>
+                  <h3 className="text-sm font-bold text-blue-900">
+                    Excepciones Administrativas
+                  </h3>
+                  <p className="text-[11px] text-blue-700/60">
+                    Autorizar petición de asunto propio
+                  </p>
+                </div>
+                <Button
+                  variant={showFormPermitido ? "ghost" : "default"}
+                  size="sm"
+                  onClick={() => setShowFormPermitido(!showFormPermitido)}
+                  className={
+                    showFormPermitido
+                      ? "text-slate-500"
+                      : "bg-blue-600 hover:bg-blue-700 font-bold"
+                  }
+                >
+                  {showFormPermitido ? "Cancelar" : "Añadir autorización ..."}
+                </Button>
+              </div>
+
+              {showFormPermitido && (
+                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 animate-in fade-in slide-in-from-top-2 duration-200 shrink-0 space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-blue-400 tracking-wider">
+                      Docente
+                    </Label>
+                    <SelectProfesoresSimple
+                      value={nuevoPermitido.uid}
+                      onChange={(uid) =>
+                        setNuevoPermitido({ ...nuevoPermitido, uid })
+                      }
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-blue-400 tracking-wider">
+                        Fecha
+                      </Label>
                       <Input
                         type="date"
                         value={nuevoPermitido.fecha}
                         onChange={(e) =>
-                          setNuevoPermitido((p) => ({
-                            ...p,
+                          setNuevoPermitido({
+                            ...nuevoPermitido,
                             fecha: e.target.value,
-                          }))
+                          })
                         }
+                        className="h-9 bg-white"
                       />
                     </div>
-                    <Button className="sm:mt-6" onClick={handleAddPermitido}>
-                      Autorizar fecha
-                    </Button>
+                    <div className="flex items-end">
+                      <Button
+                        onClick={() => {
+                          handleAddPermitido();
+                          setShowFormPermitido(false);
+                        }}
+                        className="bg-blue-600 w-full h-9 shadow-md"
+                      >
+                        Confirmar
+                      </Button>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                <Separator />
+              {/* Listado de Autorizaciones */}
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                    Historial de excepciones
+                  </h4>
+                  <div className="h-px flex-1 mx-4 bg-slate-100"></div>
+                  <span className="text-[11px] font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                    {asuntosPermitidos.length} ACTIVAS
+                  </span>
+                </div>
 
-                {/* --- Listado de permisos existentes --- */}
-                <div className="space-y-2">
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
                   {asuntosPermitidos.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No hay permisos especiales definidos.
-                    </p>
+                    <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-xl border-slate-100 bg-slate-50/30">
+                      <p className="text-sm text-slate-400">
+                        No hay permisos registrados.
+                      </p>
+                    </div>
                   ) : (
                     asuntosPermitidos.map((p) => {
-                      const profesor = profesores.find(
-                        (prof) => prof.uid === p.uid
-                      );
-                      const nombreCompleto = profesor
-                        ? `${profesor.givenName} ${profesor.sn}`
-                        : p.uid;
-
+                      const prof = profesores.find((pro) => pro.uid === p.uid);
                       return (
-                        <Card
+                        <div
                           key={p.id}
-                          className="p-2 flex items-center justify-between"
+                          className="group flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-blue-200 hover:shadow-md transition-all"
                         >
-                          <div className="text-sm">
-                            <strong>{nombreCompleto}</strong> —{" "}
-                            {new Date(p.fecha).toLocaleDateString("es-ES")}
+                          <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-700 text-sm font-bold border border-blue-100">
+                              {prof?.givenName?.charAt(0) || "?"}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-slate-700">
+                                {prof ? `${prof.sn}, ${prof.givenName}` : p.uid}
+                              </span>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[11px] text-blue-600 font-semibold bg-blue-50 px-1.5 rounded">
+                                  {new Date(p.fecha).toLocaleDateString(
+                                    "es-ES"
+                                  )}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  • Válido solo para esta fecha
+                                </span>
+                              </div>
+                            </div>
                           </div>
-
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="text-red-500"
+                            size="icon"
                             onClick={() => handleEliminarAutorizacion(p)}
+                            className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
-                        </Card>
+                        </div>
                       );
                     })
                   )}
                 </div>
-              </TabsContent>
-            </Tabs>
+              </div>
+            </TabsContent>
+          </div>
+        </Tabs>
 
-            <Separator />
-
-            <DialogFooter className="px-6 py-4 bg-gray-50">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleGuardar}
-                disabled={guardarRestriccionesMutation.isLoading}
-                className="bg-green-600 hover:bg-green-700 text-white min-w-[120px] gap-2"
-              >
-                {guardarRestriccionesMutation.isLoading
-                  ? "Guardando..."
-                  : "Guardar"}
-              </Button>
-            </DialogFooter>
-          </CardContent>
-        </Card>
+        {/* FOOTER: Fijo abajo */}
+        <div className="px-6 py-4 bg-slate-50 border-t flex justify-end gap-3 shrink-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleGuardar}
+            disabled={guardarRestriccionesMutation.isLoading}
+            className="bg-green-600 hover:bg-green-700 text-white min-w-[120px]"
+          >
+            {guardarRestriccionesMutation.isLoading
+              ? "Guardando..."
+              : "Guardar Cambios"}
+          </Button>
+        </div>
       </DialogContent>
       <DialogoEliminarRango
         open={dialogoEliminarRangoOpen}

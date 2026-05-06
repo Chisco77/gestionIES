@@ -78,38 +78,47 @@ async function getExtraescolaresEnriquecidos(req, res) {
     // Consulta BD con JOIN a periodos (Incluido genera_ausencias)
     const { rows } = await db.query(
       `SELECT 
-        e.id,
-        e.uid,
-        e.updated_by,
-        e.gidnumber,
-        e.cursos_gids,
-        e.tipo,
-        e.titulo,
-        e.descripcion,
-        e.fecha_inicio,
-        e.fecha_fin,
-        e.idperiodo_inicio,
-        e.idperiodo_fin,
-        e.estado,
-        e.responsables_uids,
-        e.ubicacion,
-        e.coords,
-        e.updated_at,
-        e.genera_ausencias,
+  e.id,
+  e.uid,
+  e.updated_by,
+  e.gidnumber,
+  e.cursos_gids,
+  e.tipo,
+  e.titulo,
+  e.descripcion,
+  e.fecha_inicio,
+  e.fecha_fin,
+  e.idperiodo_inicio,
+  e.idperiodo_fin,
+  e.estado,
+  e.responsables_uids,
+  e.ubicacion,
+  e.coords,
+  e.updated_at,
+  e.genera_ausencias,
+  e.idestancia,  
 
-        p_ini.nombre AS periodo_inicio_nombre,
-        p_fin.nombre AS periodo_fin_nombre
+  p_ini.nombre AS periodo_inicio_nombre,
+  p_fin.nombre AS periodo_fin_nombre,
 
-      FROM extraescolares e
+  est.id AS estancia_id,                 
+  est.descripcion AS estancia_descripcion,
+  est.reservable AS estancia_reservable,
+  est.idplano AS estancia_idplano
 
-      LEFT JOIN periodos_horarios p_ini
-        ON e.idperiodo_inicio = p_ini.id
+FROM extraescolares e
 
-      LEFT JOIN periodos_horarios p_fin
-        ON e.idperiodo_fin = p_fin.id
+LEFT JOIN periodos_horarios p_ini
+  ON e.idperiodo_inicio = p_ini.id
 
-      ${where}
-      ORDER BY e.fecha_inicio ASC`,
+LEFT JOIN periodos_horarios p_fin
+  ON e.idperiodo_fin = p_fin.id
+
+LEFT JOIN estancias est                
+  ON e.idestancia = est.id
+
+${where}
+ORDER BY e.fecha_inicio ASC`,
       vals
     );
 
@@ -165,6 +174,15 @@ async function getExtraescolaresEnriquecidos(req, res) {
           }))
         : [];
 
+      const estancia = item.idestancia
+        ? {
+            id: item.estancia_id,
+            descripcion: item.estancia_descripcion,
+            reservable: item.estancia_reservable,
+            idplano: item.estancia_idplano,
+          }
+        : null;
+
       return {
         ...item,
         nombreProfesor: usuariosCache[item.uid] || "Profesor desconocido",
@@ -174,6 +192,7 @@ async function getExtraescolaresEnriquecidos(req, res) {
         responsables,
         departamento,
         cursos: cursosActividad,
+        estancia,
         periodo_inicio: item.idperiodo_inicio
           ? {
               id: item.idperiodo_inicio,
@@ -354,6 +373,7 @@ async function insertExtraescolar(req, res) {
       responsables_uids = [],
       ubicacion,
       coords,
+      idestancia,
     } = req.body;
 
     const genera_ausencias =
@@ -361,12 +381,12 @@ async function insertExtraescolar(req, res) {
 
     const { rows } = await db.query(
       `INSERT INTO extraescolares (
-        uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
-        fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
-        responsables_uids, ubicacion, coords, updated_by, genera_ausencias
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-      RETURNING *`,
+  uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
+  fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
+  responsables_uids, ubicacion, coords, updated_by, genera_ausencias, idestancia
+)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+RETURNING *`,
       [
         usuarioSesion.username,
         gidnumber,
@@ -383,6 +403,7 @@ async function insertExtraescolar(req, res) {
         coords,
         usuarioSesion.username,
         genera_ausencias,
+        idestancia || null,
       ]
     );
 
@@ -398,29 +419,6 @@ async function insertExtraescolar(req, res) {
     res.status(500).json({ ok: false, error: "Error insertando actividad" });
   }
 }
-
-/**
- * Borrar actividad
- */
-/*async function deleteExtraescolar(req, res) {
-  try {
-    const id = req.params.id;
-    // La DB debería tener ON DELETE CASCADE en ausencias_profesorado,
-    // si no, habría que borrar las ausencias manualmente aquí primero.
-    const { rowCount } = await db.query(
-      `DELETE FROM extraescolares WHERE id = $1`,
-      [id]
-    );
-
-    if (rowCount === 0)
-      return res.status(404).json({ ok: false, error: "No encontrado" });
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("[deleteExtraescolar] Error:", err);
-    res.status(500).json({ ok: false, error: "Error eliminando actividad" });
-  }
-}*/
 
 /**
  * ELIMINAR ACTIVIDAD
@@ -542,6 +540,7 @@ async function updateExtraescolar(req, res) {
       responsables_uids = [],
       ubicacion,
       coords,
+      idestancia,
     } = req.body;
 
     const genera_ausencias =
@@ -551,10 +550,11 @@ async function updateExtraescolar(req, res) {
     const { rows } = await client.query(
       `UPDATE extraescolares
        SET gidnumber = $1, cursos_gids = $2, tipo = $3, titulo = $4,
-         descripcion = $5, fecha_inicio = $6, fecha_fin = $7,
-         idperiodo_inicio = $8, idperiodo_fin = $9, responsables_uids = $10,
-         ubicacion = $11, coords = $12, updated_by = $13, genera_ausencias = $14
-       WHERE id = $15 RETURNING *`,
+       descripcion = $5, fecha_inicio = $6, fecha_fin = $7,
+       idperiodo_inicio = $8, idperiodo_fin = $9, responsables_uids = $10,
+       ubicacion = $11, coords = $12, updated_by = $13, genera_ausencias = $14,
+       idestancia = $15
+    WHERE id = $16 RETURNING *`,
       [
         gidnumber,
         cursos_gids,
@@ -570,6 +570,7 @@ async function updateExtraescolar(req, res) {
         coords,
         usuarioSesion.username,
         genera_ausencias,
+        idestancia || null,
         id,
       ]
     );
@@ -608,82 +609,86 @@ async function updateExtraescolar(req, res) {
  */
 function validarActividad(body) {
   const errores = [];
-  if (!body.titulo || body.titulo.trim().length < 10)
-    errores.push("Título corto");
-  if (!body.descripcion || body.descripcion.trim().length < 15)
-    errores.push("Descripción corta");
-  if (typeof body.gidnumber !== "number" || body.gidnumber < 1)
-    errores.push("Departamento inválido");
-  if (!["complementaria", "extraescolar"].includes(body.tipo))
-    errores.push("Tipo inválido");
-  if (!body.fecha_inicio || !body.fecha_fin)
-    errores.push("Fechas obligatorias");
-  if (
-    !Array.isArray(body.responsables_uids) ||
-    body.responsables_uids.length < 1
-  )
-    errores.push("Mínimo un profesor");
-  if (!body.ubicacion || !body.ubicacion.trim())
-    errores.push("Ubicación obligatoria");
-  if (!body.coords || typeof body.coords.lat !== "number")
-    errores.push("Coordenadas inválidas");
 
-  if (body.tipo === "complementaria") {
-    if (!body.idperiodo_inicio || !body.idperiodo_fin)
-      errores.push("Periodos obligatorios en complementarias");
+  console.log("Body recibido:", body);
+
+  // =========================
+  // CAMPOS BÁSICOS
+  // =========================
+  if (!body.titulo || body.titulo.trim().length < 10) {
+    errores.push("El título es demasiado corto (mínimo 10 caracteres)");
   }
-  return errores;
-}
 
-/*async function sincronizarAusenciasActividad(actividad, client) {
-  const {
-    id,
-    estado,
-    genera_ausencias,
-    responsables_uids,
-    titulo,
-    fecha_inicio,
-    fecha_fin,
-    idperiodo_inicio,
-    idperiodo_fin,
-    uid,
-  } = actividad;
+  if (!body.descripcion || body.descripcion.trim().length < 15) {
+    errores.push("La descripción es demasiado corta (mínimo 15 caracteres)");
+  }
 
-  // 1. Limpieza total siempre: borramos cualquier rastro previo para esta actividad
-  await client.query(
-    `DELETE FROM ausencias_profesorado WHERE idextraescolar = $1`,
-    [id]
-  );
+  if (typeof body.gidnumber !== "number" || body.gidnumber < 1) {
+    errores.push("Departamento inválido");
+  }
 
-  // 2. Si está ACEPTADA y GENERA AUSENCIAS, las creamos de nuevo
-  if (estado === 1 && genera_ausencias === true) {
-    const responsables = responsables_uids || [];
-    const fInicio = new Date(fecha_inicio);
-    let fFin = fecha_fin ? new Date(fecha_fin) : fInicio;
-    if (fFin < fInicio) fFin = fInicio;
+  if (!["complementaria", "extraescolar"].includes(body.tipo)) {
+    errores.push("Tipo de actividad inválido");
+  }
 
-    for (const uidProf of responsables) {
-      await client.query(
-        `INSERT INTO ausencias_profesorado (
-          uid_profesor, fecha_inicio, fecha_fin, 
-          idperiodo_inicio, idperiodo_fin, tipo_ausencia, 
-          creada_por, idextraescolar
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          uidProf,
-          fInicio,
-          fFin,
-          idperiodo_inicio,
-          idperiodo_fin,
-          `Extraescolar: ${titulo}`,
-          uid,
-          id,
-        ]
-      );
+  if (!body.fecha_inicio || !body.fecha_fin) {
+    errores.push("Fechas obligatorias");
+  }
+
+  // =========================
+  // RESPONSABLES
+  // =========================
+  const responsablesValidos = Array.isArray(body.responsables_uids)
+    ? body.responsables_uids.filter(
+        (uid) => typeof uid === "string" && uid.trim() !== ""
+      )
+    : [];
+
+  if (responsablesValidos.length === 0) {
+    errores.push("Debe indicar al menos un profesor responsable");
+  }
+
+  // =========================
+  // UBICACIÓN (REGLA CLAVE)
+  // =========================
+  if (body.ambito === "centro") {
+    if (!body.idestancia || isNaN(Number(body.idestancia))) {
+      errores.push("Debe seleccionar una estancia válida del centro");
     }
   }
-}*/
+
+  if (body.ambito === "fuera") {
+    // Comprobar que el texto no sea solo ruido
+    if (!body.ubicacion || body.ubicacion.trim().length < 5) {
+      errores.push("La ubicación proporcionada no parece una dirección válida");
+    }
+
+    // Comprobar que las coordenadas no sean las de por defecto (si tienes unas)
+    // O simplemente que estén en rangos lógicos
+    if (body.coords) {
+      const { lat, lng } = body.coords;
+      if (lat === 0 && lng === 0) {
+        errores.push("Las coordenadas no pueden ser (0,0)");
+      }
+    }
+  }
+
+  // fallback de seguridad
+  if (!body.ambito) {
+    errores.push("Debe indicar si la actividad es en el centro o fuera");
+  }
+
+  // =========================
+  // PERIODOS
+  // =========================
+  if (body.tipo === "complementaria") {
+    if (!body.idperiodo_inicio || !body.idperiodo_fin) {
+      errores.push("Debe indicar periodos en actividades complementarias");
+    }
+  }
+
+  return errores;
+}
 
 /**
  * Función unificada para enviar avisos de actividades

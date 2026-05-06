@@ -262,7 +262,7 @@ exports.getLdapUsuarios = (req, res) => {
 
     try {
       // ==========================
-      // 1️⃣ Obtener miembros del grupo principal (students/teachers/staff)
+      // Obtener miembros del grupo principal (students/teachers/staff)
       // ==========================
       let allowedUidSet = null;
 
@@ -283,7 +283,7 @@ exports.getLdapUsuarios = (req, res) => {
       }
 
       // ==========================
-      // 2️⃣ Buscar TODOS los usuarios (sin OR gigante)
+      //  Buscar TODOS los usuarios
       // ==========================
       const people = await searchLDAP(client, `ou=People,${baseDN}`, {
         scope: "sub",
@@ -299,7 +299,7 @@ exports.getLdapUsuarios = (req, res) => {
       });
 
       // ==========================
-      // 3️⃣ Buscar SOLO grupos permitidos por groupType
+      //  Buscar SOLO grupos permitidos por groupType
       // ==========================
       let groupTypeFilter = "(objectClass=lisAclGroup)";
 
@@ -325,7 +325,7 @@ exports.getLdapUsuarios = (req, res) => {
       });
 
       // ==========================
-      // 4️⃣ Construir mapa invertido uid → grupos
+      //  Construir mapa invertido uid → grupos
       // ==========================
       const userGroupsMap = {};
 
@@ -342,7 +342,7 @@ exports.getLdapUsuarios = (req, res) => {
       });
 
       // ==========================
-      // 5️⃣ Construir resultado final (filtrado eficiente con Set)
+      //  Construir resultado final 
       // ==========================
       const result = people
         .filter((p) => {
@@ -360,7 +360,7 @@ exports.getLdapUsuarios = (req, res) => {
         }));
 
       // ==========================
-      // 6️⃣ Ordenación
+      //  Ordenación
       // ==========================
       result.sort((a, b) => {
         const snA = a.sn?.toLowerCase() || "";

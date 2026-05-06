@@ -17,17 +17,18 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-
 import { MultiSelect } from "@/components/ui/multiselect";
 import { MultiSelectProfesores } from "@/modules/Utilidades/components/MultiSelectProfesores";
 
 import { Calendar } from "@/components/ui/calendar";
+import { es } from "date-fns/locale";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { es } from "date-fns/locale";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import {
   MapContainer,
@@ -36,24 +37,18 @@ import {
   useMapEvent,
   useMap,
 } from "react-leaflet";
-
 import { OpenStreetMapProvider } from "leaflet-geosearch";
 import { Autocomplete } from "@/modules/Utilidades/components/Autocomplete";
-import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+
+import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { useDepartamentosLdap } from "@/hooks/useDepartamentosLdap";
 import { useCursosLdap } from "@/hooks/useCursosLdap";
-import { format } from "date-fns";
-import { Checkbox } from "@/components/ui/checkbox";
-
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const provider = new OpenStreetMapProvider();
-
-function CampoError({ children }) {
-  return <p className="text-red-600 text-sm mt-1">{children}</p>;
-}
 
 const buscarLugar = async (query) => {
   if (!query || query.length < 3) return [];
@@ -64,8 +59,9 @@ const buscarLugar = async (query) => {
 async function reverseGeocode({ lat, lng }) {
   try {
     const resultados = await provider.search({ query: `${lat}, ${lng}` });
-    if (resultados.length > 0) return resultados[0].label;
-    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    return resultados.length > 0
+      ? resultados[0].label
+      : `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
   } catch {
     return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
   }
@@ -85,7 +81,7 @@ function SetViewOnChange({ coords }) {
   const map = useMap();
   useEffect(() => {
     if (map) map.setView([coords.lat, coords.lng], map.getZoom());
-  }, [coords]);
+  }, [coords, map]);
   return null;
 }
 
@@ -98,61 +94,61 @@ export function DialogoInsertarExtraescolar({
 }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { data: estancias = [] } = useEstancias();
+  const { data: departamentos = [] } = useDepartamentosLdap();
+  const { data: cursos = [] } = useCursosLdap();
 
+  // --- State ---
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [tipo, setTipo] = useState("complementaria");
   const [departamento, setDepartamento] = useState("");
-
-  const [fechaInicio, setFechaInicio] = useState(new Date());
-  const [fechaFin, setFechaFin] = useState(new Date());
-
-  const [horaInicio, setHoraInicio] = useState("09:00");
-  const [horaFin, setHoraFin] = useState("14:00");
-
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFin, setPeriodoFin] = useState("");
-
   const [cursosSeleccionados, setCursosSeleccionados] = useState([]);
   const [profesoresSeleccionados, setProfesoresSeleccionados] = useState([]);
-
   const [ubicacion, setUbicacion] = useState("");
-  const [coords, setCoords] = useState({ lat: 40.4168, lng: -3.7038 });
-
-  // NUEVO ATRIBUTO: genera_ausencias
+  const [coords, setCoords] = useState({ lat: 0, lng: 0 });
+  const [horaInicio, setHoraInicio] = useState("09:00");
+  const [horaFin, setHoraFin] = useState("14:00");
+  const [fechaInicio, setFechaInicio] = useState(new Date());
+  const [fechaFin, setFechaFin] = useState(new Date());
+  const [ambito, setAmbito] = useState("fuera");
+  const [estancia, setEstancia] = useState("");
   const [generaAusencias, setGeneraAusencias] = useState(true);
 
-  const { data: departamentos = [] } = useDepartamentosLdap();
-  const { data: cursos = [] } = useCursosLdap();
+  // seleccion de ubicación válida o no
+  const [seleccionValida, setSeleccionValida] = useState(false);
 
-  const [errores, setErrores] = useState({});
+  // --- Inicialización ---
+  useEffect(() => {
+    if (open) {
+      const f = fechaSeleccionada ? new Date(fechaSeleccionada) : new Date();
+      setFechaInicio(f);
+      setFechaFin(f);
+      if (periodos.length > 0) {
+        setPeriodoInicio(String(periodos[0].id));
+        setPeriodoFin(String(periodos[periodos.length - 1].id));
+      }
+      // Reset campos
+      setTitulo("");
+      setDescripcion("");
+      setProfesoresSeleccionados([]);
+      setCursosSeleccionados([]);
+    }
+  }, [open, fechaSeleccionada, periodos]);
+
+  useEffect(() => {
+    if (tipo === "extraescolar") setGeneraAusencias(true);
+  }, [tipo]);
 
   const todosLosCursosSeleccionados =
     cursos.length > 0 && cursosSeleccionados.length === cursos.length;
 
-  // Si el tipo es extraescolar, forzamos que genere ausencias (según lógica de negocio)
-  useEffect(() => {
-    if (tipo === "extraescolar") {
-      setGeneraAusencias(true);
-    }
-  }, [tipo]);
-
-  // Inicializar fechas si viene una seleccionada
-  useEffect(() => {
-    if (open && fechaSeleccionada) {
-      const f = new Date(fechaSeleccionada);
-      setFechaInicio(f);
-      setFechaFin(f);
-    }
-  }, [open, fechaSeleccionada]);
-
-  // Inicializar periodos
-  useEffect(() => {
-    if (open && periodos.length > 0) {
-      setPeriodoInicio(String(periodos[0].id));
-      setPeriodoFin(String(periodos[periodos.length - 1].id));
-    }
-  }, [open, periodos]);
+  const handleToggleTodosCursos = (checked) => {
+    if (checked) setCursosSeleccionados(cursos.map((c) => String(c.gid)));
+    else setCursosSeleccionados([]);
+  };
 
   const mutation = useMutation({
     mutationFn: async (datos) => {
@@ -165,407 +161,455 @@ export function DialogoInsertarExtraescolar({
       });
 
       const json = await resp.json();
+
+      // Si la respuesta no es correcta, lanzamos un objeto literal estructurado
       if (!resp.ok || !json.ok) {
-        const error = new Error("Error validación");
-        error.data = json;
-        throw error;
+        throw json; // 👈 Lanzamos directamente el JSON devuelto por el backend
       }
       return json.actividad;
     },
-    onSuccess: (actividad) => {
-      queryClient.invalidateQueries(["extraescolares", "uid", user.username]);
-      queryClient.invalidateQueries(["extraescolares", "all"]);
-      queryClient.invalidateQueries(["notificacionesDirectiva"]);
-      toast.success("Alta de actividad", actividad.titulo);
-      onGuardado?.(actividad);
+    onSuccess: (act) => {
+      queryClient.invalidateQueries(["extraescolares"]);
+      toast.success("Actividad creada correctamente", {
+        description: act.titulo,
+      });
+      onGuardado?.(act);
       onClose();
     },
-    onError: (err) => {
-      const data = err?.data;
-      if (data?.errores && Array.isArray(data.errores)) {
+    onError: (serverData) => {
+      // 👈 El parámetro aquí es directamente lo que lanzas en el throw (el JSON)
+
+      // 1. Si el backend nos devolvió un array de errores de validación
+      if (serverData?.errores && Array.isArray(serverData.errores)) {
+        toast.error("Revisa los siguientes errores:", {
+          description: (
+            <ul className="mt-2 list-disc list-inside space-y-1">
+              {serverData.errores.map((msg, i) => (
+                <li key={i} className="text-sm">
+                  {msg}
+                </li>
+              ))}
+            </ul>
+          ),
+          duration: 6000,
+        });
+      }
+      // 2. Si es un error único del backend
+      else if (serverData?.error) {
+        toast.error(serverData.error);
+      }
+      // 3. Error genérico de red/conexión si no hay serverData
+      else {
         toast.error(
-          <div className="flex flex-col">
-            {data.errores.map((e, i) => (
-              <span key={i}>• {e}</span>
-            ))}
-          </div>,
-          { duration: 5000 }
+          serverData?.message || "Error inesperado al conectar con el servidor"
         );
-      } else {
-        toast.error(data?.error || err.message || "Error guardando actividad");
       }
     },
   });
 
   const handleGuardar = () => {
-    if (mutation.isLoading) return;
+    const fechaInicioStr =
+      tipo === "extraescolar"
+        ? `${format(fechaInicio, "yyyy-MM-dd")} ${horaInicio}:00`
+        : `${format(fechaInicio, "yyyy-MM-dd")} 00:00:00`;
 
-    const isValidDate = (d) => d instanceof Date && !isNaN(d);
-    if (!isValidDate(fechaInicio) || !isValidDate(fechaFin)) {
-      toast.error("Las fechas no son válidas");
-      return;
-    }
-
-    const fechaInicioBase = format(fechaInicio, "yyyy-MM-dd");
-    const fechaFinBase = format(fechaFin, "yyyy-MM-dd");
-
-    let fechaInicioStr, fechaFinStr;
-    if (tipo === "extraescolar") {
-      fechaInicioStr = `${fechaInicioBase} ${horaInicio}:00`;
-      fechaFinStr = `${fechaFinBase} ${horaFin}:00`;
-    } else {
-      fechaInicioStr = `${fechaInicioBase} 00:00:00`;
-      fechaFinStr = `${fechaFinBase} 00:00:00`;
-    }
-
-    if (fechaFinStr < fechaInicioStr) {
-      toast.error("La fecha y hora de fin debe ser posterior a la de inicio");
-      return;
-    }
+    const fechaFinStr =
+      tipo === "extraescolar"
+        ? `${format(fechaFin, "yyyy-MM-dd")} ${horaFin}:00`
+        : `${format(fechaFin, "yyyy-MM-dd")} 00:00:00`;
 
     const datos = {
       titulo: titulo.trim(),
       descripcion: descripcion.trim(),
-      gidnumber: departamento ? Number(departamento) : null,
       tipo,
+      gidnumber: departamento ? Number(departamento) : null,
       fecha_inicio: fechaInicioStr,
       fecha_fin: fechaFinStr,
       idperiodo_inicio:
-        tipo === "complementaria" && periodoInicio
-          ? Number(periodoInicio)
-          : null,
-      idperiodo_fin:
-        tipo === "complementaria" && periodoFin ? Number(periodoFin) : null,
-      cursos_gids: cursosSeleccionados ?? [],
-      responsables_uids: profesoresSeleccionados ?? [],
-      ubicacion: ubicacion.trim(),
-      coords,
+        tipo === "complementaria" ? Number(periodoInicio) : null,
+      idperiodo_fin: tipo === "complementaria" ? Number(periodoFin) : null,
+      cursos_gids: cursosSeleccionados,
+      responsables_uids: profesoresSeleccionados,
+      genera_ausencias: generaAusencias,
+      ubicacion: ambito === "fuera" ? ubicacion : "centro",
+      coords: ambito === "fuera" ? coords : null,
+      idestancia: ambito === "centro" ? Number(estancia) : null,
+      ambito,
       uid: user.username,
-      updated_by: user.username,
-      genera_ausencias: generaAusencias, // Enviamos el nuevo valor
     };
 
-    mutation.mutate(datos);
-  };
+    console.log(JSON.stringify(datos, null, 2));
 
-  const handleMarkerDrag = async (event) => {
-    const { lat, lng } = event.target.getLatLng();
-    setCoords({ lat, lng });
-    const direccion = await reverseGeocode({ lat, lng });
-    setUbicacion(direccion);
+    mutation.mutate(datos);
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
+        className="p-0 overflow-hidden rounded-lg max-w-5xl w-full flex flex-col max-h-[95vh]"
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-visible rounded-lg max-w-5xl w-full"
       >
-        <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
-          <DialogTitle className="text-lg font-semibold text-center leading-snug">
-            Nueva Actividad Extraescolar
+        <DialogHeader className="py-4 px-6 text-white bg-blue-600 flex flex-row items-center justify-center space-y-0">
+          <DialogTitle className="text-xl font-bold">
+            Nueva Solicitud de Actividad
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 py-5">
+        <div className="flex-1 overflow-y-auto bg-white">
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid grid-cols-3 w-full mb-4">
-              <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="detalles">Detalles</TabsTrigger>
-              <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
-            </TabsList>
+            <div className="px-6 pt-4 bg-slate-50 border-b">
+              <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-4">
+                <TabsTrigger value="general">General</TabsTrigger>
+                <TabsTrigger value="detalles">Participantes</TabsTrigger>
+                <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
+              </TabsList>
+            </div>
 
-            {/* ====== GENERAL ====== */}
-            <TabsContent value="general" className="space-y-4">
-              <div className="space-y-1">
-                <Label>Título</Label>
-                <Input
-                  value={titulo}
-                  onChange={(e) => setTitulo(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label>Departamento organizador</Label>
-                <Select value={departamento} onValueChange={setDepartamento}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar departamento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departamentos.map((d) => (
-                      <SelectItem key={d.gidNumber} value={d.gidNumber}>
-                        {d.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <Label>Tipo de actividad</Label>
-                <Select value={tipo} onValueChange={setTipo}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="complementaria">
-                      Actividad complementaria
-                    </SelectItem>
-                    <SelectItem value="extraescolar">
-                      Actividad extraescolar
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label>Fecha inicio</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start"
-                      >
-                        {fechaInicio instanceof Date && !isNaN(fechaInicio)
-                          ? format(fechaInicio, "dd/MM/yyyy")
-                          : "Seleccionar fecha"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0">
-                      <Calendar
-                        mode="single"
-                        selected={fechaInicio}
-                        onSelect={(date) => date && setFechaInicio(date)}
-                        locale={es}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                {tipo === "extraescolar" && (
-                  <div className="space-y-1">
-                    <Label>Hora inicio</Label>
-                    <Input
-                      type="time"
-                      value={horaInicio}
-                      onChange={(e) => setHoraInicio(e.target.value)}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label>Fecha fin</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start"
-                      >
-                        {fechaFin instanceof Date && !isNaN(fechaFin)
-                          ? format(fechaFin, "dd/MM/yyyy")
-                          : "Seleccionar fecha"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0">
-                      <Calendar
-                        mode="single"
-                        selected={fechaFin}
-                        onSelect={(date) => date && setFechaFin(date)}
-                        locale={es}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                {tipo === "extraescolar" && (
-                  <div className="space-y-1">
-                    <Label>Hora fin</Label>
-                    <Input
-                      type="time"
-                      value={horaFin}
-                      onChange={(e) => setHoraFin(e.target.value)}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {tipo === "complementaria" && (
-                <div className="space-y-3 pt-2">
-                  <div className="flex flex-col space-y-1">
-                    <Label className="text-sm font-bold text-gray-700">
-                      Horario lectivo afectado
+            <div className="px-8 py-6 min-h-[520px]">
+              {/* --- TAB GENERAL --- */}
+              <TabsContent value="general" className="mt-0 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                  <div className="md:col-span-4 space-y-2">
+                    <Label className="font-bold text-blue-700">
+                      Tipo de Actividad
                     </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Selecciona el rango de periodos en los que se realizará la
-                      actividad.
-                    </p>
+                    <Select value={tipo} onValueChange={setTipo}>
+                      <SelectTrigger className="border-blue-200 bg-blue-50/30 font-medium">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="complementaria">
+                          Act. Complementaria
+                        </SelectItem>
+                        <SelectItem value="extraescolar">
+                          Act. Extraescolar
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-slate-50/50">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-semibold text-muted-foreground">
-                        Desde el periodo
-                      </Label>
-                      <Select
-                        value={periodoInicio}
-                        onValueChange={setPeriodoInicio}
-                      >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Seleccionar inicio..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {periodos.map((p) => (
-                            <SelectItem key={p.id} value={String(p.id)}>
-                              {p.nombre}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-semibold text-muted-foreground">
-                        Hasta el periodo
-                      </Label>
-                      <Select value={periodoFin} onValueChange={setPeriodoFin}>
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Seleccionar fin..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {periodos.map((p) => (
-                            <SelectItem key={p.id} value={String(p.id)}>
-                              {p.nombre}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="md:col-span-8 space-y-2">
+                    <Label className="font-bold">Título de la Actividad</Label>
+                    <Input
+                      value={titulo}
+                      onChange={(e) => setTitulo(e.target.value)}
+                      placeholder="Ej: Visita al Museo del Prado"
+                    />
                   </div>
                 </div>
-              )}
-            </TabsContent>
 
-            {/* ====== DETALLES ====== */}
-            <TabsContent value="detalles" className="space-y-6">
-              <div className="space-y-1">
-                <Label>Descripción</Label>
-                <Textarea
-                  value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
-                  placeholder="Explique brevemente la actividad..."
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label className="font-bold">Departamento Organizador</Label>
+                  <Select value={departamento} onValueChange={setDepartamento}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar departamento..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departamentos.map((d) => (
+                        <SelectItem
+                          key={d.gidNumber}
+                          value={String(d.gidNumber)}
+                        >
+                          {d.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-1">
-                <MultiSelectProfesores
-                  value={profesoresSeleccionados}
-                  onChange={setProfesoresSeleccionados}
-                />
-              </div>
+                {/* BLOQUE LOGÍSTICO */}
+                <div className="border rounded-xl overflow-hidden shadow-sm">
+                  <div className="bg-slate-50 px-4 py-3 border-b flex justify-between items-center">
+                    <h3 className="text-sm font-bold text-slate-600 uppercase tracking-tight">
+                      Planificación Horaria
+                    </h3>
+                    <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg border shadow-sm max-w-[280px]">
+                      <Checkbox
+                        id="aus"
+                        checked={generaAusencias}
+                        disabled={tipo === "extraescolar"}
+                        onCheckedChange={setGeneraAusencias}
+                      />
+                      <div className="grid gap-0.5 leading-none">
+                        <Label
+                          htmlFor="aus"
+                          className="text-[11px] font-bold cursor-pointer text-slate-800"
+                        >
+                          SOLICITAR GUARDIAS
+                        </Label>
+                        <p className="text-[10px] text-muted-foreground leading-tight">
+                          Marcar si se requiere cobertura de guardias para los
+                          responsables.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* ====== CUBRIR CON GUARDIAS ====== */}
-              <div className="flex flex-col space-y-2 p-4 border rounded-md bg-blue-50/30">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="genera_ausencias"
-                    checked={generaAusencias}
-                    disabled={tipo === "extraescolar"} // Deshabilitado si es extraescolar (siempre true)
-                    onCheckedChange={(checked) => setGeneraAusencias(!!checked)}
-                  />
-                  <Label
-                    htmlFor="genera_ausencias"
-                    className="font-semibold cursor-pointer"
-                  >
-                    Cubrir con guardias
+                  <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-2">
+                        <Label className="text-slate-500 font-medium text-xs">
+                          FECHA Y HORA DE INICIO
+                        </Label>
+                        <div className="flex gap-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="flex-1 justify-start border-slate-300"
+                              >
+                                {format(fechaInicio, "dd/MM/yyyy")}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={fechaInicio}
+                                onSelect={(d) => d && setFechaInicio(d)}
+                                locale={es}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          {tipo === "extraescolar" && (
+                            <Input
+                              type="time"
+                              className="w-28 border-slate-300"
+                              value={horaInicio}
+                              onChange={(e) => setHoraInicio(e.target.value)}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-slate-500 font-medium text-xs">
+                          FECHA Y HORA DE FIN
+                        </Label>
+                        <div className="flex gap-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="flex-1 justify-start border-slate-300"
+                              >
+                                {format(fechaFin, "dd/MM/yyyy")}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={fechaFin}
+                                onSelect={(d) => d && setFechaFin(d)}
+                                locale={es}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          {tipo === "extraescolar" && (
+                            <Input
+                              type="time"
+                              className="w-28 border-slate-300"
+                              value={horaFin}
+                              onChange={(e) => setHoraFin(e.target.value)}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {tipo === "complementaria" && (
+                      <div className="pt-4 border-t grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-blue-600">
+                            Periodo Lectivo Inicial
+                          </Label>
+                          <Select
+                            value={periodoInicio}
+                            onValueChange={setPeriodoInicio}
+                          >
+                            <SelectTrigger className="bg-blue-50/20 border-blue-100">
+                              <SelectValue placeholder="Periodo..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {periodos.map((p) => (
+                                <SelectItem key={p.id} value={String(p.id)}>
+                                  {p.nombre}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-blue-600">
+                            Periodo Lectivo Final
+                          </Label>
+                          <Select
+                            value={periodoFin}
+                            onValueChange={setPeriodoFin}
+                          >
+                            <SelectTrigger className="bg-blue-50/20 border-blue-100">
+                              <SelectValue placeholder="Periodo..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {periodos.map((p) => (
+                                <SelectItem key={p.id} value={String(p.id)}>
+                                  {p.nombre}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* --- TAB PARTICIPANTES --- */}
+              <TabsContent value="detalles" className="mt-0 space-y-6">
+                <div className="space-y-2">
+                  <Label className="font-bold">
+                    Descripción / Itinerario / Objetivos
                   </Label>
-                </div>
-                <p className="text-xs text-muted-foreground ml-6 leading-relaxed">
-                  Marcar si la actividad genera ausencias del profesorado que
-                  participa en ella, que hay que cubrir con las guardias.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Cursos participantes</Label>
-                <div className="flex items-center gap-2 mb-2">
-                  <Checkbox
-                    id="todos-cursos"
-                    checked={todosLosCursosSeleccionados}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setCursosSeleccionados(cursos.map((c) => c.gid));
-                      } else {
-                        setCursosSeleccionados([]);
-                      }
-                    }}
+                  <Textarea
+                    className="min-h-[120px]"
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                    placeholder="Describe detalladamente la actividad..."
                   />
-                  <label
-                    htmlFor="todos-cursos"
-                    className="text-sm cursor-pointer"
-                  >
-                    Todos los cursos
-                  </label>
                 </div>
-                <MultiSelect
-                  values={cursosSeleccionados}
-                  onChange={setCursosSeleccionados}
-                  options={cursos.map((c) => ({
-                    value: c.gid,
-                    label: c.nombre,
-                  }))}
-                  placeholder={
-                    cursosSeleccionados.length === 0
-                      ? "No hay cursos seleccionados"
-                      : ""
-                  }
-                />
-              </div>
-            </TabsContent>
+                <div className="space-y-2">
+                  <Label className="font-bold">Profesores Responsables</Label>
+                  <MultiSelectProfesores
+                    value={profesoresSeleccionados}
+                    onChange={setProfesoresSeleccionados}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center mb-2">
+                    <Label className="font-bold">Cursos Participantes</Label>
+                    <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                      <Checkbox
+                        id="sel-all-ins"
+                        checked={todosLosCursosSeleccionados}
+                        onCheckedChange={handleToggleTodosCursos}
+                      />
+                      <label
+                        htmlFor="sel-all-ins"
+                        className="cursor-pointer font-medium"
+                      >
+                        Seleccionar todos
+                      </label>
+                    </div>
+                  </div>
+                  <MultiSelect
+                    values={cursosSeleccionados}
+                    onChange={setCursosSeleccionados}
+                    options={cursos.map((c) => ({
+                      value: String(c.gid),
+                      label: c.nombre,
+                    }))}
+                  />
+                </div>
+              </TabsContent>
 
-            {/* ====== UBICACIÓN ====== */}
-            <TabsContent value="ubicacion" className="space-y-4">
-              <div className="space-y-1">
-                <Autocomplete
-                  value={ubicacion}
-                  placeholder="Nombre de la localidad o lugar..."
-                  buscar={buscarLugar}
-                  onChange={setUbicacion}
-                  onSelect={(lugar) => {
-                    setUbicacion(lugar.label);
-                    setCoords({ lat: lugar.lat, lng: lugar.lng });
-                  }}
-                />
-              </div>
+              {/* --- TAB UBICACIÓN --- */}
+              <TabsContent value="ubicacion" className="mt-0 space-y-4">
+                <div className="flex justify-center p-1 bg-slate-100 rounded-lg w-fit mx-auto border shadow-inner">
+                  <Button
+                    variant={ambito === "centro" ? "white" : "ghost"}
+                    size="sm"
+                    onClick={() => setAmbito("centro")}
+                  >
+                    En el Centro
+                  </Button>
+                  <Button
+                    variant={ambito === "fuera" ? "white" : "ghost"}
+                    size="sm"
+                    onClick={() => setAmbito("fuera")}
+                  >
+                    Fuera del Centro
+                  </Button>
+                </div>
 
-              <MapContainer
-                center={coords}
-                zoom={13}
-                style={{ height: "350px", width: "100%" }}
-              >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <Marker
-                  position={coords}
-                  draggable
-                  eventHandlers={{ dragend: handleMarkerDrag }}
-                />
-                <ClickHandler
-                  setCoords={setCoords}
-                  setUbicacion={setUbicacion}
-                />
-                <SetViewOnChange coords={coords} />
-              </MapContainer>
-            </TabsContent>
+                {ambito === "centro" ? (
+                  <div className="flex flex-col items-center justify-center py-16 space-y-4 border-2 border-dashed rounded-2xl bg-slate-50/50">
+                    <Label className="text-lg font-semibold text-slate-600">
+                      Elegir aula o estancia
+                    </Label>
+                    <Select value={estancia} onValueChange={setEstancia}>
+                      <SelectTrigger className="w-80 bg-white border-slate-300 shadow-sm">
+                        <SelectValue placeholder="Elegir estancia..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {estancias.map((e) => (
+                          <SelectItem key={e.id} value={String(e.id)}>
+                            {e.descripcion}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="space-y-4 animate-in fade-in duration-500">
+                    <Autocomplete
+                      value={ubicacion}
+                      buscar={buscarLugar}
+                      onChange={(nuevoTexto) => {
+                        setUbicacion(nuevoTexto);
+                        setSeleccionValida(false); // En cuanto escribe, ya no es la opción seleccionada
+                      }}
+                      onSelect={(l) => {
+                        setUbicacion(l.label);
+                        setCoords({ lat: l.lat, lng: l.lng });
+                        setSeleccionValida(true); // ¡Confirmado!
+                      }}
+                      placeholder="Comienza a escribir la ubicación..."
+                    />
+                    <div className="rounded-xl overflow-hidden border-2 border-white shadow-md h-[320px]">
+                      <MapContainer
+                        center={coords}
+                        zoom={13}
+                        style={{ height: "100%", width: "100%" }}
+                      >
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        <Marker
+                          position={coords}
+                          draggable
+                          eventHandlers={{
+                            dragend: async (e) => {
+                              const { lat, lng } = e.target.getLatLng();
+                              setCoords({ lat, lng });
+                              const dir = await reverseGeocode({ lat, lng });
+                              setUbicacion(dir);
+                            },
+                          }}
+                        />
+                        <ClickHandler
+                          setCoords={setCoords}
+                          setUbicacion={setUbicacion}
+                        />
+                        <SetViewOnChange coords={coords} />
+                      </MapContainer>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+            </div>
           </Tabs>
         </div>
 
-        <DialogFooter className="px-6 py-4 bg-gray-50">
+        <DialogFooter className="px-6 py-4 bg-slate-50 border-t flex items-center justify-between">
           <Button
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            variant="ghost"
+            onClick={onClose}
+            disabled={mutation.isLoading}
+          >
+            Cancelar
+          </Button>
+          <Button
+            className="bg-green-600 hover:bg-green-700 text-white px-10 font-bold"
             onClick={handleGuardar}
             disabled={mutation.isLoading}
           >
-            {mutation.isLoading ? "Guardando..." : "Guardar"}
+            {mutation.isLoading ? "Guardando..." : "Crear Actividad"}
           </Button>
         </DialogFooter>
       </DialogContent>

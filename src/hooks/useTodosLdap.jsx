@@ -36,6 +36,7 @@ export function useTodosLdap() {
       if (!res.ok) {
         throw new Error("Error al obtener los usuarios desde LDAP");
       }
+
       return res.json();
     },
     staleTime: 1000 * 60 * 5, // 5 minutos
