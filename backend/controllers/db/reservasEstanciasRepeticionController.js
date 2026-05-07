@@ -149,8 +149,14 @@ async function getReservasEstanciasRepeticionEnriquecidas(req, res) {
   if (!ldapSession)
     return res.status(401).json({ ok: false, error: "No autenticado" });
 
+  // Obtenemos los límites del curso del middleware
+  const { inicioCurso, finCurso } = req.curso;
+
   try {
-    const { rows } = await pool.query(`
+    // Filtramos para que la reserva periódica tenga alguna actividad en el curso actual
+    // Es decir: que no haya terminado antes de que empiece el curso
+    // y que no empiece después de que termine el curso.
+    const query = `
       SELECT
         r.id,
         r.uid,
@@ -159,16 +165,18 @@ async function getReservasEstanciasRepeticionEnriquecidas(req, res) {
         r.idperiodo_fin,
         r.fecha_desde,
         r.fecha_hasta,
-        r.descripcion AS descripcion_reserva,   -- descripcion de la reserva periódica
+        r.descripcion AS descripcion_reserva,
         r.frecuencia,
         r.dias_semana,
         r.created_at,
-        e.descripcion AS descripcion_estancia   -- descripcion de la estancia
+        e.descripcion AS descripcion_estancia
       FROM reservas_estancias_repeticion r
-      LEFT JOIN estancias e
-        ON e.id = r.idestancia
+      LEFT JOIN estancias e ON e.id = r.idestancia
+      WHERE r.fecha_desde <= $2 AND r.fecha_hasta >= $1
       ORDER BY r.fecha_desde ASC
-    `);
+    `;
+
+    const { rows } = await pool.query(query, [inicioCurso, finCurso]);
 
     const cacheNombres = new Map();
 

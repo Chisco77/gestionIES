@@ -17,6 +17,9 @@ const excelDietasRoutes = require("./routes/excelDietasRoutes");
 
 const importHorariosRoutes = require("./routes/importHorariosRoutes");
 
+// middleware de curso
+const setCursoContext = require("./middleware/cursoContext");
+
 // Configuración del pool de PostgreSQL
 const pgPool = new Pool({
   host: process.env.DB_HOST,
@@ -87,6 +90,10 @@ async function initServer() {
         },
       })
     );
+
+    
+    // Aplicar el contexto del curso globalmente ---
+    app.use(setCursoContext)
 
     // Rutas
     app.use("/api", authRoutes);
