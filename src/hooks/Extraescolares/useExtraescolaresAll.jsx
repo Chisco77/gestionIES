@@ -6,7 +6,7 @@ const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
 export function useExtraescolaresAll() {
   return useQuery({
-    queryKey: ["extraescolares", "all"],
+    queryKey: ["extraescolares", "all", "curso-actual"], // Contexto de curso
     queryFn: async () => {
       const res = await fetch(`${API_BASE}/extraescolares/enriquecidos`, {
         credentials: "include",

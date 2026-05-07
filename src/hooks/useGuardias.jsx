@@ -13,9 +13,10 @@ const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
 export function useGuardias(filtros = {}) {
   return useQuery({
-    queryKey: ["guardias", filtros],
+    // Añadimos "curso-actual" a la key para que React Query sepa que estos
+    // datos pertenecen al contexto temporal actual.
+    queryKey: ["guardias", "curso-actual", filtros],
     queryFn: async () => {
-      // 1. Construir query string para filtros (por ejemplo: uid_profesor_cubridor, fecha, etc.)
       const params = new URLSearchParams();
       Object.entries(filtros).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -24,16 +25,19 @@ export function useGuardias(filtros = {}) {
       });
 
       const queryString = params.toString() ? `?${params.toString()}` : "";
-      
-      // Asumimos que el endpoint en el backend es /guardias-enriquecidas
-      // Este endpoint debería devolver los JOINs con periodos y nombres de profesores
-      const res = await fetch(`${API_BASE}/guardias-enriquecidas${queryString}`, {
-        credentials: "include",
-      });
+
+      const res = await fetch(
+        `${API_BASE}/guardias-enriquecidas${queryString}`,
+        {
+          credentials: "include",
+        }
+      );
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Error obteniendo el histórico de guardias");
+        throw new Error(
+          errorData.error || "Error obteniendo el histórico de guardias"
+        );
       }
 
       const data = await res.json();

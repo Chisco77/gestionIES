@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+/*import { useQuery } from "@tanstack/react-query";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -35,5 +35,39 @@ export function useNotificaciones() {
     isError,
     error,
     refetch, // opcional
+  };
+}*/
+
+// src/hooks/useNotificaciones.jsx
+import { useQuery } from "@tanstack/react-query";
+
+const API_URL = import.meta.env.VITE_API_URL;
+const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
+
+const fetchNotificaciones = async () => {
+  const res = await fetch(`${API_BASE}/directiva/pendientes`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Error cargando notificaciones");
+  return await res.json();
+};
+
+export function useNotificaciones() {
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    // Añadimos 'curso-actual' para que la caché se invalide si cambia el año
+    queryKey: ["notificacionesDirectiva", "curso-actual"],
+    queryFn: fetchNotificaciones,
+    refetchInterval: 60000, // 1 minuto (ideal para notificaciones)
+    staleTime: 30000,
+  });
+
+  return {
+    permisos: data?.permisos?.total || 0,
+    extraescolares: data?.extraescolares?.total || 0,
+    total: data?.total || 0,
+    isLoading,
+    isError,
+    error,
+    refetch,
   };
 }

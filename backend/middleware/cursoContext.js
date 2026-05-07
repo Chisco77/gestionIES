@@ -10,6 +10,8 @@ function setCursoContext(req, res, next) {
     // Inyectamos el objeto curso en el request
     req.curso = getCursoActual(fechaRef);
 
+    console.log(`[CursoContext] Ref: ${fechaRef} -> Curso: ${req.curso.label} (${req.curso.inicioCurso} a ${req.curso.finCurso})`);
+
     next();
   } catch (error) {
     console.error("Error en cursoMiddleware:", error);

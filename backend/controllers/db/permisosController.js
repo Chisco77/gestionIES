@@ -50,19 +50,40 @@ const MAPA_TIPOS = {
  */
 async function getPermisos(req, res) {
   try {
-    const { uid, fecha, descripcion, estado, tipo } = req.query;
+    // 1. Añadimos fecha_inicio y fecha_fin a la desestructuración
+    const { uid, fecha, fecha_inicio, fecha_fin, descripcion, estado, tipo } =
+      req.query;
+
+    const { inicioCurso, finCurso } = req.curso;
 
     const filtros = [];
     const vals = [];
     let i = 0;
 
     if (uid) filtros.push(`uid = $${++i}`) && vals.push(uid);
-    if (fecha) filtros.push(`fecha = $${++i}`) && vals.push(fecha);
+
+    // 2. REFORMULAMOS LA LÓGICA DE FECHAS (Prioridad de mayor a menor especificidad)
+    if (fecha_inicio && fecha_fin) {
+      // Prioridad 1: Rango explícito (Calendario mensual)
+      filtros.push(`fecha >= $${++i} AND fecha <= $${++i}`);
+      vals.push(fecha_inicio, fecha_fin);
+    } else if (fecha) {
+      // Prioridad 2: Día concreto
+      filtros.push(`fecha = $${++i}`);
+      vals.push(fecha);
+    } else {
+      // Prioridad 3: Por defecto (Panel), curso actual del middleware
+      filtros.push(`fecha BETWEEN $${++i} AND $${++i}`);
+      vals.push(inicioCurso, finCurso);
+    }
+
     if (descripcion)
       filtros.push(`descripcion ILIKE $${++i}`) &&
         vals.push(`%${descripcion}%`);
+
     if (typeof estado !== "undefined")
       filtros.push(`estado = $${++i}`) && vals.push(Number(estado));
+
     if (typeof tipo !== "undefined")
       filtros.push(`tipo = $${++i}`) && vals.push(Number(tipo));
 
@@ -70,19 +91,14 @@ async function getPermisos(req, res) {
 
     const { rows } = await db.query(
       `SELECT 
-     id,
-     uid,
-     TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha,
-     TO_CHAR(fecha_fin, 'YYYY-MM-DD') AS fecha_fin,
-     descripcion,
-     estado,
-     tipo,
-     idperiodo_inicio,
-     idperiodo_fin,
-     dia_completo
-   FROM permisos
-   ${where}
-   ORDER BY fecha ASC`,
+         id, uid,
+         TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha,
+         TO_CHAR(fecha_fin, 'YYYY-MM-DD') AS fecha_fin,
+         descripcion, estado, tipo,
+         idperiodo_inicio, idperiodo_fin, dia_completo
+       FROM permisos
+       ${where}
+       ORDER BY fecha ASC`,
       vals
     );
 
@@ -101,13 +117,23 @@ async function getPermisosEnriquecidos(req, res) {
         .status(401)
         .json({ ok: false, error: "No autenticado en LDAP" });
 
+    // Extraemos el curso del middleware
+    const { inicioCurso, finCurso } = req.curso;
+
     const { uid, fecha, descripcion, estado, tipo } = req.query;
     const filtros = [];
     const vals = [];
     let i = 0;
-
+    // --- FILTRADO POR CURSO POR DEFECTO ---
+    // Si no se pide una fecha específica, filtramos por el curso actual
+    if (fecha) {
+      filtros.push(`ap.fecha = $${++i}`);
+      vals.push(fecha);
+    } else {
+      filtros.push(`ap.fecha BETWEEN $${++i} AND $${++i}`);
+      vals.push(inicioCurso, finCurso);
+    }
     if (uid) filtros.push(`ap.uid = $${++i}`) && vals.push(uid);
-    if (fecha) filtros.push(`ap.fecha = $${++i}`) && vals.push(fecha);
     if (descripcion)
       filtros.push(`ap.descripcion ILIKE $${++i}`) &&
         vals.push(`%${descripcion}%`);
@@ -118,28 +144,16 @@ async function getPermisosEnriquecidos(req, res) {
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
 
-    // 1️⃣ Obtener permisos filtrados con created_at
+    // Obtener permisos filtrados con created_at
     const { rows: permisos } = await db.query(
-      `SELECT 
-    ap.id, 
-    ap.uid, 
-    TO_CHAR(ap.fecha, 'YYYY-MM-DD') AS fecha,
-    TO_CHAR(ap.fecha_fin, 'YYYY-MM-DD') AS fecha_fin,
-    ap.descripcion, 
-    ap.estado, 
-    ap.tipo,
-    ap.idperiodo_inicio,
-    ap.idperiodo_fin,
-    ap.dia_completo,
-    ap.created_at
-   FROM permisos ap
-   ${where}`,
+      `SELECT ap.*, TO_CHAR(ap.fecha, 'YYYY-MM-DD') AS fecha, TO_CHAR(ap.fecha_fin, 'YYYY-MM-DD') AS fecha_fin
+       FROM permisos ap ${where}`,
       vals
     );
 
     const uids = [...new Set(permisos.map((p) => p.uid))];
 
-    // 2️⃣ Obtener asuntos_propios de empleados
+    //  Obtener asuntos_propios de empleados
     let empleadosMap = {};
     if (uids.length > 0) {
       const { rows: empleados } = await db.query(
@@ -152,7 +166,7 @@ async function getPermisosEnriquecidos(req, res) {
       }, {});
     }
 
-    // 3️⃣ Obtener nombres de profesores del LDAP en batch
+    //  Obtener nombres de profesores del LDAP en batch
     const nombreMap = {};
     for (const p of permisos) {
       if (!nombreMap[p.uid]) {
@@ -166,26 +180,19 @@ async function getPermisosEnriquecidos(req, res) {
       }
     }
 
-    // 4️⃣ Calcular fechas de curso escolar
-    const fechaPermiso = fecha ? new Date(fecha) : new Date();
-    let yearInicioCurso = fechaPermiso.getFullYear();
-    if (fechaPermiso.getMonth() < 8) yearInicioCurso -= 1; // antes de septiembre
-    const fechaInicioCurso = `${yearInicioCurso}-09-01`;
-    const fechaFinCurso = `${yearInicioCurso + 1}-06-30`;
-
-    // 5️⃣ Contar días disfrutados por uid
+    // Contar días disfrutados por uid
     let diasMap = {};
     if (uids.length > 0) {
       const { rows: diasDisfrutados } = await db.query(
         `SELECT uid, COUNT(*) AS dias_disfrutados
          FROM permisos
          WHERE uid = ANY($1)
-           AND tipo = 13
-           AND estado = 1
+           AND tipo = 13 -- Asuntos propios
+           AND estado = 1 -- Aceptados
            AND fecha >= $2
            AND fecha <= $3
          GROUP BY uid`,
-        [uids, fechaInicioCurso, fechaFinCurso]
+        [uids, inicioCurso, finCurso] // <--- Usamos req.curso
       );
       diasMap = diasDisfrutados.reduce((acc, row) => {
         acc[row.uid] = Number(row.dias_disfrutados);
@@ -214,7 +221,7 @@ async function getPermisosEnriquecidos(req, res) {
       }, {});
     }
 
-    // 7️⃣ Enriquecer permisos
+    //  Enriquecer permisos
     let asuntosEnriquecidos = permisos.map((permiso) => {
       const empleado = empleadosMap[permiso.uid]; // <-- CORRECTO
 
@@ -235,7 +242,7 @@ async function getPermisosEnriquecidos(req, res) {
       };
     });
 
-    // 7️⃣ Ordenar: primero por dias_disfrutados, luego por created_at
+    // Ordenar: primero por dias_disfrutados, luego por created_at
     asuntosEnriquecidos.sort((a, b) => {
       if ((a.dias_disfrutados ?? 0) !== (b.dias_disfrutados ?? 0)) {
         return (a.dias_disfrutados ?? 0) - (b.dias_disfrutados ?? 0);
@@ -873,7 +880,7 @@ async function updateEstadoPermiso(req, res) {
        RETURNING id, uid, fecha, fecha_fin, descripcion, estado, tipo, idperiodo_inicio, idperiodo_fin, dia_completo`,
       [estado, id]
     );*/
-    
+
     const { rows } = await client.query(
       `UPDATE permisos 
        SET estado = $1, 

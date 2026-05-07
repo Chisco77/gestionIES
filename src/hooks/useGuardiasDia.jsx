@@ -24,7 +24,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
 // Ahora recibe un segundo objeto opcional con el token y el intervalo de refresco
-export function useGuardiasDia(fechaFmt, options = {}) {
+/*export function useGuardiasDia(fechaFmt, options = {}) {
   const { tokenTV = null, refetchInterval = false } = options;
 
   return useQuery({
@@ -59,5 +59,40 @@ export function useGuardiasDia(fechaFmt, options = {}) {
     enabled: !!fechaFmt,
     // Si estamos en modo TV, React Query refrescará los datos automáticamente
     refetchInterval: refetchInterval,
+  });
+}
+*/
+
+// src/hooks/useGuardiasDia.jsx
+
+export function useGuardiasDia(fechaFmt, options = {}) {
+  const { tokenTV = null, refetchInterval = false } = options;
+
+  return useQuery({
+    // Añadimos contexto a la clave
+    queryKey: ["guardias-dia", "curso-actual", fechaFmt],
+    queryFn: async () => {
+      if (!fechaFmt) return null;
+
+      const headers = { "Content-Type": "application/json" };
+      if (tokenTV && tokenTV !== "null" && tokenTV !== "undefined") {
+        headers["x-public-token"] = tokenTV;
+      }
+
+      const res = await fetch(`${API_BASE}/guardias/simular/${fechaFmt}`, {
+        method: "GET",
+        headers: headers,
+        credentials: "include",
+      });
+
+      const result = await res.json();
+      if (!res.ok)
+        throw new Error(result.error || "Error al simular las guardias");
+
+      return result;
+    },
+    staleTime: 1000 * 60 * 2, // 2 minutos
+    enabled: !!fechaFmt,
+    refetchInterval: refetchInterval, // Útil para el modo TV
   });
 }

@@ -6,11 +6,14 @@ const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
 export function useExtraescolaresUid(uid) {
   return useQuery({
-    queryKey: ["extraescolares", "uid", uid],
-    queryFn: async () => { 
-      const res = await fetch(`${API_BASE}/extraescolares/enriquecidos?uid=${uid}`, {
-        credentials: "include",
-      });
+    queryKey: ["extraescolares", "uid", uid, "curso-actual"], // Contexto de curso
+    queryFn: async () => {
+      const res = await fetch(
+        `${API_BASE}/extraescolares/enriquecidos?uid=${uid}`,
+        {
+          credentials: "include",
+        }
+      );
 
       // 204 = sin actividades
       if (res.status === 204) return [];

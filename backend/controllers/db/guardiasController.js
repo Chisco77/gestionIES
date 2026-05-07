@@ -3,43 +3,15 @@ const { buscarPorUid } = require("../ldap/usuariosController");
 const { obtenerGruposPorTipo } = require("../ldap/gruposController");
 const { getCursoActual } = require("../../utils/fechas");
 
-/**
- * PASO 5: Criterio de Equidad
- * Obtiene el conteo de guardias confirmadas y activas por profesor
- */
-async function getContadorGuardias() {
-  const query = `
-  SELECT uid_profesor_cubridor, COUNT(DISTINCT (fecha, idperiodo)) as total
-  FROM guardias_asignadas
-  WHERE confirmada = true AND estado = 'activa'
-  GROUP BY uid_profesor_cubridor
-`;
-  const { rows } = await db.query(query);
-  return rows.reduce((acc, r) => {
-    acc[r.uid_profesor_cubridor] = parseInt(r.total);
-    return acc;
-  }, {});
-}
-
 async function simularGuardiasDia(req, res) {
   const { fecha } = req.params;
-
-  // LOG
-  console.log(
-    "LOG 7: [Controller] ¿Existe req.session.ldap?:",
-    !!req.session?.ldap
-  );
-  if (req.session?.ldap) {
-    console.log("LOG 8: [Controller] UID en sesión:", req.session.ldap.uid);
-  }
   const ldapSession = req.session?.ldap;
+
+  // Usamos el curso calculado por el middleware
+  const { inicioCurso, finCurso } = req.curso;
 
   try {
     const diaSemana = new Date(fecha).getDay();
-    // Si tu base de datos usa 1 (Lunes) a 7 (Domingo), recuerda ajustar:
-    // const diaSemanaISO = diaSemana === 0 ? 7 : diaSemana;
-
-    // 1. Caches para no saturar LDAP/DB
     const usuariosCache = {};
     const gruposCache = {};
 
@@ -78,11 +50,16 @@ async function simularGuardiasDia(req, res) {
       [fecha]
     );
 
-    // 4. Obtener contadores de guardias para la equidad
+    // 4. Obtener contadores de guardias LIMITADOS AL CURSO ACTUAL
+    // Así la propuesta de candidatos se basa en la equidad de este año
     const { rows: contadoresRows } = await db.query(
       `SELECT uid_profesor_cubridor, COUNT(*) as total 
-       FROM guardias_asignadas GROUP BY uid_profesor_cubridor`
+       FROM guardias_asignadas 
+       WHERE fecha BETWEEN $1 AND $2 AND estado = 'activa' AND confirmada = true
+       GROUP BY uid_profesor_cubridor`,
+      [inicioCurso, finCurso]
     );
+
     const contadores = {};
     contadoresRows.forEach(
       (r) => (contadores[r.uid_profesor_cubridor] = parseInt(r.total))
@@ -501,64 +478,59 @@ SELECT
 async function getProfesoresDeGuardia(req, res) {
   const { fecha, idperiodo } = req.params;
   const ldapSession = req.session?.ldap;
-  const curso = getCursoActual(new Date(fecha));
+  const { inicioCurso, finCurso } = req.curso;
   const diaSemana = new Date(fecha).getDay();
 
   try {
-    // 1. Obtenemos los UIDs y los tres conteos clave:
-    //    - total_guardias: Equidad histórica global.
-    //    - guardias_periodo_acumuladas: Equidad específica del slot: cuantas guardias ha hecho el profe en ese día y esa hora concreta.
-    //    - num_asignadas_ahora: Ocupación en tiempo real.
     const query = `
-SELECT 
-    h.uid, 
-    -- Equidad TOTAL histórica (global del curso)
-    (SELECT COUNT(DISTINCT (ga.fecha, ga.idperiodo)) 
-     FROM guardias_asignadas ga 
-     WHERE ga.uid_profesor_cubridor = h.uid 
-     AND ga.fecha BETWEEN $1 AND $2 
-     AND ga.estado = 'activa'
-     AND ga.confirmada = true) as total_guardias,
+      SELECT 
+          h.uid, 
+          -- Equidad TOTAL (limitada al curso actual vía $1 y $2)
+          (SELECT COUNT(DISTINCT (ga.fecha, ga.idperiodo)) 
+           FROM guardias_asignadas ga 
+           WHERE ga.uid_profesor_cubridor = h.uid 
+           AND ga.fecha BETWEEN $1 AND $2 
+           AND ga.estado = 'activa'
+           AND ga.confirmada = true) as total_guardias,
 
-    -- Equidad ESPECÍFICA del periodo (cuántas ha hecho en esta hora en el curso)
-    (SELECT COUNT(*) 
-     FROM guardias_asignadas ga_slot
-     WHERE ga_slot.uid_profesor_cubridor = h.uid
-       AND ga_slot.idperiodo = $4
-       AND ga_slot.fecha BETWEEN $1 AND $2
-       AND ga_slot.estado = 'activa'
-       AND ga_slot.confirmada = true) as guardias_periodo_acumuladas,
+          -- Equidad ESPECÍFICA del periodo (limitada al curso actual)
+          (SELECT COUNT(*) 
+           FROM guardias_asignadas ga_slot
+           WHERE ga_slot.uid_profesor_cubridor = h.uid
+             AND ga_slot.idperiodo = $4
+             AND ga_slot.fecha BETWEEN $1 AND $2
+             AND ga_slot.estado = 'activa'
+             AND ga_slot.confirmada = true) as guardias_periodo_acumuladas,
 
-    -- Ocupación EN ESTE MOMENTO (para detectar si ya está cubriendo algo hoy)
-    (SELECT COUNT(*) 
-     FROM guardias_asignadas ga2
-     WHERE ga2.uid_profesor_cubridor = h.uid
-       AND ga2.fecha = $5
-       AND ga2.idperiodo = $4
-       AND ga2.estado = 'activa') as num_asignadas_ahora
-  FROM horario_profesorado h
-  WHERE h.dia_semana = $3 
-    AND h.idperiodo = $4 
-    AND h.tipo = 'guardia'
-    AND NOT EXISTS (
-      SELECT 1 FROM ausencias_profesorado aus
-      WHERE aus.uid_profesor = h.uid
-        AND aus.fecha_inicio <= $5
-        AND (aus.fecha_fin IS NULL OR aus.fecha_fin >= $5)
-        AND (
-          (aus.idperiodo_inicio IS NULL AND aus.idperiodo_fin IS NULL)
-          OR 
-          ($4 BETWEEN COALESCE(aus.idperiodo_inicio, 0) AND COALESCE(aus.idperiodo_fin, 99))
-        )
-    )
-  -- PRIORIDAD: Primero quien menos guardias tenga en este periodo, 
-  -- luego quien menos tenga en total (global).
-  ORDER BY guardias_periodo_acumuladas ASC, total_guardias ASC
-`;
+          -- Ocupación EN ESTE MOMENTO (Hoy)
+          (SELECT COUNT(*) 
+           FROM guardias_asignadas ga2
+           WHERE ga2.uid_profesor_cubridor = h.uid
+             AND ga2.fecha = $5
+             AND ga2.idperiodo = $4
+             AND ga2.estado = 'activa') as num_asignadas_ahora
+        FROM horario_profesorado h
+        WHERE h.dia_semana = $3 
+          AND h.idperiodo = $4 
+          AND h.tipo = 'guardia'
+          AND NOT EXISTS (
+            SELECT 1 FROM ausencias_profesorado aus
+            WHERE aus.uid_profesor = h.uid
+              AND aus.fecha_inicio <= $5
+              AND (aus.fecha_fin IS NULL OR aus.fecha_fin >= $5)
+              AND (
+                (aus.idperiodo_inicio IS NULL AND aus.idperiodo_fin IS NULL)
+                OR 
+                ($4 BETWEEN COALESCE(aus.idperiodo_inicio, 0) AND COALESCE(aus.idperiodo_fin, 99))
+              )
+          )
+        ORDER BY guardias_periodo_acumuladas ASC, total_guardias ASC
+    `;
 
+    // Pasamos los límites del curso a la query ($1 y $2)
     const { rows: uidsDisponibles } = await db.query(query, [
-      curso.inicioCurso,
-      curso.finCurso,
+      inicioCurso,
+      finCurso,
       diaSemana,
       idperiodo,
       fecha,
@@ -621,6 +593,10 @@ async function getGuardiasEnriquecidas(req, res) {
     // Extraemos filtros de la query string
     const { uid_profesor_cubridor, uid_profesor_ausente, fecha, estado } =
       req.query;
+
+    // Obtenemos el rango del curso del middleware
+    const { inicioCurso, finCurso } = req.curso;
+
     const filtros = [];
     const vals = [];
     let i = 0;

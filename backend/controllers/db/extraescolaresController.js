@@ -17,9 +17,10 @@ async function getExtraescolaresEnriquecidos(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession)
-      return res
-        .status(401)
-        .json({ ok: false, error: "No autenticado en LDAP" });
+      return res.status(401).json({ ok: false, error: "No autenticado" });
+
+    // Obtenemos los límites del curso del middleware
+    const { inicioCurso, finCurso } = req.curso;
 
     // Cache por request (usuarios LDAP)
     const usuariosCache = {};
@@ -55,10 +56,21 @@ async function getExtraescolaresEnriquecidos(req, res) {
     );
 
     // Filtros
-    const { estado, tipo, uid } = req.query;
+    const { estado, tipo, uid, fecha } = req.query;
     const filtros = [];
     const vals = [];
     let i = 0;
+
+    // --- LÓGICA DE CURSO ---
+    if (fecha) {
+      // Si buscan actividades de un día concreto
+      filtros.push(`e.fecha_inicio <= $${++i} AND e.fecha_fin >= $${i}`);
+      vals.push(fecha);
+    } else {
+      // Por defecto, actividades que se solapen con el curso actual
+      filtros.push(`e.fecha_inicio <= $${++i} AND e.fecha_fin >= $${++i}`);
+      vals.push(finCurso, inicioCurso);
+    }
 
     if (uid) {
       filtros.push(`e.uid = $${++i}`);
