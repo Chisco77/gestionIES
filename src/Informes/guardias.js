@@ -22,11 +22,25 @@ export async function generarPdfControlGuardias(
   });
 
   // 2. Cálculo de estadísticas
-  const statsProfes = {};
+  const statsTotales = {}; // { uid: total_unico }
+  const statsPorSlot = {}; // { "uid-idperiodo": conteo_slot }
+  const periodosCubiertos = new Set(); // Para evitar contar doble (guardias dobles)
+
   guardiasRealizadas.forEach((g) => {
     if (g.confirmada) {
-      statsProfes[g.uid_profesor_cubridor] =
-        (statsProfes[g.uid_profesor_cubridor] || 0) + 1;
+      const claveDia = `${g.uid_profesor_cubridor}-${g.fecha}-${g.idperiodo}`;
+      const claveSlot = `${g.uid_profesor_cubridor}-${g.idperiodo}`;
+
+      if (!periodosCubiertos.has(claveDia)) {
+        // Incrementar total global
+        statsTotales[g.uid_profesor_cubridor] =
+          (statsTotales[g.uid_profesor_cubridor] || 0) + 1;
+
+        // Incrementar total del slot específico
+        statsPorSlot[claveSlot] = (statsPorSlot[claveSlot] || 0) + 1;
+
+        periodosCubiertos.add(claveDia);
+      }
     }
   });
 
@@ -154,10 +168,10 @@ export async function generarPdfControlGuardias(
       profes.forEach((profe, pIdx) => {
         const yFila = currentY + pIdx * 6;
         doc.rect(margin + colHoraWidth, yFila, colProfeWidth, 6);
-        const totalGuardias = statsProfes[profe.uid] || 0;
+        const totalEnEsteSlot = statsPorSlot[`${profe.uid}-${p.id}`] || 0;
         doc.setFont("helvetica", "normal");
         doc.text(
-          `${profe.nombreProfesor.substring(0, 30)} (${totalGuardias})`,
+          `${profe.nombreProfesor.substring(0, 25)} (${totalEnEsteSlot})`,
           margin + colHoraWidth + 2,
           yFila + 4
         );
@@ -212,7 +226,8 @@ export async function generarPdfControlGuardias(
     if (h.tipo === "guardia" && !uidsProcesados.has(h.uid)) {
       listaRanking.push({
         nombre: h.nombreProfesor,
-        total: statsProfes[h.uid] || 0,
+        // Usamos el acumulado global aquí
+        total: statsTotales[h.uid] || 0,
       });
       uidsProcesados.add(h.uid);
     }

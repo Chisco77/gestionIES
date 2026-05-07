@@ -404,7 +404,7 @@ async function confirmarGuardias(req, res) {
  * @param {*} req
  * @param {*} res
  */
-async function getProfesoresDeGuardia(req, res) {
+/*async function getProfesoresDeGuardia(req, res) {
   const { fecha, idperiodo } = req.params;
   const ldapSession = req.session?.ldap;
   const curso = getCursoActual(new Date(fecha));
@@ -467,6 +467,116 @@ SELECT
               uid: row.uid,
               total_guardias: parseInt(row.total_guardias),
               // Ahora pasamos ambos datos al frontend:
+              num_asignadas_ahora: parseInt(row.num_asignadas_ahora),
+              ya_asignado: parseInt(row.num_asignadas_ahora) > 0,
+            };
+
+            if (!err && datos) {
+              resolve({
+                ...baseData,
+                nombre: datos.givenName || "",
+                apellido1: datos.sn || "",
+                apellido2: "",
+              });
+            } else {
+              resolve({
+                ...baseData,
+                nombre: row.uid,
+                apellido1: "",
+                apellido2: "",
+              });
+            }
+          });
+        });
+      })
+    );
+
+    res.json(profesEnriquecidos);
+  } catch (err) {
+    console.error("[getProfesoresDeGuardia] Error:", err);
+    res.status(500).json({ error: "Error al consultar disponibilidad real" });
+  }
+}*/
+
+async function getProfesoresDeGuardia(req, res) {
+  const { fecha, idperiodo } = req.params;
+  const ldapSession = req.session?.ldap;
+  const curso = getCursoActual(new Date(fecha));
+  const diaSemana = new Date(fecha).getDay();
+
+  try {
+    // 1. Obtenemos los UIDs y los tres conteos clave:
+    //    - total_guardias: Equidad histórica global.
+    //    - guardias_periodo_acumuladas: Equidad específica del slot: cuantas guardias ha hecho el profe en ese día y esa hora concreta.
+    //    - num_asignadas_ahora: Ocupación en tiempo real.
+    const query = `
+SELECT 
+    h.uid, 
+    -- Equidad TOTAL histórica (global del curso)
+    (SELECT COUNT(DISTINCT (ga.fecha, ga.idperiodo)) 
+     FROM guardias_asignadas ga 
+     WHERE ga.uid_profesor_cubridor = h.uid 
+     AND ga.fecha BETWEEN $1 AND $2 
+     AND ga.estado = 'activa'
+     AND ga.confirmada = true) as total_guardias,
+
+    -- Equidad ESPECÍFICA del periodo (cuántas ha hecho en esta hora en el curso)
+    (SELECT COUNT(*) 
+     FROM guardias_asignadas ga_slot
+     WHERE ga_slot.uid_profesor_cubridor = h.uid
+       AND ga_slot.idperiodo = $4
+       AND ga_slot.fecha BETWEEN $1 AND $2
+       AND ga_slot.estado = 'activa'
+       AND ga_slot.confirmada = true) as guardias_periodo_acumuladas,
+
+    -- Ocupación EN ESTE MOMENTO (para detectar si ya está cubriendo algo hoy)
+    (SELECT COUNT(*) 
+     FROM guardias_asignadas ga2
+     WHERE ga2.uid_profesor_cubridor = h.uid
+       AND ga2.fecha = $5
+       AND ga2.idperiodo = $4
+       AND ga2.estado = 'activa') as num_asignadas_ahora
+  FROM horario_profesorado h
+  WHERE h.dia_semana = $3 
+    AND h.idperiodo = $4 
+    AND h.tipo = 'guardia'
+    AND NOT EXISTS (
+      SELECT 1 FROM ausencias_profesorado aus
+      WHERE aus.uid_profesor = h.uid
+        AND aus.fecha_inicio <= $5
+        AND (aus.fecha_fin IS NULL OR aus.fecha_fin >= $5)
+        AND (
+          (aus.idperiodo_inicio IS NULL AND aus.idperiodo_fin IS NULL)
+          OR 
+          ($4 BETWEEN COALESCE(aus.idperiodo_inicio, 0) AND COALESCE(aus.idperiodo_fin, 99))
+        )
+    )
+  -- PRIORIDAD: Primero quien menos guardias tenga en este periodo, 
+  -- luego quien menos tenga en total (global).
+  ORDER BY guardias_periodo_acumuladas ASC, total_guardias ASC
+`;
+
+    const { rows: uidsDisponibles } = await db.query(query, [
+      curso.inicioCurso,
+      curso.finCurso,
+      diaSemana,
+      idperiodo,
+      fecha,
+    ]);
+
+    // 2. "Humanizar" los resultados con LDAP respetando estrictamente los campos originales
+    const profesEnriquecidos = await Promise.all(
+      uidsDisponibles.map(async (row) => {
+        return new Promise((resolve) => {
+          buscarPorUid(ldapSession, row.uid, (err, datos) => {
+            // Objeto base respetando nombres originales para el frontend
+            const baseData = {
+              uid: row.uid,
+              total_guardias: parseInt(row.total_guardias),
+              // Añadimos el nuevo dato por si el frontend decide pintarlo
+              guardias_periodo_acumuladas: parseInt(
+                row.guardias_periodo_acumuladas
+              ),
               num_asignadas_ahora: parseInt(row.num_asignadas_ahora),
               ya_asignado: parseInt(row.num_asignadas_ahora) > 0,
             };

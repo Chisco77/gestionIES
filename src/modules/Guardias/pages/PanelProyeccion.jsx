@@ -104,12 +104,12 @@ export function PanelProyeccion() {
           </div>
         </div>
         <div className="max-w-[1600px] mx-auto">
-          {/* El modoTV={true} ocultará los botones de "Cubrir/Liberar" que pusimos en el componente hijo */}
+          {/* El modoTV={true} ocultará los botones de "Cubrir/Liberar" */}
           <PanelGuardias modoTV={true} publicToken={token} />
         </div>
       </main>
 
-      {/* FOOTER: Sutil y profesional */}
+      {/* FOOTER */}
       <footer className="fixed bottom-0 w-full py-4 px-10 bg-white/80 backdrop-blur-md border-t border-slate-200 flex justify-between items-center text-slate-400">
         <p className="text-[10px] font-bold uppercase tracking-[0.3em]">
           IES Francisco de Orellana{" "}

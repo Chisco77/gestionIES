@@ -168,7 +168,7 @@ export function PanelGuardias({
       }
     }
 
-    // Lógica de rotación de TV (se mantiene igual)
+    // Lógica de rotación de TV
     if (modoTV && periodosUnicos.length > 1) {
       const intervaloRotacion = setInterval(() => {
         setTabActiva((currentTab) => {
@@ -189,7 +189,6 @@ export function PanelGuardias({
 
   const mutationAuto = useMutation({
     mutationFn: async (vars) => {
-      // vars puede ser el payload directo o { payload, fuerza }
       const isRetry = vars.fuerza !== undefined;
       const payload = isRetry ? vars.payload : vars;
       const fuerza = isRetry ? vars.fuerza : false;
@@ -571,7 +570,7 @@ function GuardiaCard({
               {esConfirmada ? (esMia ? "Tuya" : "Cubierta") : "Pendiente"}
             </span>
             {/* 2. BOTÓN DE TAREAS */}
-            {mostrarInstrucciones && !modoTV &&  (
+            {mostrarInstrucciones && !modoTV && (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -709,7 +708,7 @@ function GuardiaCard({
   );
 }
 
-function ListaProfesGuardia({ fecha, idPeriodo }) {
+/*function ListaProfesGuardia({ fecha, idPeriodo }) {
   const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
 
   if (isLoading) return <div className="animate-pulse space-y-2">...</div>;
@@ -734,7 +733,6 @@ function ListaProfesGuardia({ fecha, idPeriodo }) {
           >
             <CardContent className="p-3 flex justify-between items-center">
               <div className="flex items-center gap-3 min-w-0">
-                {/* Indicador de estado con pulso más rápido si es doble */}
                 <div
                   className={`w-2 h-2 rounded-full flex-shrink-0 ${
                     estaOcupado
@@ -791,6 +789,105 @@ function ListaProfesGuardia({ fecha, idPeriodo }) {
                 >
                   {profe.total_guardias} <Clock className="w-3 h-3 ml-1" />
                 </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}*/
+
+function ListaProfesGuardia({ fecha, idPeriodo }) {
+  const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
+
+  if (isLoading)
+    return (
+      <div className="animate-pulse space-y-2 text-slate-400">
+        Cargando disponibilidad...
+      </div>
+    );
+
+  return (
+    <div className="space-y-3">
+      {profes?.map((profe) => {
+        const numGuardiasHoy = profe.num_asignadas_ahora || 0;
+        const estaOcupado = numGuardiasHoy > 0;
+        const esDoble = numGuardiasHoy > 1;
+
+        return (
+          <Card
+            key={profe.uid}
+            className={`transition-all duration-300 border shadow-none ${
+              estaOcupado
+                ? esDoble
+                  ? "bg-indigo-50/50 border-indigo-200 ring-1 ring-indigo-100"
+                  : "bg-blue-50/50 border-blue-200 ring-1 ring-blue-100"
+                : "bg-white border-slate-200 shadow-sm hover:shadow-md"
+            }`}
+          >
+            <CardContent className="p-3 flex justify-between items-center">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Indicador de estado circular */}
+                <div
+                  className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                    estaOcupado
+                      ? esDoble
+                        ? "bg-indigo-600 animate-bounce"
+                        : "bg-blue-500 animate-pulse"
+                      : "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+                  }`}
+                />
+
+                <div className="min-w-0">
+                  <p
+                    className={`text-sm font-bold truncate ${
+                      estaOcupado
+                        ? esDoble
+                          ? "text-indigo-900"
+                          : "text-blue-900"
+                        : "text-slate-700"
+                    }`}
+                  >
+                    {profe.apellido1}
+                    {profe.nombre ? `, ${profe.nombre}` : ""}
+                  </p>
+
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {estaOcupado ? (
+                      <span
+                        className={`text-[10px] font-black uppercase tracking-tight ${
+                          esDoble ? "text-indigo-600" : "text-blue-600"
+                        }`}
+                      >
+                        {esDoble ? "Doble Guardia" : "Asignada"}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
+                        Disponible
+                      </span>
+                    )}
+                    <span className="text-slate-300">|</span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      Acumulado: {profe.total_guardias}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOQUE DEL CONTADOR DE SLOT  */}
+              <div className="flex items-center gap-3 bg-white border border-slate-100 p-1.5 pl-3 rounded-xl shadow-sm">
+                <div className="flex flex-col items-end leading-none">
+                  <span className="text-[16px] font-black font-mono text-slate-800">
+                    {profe.guardias_periodo_acumuladas}
+                  </span>
+                </div>
+
+                <div
+                  className={`p-1.5 rounded-lg ${estaOcupado ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-500"}`}
+                >
+                  <Clock className="w-4 h-4" />
+                </div>
               </div>
             </CardContent>
           </Card>
