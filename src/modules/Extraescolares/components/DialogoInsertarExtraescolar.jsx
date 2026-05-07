@@ -113,7 +113,9 @@ export function DialogoInsertarExtraescolar({
   const [horaFin, setHoraFin] = useState("14:00");
   const [fechaInicio, setFechaInicio] = useState(new Date());
   const [fechaFin, setFechaFin] = useState(new Date());
-  const [ambito, setAmbito] = useState("fuera");
+
+  // Nuevo estado booleano según la nueva lógica del backend
+  const [fueraDelCentro, setFueraDelCentro] = useState(false);
   const [estancia, setEstancia] = useState("");
   const [generaAusencias, setGeneraAusencias] = useState(true);
 
@@ -231,24 +233,20 @@ export function DialogoInsertarExtraescolar({
       cursos_gids: cursosSeleccionados,
       responsables_uids: profesoresSeleccionados,
       genera_ausencias: generaAusencias,
-      ubicacion: ambito === "fuera" ? ubicacion : "centro",
-      coords: ambito === "fuera" ? coords : null,
-      idestancia: ambito === "centro" ? Number(estancia) : null,
-      ambito,
+      // Aplicamos la lógica de envío:
+      fuera_del_centro: fueraDelCentro,
+      ubicacion: fueraDelCentro ? ubicacion : "",
+      coords: fueraDelCentro ? coords : null,
+      idestancia: !fueraDelCentro && estancia ? Number(estancia) : null,
       uid: user.username,
     };
-
-    console.log(JSON.stringify(datos, null, 2));
 
     mutation.mutate(datos);
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
-      <DialogContent
-        className="p-0 overflow-hidden rounded-lg max-w-5xl w-full flex flex-col max-h-[95vh]"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
+      <DialogContent className="p-0 overflow-hidden rounded-lg max-w-5xl w-full flex flex-col max-h-[95vh]">
         <DialogHeader className="py-4 px-6 text-white bg-blue-600 flex flex-row items-center justify-center space-y-0">
           <DialogTitle className="text-xl font-bold">
             Nueva Solicitud de Actividad
@@ -264,7 +262,6 @@ export function DialogoInsertarExtraescolar({
                 <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
               </TabsList>
             </div>
-
             <div className="px-8 py-6 min-h-[520px]">
               {/* --- TAB GENERAL --- */}
               <TabsContent value="general" className="mt-0 space-y-6">
@@ -326,7 +323,6 @@ export function DialogoInsertarExtraescolar({
                       <Checkbox
                         id="aus"
                         checked={generaAusencias}
-                        disabled={tipo === "extraescolar"}
                         onCheckedChange={setGeneraAusencias}
                       />
                       <div className="grid gap-0.5 leading-none">
@@ -511,86 +507,113 @@ export function DialogoInsertarExtraescolar({
               </TabsContent>
 
               {/* --- TAB UBICACIÓN --- */}
-              <TabsContent value="ubicacion" className="mt-0 space-y-4">
-                <div className="flex justify-center p-1 bg-slate-100 rounded-lg w-fit mx-auto border shadow-inner">
-                  <Button
-                    variant={ambito === "centro" ? "white" : "ghost"}
-                    size="sm"
-                    onClick={() => setAmbito("centro")}
-                  >
-                    En el Centro
-                  </Button>
-                  <Button
-                    variant={ambito === "fuera" ? "white" : "ghost"}
-                    size="sm"
-                    onClick={() => setAmbito("fuera")}
-                  >
-                    Fuera del Centro
-                  </Button>
-                </div>
-
-                {ambito === "centro" ? (
-                  <div className="flex flex-col items-center justify-center py-16 space-y-4 border-2 border-dashed rounded-2xl bg-slate-50/50">
-                    <Label className="text-lg font-semibold text-slate-600">
-                      Elegir aula o estancia
+              <TabsContent value="ubicacion" className="mt-0 space-y-6">
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <Label className="text-sm font-bold text-slate-700 uppercase">
+                      ¿Dónde se realizará la actividad?
                     </Label>
-                    <Select value={estancia} onValueChange={setEstancia}>
-                      <SelectTrigger className="w-80 bg-white border-slate-300 shadow-sm">
-                        <SelectValue placeholder="Elegir estancia..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {estancias.map((e) => (
-                          <SelectItem key={e.id} value={String(e.id)}>
-                            {e.descripcion}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <div className="space-y-4 animate-in fade-in duration-500">
-                    <Autocomplete
-                      value={ubicacion}
-                      buscar={buscarLugar}
-                      onChange={(nuevoTexto) => {
-                        setUbicacion(nuevoTexto);
-                        setSeleccionValida(false); // En cuanto escribe, ya no es la opción seleccionada
-                      }}
-                      onSelect={(l) => {
-                        setUbicacion(l.label);
-                        setCoords({ lat: l.lat, lng: l.lng });
-                        setSeleccionValida(true); // ¡Confirmado!
-                      }}
-                      placeholder="Comienza a escribir la ubicación..."
-                    />
-                    <div className="rounded-xl overflow-hidden border-2 border-white shadow-md h-[320px]">
-                      <MapContainer
-                        center={coords}
-                        zoom={13}
-                        style={{ height: "100%", width: "100%" }}
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={!fueraDelCentro ? "default" : "outline"}
+                        className={
+                          !fueraDelCentro ? "bg-blue-600 hover:bg-blue-700" : ""
+                        }
+                        onClick={() => setFueraDelCentro(false)}
                       >
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        <Marker
-                          position={coords}
-                          draggable
-                          eventHandlers={{
-                            dragend: async (e) => {
-                              const { lat, lng } = e.target.getLatLng();
-                              setCoords({ lat, lng });
-                              const dir = await reverseGeocode({ lat, lng });
-                              setUbicacion(dir);
-                            },
-                          }}
-                        />
-                        <ClickHandler
-                          setCoords={setCoords}
-                          setUbicacion={setUbicacion}
-                        />
-                        <SetViewOnChange coords={coords} />
-                      </MapContainer>
+                        🏠 En el propio centro
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={fueraDelCentro ? "default" : "outline"}
+                        className={
+                          fueraDelCentro ? "bg-blue-600 hover:bg-blue-700" : ""
+                        }
+                        onClick={() => setFueraDelCentro(true)}
+                      >
+                        📍 Fuera del centro
+                      </Button>
                     </div>
                   </div>
-                )}
+
+                  {!fueraDelCentro ? (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-4 border-2 border-dashed rounded-2xl bg-slate-50/50 animate-in fade-in zoom-in-95 duration-300">
+                      <div className="text-center space-y-1">
+                        <Label className="text-lg font-semibold text-slate-700">
+                          Ubicación en el centro
+                        </Label>
+                        <p className="text-xs text-slate-500">
+                          Opcional: Seleccione una estancia si desea reservar un
+                          espacio concreto
+                        </p>
+                      </div>
+                      <Select value={estancia} onValueChange={setEstancia}>
+                        <SelectTrigger className="w-80 bg-white border-slate-300 shadow-sm">
+                          <SelectValue placeholder="Sin estancia específica" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">
+                            Ninguna / Todo el centro
+                          </SelectItem>
+                          {estancias.map((e) => (
+                            <SelectItem key={e.id} value={String(e.id)}>
+                              {e.descripcion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <div className="space-y-2">
+                        <Label className="font-bold">
+                          Dirección o Lugar de Destino
+                        </Label>
+                        <Autocomplete
+                          value={ubicacion}
+                          buscar={buscarLugar}
+                          onChange={(nuevoTexto) => setUbicacion(nuevoTexto)}
+                          onSelect={(l) => {
+                            setUbicacion(l.label);
+                            setCoords({ lat: l.lat, lng: l.lng });
+                          }}
+                          placeholder="Busca la dirección, museo, localidad..."
+                        />
+                      </div>
+                      <div className="rounded-xl overflow-hidden border-2 border-slate-200 shadow-md h-[320px]">
+                        <MapContainer
+                          center={coords}
+                          zoom={13}
+                          style={{ height: "100%", width: "100%" }}
+                        >
+                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                          <Marker
+                            position={coords}
+                            draggable
+                            eventHandlers={{
+                              dragend: async (e) => {
+                                const { lat, lng } = e.target.getLatLng();
+                                setCoords({ lat, lng });
+                                const dir = await reverseGeocode({ lat, lng });
+                                setUbicacion(dir);
+                              },
+                            }}
+                          />
+                          <ClickHandler
+                            setCoords={setCoords}
+                            setUbicacion={setUbicacion}
+                          />
+                          <SetViewOnChange coords={coords} />
+                        </MapContainer>
+                      </div>
+                      <p className="text-[10px] text-slate-500 italic text-center">
+                        Puedes hacer clic en el mapa para ajustar la ubicación
+                        exacta.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
             </div>
           </Tabs>
@@ -605,7 +628,7 @@ export function DialogoInsertarExtraescolar({
             Cancelar
           </Button>
           <Button
-            className="bg-green-600 hover:bg-green-700 text-white px-10 font-bold"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-10 font-bold"
             onClick={handleGuardar}
             disabled={mutation.isLoading}
           >

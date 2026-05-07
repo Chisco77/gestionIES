@@ -94,6 +94,7 @@ async function getExtraescolaresEnriquecidos(req, res) {
   e.responsables_uids,
   e.ubicacion,
   e.coords,
+  e.fuera_del_centro,
   e.updated_at,
   e.genera_ausencias,
   e.idestancia,  
@@ -374,19 +375,30 @@ async function insertExtraescolar(req, res) {
       ubicacion,
       coords,
       idestancia,
+      fuera_del_centro,
     } = req.body;
+
+    // Lógica de limpieza antes de insertar
+    const esFuera = fuera_del_centro === true || fuera_del_centro === "true";
+
+    // Si es dentro: ubicación vacía y coords null.
+    // Si es fuera: idestancia null.
+    const finalUbicacion = esFuera ? ubicacion : "";
+    const finalCoords = esFuera ? coords : null;
+    const finalEstancia = esFuera ? null : idestancia || null;
 
     const genera_ausencias =
       tipo === "extraescolar" ? true : (req.body.genera_ausencias ?? false);
 
     const { rows } = await db.query(
       `INSERT INTO extraescolares (
-  uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
-  fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
-  responsables_uids, ubicacion, coords, updated_by, genera_ausencias, idestancia
-)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-RETURNING *`,
+        uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
+        fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
+        responsables_uids, ubicacion, coords, updated_by, genera_ausencias, 
+        idestancia, fuera_del_centro
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+      RETURNING *`,
       [
         usuarioSesion.username,
         gidnumber,
@@ -399,11 +411,12 @@ RETURNING *`,
         idperiodo_inicio || null,
         idperiodo_fin || null,
         responsables_uids,
-        ubicacion,
-        coords,
+        finalUbicacion,
+        finalCoords,
         usuarioSesion.username,
         genera_ausencias,
-        idestancia || null,
+        finalEstancia,
+        esFuera,
       ]
     );
 
@@ -541,20 +554,30 @@ async function updateExtraescolar(req, res) {
       ubicacion,
       coords,
       idestancia,
+      fuera_del_centro,
     } = req.body;
 
     const genera_ausencias =
       tipo === "extraescolar" ? true : (req.body.genera_ausencias ?? false);
+
+    // Lógica de limpieza antes de insertar
+    const esFuera = fuera_del_centro === true || fuera_del_centro === "true";
+
+    // Si es dentro: ubicación vacía y coords null.
+    // Si es fuera: idestancia null.
+    const finalUbicacion = esFuera ? ubicacion : "";
+    const finalCoords = esFuera ? coords : null;
+    const finalEstancia = esFuera ? null : idestancia || null;
     await client.query("BEGIN");
 
     const { rows } = await client.query(
       `UPDATE extraescolares
        SET gidnumber = $1, cursos_gids = $2, tipo = $3, titulo = $4,
-       descripcion = $5, fecha_inicio = $6, fecha_fin = $7,
-       idperiodo_inicio = $8, idperiodo_fin = $9, responsables_uids = $10,
-       ubicacion = $11, coords = $12, updated_by = $13, genera_ausencias = $14,
-       idestancia = $15
-    WHERE id = $16 RETURNING *`,
+           descripcion = $5, fecha_inicio = $6, fecha_fin = $7,
+           idperiodo_inicio = $8, idperiodo_fin = $9, responsables_uids = $10,
+           ubicacion = $11, coords = $12, updated_by = $13, genera_ausencias = $14,
+           idestancia = $15, fuera_del_centro = $16  -- <--- Añadido el campo
+       WHERE id = $17 RETURNING *`,
       [
         gidnumber,
         cursos_gids,
@@ -566,12 +589,13 @@ async function updateExtraescolar(req, res) {
         idperiodo_inicio || null,
         idperiodo_fin || null,
         responsables_uids,
-        ubicacion,
-        coords,
+        finalUbicacion,
+        finalCoords,
         usuarioSesion.username,
         genera_ausencias,
-        idestancia || null,
-        id,
+        finalEstancia,
+        esFuera,
+        id, // <--- No olvides actualizar el índice del ID
       ]
     );
 
@@ -649,33 +673,33 @@ function validarActividad(body) {
   }
 
   // =========================
-  // UBICACIÓN (REGLA CLAVE)
+  // UBICACIÓN
   // =========================
-  if (body.ambito === "centro") {
-    if (!body.idestancia || isNaN(Number(body.idestancia))) {
-      errores.push("Debe seleccionar una estancia válida del centro");
-    }
-  }
+  // Forzamos que fuera_del_centro sea booleano (si viene como string del form)
+  const esFuera =
+    body.fuera_del_centro === true || body.fuera_del_centro === "true";
 
-  if (body.ambito === "fuera") {
-    // Comprobar que el texto no sea solo ruido
+  if (!esFuera) {
+    // CASO: DENTRO DEL CENTRO
+    // Puede tener estancia o no
+    // Pero si la tiene, debe ser un número válido
+    if (body.idestancia && isNaN(Number(body.idestancia))) {
+      errores.push("La estancia seleccionada no es válida");
+    }
+
+    // Forzamos limpieza de datos de fuera (opcional, pero recomendado)
+    // Si es en el centro, ignoramos ubicación y coordenadas
+  } else {
+    // CASO: FUERA DEL CENTRO
     if (!body.ubicacion || body.ubicacion.trim().length < 5) {
-      errores.push("La ubicación proporcionada no parece una dirección válida");
+      errores.push(
+        "Para actividades fuera del centro, debe indicar una ubicación o dirección válida"
+      );
     }
-
-    // Comprobar que las coordenadas no sean las de por defecto (si tienes unas)
-    // O simplemente que estén en rangos lógicos
-    if (body.coords) {
-      const { lat, lng } = body.coords;
-      if (lat === 0 && lng === 0) {
-        errores.push("Las coordenadas no pueden ser (0,0)");
-      }
+    // para validar coordenadas
+    if (!body.coords || (body.coords.lat === 0 && body.coords.lng === 0)) {
+      // errores.push("Debe marcar el punto en el mapa");
     }
-  }
-
-  // fallback de seguridad
-  if (!body.ambito) {
-    errores.push("Debe indicar si la actividad es en el centro o fuera");
   }
 
   // =========================
@@ -744,6 +768,23 @@ async function enviarEmailActividad(actividad, origen, ldapSession) {
       ? new Date(actividad.fecha_fin).toLocaleDateString("es-ES")
       : fIni;
     const rangoFechas = fIni === fFin ? fIni : `del ${fIni} al ${fFin}`;
+
+    // 2.5 Lógica de Ubicación para el Email
+    let textoUbicacion = "";
+    if (actividad.fuera_del_centro) {
+      textoUbicacion = `🚶 <b>Fuera del centro:</b> ${actividad.ubicacion || "Ubicación no especificada"}`;
+    } else {
+      // Si es en el centro, intentamos obtener el nombre de la estancia
+      let nombreEstancia = "Recinto del centro";
+      if (actividad.idestancia) {
+        const { rows: stRows } = await db.query(
+          `SELECT descripcion FROM estancias WHERE id = $1`,
+          [actividad.idestancia]
+        );
+        if (stRows.length > 0) nombreEstancia = stRows[0].descripcion;
+      }
+      textoUbicacion = `🏫 <b>En el centro:</b> ${nombreEstancia}`;
+    }
 
     // 3. Lógica de Personalización y BADGE de estado
     let tituloHeader, subheader, colorEstado, tagAsunto;
@@ -825,7 +866,7 @@ async function enviarEmailActividad(actividad, origen, ldapSession) {
               ${infoPeriodos ? `<tr><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;"><b>⏰ Horario:</b></td><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${infoPeriodos}</td></tr>` : ""}
               <tr><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;"><b>👤 Organizador:</b></td><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${nombreOrganizador}</td></tr>
               <tr><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; vertical-align: top;"><b>👥 Participantes:</b></td><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${nombresParticipantes.join("<br>")}</td></tr>
-              <tr><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;"><b>📍 Ubicación:</b></td><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${actividad.ubicacion}</td></tr>
+              <tr><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; width: 130px;"><b>📍 Ubicación:</b></td><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${textoUbicacion}</td></tr>
               <tr><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;"><b>🛡️ Gestión:</b></td><td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">${infoGuardias}</td></tr>
             </table>
             <div style="margin-top: 20px; padding: 15px; background-color: #f8fafc; border-radius: 6px; font-size: 0.9rem;">

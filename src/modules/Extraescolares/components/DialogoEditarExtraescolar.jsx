@@ -112,7 +112,7 @@ export function DialogoEditarExtraescolar({
   const [horaFin, setHoraFin] = useState("14:00");
   const [fechaInicio, setFechaInicio] = useState(new Date());
   const [fechaFin, setFechaFin] = useState(new Date());
-  const [ambito, setAmbito] = useState("fuera");
+  const [fueraDelCentro, setFueraDelCentro] = useState(false);
   const [estancia, setEstancia] = useState("");
   const [generaAusencias, setGeneraAusencias] = useState(true);
 
@@ -157,13 +157,17 @@ export function DialogoEditarExtraescolar({
     setCursosSeleccionados(actividad.cursos_gids?.map(String) || []);
     setProfesoresSeleccionados(actividad.responsables_uids || []);
 
-    if (actividad.idestancia) {
-      setAmbito("centro");
-      setEstancia(String(actividad.idestancia));
-    } else {
-      setAmbito("fuera");
+    // --- Carga de Ubicación
+    const esFuera = actividad.fuera_del_centro ?? false;
+    setFueraDelCentro(esFuera);
+
+    if (esFuera) {
       setUbicacion(actividad.ubicacion || "");
       if (actividad.coords?.lat) setCoords(actividad.coords);
+      setEstancia("");
+    } else {
+      setEstancia(actividad.idestancia ? String(actividad.idestancia) : "");
+      setUbicacion("");
     }
   }, [actividad, open]);
 
@@ -257,10 +261,11 @@ export function DialogoEditarExtraescolar({
       cursos_gids: cursosSeleccionados,
       responsables_uids: profesoresSeleccionados,
       genera_ausencias: generaAusencias,
-      ubicacion: ambito === "fuera" ? ubicacion : "centro",
-      coords: ambito === "fuera" ? coords : null,
-      ambito,
-      idestancia: ambito === "centro" ? Number(estancia) : null,
+      // Lógica unificada con el backend:
+      fuera_del_centro: fueraDelCentro,
+      ubicacion: fueraDelCentro ? ubicacion : "",
+      coords: fueraDelCentro ? coords : null,
+      idestancia: !fueraDelCentro && estancia ? Number(estancia) : null,
       updated_by: user.username,
     };
 
@@ -277,13 +282,22 @@ export function DialogoEditarExtraescolar({
           <DialogTitle className="text-xl font-bold">
             Editar Actividad
           </DialogTitle>
+
           {actividad && (
-            <div className="absolute right-6 bg-white/20 px-3 py-1 rounded-full text-sm font-medium border border-white/30">
+            <div
+              className={`absolute right-6 px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${
+                actividad.estado === 0
+                  ? "text-yellow-700 bg-yellow-100 border-yellow-300"
+                  : actividad.estado === 1
+                    ? "text-green-700 bg-green-100 border-green-300"
+                    : "text-red-700 bg-red-100 border-red-300"
+              }`}
+            >
               {actividad.estado === 0
-                ? "Pendiente"
+                ? "PENDIENTE"
                 : actividad.estado === 1
-                  ? "Aceptada"
-                  : "Rechazada"}
+                  ? "ACEPTADA"
+                  : "RECHAZADA"}
             </div>
           )}
         </DialogHeader>
@@ -511,7 +525,7 @@ export function DialogoEditarExtraescolar({
                 </div>
               </TabsContent>
 
-              {/* --- TAB DETALLES (Mismo código pero verificado) --- */}
+              {/* --- TAB DETALLES */}
               <TabsContent value="detalles" className="mt-0 space-y-6">
                 <div className="space-y-2">
                   <Label className="font-bold">
@@ -563,91 +577,122 @@ export function DialogoEditarExtraescolar({
                 </div>
               </TabsContent>
 
-              {/* --- TAB UBICACIÓN (Mismo código pero verificado) --- */}
-              <TabsContent value="ubicacion" className="mt-0 space-y-4">
-                <div className="flex justify-center p-1 bg-slate-100 rounded-lg w-fit mx-auto border shadow-inner">
-                  <Button
-                    variant={ambito === "centro" ? "white" : "ghost"}
-                    size="sm"
-                    onClick={() => setAmbito("centro")}
-                    disabled={!esEditable}
-                  >
-                    En el Centro
-                  </Button>
-                  <Button
-                    variant={ambito === "fuera" ? "white" : "ghost"}
-                    size="sm"
-                    onClick={() => setAmbito("fuera")}
-                    disabled={!esEditable}
-                  >
-                    Fuera del Centro
-                  </Button>
-                </div>
-
-                {ambito === "centro" ? (
-                  <div className="flex flex-col items-center justify-center py-16 space-y-4 border-2 border-dashed rounded-2xl bg-slate-50/50">
-                    <Label className="text-lg font-semibold text-slate-600">
-                      Indica el aula o estancia del centro
+              {/* --- TAB UBICACIÓN --- */}
+              <TabsContent value="ubicacion" className="mt-0 space-y-6">
+                <div className="space-y-4">
+                  {/* Selector explícito de ámbito */}
+                  <div className="flex flex-col items-center space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <Label className="text-sm font-bold text-slate-700 uppercase">
+                      Ámbito de la actividad
                     </Label>
-                    <Select
-                      value={estancia}
-                      onValueChange={setEstancia}
-                      disabled={!esEditable}
-                    >
-                      <SelectTrigger className="w-80 bg-white border-slate-300 shadow-sm">
-                        <SelectValue placeholder="Elegir estancia..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {estancias.map((e) => (
-                          <SelectItem key={e.id} value={String(e.id)}>
-                            {e.descripcion}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <div className="space-y-4 animate-in fade-in duration-500">
-                    <Autocomplete
-                      value={ubicacion}
-                      buscar={buscarLugar}
-                      onChange={setUbicacion}
-                      onSelect={(l) => {
-                        setUbicacion(l.label);
-                        setCoords({ lat: l.lat, lng: l.lng });
-                      }}
-                      disabled={!esEditable}
-                      placeholder="Busca la dirección o lugar..."
-                    />
-                    <div className="rounded-xl overflow-hidden border-2 border-white shadow-md h-[320px]">
-                      <MapContainer
-                        center={coords}
-                        zoom={13}
-                        style={{ height: "100%", width: "100%" }}
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={!fueraDelCentro ? "default" : "outline"}
+                        className={
+                          !fueraDelCentro
+                            ? "bg-green-600 hover:bg-green-700"
+                            : ""
+                        }
+                        disabled={!esEditable}
+                        onClick={() => setFueraDelCentro(false)}
                       >
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        <Marker
-                          position={coords}
-                          draggable={esEditable}
-                          eventHandlers={{
-                            dragend: async (e) => {
-                              const { lat, lng } = e.target.getLatLng();
-                              setCoords({ lat, lng });
-                              const dir = await reverseGeocode({ lat, lng });
-                              setUbicacion(dir);
-                            },
-                          }}
-                        />
-                        <ClickHandler
-                          setCoords={setCoords}
-                          setUbicacion={setUbicacion}
-                          disabled={!esEditable}
-                        />
-                        <SetViewOnChange coords={coords} />
-                      </MapContainer>
+                        🏠 En el centro
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={fueraDelCentro ? "default" : "outline"}
+                        className={
+                          fueraDelCentro
+                            ? "bg-green-600 hover:bg-green-700"
+                            : ""
+                        }
+                        disabled={!esEditable}
+                        onClick={() => setFueraDelCentro(true)}
+                      >
+                        📍 Fuera del centro
+                      </Button>
                     </div>
                   </div>
-                )}
+
+                  {!fueraDelCentro ? (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-4 border-2 border-dashed rounded-2xl bg-slate-50/50 animate-in fade-in zoom-in-95 duration-300">
+                      <div className="text-center space-y-1">
+                        <Label className="text-lg font-semibold text-slate-700">
+                          Ubicación en el centro
+                        </Label>
+                        <p className="text-xs text-slate-500">
+                          Seleccione el espacio si es necesario reservar
+                        </p>
+                      </div>
+                      <Select
+                        value={estancia}
+                        onValueChange={setEstancia}
+                        disabled={!esEditable}
+                      >
+                        <SelectTrigger className="w-80 bg-white border-slate-300 shadow-sm">
+                          <SelectValue placeholder="Sin estancia específica" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">
+                            Ninguna / Todo el centro
+                          </SelectItem>
+                          {estancias.map((e) => (
+                            <SelectItem key={e.id} value={String(e.id)}>
+                              {e.descripcion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <div className="space-y-2">
+                        <Label className="font-bold">
+                          Dirección o Lugar de Destino
+                        </Label>
+                        <Autocomplete
+                          value={ubicacion}
+                          buscar={buscarLugar}
+                          onChange={(txt) => setUbicacion(txt)}
+                          onSelect={(l) => {
+                            setUbicacion(l.label);
+                            setCoords({ lat: l.lat, lng: l.lng });
+                          }}
+                          disabled={!esEditable}
+                          placeholder="Busca la dirección o lugar..."
+                        />
+                      </div>
+                      <div className="rounded-xl overflow-hidden border-2 border-slate-200 shadow-md h-[320px]">
+                        <MapContainer
+                          center={coords}
+                          zoom={13}
+                          style={{ height: "100%", width: "100%" }}
+                        >
+                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                          <Marker
+                            position={coords}
+                            draggable={esEditable}
+                            eventHandlers={{
+                              dragend: async (e) => {
+                                const { lat, lng } = e.target.getLatLng();
+                                setCoords({ lat, lng });
+                                const dir = await reverseGeocode({ lat, lng });
+                                setUbicacion(dir);
+                              },
+                            }}
+                          />
+                          <ClickHandler
+                            setCoords={setCoords}
+                            setUbicacion={setUbicacion}
+                            disabled={!esEditable}
+                          />
+                          <SetViewOnChange coords={coords} />
+                        </MapContainer>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
             </div>
           </Tabs>
@@ -662,7 +707,7 @@ export function DialogoEditarExtraescolar({
             Cancelar
           </Button>
           <Button
-            className="bg-blue-600 hover:bg-blue-700 text-white px-10 font-bold"
+            className="bg-green-600 hover:bg-green-700 text-white px-10 font-bold"
             onClick={handleGuardar}
             disabled={!esEditable || mutation.isLoading}
           >
