@@ -204,6 +204,11 @@ export function DialogoInsertarReserva({
 
       queryClient.invalidateQueries(["reservas", "dia", fecha]);
       queryClient.invalidateQueries(["reservas", "uid", user.username]);
+      queryClient.invalidateQueries([
+        "reservas",
+        "curso-actual",
+        user?.username,
+      ]);
 
       onSuccess?.();
       onClose();

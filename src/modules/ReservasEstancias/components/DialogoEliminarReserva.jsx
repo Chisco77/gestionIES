@@ -67,6 +67,11 @@ export function DialogoEliminarReserva({
 
       // Invalidate → refresca panel del usuario
       queryClient.invalidateQueries(["reservas", "uid", user?.username]);
+      queryClient.invalidateQueries([
+        "reservas",
+        "curso-actual",
+        user?.username,
+      ]);
 
       onOpenChange(false);
     },

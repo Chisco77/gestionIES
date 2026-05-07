@@ -51,7 +51,7 @@ export function DialogoEliminarAsunto({ open, onOpenChange, asunto, onDeleteSucc
       toast.success("Asunto propio eliminado correctamente");
 
       // 1️⃣ Actualizar PanelReservas
-      queryClient.invalidateQueries(["asuntosPropios", user.uid]);
+      queryClient.invalidateQueries(["reservasPanel", user.username]);
 
       // 2️⃣ Actualizar calendario (usePermisosMes)
       const fechaObj = new Date(asunto.fecha);
@@ -59,7 +59,7 @@ export function DialogoEliminarAsunto({ open, onOpenChange, asunto, onDeleteSucc
       const year = fechaObj.getFullYear();
       const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
       const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
-      queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
+      queryClient.invalidateQueries({ queryKey: ["permisos", "calendario", start, end] });
 
       queryClient.invalidateQueries(["notificacionesDirectiva"]);
 

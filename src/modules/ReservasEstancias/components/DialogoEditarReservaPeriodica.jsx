@@ -192,6 +192,11 @@ export function DialogoEditarReservaPeriodica({
       // Invalidamos los hooks para refrescar grid y listas
       queryClient.invalidateQueries(["reservas", "dia", fecha]); // refresca grid del día
       queryClient.invalidateQueries(["reservas", "uid", user.username]); // refresca panel del usuario
+      queryClient.invalidateQueries([
+        "reservas",
+        "curso-actual",
+        user?.username,
+      ]);
       queryClient.invalidateQueries(["reservasPeriodicasTodas"]);
     },
 

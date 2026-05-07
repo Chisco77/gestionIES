@@ -62,7 +62,11 @@ export function DialogoEliminarReservaPeriodica({
 
       queryClient.invalidateQueries(["reservasPeriodicasTodas"]);
       queryClient.invalidateQueries(["reservas", "uid", user?.username]);
-
+      queryClient.invalidateQueries([
+        "reservas",
+        "curso-actual",
+        user?.username,
+      ]);
       onOpenChange(false);
     },
 

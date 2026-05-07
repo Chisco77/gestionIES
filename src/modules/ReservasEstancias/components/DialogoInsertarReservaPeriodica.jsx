@@ -126,7 +126,7 @@ export function DialogoInsertarReservaPeriodica({
 
   const toggleDiaSemana = (dia) => {
     setDiasSemana((prev) =>
-      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia],
+      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia]
     );
   };
 
@@ -145,7 +145,7 @@ export function DialogoInsertarReservaPeriodica({
 
     if (fechaLimite < fecha)
       throw new Error(
-        "La fecha límite no puede ser anterior a la fecha de la reserva",
+        "La fecha límite no puede ser anterior a la fecha de la reserva"
       );
   };
 
@@ -193,6 +193,11 @@ export function DialogoInsertarReservaPeriodica({
       queryClient.invalidateQueries(["reservas", "dia", fecha]); // refresca grid del día
       queryClient.invalidateQueries(["reservas", "uid", user.username]); // refresca panel del usuario
       queryClient.invalidateQueries(["reservasPeriodicasTodas"]);
+      queryClient.invalidateQueries([
+        "reservas",
+        "curso-actual",
+        user?.username,
+      ]);
     },
 
     onError: (err) => {

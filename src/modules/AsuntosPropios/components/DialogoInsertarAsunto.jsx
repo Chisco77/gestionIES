@@ -88,6 +88,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
       toast.success("Asunto propio insertado correctamente");
 
       queryClient.invalidateQueries(["panel", "permisos", user.username]);
+      queryClient.invalidateQueries(["reservasPanel", user.username]);
       queryClient.invalidateQueries(["notificacionesDirectiva"]);
 
       const month = new Date(fecha).getMonth();
@@ -95,7 +96,7 @@ export function DialogoInsertarAsunto({ open, onClose, fecha }) {
       const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
       const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
 
-      queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
+      queryClient.invalidateQueries({ queryKey: ["permisos", "calendario", start, end] });
 
       setShowPdfDialog(true);
     },

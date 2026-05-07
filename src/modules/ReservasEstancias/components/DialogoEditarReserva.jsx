@@ -106,6 +106,11 @@ export function DialogoEditarReserva({
       // Igual que en insertar
       queryClient.invalidateQueries(["reservas", "dia", reserva.fecha]); // refresca grid del día
       queryClient.invalidateQueries(["reservas", "uid", user.username]); // refresca panel del usuario
+      queryClient.invalidateQueries([
+        "reservas",
+        "curso-actual",
+        user?.username,
+      ]);
 
       onClose();
     },

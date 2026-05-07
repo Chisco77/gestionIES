@@ -66,7 +66,7 @@ export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
       toast.success("Asunto propio actualizado correctamente");
 
       // 1️⃣ Actualizar PanelReservas
-      queryClient.invalidateQueries(["asuntosPropios", user.username]);
+      queryClient.invalidateQueries(["reservasPanel", user.username]);
 
       // 2️⃣ Actualizar calendario (usePermisosMes)
       const fechaObj = new Date(asunto.fecha);
@@ -74,7 +74,7 @@ export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
       const year = fechaObj.getFullYear();
       const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
       const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
-      queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
+      queryClient.invalidateQueries({ queryKey: ["permisos", "calendario", start, end] });
 
       onSuccess?.();
       onClose();
