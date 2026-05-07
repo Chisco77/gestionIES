@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
+import { sk } from "date-fns/locale";
 
 export function DialogoEliminarExtraescolar({
   open,
@@ -24,23 +25,20 @@ export function DialogoEliminarExtraescolar({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(
-        `${API_URL}/db/extraescolares/${actividad.id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/db/extraescolares/${actividad.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
       if (!res.ok)
         throw new Error("Error al eliminar la actividad extraescolar");
       return true;
     },
     onSuccess: () => {
       toast.success("Actividad extraescolar eliminada correctamente");
-
       // Actualizar panel
-      queryClient.invalidateQueries(["extraescolares", "uid", user.uid]);
+      queryClient.invalidateQueries(["extraescolares", "uid", user.username]);
       queryClient.invalidateQueries(["extraescolares", "all"]);
+      queryClient.invalidateQueries(["reservasPanel", user.username]);
       queryClient.invalidateQueries(["notificacionesDirectiva"]);
 
       // Actualizar calendario si procede

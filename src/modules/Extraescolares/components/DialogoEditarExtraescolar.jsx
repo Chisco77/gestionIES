@@ -208,6 +208,7 @@ export function DialogoEditarExtraescolar({
     },
     onSuccess: (act) => {
       queryClient.invalidateQueries(["extraescolares"]);
+      queryClient.invalidateQueries(["reservasPanel", user.username]);
       toast.success("Actividad actualizada", { description: act.titulo });
       onGuardado?.(act);
       onClose();
