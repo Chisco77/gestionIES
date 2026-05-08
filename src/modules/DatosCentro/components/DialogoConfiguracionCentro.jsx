@@ -158,7 +158,7 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 rounded-lg max-w-2xl flex flex-col max-h-[90vh]"
+        className="p-0 rounded-xl w-[600px] flex flex-col overflow-hidden border-none shadow-2xl"
       >
         {/* Inputs de Archivo Ocultos */}
         <input
@@ -183,13 +183,10 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
           onChange={(e) => handleFileChange(e, "favicon")}
         />
 
-        <DialogHeader className="bg-green-600 text-white rounded-t-lg py-4 px-8">
-          <div className="flex items-center gap-3">
-            <Building2 className="w-6 h-6" />
-            <DialogTitle className="text-xl font-bold">
-              Configuración del Centro
-            </DialogTitle>
-          </div>
+        <DialogHeader className="bg-green-600 text-white flex items-center justify-center py-5 px-6 shrink-0">
+          <DialogTitle className="text-xl font-bold flex items-center gap-3">
+            <Building2 className="w-5 h-5" /> Centro
+          </DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col">
@@ -419,7 +416,7 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
           </Tabs>
         </div>
 
-        <DialogFooter className="px-8 py-4 bg-slate-50 border-t flex justify-end gap-3">
+        <DialogFooter className="px-6 py-4 bg-slate-50 border-t flex justify-end gap-3 shrink-0">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>

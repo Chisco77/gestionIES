@@ -55,7 +55,7 @@ export function DialogoEliminarAusencia({ open, onOpenChange, ausencia, onDelete
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
-      <DialogContent onInteractOutside={(e) => e.preventDefault()} className="p-0 overflow-hidden rounded-lg">
+      <DialogContent onInteractOutside={(e) => e.preventDefault()} className="p-0 overflow-hidden rounded-lg border-none">
         <DialogHeader className="bg-red-600 text-white py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center">
             Eliminar Registro de Ausencia

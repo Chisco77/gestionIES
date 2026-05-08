@@ -65,16 +65,16 @@ export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
     onSuccess: () => {
       toast.success("Asunto propio actualizado correctamente");
 
-      // 1️⃣ Actualizar PanelReservas
-      queryClient.invalidateQueries(["reservasPanel", user.username]);
-
-      // 2️⃣ Actualizar calendario (usePermisosMes)
       const fechaObj = new Date(asunto.fecha);
       const month = fechaObj.getMonth();
       const year = fechaObj.getFullYear();
       const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
       const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
-      queryClient.invalidateQueries({ queryKey: ["permisos", "calendario", start, end] });
+
+      // invalidar queries
+      queryClient.invalidateQueries(["reservasPanel", user.username]);
+      queryClient.invalidateQueries(["panel", "permisos", user.username]);
+      queryClient.invalidateQueries(["permisos"]);
 
       onSuccess?.();
       onClose();
@@ -106,7 +106,7 @@ export function DialogoEditarAsunto({ open, onClose, asunto, onSuccess }) {
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg"
+        className="p-0 overflow-hidden rounded-lg border-none"
       >
         {/* ENCABEZADO */}
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">

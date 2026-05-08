@@ -47,7 +47,7 @@ export function DialogoEliminarPeriodo({
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
-        className="p-0 overflow-hidden rounded-lg sm:max-w-[425px]"
+        className="p-0 overflow-hidden rounded-lg sm:max-w-[425px] border-none"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader className="bg-red-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">

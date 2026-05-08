@@ -46,7 +46,7 @@ export function DialogoResumenReservaPeriodica({ open, setOpen, resumen }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen} modalmodal={true}>
-      <DialogContent className="p-0 overflow-hidden rounded-lg">
+      <DialogContent className="p-0 overflow-hidden rounded-lg border-none">
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             {esActualizacion

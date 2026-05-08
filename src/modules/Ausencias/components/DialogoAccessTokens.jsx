@@ -137,7 +137,7 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 rounded-lg w-[600px] flex flex-col"
+        className="p-0 rounded-lg w-[600px] flex flex-col border-none"
       >
         <DialogHeader className="bg-green-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <div className="flex items-center gap-3">

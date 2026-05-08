@@ -166,7 +166,7 @@ export function DialogoImportarHorariosUNTIS({ open, onOpenChange }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange} modal>
       <DialogContent
-        className="p-0 rounded-lg w-[500px] flex flex-col overflow-hidden"
+        className="p-0 rounded-lg w-[500px] flex flex-col overflow-hidden border-none"
         onInteractOutside={(e) => e.preventDefault()}
       >
         {/* Header */}

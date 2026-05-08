@@ -30,14 +30,14 @@ const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
 export function usePermisosMes({ month, year }) {
-  // 1. Validamos que month y year sean números válidos antes de hacer nada
-  const isDataReady =
-    typeof month === "number" &&
-    typeof year === "number" &&
-    !isNaN(month) &&
-    !isNaN(year);
+  // 1. Verificamos que existan datos válidos
+  const isDataReady = typeof month === "number" && typeof year === "number";
 
-  // 2. Solo calculamos las fechas si los datos son correctos
+  console.log("Month: ", month);
+  console.log("Year: ", year);
+  
+  // 2. Calculamos fechas solo si tenemos los datos
+  // Usamos month + 1 porque JS cuenta meses de 0 a 11, pero la API quiere 01 a 12
   const start = isDataReady
     ? `${year}-${String(month + 1).padStart(2, "0")}-01`
     : null;
@@ -49,7 +49,6 @@ export function usePermisosMes({ month, year }) {
   return useQuery({
     queryKey: ["permisos", "calendario", start, end],
     queryFn: async () => {
-      // Por si acaso, doble verificación antes de disparar el fetch
       if (!start || !end) return [];
 
       const res = await fetch(
@@ -61,9 +60,8 @@ export function usePermisosMes({ month, year }) {
       const data = await res.json();
       return data.asuntos || [];
     },
-    // 3. ESTA ES LA CLAVE: enabled evita que la query se ejecute si es false
-    enabled: isDataReady && !!start && !!end,
-
+    // Si no hay fechas, la query no se dispara
+    enabled: !!start && !!end,
     placeholderData: (previousData) => previousData,
     staleTime: 1000 * 60 * 10,
   });

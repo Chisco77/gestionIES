@@ -40,6 +40,8 @@ import {
 import { toast } from "sonner";
 import { SelectorField } from "@/modules/Comunes/SelectorField";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 export function DialogoEditarCeldaHorario({
   open,
   onClose,
@@ -55,6 +57,8 @@ export function DialogoEditarCeldaHorario({
   const [materia, setMateria] = useState(null);
   const [gruposSeleccionados, setGruposSeleccionados] = useState([]); // Array de objetos {id, label}
   const [estancia, setEstancia] = useState(null);
+
+  const queryClient = useQueryClient();
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -146,6 +150,11 @@ export function DialogoEditarCeldaHorario({
       if (!res.ok || !data.ok)
         throw new Error(data.error || "Error al actualizar");
 
+      // Invalidamos query para actualizar caché de profes de guardia (por si la celda editada era una guardia)
+      queryClient.invalidateQueries({
+        queryKey: ["profes-guardia"],
+      });
+
       toast.success("Celda actualizada");
 
       // 4. Devolvemos el objeto actualizado al padre
@@ -183,7 +192,7 @@ export function DialogoEditarCeldaHorario({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="p-0 max-w-6xl"
+        className="p-0 max-w-6xl border-none"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader className="bg-green-600 text-white py-3 px-6 text-center">

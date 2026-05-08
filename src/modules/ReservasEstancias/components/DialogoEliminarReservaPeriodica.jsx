@@ -80,7 +80,7 @@ export function DialogoEliminarReservaPeriodica({
     <Dialog open={open} onOpenChange={onOpenChange} modal>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg"
+        className="p-0 overflow-hidden rounded-lg border-none"
       >
         {/* HEADER */}
         <DialogHeader className="bg-red-600 text-white rounded-t-lg py-3 px-6 text-center">

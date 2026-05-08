@@ -112,7 +112,7 @@ export function DialogoEditarTareas({ open, onClose, ausencia, onSuccess }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="sm:max-w-[550px] border-t-4 border-t-blue-500"
+        className="sm:max-w-[550px] border-t-4 border-t-blue-500 border-none"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader className="space-y-4">

@@ -73,7 +73,7 @@ export function DialogoSeleccionarMes({ open, onOpenChange, onConfirmar }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 rounded-lg w-[400px]"
+        className="p-0 rounded-lg w-[400px] border-none"
       >
         <DialogHeader className="bg-blue-700 text-white rounded-t-lg py-3 px-6">
           <DialogTitle className="text-center flex items-center justify-center gap-2">

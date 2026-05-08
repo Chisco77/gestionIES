@@ -87,7 +87,7 @@ export function DialogoEliminarReserva({
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg"
+        className="p-0 overflow-hidden rounded-lg border-none"
       >
         {/* ENCABEZADO ROJO */}
         <DialogHeader className="bg-red-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">

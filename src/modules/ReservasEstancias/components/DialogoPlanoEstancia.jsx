@@ -32,7 +32,7 @@ export function DialogoPlanoEstancia({ open, onClose, estancia }) {
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg max-w-6xl w-[92vw] h-[90vh] max-h-[90vh] flex flex-col border-none shadow-2xl bg-white"
+        className="p-0 overflow-hidden rounded-lg max-w-6xl w-[92vw] h-[90vh] max-h-[90vh] flex flex-col border-none shadow-2xl bg-white border-none"
       >
         <DialogHeader className="bg-green-600 text-white flex flex-col items-center justify-center py-3 px-8 border-b border-green-700 shrink-0">
           <DialogTitle className="text-xl font-bold tracking-tight text-center">

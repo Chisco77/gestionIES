@@ -276,7 +276,7 @@ export function DialogoEditarExtraescolar({
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
-        className="p-0 overflow-hidden rounded-lg max-w-5xl w-full flex flex-col max-h-[95vh]"
+        className="p-0 overflow-hidden rounded-lg max-w-5xl w-full flex flex-col max-h-[95vh] border-none"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader className="py-4 px-6 text-white bg-green-600 relative flex flex-row items-center justify-center space-y-0">

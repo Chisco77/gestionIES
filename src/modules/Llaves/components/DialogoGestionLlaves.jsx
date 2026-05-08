@@ -240,7 +240,7 @@ export function DialogoGestionLlaves({
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent
           onInteractOutside={(e) => e.preventDefault()}
-          className="p-0 rounded-lg h-[610px] flex flex-col"
+          className="p-0 rounded-lg h-[610px] flex flex-col border-none"
         >
           {/* CABECERA */}
           <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">

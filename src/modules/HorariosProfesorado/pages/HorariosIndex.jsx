@@ -61,6 +61,13 @@ import { DialogoEditarHorario } from "../components/DialogoEditarHorario";
 import { DialogoAsignarHorario } from "../components/DialogoAsignarHorario";
 import { generarPdfHorariosProfesores } from "@/Informes/horarios";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 export function HorariosIndex() {
   const [profesoresFiltrados, setProfesoresFiltrados] = useState([]);
   const [profesorSeleccionado, setProfesorSeleccionado] = useState(null);
@@ -85,10 +92,12 @@ export function HorariosIndex() {
 
   const handleEliminar = (profesor) => {
     if (!profesor) {
-      alert("Selecciona un profesor para eliminar.");
+      alert("Selecciona un horario de profesor para eliminar.");
       return;
     }
-    alert(`Eliminación de profesor ${profesor.uid}: No implementado`);
+    alert(
+      `Eliminación de horario de profesor ${profesor.uid}: No implementado`
+    );
   };
 
   const handleEditarHorario = (seleccionado) => {
@@ -192,48 +201,68 @@ export function HorariosIndex() {
           }
           acciones={(seleccionado) => (
             <>
-              <Button variant="outline" size="icon" disabled={true}>
-                <Plus className="w-4 h-4" />
-              </Button>
+              <TooltipProvider>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" disabled={true}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
 
-              {/* Botón Editar horario */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  if (!seleccionado) return;
-                  setProfesorSeleccionado(seleccionado); // Guardamos profesor
-                  setEmpleadoSeleccionado(seleccionado); // Si quieres usar empleado
-                  setAbrirEditar(true); // Abrimos diálogo editar
-                }}
-                disabled={!seleccionado}
-              >
-                <Pencil className="w-4 h-4" />
-              </Button>
+                  {/* Botón Editar horario */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          if (!seleccionado) return;
+                          setProfesorSeleccionado(seleccionado); // Guardamos profesor
+                          setEmpleadoSeleccionado(seleccionado); // Si quieres usar empleado
+                          setAbrirEditar(true); // Abrimos diálogo editar
+                        }}
+                        disabled={!seleccionado}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
 
-              {/* Botón Eliminar */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleEliminar(seleccionado)}
-                disabled={true}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+                    <TooltipContent>
+                      <p>Editar horario</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-              {/* Botón Duplicar horario */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  if (!seleccionado) return;
-                  setProfesorSeleccionado(seleccionado); // Guardamos profesor de la fila
-                  setAbrirAsignarHorario(true); // Abrimos diálogo duplicar
-                }}
-                disabled={!seleccionado}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
+                  {/* Botón Eliminar */}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEliminar(seleccionado)}
+                    disabled={true}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+
+                  {/* Botón Duplicar horario */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          if (!seleccionado) return;
+                          setProfesorSeleccionado(seleccionado); // Guardamos profesor de la fila
+                          setAbrirAsignarHorario(true); // Abrimos diálogo duplicar
+                        }}
+                        disabled={!seleccionado}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+
+                    <TooltipContent>
+                      <p>Asignar este horario a otro profesor</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
             </>
           )}
         />

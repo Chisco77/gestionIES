@@ -37,6 +37,8 @@ import {
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import { toast } from "sonner";
 
 export function DialogoEliminarCeldaHorario({
@@ -46,6 +48,8 @@ export function DialogoEliminarCeldaHorario({
   onEliminar,
 }) {
   const API_URL = import.meta.env.VITE_API_URL;
+
+  const queryClient = useQueryClient();
 
   const handleEliminar = async () => {
     console.log("Eliminando ID:", celda.id); // Si aquí sale "undefined", el problema es el paso de datos anterior
@@ -59,6 +63,11 @@ export function DialogoEliminarCeldaHorario({
 
       const data = await res.json();
       if (!data.ok) throw new Error(data.error);
+
+      // Invalidamos query para actualizar caché de profes de guardia (por si la celda eliminada era una guardia)
+      queryClient.invalidateQueries({
+        queryKey: ["profes-guardia"],
+      });
 
       toast.success("Celda eliminada");
 

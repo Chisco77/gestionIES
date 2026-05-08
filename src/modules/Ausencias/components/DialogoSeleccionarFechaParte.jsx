@@ -72,7 +72,7 @@ export function DialogoSeleccionarFechaParte({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 rounded-lg w-[420px]"
+        className="p-0 rounded-lg w-[420px] border-none"
       >
         <DialogHeader className="bg-blue-600 text-white rounded-t-lg py-3 px-6">
           <DialogTitle className="text-center">

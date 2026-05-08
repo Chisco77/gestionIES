@@ -18,7 +18,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Trash2, CalendarIcon } from "lucide-react";
+import { Trash2, CalendarIcon, CalendarDays } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -291,12 +291,12 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 rounded-lg h-[750px] w-[900px] flex flex-col overflow-hidden"
+        className="p-0 rounded-xl h-[750px] w-[900px] flex flex-col overflow-hidden border-none"
       >
         {/* HEADER: Fijo arriba */}
-        <DialogHeader className="bg-green-500 text-white flex items-center justify-center py-4 px-6 shrink-0">
-          <DialogTitle className="text-lg font-semibold text-center leading-snug">
-            Restricciones de Asuntos Propios
+     <DialogHeader className="bg-green-600 text-white flex items-center justify-center py-5 px-6 shrink-0">
+          <DialogTitle className="text-xl font-bold flex items-center gap-3">
+            <CalendarDays className="w-5 h-5" /> Restricciones de Asuntos Propios
           </DialogTitle>
         </DialogHeader>
 

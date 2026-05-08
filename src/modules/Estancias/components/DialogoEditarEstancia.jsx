@@ -120,7 +120,7 @@ export function DialogoEditarEstancia({
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg"
+        className="p-0 overflow-hidden rounded-lg border-none"
       >
         {/* ENCABEZADO */}
         <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">

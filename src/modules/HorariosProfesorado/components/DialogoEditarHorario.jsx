@@ -26,6 +26,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
@@ -186,7 +187,7 @@ export function DialogoEditarHorario({ open, onClose, usuarioSeleccionado }) {
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg max-w-6xl w-full"
+        className="p-0 overflow-hidden rounded-lg max-w-6xl w-full border-none"
       >
         {/* ENCABEZADO */}
         <DialogHeader className="bg-blue-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">

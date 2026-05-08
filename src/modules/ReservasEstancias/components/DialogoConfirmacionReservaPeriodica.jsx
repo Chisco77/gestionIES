@@ -100,7 +100,7 @@ export function DialogoConfirmacionReservaPeriodica({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modalmodal={true}>
-      <DialogContent  onInteractOutside={(e) => e.preventDefault()} className="p-0 overflow-hidden rounded-lg">
+      <DialogContent  onInteractOutside={(e) => e.preventDefault()} className="p-0 overflow-hidden rounded-lg border-none">
         {/* HEADER */}
         <DialogHeader
           className={`${colorHeader} text-white rounded-t-lg py-3 px-6 text-center`}

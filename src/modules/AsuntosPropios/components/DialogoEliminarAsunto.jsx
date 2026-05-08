@@ -28,7 +28,12 @@ import { toast } from "sonner";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 
-export function DialogoEliminarAsunto({ open, onOpenChange, asunto, onDeleteSuccess }) {
+export function DialogoEliminarAsunto({
+  open,
+  onOpenChange,
+  asunto,
+  onDeleteSuccess,
+}) {
   if (!asunto) return null;
 
   const API_URL = import.meta.env.VITE_API_URL;
@@ -50,16 +55,19 @@ export function DialogoEliminarAsunto({ open, onOpenChange, asunto, onDeleteSucc
     onSuccess: () => {
       toast.success("Asunto propio eliminado correctamente");
 
-      // 1️⃣ Actualizar PanelReservas
-      queryClient.invalidateQueries(["reservasPanel", user.username]);
+      
 
-      // 2️⃣ Actualizar calendario (usePermisosMes)
+      // Actualizar calendario (usePermisosMes)
       const fechaObj = new Date(asunto.fecha);
       const month = fechaObj.getMonth();
       const year = fechaObj.getFullYear();
       const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
       const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
-      queryClient.invalidateQueries({ queryKey: ["permisos", "calendario", start, end] });
+      
+      // Invalidar queries
+      queryClient.invalidateQueries(["reservasPanel", user.username]);
+      queryClient.invalidateQueries(["permisos"]);
+      queryClient.invalidateQueries(["panel", "permisos", user.username]);
 
       queryClient.invalidateQueries(["notificacionesDirectiva"]);
 
@@ -80,7 +88,7 @@ export function DialogoEliminarAsunto({ open, onOpenChange, asunto, onDeleteSucc
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg"
+        className="p-0 overflow-hidden rounded-lg border-none"
       >
         {/* ENCABEZADO ROJO */}
         <DialogHeader className="bg-red-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">

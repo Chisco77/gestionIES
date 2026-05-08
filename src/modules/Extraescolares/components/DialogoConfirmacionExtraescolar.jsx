@@ -90,7 +90,7 @@ export function DialogoConfirmacionExtraescolar({
     <Dialog open={open} onOpenChange={setOpen} modal>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg max-w-lg"
+        className="p-0 overflow-hidden rounded-lg max-w-lg border-none"
       >
         <DialogHeader
           className={`${

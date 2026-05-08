@@ -203,7 +203,7 @@ export function DialogoConfirmacion({
     <Dialog open={open} onOpenChange={setOpen} modal>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg"
+        className="p-0 overflow-hidden rounded-lg border-none"
       >
         <DialogHeader
           className={`${

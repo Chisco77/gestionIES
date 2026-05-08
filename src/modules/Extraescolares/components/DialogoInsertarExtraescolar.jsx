@@ -172,6 +172,8 @@ export function DialogoInsertarExtraescolar({
     },
     onSuccess: (act) => {
       queryClient.invalidateQueries(["extraescolares"]);
+      queryClient.invalidateQueries(["reservasPanel", user.username]);
+      queryClient.invalidateQueries(["notificacionesDirectiva"]);
       toast.success("Actividad creada correctamente", {
         description: act.titulo,
       });
@@ -246,7 +248,7 @@ export function DialogoInsertarExtraescolar({
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
-      <DialogContent className="p-0 overflow-hidden rounded-lg max-w-5xl w-full flex flex-col max-h-[95vh]">
+      <DialogContent className="p-0 overflow-hidden rounded-lg max-w-5xl w-full flex flex-col max-h-[95vh] border-none">
         <DialogHeader className="py-4 px-6 text-white bg-blue-600 flex flex-row items-center justify-center space-y-0">
           <DialogTitle className="text-xl font-bold">
             Nueva Solicitud de Actividad

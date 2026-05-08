@@ -164,7 +164,7 @@ export function DialogoInsertarCeldaHorario({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="p-0 max-w-6xl"
+        className="p-0 max-w-6xl border-none"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader className="bg-blue-600 text-white py-3 px-6 text-center">

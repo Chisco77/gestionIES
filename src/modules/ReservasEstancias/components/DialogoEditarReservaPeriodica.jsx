@@ -210,7 +210,7 @@ export function DialogoEditarReservaPeriodica({
       <Dialog open={open} onOpenChange={onClose} modal={true}>
         <DialogContent
           onInteractOutside={(e) => e.preventDefault()}
-          className="p-0 overflow-hidden rounded-lg"
+          className="p-0 overflow-hidden rounded-lg border-none"
         >
           <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
             <DialogTitle className="text-lg font-semibold text-center leading-snug">

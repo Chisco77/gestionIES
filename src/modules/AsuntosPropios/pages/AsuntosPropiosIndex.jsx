@@ -79,6 +79,8 @@ export function AsuntosPropiosIndex() {
   const { data: periodos } = usePeriodosHorarios();
   const { data: permisosEspeciales = [] } = useAsuntosPermitidosUid(uid);
 
+  console.log("Asuntos Propios: ", asuntosPropios);
+
   // filtrar solo asuntos propios
   const asuntosPropiosFiltrados = (asuntosPropios || []).filter(
     (a) => Number(a.tipo) === 13
@@ -105,13 +107,21 @@ export function AsuntosPropiosIndex() {
       rangosBloqueados = [];
     }
   }
+  console.log("Current month: ", currentMonth);
+  console.log("Current year: ", currentYear);
 
   // === Hook para asuntos del mes ===
+  /*const { data: asuntosPropiosMes = [], refetch: refetchAsuntosMes } =
+    usePermisosMes(currentYear, currentMonth + 1);*/
+
   const { data: asuntosPropiosMes = [], refetch: refetchAsuntosMes } =
-    usePermisosMes(
-      currentYear,
-      currentMonth + 1 // el hook espera mes 1-12
-    );
+    usePermisosMes({
+      // 
+      year: currentYear,
+      month: currentMonth,
+    });
+
+  console.log("Permisos mes: ", asuntosPropiosMes);
 
   // --- Función para recargar PanelReservas ---
   const recargarPanel = () => setReloadPanel((r) => r + 1);
@@ -160,7 +170,6 @@ export function AsuntosPropiosIndex() {
     autorizacionesUsuario[fecha] = p;
   });
 
-  
   // --- Handlers calendario ---
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
