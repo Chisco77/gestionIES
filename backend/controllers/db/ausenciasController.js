@@ -122,7 +122,7 @@ async function getAusenciasEnriquecidas(req, res) {
       }, {});
     }
 
-    // --- NUEVO: Enriquecimiento de Permisos (Siguiendo tu lógica) ---
+    // --- NUEVO: Enriquecimiento de Permisos
     const permisosIds = [
       ...new Set(ausencias.map((a) => a.idpermiso).filter(Boolean)),
     ];
@@ -138,7 +138,7 @@ async function getAusenciasEnriquecidas(req, res) {
       }, {});
     }
 
-    // --- NUEVO: Enriquecimiento de Extraescolares (Siguiendo tu lógica) ---
+    // --- NUEVO: Enriquecimiento de Extraescolares
     const extraIds = [
       ...new Set(ausencias.map((a) => a.idextraescolar).filter(Boolean)),
     ];

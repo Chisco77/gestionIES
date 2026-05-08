@@ -120,10 +120,10 @@ export function AusenciasIndex() {
   };
 
   /**
-   * handleConfirmarGenerarPdfAusenciasMes
+   * handleConfirmarGenerarPdfFaltasMes
    * Procesa la generación de informes mensuales basados en la selección.
    */
-  const handleConfirmarGenerarPdfAusenciasMes = async (mesesSeleccionados) => {
+  const handleConfirmarGenerarPdfFaltasMes = async (mesesSeleccionados) => {
     const nombresMeses = {
       9: "Septiembre",
       10: "Octubre",
@@ -138,8 +138,7 @@ export function AusenciasIndex() {
     };
 
     const hoy = new Date();
-    // Usamos let si planeamos cambiar el valor, aunque aquí con const debería bastar
-    // si solo se calcula una vez por ejecución.
+
     const cursoInicioAnio =
       hoy.getMonth() + 1 >= 9 ? hoy.getFullYear() : hoy.getFullYear() - 1;
     const cursoTexto = `${cursoInicioAnio}/${cursoInicioAnio + 1}`;
@@ -160,7 +159,8 @@ export function AusenciasIndex() {
           const fechaInicioDoc = new Date(a.fecha_inicio);
           const mesAusencia = fechaInicioDoc.getMonth() + 1;
           const anioAusencia = fechaInicioDoc.getFullYear();
-
+          // Un profesor que está en una actividad extraescolar no genera una FALTA.
+          // FALTA NO ES LO MISMO QUE AUSENCIA. FALTA es que no acude a trabajar, ya sea al centro o donde le toque
           return (
             mesAusencia === mesId &&
             anioAusencia === anioParaFiltro &&
@@ -168,7 +168,6 @@ export function AusenciasIndex() {
             !a.idextraescolar
           );
         });
-
         if (ausenciasDelMes.length === 0) {
           toast.info(`No hay faltas para ${nombresMeses[mesId]}`);
           continue;
@@ -351,8 +350,7 @@ export function AusenciasIndex() {
                     Ausencias
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setAbrirDialogoMes(true)}>
-                    <CalendarOff className="mr-2 h-4 w-4" /> Parte mensual de
-                    Ausencias
+                    <CalendarOff className="mr-2 h-4 w-4" /> Parte mensual de Faltas
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -482,7 +480,7 @@ export function AusenciasIndex() {
       <DialogoSeleccionarMes
         open={abrirDialogoMes}
         onOpenChange={setAbrirDialogoMes}
-        onConfirmar={handleConfirmarGenerarPdfAusenciasMes}
+        onConfirmar={handleConfirmarGenerarPdfFaltasMes}
       />
 
       {/* Diálogo para Insertar Ausencia Manual */}

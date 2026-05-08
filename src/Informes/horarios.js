@@ -632,11 +632,11 @@ export async function generarParteDiarioAusencias(
   // --- PIE DE PÁGINA ---
   drawFooter(doc); // Añadimos el pie de página antes de guardar[cite: 2]
 
-  doc.save(`Parte_Ausencias_${format(fecha, "yyyy-MM-dd")}.pdf`);
+  doc.save(`Parte_Faltas_${format(fecha, "yyyy-MM-dd")}.pdf`);
 }
 
 /**
- * Genera el PDF del Parte Mensual de Ausencias
+ * Genera el PDF del Parte Mensual de falats
  * @param {Array} datos - Lista de ausencias
  * @param {Object} meta - Metadatos (mes, curso, etc.)
  * @param {String} logoUrl - URL del logo resuelta
@@ -707,7 +707,7 @@ export async function generarParteMensualAusencias(
     return yPos + 8;
   };
 
-  const tituloHeader = `PARTE MENSUAL DE AUSENCIAS - ${meta.mesNombre.toUpperCase()} (Curso ${meta.cursoAcademico})`;
+  const tituloHeader = `PARTE MENSUAL DE FALTAS - ${meta.mesNombre.toUpperCase()} (Curso ${meta.cursoAcademico})`;
   let currentY = drawHeader(doc, tituloHeader, logoUrl);
 
   currentY = drawHeadersTabla(currentY);
