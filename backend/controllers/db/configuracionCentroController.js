@@ -21,9 +21,9 @@ const { buscarPorUid } = require("../ldap/usuariosController");
 async function getConfiguracionCentro(req, res) {
   try {
     const ldapSession = req.session?.ldap;
-    if (!ldapSession) {
+    /*if (!ldapSession) {
       return res.status(401).json({ ok: false, error: "No autenticado" });
-    }
+    }*/
 
     const { rows } = await db.query(
       `SELECT 
