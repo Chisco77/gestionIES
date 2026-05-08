@@ -72,10 +72,18 @@ async function getExtraescolaresEnriquecidos(req, res) {
       vals.push(finCurso, inicioCurso);
     }
 
-    if (uid) {
+    /*if (uid) {
       filtros.push(`e.uid = $${++i}`);
       vals.push(uid);
+    }*/
+
+    // --- LÓGICA DE FILTRADO POR USUARIO (Creador o Responsable) ---
+    if (uid) {
+      // Buscamos donde el uid sea el creador O esté contenido en el array de responsables
+      filtros.push(`(e.uid = $${++i} OR $${i} = ANY(e.responsables_uids))`);
+      vals.push(uid);
     }
+    
     if (tipo) {
       filtros.push(`e.tipo ILIKE $${++i}`);
       vals.push(`%${tipo}%`);

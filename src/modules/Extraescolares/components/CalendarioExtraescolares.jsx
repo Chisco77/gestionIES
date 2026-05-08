@@ -15,7 +15,6 @@ const formatDateKey = (date) => {
 };
 
 export function CalendarioExtraescolares({
-  uid,
   onSelectDate,
   disableInsert = false,
 }) {

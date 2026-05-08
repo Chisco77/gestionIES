@@ -18,7 +18,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Trash2, File } from "lucide-react";
+import { Loader2, Trash2, File, CalendarIcon } from "lucide-react";
 import { DialogoEditarAsunto } from "../AsuntosPropios/components/DialogoEditarAsunto";
 import { DialogoEliminarAsunto } from "../AsuntosPropios/components/DialogoEliminarAsunto";
 import { DialogoEditarReserva } from "../ReservasEstancias/components/DialogoEditarReserva";
@@ -458,7 +458,22 @@ export function PanelReservas({ uid, loading = false }) {
 
   const renderActividadesExtraescolares = () => {
     if (!extraescolares.length)
-      return <p className="text-gray-500 text-center">No hay actividades</p>;
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center p-10 border-2 border-dashed rounded-xl bg-slate-50/50">
+            <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
+
+            <h3 className="mt-4 text-lg font-medium text-slate-600">
+              No hay actividades
+            </h3>
+
+            <p className="text-muted-foreground">
+              No se han registrado actividades extraescolares en las que
+              participes
+            </p>
+          </div>
+        </div>
+      );
 
     const estadoMap = {
       0: { text: "Pendiente", color: "text-yellow-600 bg-yellow-100" },

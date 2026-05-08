@@ -21,7 +21,7 @@ export function useExtraescolaresAll() {
 
       const data = await res.json();
 
-      // Estructuras posibles, igual que en useExtraescolaresUid
+      // Estructuras posibles
       if (Array.isArray(data)) return data;
       if (Array.isArray(data?.actividades)) return data.actividades;
       if (Array.isArray(data?.extraescolares)) return data.extraescolares;

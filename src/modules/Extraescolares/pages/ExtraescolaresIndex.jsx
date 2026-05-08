@@ -11,7 +11,7 @@ export function ExtraescolaresIndex() {
   return (
     <div className="p-4 space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <CalendarioExtraescolares uid={uid} />
+        <CalendarioExtraescolares />
 
         <div className="h-full">
           <PanelReservas uid={uid} />
