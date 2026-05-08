@@ -5,7 +5,6 @@ const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
 export function usePermisosUid(uid) {
-  console.log ("Permisosuid: ", uid);
   return useQuery({
     // Incluimos "curso-actual" para que la caché se limpie al cambiar de año escolar
     queryKey: ["panel", "permisos", uid, "curso-actual"],

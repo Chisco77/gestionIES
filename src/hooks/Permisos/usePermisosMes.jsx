@@ -33,8 +33,6 @@ export function usePermisosMes({ month, year }) {
   // 1. Verificamos que existan datos válidos
   const isDataReady = typeof month === "number" && typeof year === "number";
 
-  console.log("Month: ", month);
-  console.log("Year: ", year);
   
   // 2. Calculamos fechas solo si tenemos los datos
   // Usamos month + 1 porque JS cuenta meses de 0 a 11, pero la API quiere 01 a 12
