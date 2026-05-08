@@ -706,6 +706,8 @@ export default function PlanoEstanciasEdicion() {
                         <SelectItem value="sin-asignar">Sin asignar</SelectItem>
                         <SelectItem value="Llavera 1">Llavera 1</SelectItem>
                         <SelectItem value="Llavera 2">Llavera 2</SelectItem>
+                        <SelectItem value="Llavera 3">Llavera 3</SelectItem>
+                        <SelectItem value="Llavera 4">Llavera 4</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

@@ -47,7 +47,7 @@
  */
 
 import { jsPDF } from "jspdf";
-import { drawHeader, drawFooter, addPageWithHeader } from "./utils";
+import { drawHeader, drawFooter } from "./utils";
 
 import { MAPEO_TIPOS_PERMISOS } from "@/utils/mapeoTiposPermisos";
 
@@ -482,7 +482,7 @@ export function generatePermisosPdf({ empleado, permiso, periodos, directora }) 
   doc.save(`Anexo_V_Permiso_${apellidoUsuario}.pdf`);
 }
 
-export function generateListadoPermisosProfesores(permisos = []) {
+export function generateListadoPermisosProfesores(permisos = [], logoUrl) {
   if (!permisos?.length) {
     alert("No hay permisos para generar el informe.");
     return;
@@ -523,7 +523,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
   const nombresProfesores = Object.keys(permisosPorProfesor).sort();
 
   // 🔹 Cabecera corporativa inicial
-  y = drawHeader(doc, "Listado de Permisos por Profesor");
+  y = drawHeader(doc, "Listado de Permisos por Profesor", logoUrl);
   resetContentStyle();
 
   // 🔹 Información resumen inicial
@@ -569,7 +569,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
     const minSpaceNeeded = 10 + 8 + firstRowHeight + resumenHeight;
     if (y + minSpaceNeeded > pageHeight - marginBottom) {
       doc.addPage();
-      y = drawHeader(doc, "Listado de Permisos por Profesor");
+      y = drawHeader(doc, "Listado de Permisos por Profesor", logoUrl);
       resetContentStyle();
     }
 
@@ -602,7 +602,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
 
       if (y + rowHeight + resumenHeight > pageHeight - marginBottom) {
         doc.addPage();
-        y = drawHeader(doc, "Listado de Permisos por Profesor");
+        y = drawHeader(doc, "Listado de Permisos por Profesor", logoUrl);
         resetContentStyle();
         printTableHeader();
       }
@@ -639,7 +639,7 @@ export function generateListadoPermisosProfesores(permisos = []) {
 
     if (y + totalHeightNeeded > pageHeight - marginBottom) {
       doc.addPage();
-      y = drawHeader(doc, "Listado de Permisos por Profesor");
+      y = drawHeader(doc, "Listado de Permisos por Profesor",logoUrl);
       resetContentStyle();
     }
 

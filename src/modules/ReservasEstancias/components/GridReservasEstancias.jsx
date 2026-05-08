@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { generateCalendarioOcupacionPorEstancia } from "@/Informes/reservas";
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
 
 export function GridReservasEstancias({
   uid,
@@ -84,6 +85,8 @@ export function GridReservasEstancias({
     setAbrirDialogoEditarReservaPeriodica,
   ] = useState(false);
   const [reservaEditarPeriodica, setReservaEditarPeriodica] = useState(null);
+
+  const { data: centro } = useConfiguracionCentro(); // Traemos los datos del centro
 
   // Handler para abrir el diálogo de edición de reserva periódica
   const handleEditarReservaPeriodica = (reserva) => {
@@ -189,6 +192,10 @@ export function GridReservasEstancias({
   };
 
   const handleGenerarCalendarioOcupacionPorEstancia = async () => {
+    const urlParaPdf =
+      typeof resolverRutaLogo === "function"
+        ? resolverRutaLogo(centro?.logoCentroUrl)
+        : centro?.logoCentroUrl;
     try {
       if (!tipoEstancia) {
         toast.info("Selecciona un tipo de estancia.");

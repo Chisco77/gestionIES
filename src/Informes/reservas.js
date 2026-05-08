@@ -48,10 +48,14 @@
  */
 
 import jsPDF from "jspdf";
-import { drawHeader, drawFooter, addPageWithHeader } from "./utils";
+import { drawHeader, drawFooter } from "./utils";
 import { addMonths } from "date-fns";
 
-export const generateInformeReservasPeriodicas = (reservas, periodosDB) => {
+export const generateInformeReservasPeriodicas = (
+  reservas,
+  periodosDB,
+  logoUrl
+) => {
   if (!reservas?.length) {
     alert("No hay reservas periódicas.");
     return;
@@ -74,7 +78,7 @@ export const generateInformeReservasPeriodicas = (reservas, periodosDB) => {
   };
 
   // 🔹 Cabecera corporativa inicial
-  y = drawHeader(doc, "Informe de Reservas Periódicas");
+  y = drawHeader(doc, "Informe de Reservas Periódicas", logoUrl);
   resetContentStyle();
 
   // 🔹 Configuración columnas
@@ -152,7 +156,7 @@ export const generateInformeReservasPeriodicas = (reservas, periodosDB) => {
     // 🔹 Cada aula en una página nueva (excepto la primera)
     if (index > 0) {
       doc.addPage();
-      y = drawHeader(doc, "Informe de Reservas Periódicas");
+      y = drawHeader(doc, "Informe de Reservas Periódicas", logoUrl);
       resetContentStyle();
     }
 
@@ -219,7 +223,7 @@ export const generateInformeReservasPeriodicas = (reservas, periodosDB) => {
 
       if (y + rowHeight > pageHeight - marginBottom - 5) {
         doc.addPage();
-        y = drawHeader(doc, "Informe de Reservas Periódicas");
+        y = drawHeader(doc, "Informe de Reservas Periódicas", logoUrl);
         resetContentStyle();
         drawTableHeader();
       }
@@ -246,7 +250,8 @@ export const generateInformeReservasPeriodicas = (reservas, periodosDB) => {
 
 export const generateInformeReservasPeriodicasProfesor = (
   reservas,
-  periodosDB
+  periodosDB,
+  logoUrl
 ) => {
   if (!reservas?.length) {
     alert("No hay reservas periódicas.");
@@ -269,7 +274,7 @@ export const generateInformeReservasPeriodicasProfesor = (
   };
 
   // 🔹 Cabecera inicial
-  y = drawHeader(doc, "Informe de Reservas Periódicas por Profesor");
+  y = drawHeader(doc, "Informe de Reservas Periódicas por Profesor", logoUrl);
   resetContentStyle();
 
   // 🔹 Columnas: Aula → Días → Periodo → Fecha desde → Fecha hasta
@@ -334,7 +339,11 @@ export const generateInformeReservasPeriodicasProfesor = (
     // Cada profesor en página nueva
     if (index > 0) {
       doc.addPage();
-      y = drawHeader(doc, "Informe de Reservas Periódicas por Profesor");
+      y = drawHeader(
+        doc,
+        "Informe de Reservas Periódicas por Profesor",
+        logoUrl
+      );
       resetContentStyle();
     }
 
@@ -390,7 +399,11 @@ export const generateInformeReservasPeriodicasProfesor = (
 
       if (y + rowHeight > pageHeight - marginBottom - 5) {
         doc.addPage();
-        y = drawHeader(doc, "Informe de Reservas Periódicas por Profesor");
+        y = drawHeader(
+          doc,
+          "Informe de Reservas Periódicas por Profesor",
+          logoUrl
+        );
         resetContentStyle();
         drawTableHeader();
       }
@@ -414,7 +427,8 @@ export const generateInformeReservasPeriodicasProfesor = (
 export function generateCalendarioOcupacionPorEstancia(
   resultados = [],
   periodosDB = [],
-  { tipoEstancia, desde, hasta }
+  { tipoEstancia, desde, hasta },
+  logoUrl
 ) {
   const doc = new jsPDF({
     unit: "mm",
@@ -487,7 +501,8 @@ export function generateCalendarioOcupacionPorEstancia(
         .toUpperCase();
       const yInicio = drawHeader(
         doc,
-        `Calendario de ocupación - ${estancia.descripcion} ${mesTexto}`
+        `Calendario de ocupación - ${estancia.descripcion} ${mesTexto}`,
+        logoUrl
       );
 
       // 🔹 Dibujar calendario

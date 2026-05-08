@@ -1,4 +1,3 @@
-import { getCursoActual } from "@/utils/fechasHoras";
 import jsPDF from "jspdf";
 import { drawHeader, drawFooter, addPageWithHeader } from "./utils";
 

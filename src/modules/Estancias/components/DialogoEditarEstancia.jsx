@@ -180,6 +180,8 @@ export function DialogoEditarEstancia({
               <option value="">Seleccionar llavera</option>
               <option value="Llavera 1">Llavera 1</option>
               <option value="Llavera 2">Llavera 2</option>
+              <option value="Llavera 3">Llavera 3</option>
+              <option value="Llavera 4">Llavera 4</option>
             </select>
           </div>
 

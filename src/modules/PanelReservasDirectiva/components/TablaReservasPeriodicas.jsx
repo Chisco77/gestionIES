@@ -2,7 +2,7 @@
  * TablaReservasPeriodicas.jsx
  *
  * Componente principal para la gestión y visualización de reservas periódicas.
- * Una reserva periódica, en general, es creada por la directiva a principio de curso y 
+ * Una reserva periódica, en general, es creada por la directiva a principio de curso y
  * determina el uso que se le va a dar a un aula durante todo el curso.
  *
  * FUNCIONALIDAD PRINCIPAL:
@@ -118,6 +118,9 @@ import { DialogoEliminarReservaPeriodica } from "@/modules/ReservasEstancias/com
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { generateInformeReservasPeriodicas } from "@/Informes/reservas";
 import { generateInformeReservasPeriodicasProfesor } from "@/Informes/reservas";
+
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+
 import { toast } from "sonner";
 
 export function TablaReservasPeriodicas() {
@@ -125,6 +128,7 @@ export function TablaReservasPeriodicas() {
   const [columnFilters, setColumnFilters] = useState([]);
 
   const { data: reservas = [], isLoading } = useReservasPeriodicasTodas();
+  const { data: centro } = useConfiguracionCentro(); // Traemos los datos del centro
 
   const [openEditar, setOpenEditar] = useState(false);
   const [reservaSeleccionada, setReservaSeleccionada] = useState(null);
@@ -138,6 +142,11 @@ export function TablaReservasPeriodicas() {
   ).sort();
 
   const handleGenerarInformeReservasPeriodicas = () => {
+    const urlParaPdf =
+      typeof resolverRutaLogo === "function"
+        ? resolverRutaLogo(centro?.logoCentroUrl)
+        : centro?.logoCentroUrl;
+
     const filasFiltradas = table
       .getFilteredRowModel()
       .rows.map((row) => row.original);
@@ -145,10 +154,15 @@ export function TablaReservasPeriodicas() {
       toast.info("No hay reservas periódicas que coincidan con los filtros.");
       return;
     }
-    generateInformeReservasPeriodicas(filasFiltradas, periodosDB);
+    generateInformeReservasPeriodicas(filasFiltradas, periodosDB, urlParaPdf);
   };
 
   const handleGenerarInformeReservasPeriodicasProfesor = () => {
+    const urlParaPdf =
+      typeof resolverRutaLogo === "function"
+        ? resolverRutaLogo(centro?.logoCentroUrl)
+        : centro?.logoCentroUrl;
+
     const filasFiltradas = table
       .getFilteredRowModel()
       .rows.map((row) => row.original);
@@ -156,7 +170,7 @@ export function TablaReservasPeriodicas() {
       toast.info("No hay reservas periódicas que coincidan con los filtros.");
       return;
     }
-    generateInformeReservasPeriodicasProfesor(filasFiltradas, periodosDB);
+    generateInformeReservasPeriodicasProfesor(filasFiltradas, periodosDB, urlParaPdf);
   };
 
   const table = useReactTable({

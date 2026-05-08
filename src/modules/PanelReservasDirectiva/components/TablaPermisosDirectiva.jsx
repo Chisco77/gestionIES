@@ -90,21 +90,14 @@ import {
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
-import { es } from "date-fns/locale";
 
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 import { DialogoConfirmacion } from "./DialogoConfirmacion";
 import { toast } from "sonner";
 import { columnsPermisos } from "./columns-permisos";
 import { usePermisosTodos } from "@/hooks/Permisos/usePermisosTodos";
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
 
 import {
   Tooltip,
@@ -148,6 +141,7 @@ export function TablaPermisosDirectiva({
   const [accion, setAccion] = useState(null); // "aceptar" o "rechazar"
 
   const { data: asuntosPropiosTodos = [] } = usePermisosTodos();
+  const { data: centro } = useConfiguracionCentro(); // Traemos los datos del centro
 
   // Abrir diálogo al pinchar check o aspa
   const handleClick = (asunto, tipo) => {
@@ -157,6 +151,11 @@ export function TablaPermisosDirectiva({
   };
 
   const handleGenerarPdf = () => {
+    const urlParaPdf =
+      typeof resolverRutaLogo === "function"
+        ? resolverRutaLogo(centro?.logoCentroUrl)
+        : centro?.logoCentroUrl;
+
     const filasFiltradas = table
       .getFilteredRowModel()
       .rows.map((row) => row.original);
@@ -166,7 +165,7 @@ export function TablaPermisosDirectiva({
       return;
     }
 
-    generateListadoPermisosProfesores(filasFiltradas);
+    generateListadoPermisosProfesores(filasFiltradas, urlParaPdf);
   };
 
   // Tabla

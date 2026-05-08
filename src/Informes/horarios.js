@@ -17,7 +17,7 @@ export async function generarPdfHorariosProfesores(
   horarios,
   periodos,
   nombrePdf = "horarios_profesores",
-  logoUrl // Nuevo parámetro[cite: 2]
+  logoUrl 
 ) {
   if (!horarios || !horarios.length) {
     alert("No hay horarios para generar el informe.");
