@@ -124,7 +124,7 @@ export default function NotificacionesPopover({
       {/* DIALOG */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog} modal={true}>
         <DialogContent
-          className="p-0 overflow-visible rounded-lg max-w-6xl w-full"
+          className="p-0 overflow-visible rounded-lg max-w-7xl w-full"
           onInteractOutside={(e) => e.preventDefault()}
         >
           <DialogHeader className="bg-green-500 text-white rounded-t-lg flex flex-col items-center justify-center py-3 px-6">
