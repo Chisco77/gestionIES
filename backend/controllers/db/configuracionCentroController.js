@@ -16,7 +16,6 @@
 const db = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
 
-
 // GET: /db/configuracion-centro
 async function getConfiguracionCentro(req, res) {
   try {
@@ -43,25 +42,30 @@ async function getConfiguracionCentro(req, res) {
 
     const centro = rows[0];
 
+    let directora = null;
+    let secretaria = null;
+
     // 🔥 En paralelo (manteniendo tu estilo con Promise inline)
-    const [directora, secretaria] = await Promise.all([
-      new Promise((resolve) => {
-        if (!centro.uid_directora) return resolve(null);
+    if (ldapSession) {
+      [directora, secretaria] = await Promise.all([
+        new Promise((resolve) => {
+          if (!centro.uid_directora) return resolve(null);
 
-        buscarPorUid(ldapSession, centro.uid_directora, (err, datos) => {
-          if (!err && datos) resolve(datos);
-          else resolve(null);
-        });
-      }),
-      new Promise((resolve) => {
-        if (!centro.uid_secretaria) return resolve(null);
+          buscarPorUid(ldapSession, centro.uid_directora, (err, datos) => {
+            if (!err && datos) resolve(datos);
+            else resolve(null);
+          });
+        }),
+        new Promise((resolve) => {
+          if (!centro.uid_secretaria) return resolve(null);
 
-        buscarPorUid(ldapSession, centro.uid_secretaria, (err, datos) => {
-          if (!err && datos) resolve(datos);
-          else resolve(null);
-        });
-      }),
-    ]);
+          buscarPorUid(ldapSession, centro.uid_secretaria, (err, datos) => {
+            if (!err && datos) resolve(datos);
+            else resolve(null);
+          });
+        }),
+      ]);
+    }
 
     // 🧠 Enriquecimiento final
     const centroEnriquecido = {
