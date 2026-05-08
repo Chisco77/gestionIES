@@ -37,7 +37,6 @@ export function DialogoEditarTareas({ open, onClose, ausencia, onSuccess }) {
   const [tareas, setTareas] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  console.log ("Ausencia: ", ausencia);
 
   useEffect(() => {
     if (open) {

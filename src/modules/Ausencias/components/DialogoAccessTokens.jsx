@@ -64,7 +64,6 @@ export function DialogoAccessTokens({ open, onOpenChange }) {
       });
       if (!res.ok) throw new Error("Error al obtener tokens");
       const data = await res.json();
-      console.log("Tokens: ", data);
       // Buscamos si ya existe la configuración de la sala de profesores
       const config = data.find((t) => t.nombre === NOMBRE_FIJO);
 

@@ -125,7 +125,6 @@ export function DialogoAsignarHorario({ profesorOrigen, open, onOpenChange }) {
 
       // Leemos primero como texto para ver la respuesta cruda
       const text = await res.text();
-      console.log("Respuesta cruda del backend:", text);
 
       // Intentamos parsear JSON, si falla atrapamos el error
       let data;

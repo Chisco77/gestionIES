@@ -16,7 +16,6 @@ async function simularGuardiasDia(req, res) {
     const gruposCache = {};
 
     // 2. Cargar Grupos (school_class) para traducir gidnumber
-    console.log("LOG 9: [Controller] Llamando a obtenerGruposPorTipo...");
     const grupos = await obtenerGruposPorTipo(ldapSession, "school_class");
     grupos.forEach((g) => {
       gruposCache[String(g.gidNumber)] = g.cn;
@@ -181,7 +180,6 @@ async function simularGuardiasDia(req, res) {
 async function autoasignarGuardia(req, res) {
   const { fecha, idperiodo, uid_profesor_ausente, idausencia, fuerza_doble } =
     req.body; // <-- Recibimos el flag
-  console.log("Datos recibidos en el body:", req.body);
   const usuarioSesion = req.session?.user;
 
   // 1. Control de acceso básico
@@ -194,9 +192,6 @@ async function autoasignarGuardia(req, res) {
   try {
     const diaSemana = new Date(fecha).getDay();
 
-    console.log("Diasemana, cubridor,periodo: ", diaSemana);
-    console.log("Cubridor: ", uid_cubridor);
-    console.log("periodo: ", diaSemana);
     // 2. VALIDACIÓN: ¿Tiene el profesor esa hora de guardia en su horario?
     const { rows: horarioPropio } = await db.query(
       `SELECT id FROM horario_profesorado 

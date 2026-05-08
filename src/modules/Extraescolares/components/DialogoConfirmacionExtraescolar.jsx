@@ -19,7 +19,6 @@ export function DialogoConfirmacionExtraescolar({
   onSuccess,
 }) {
   if (!actividad) return null;
-  console.log("Actividad: ", actividad);
   const esAceptar = accion === "aceptar";
   const API_URL = import.meta.env.VITE_API_URL;
   const queryClient = useQueryClient();

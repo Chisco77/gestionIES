@@ -519,7 +519,6 @@ function GuardiaCard({
 }) {
   const esConfirmada = item.tipo === "confirmada";
   const esMia = esConfirmada && item.uid_profesor_cubridor === uidUsuarioActual;
-  console.log("Guardia: ", item);
   const mostrarInstrucciones =
     esConfirmada &&
     item.observaciones_guardia &&

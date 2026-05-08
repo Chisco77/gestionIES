@@ -92,11 +92,6 @@ export default function Header({ setTabActivo }) {
   useEffect(() => {
     if (!abrirPerfil || !user?.username) return;
 
-    console.log(
-      "[DEBUG] Abriendo perfil, cargando empleado para:",
-      user.username
-    );
-
     fetch(`${API_URL}/db/empleados/${user.username}`, {
       credentials: "include",
     })

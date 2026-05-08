@@ -268,11 +268,6 @@ async function insertAsuntoPropio(req, res) {
   const idperiodo_inicio = null;
   const idperiodo_fin = null;
 
-  console.log("===== NUEVA SOLICITUD ASUNTO PROPIO =====");
-  console.log("UID:", uid);
-  console.log("Fecha recibida:", fecha);
-  console.log("Descripción:", descripcion);
-  console.log("Tipo:", tipo);
 
   if (!uid || !fecha || !descripcion || tipo === undefined)
     return res.status(400).json({
@@ -326,11 +321,6 @@ async function insertAsuntoPropio(req, res) {
     const dias = restriccionesMap.dias.valor_num;
     const ofuscar = restriccionesMap.ofuscar?.valor_bool ?? false;
 
-    console.log("Restricciones:");
-    console.log("Antelación mínima:", antelacion_min);
-    console.log("Antelación máxima:", antelacion_max);
-    console.log("Concurrentes:", concurrentes);
-
     const fechaSolicitada = new Date(fecha);
 
     // Log para mostrar fecha de hoy
@@ -338,9 +328,6 @@ async function insertAsuntoPropio(req, res) {
       `SELECT TO_CHAR(NOW() AT TIME ZONE 'Europe/Madrid', 'YYYY-MM-DD') AS hoy_pg`
     );
     const hoyPG = hoyRows[0].hoy_pg;
-    console.log("Fecha hoy servidor (Postgres, Madrid):", hoyPG);
-
-    console.log("Fecha solicitada (Date JS):", fechaSolicitada);
 
     // === Comprobar si hay autorización especial para esa fecha y usuario
     const { rows: autorizaciones } = await db.query(
@@ -379,11 +366,6 @@ async function insertAsuntoPropio(req, res) {
       );
 
       const diffDias = diffRows[0].diff_dias;
-
-      console.log("------ CÁLCULO DIFERENCIA DÍAS POSTGRES ------");
-      console.log("Fecha solicitada:", fecha);
-      console.log("Diff días (PostgreSQL):", diffDias);
-      console.log("---------------------------------------------");
 
       // Antelación mínima
       if (diffDias < antelacion_min)

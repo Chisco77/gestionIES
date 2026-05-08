@@ -35,8 +35,6 @@ export function useAusencias(filtros = {}) {
       const data = await res.json();
       const lista = data.ausencias || [];
 
-      console.log ("Lista del hook: ", lista);
-
       // Normalización para asegurar tipos consistentes en la tabla
       return lista.map((a) => ({
         ...a,

@@ -147,7 +147,6 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
   });
 
   const handleSave = () => {
-    console.log("🧾 formData ANTES de enviar:", formData);
 
     if (!formData.nombre_ies)
       return toast.error("El nombre del centro es obligatorio");

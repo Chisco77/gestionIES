@@ -122,12 +122,6 @@ export default function PlanoEstanciasInteractivo({ planta = "baja" }) {
         // PASO CLAVE: Usamos el ID numérico real del plano encontrado
         const dataEstancias = await apiListarEstancias(planoSeleccionado.id);
 
-        console.log(
-          "Data estancias para plano ID:",
-          planoSeleccionado.id,
-          dataEstancias
-        );
-
         const normal = dataEstancias.map((r) => ({
           id: r.id,
           codigo: r.codigo,

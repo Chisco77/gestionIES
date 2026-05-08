@@ -88,7 +88,6 @@ async function deletePeriodo(req, res) {
   const id = req.params.id;
 
   try {
-    console.log(`[deletePeriodo] Comprobando usos del periodo ${id}`);
 
     const queryUso = `
       SELECT

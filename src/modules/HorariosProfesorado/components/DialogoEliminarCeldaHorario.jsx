@@ -52,7 +52,6 @@ export function DialogoEliminarCeldaHorario({
   const queryClient = useQueryClient();
 
   const handleEliminar = async () => {
-    console.log("Eliminando ID:", celda.id); // Si aquí sale "undefined", el problema es el paso de datos anterior
     try {
       const res = await fetch(`${API_URL}/db/horario-profesorado/${celda.id}`, {
         method: "DELETE",

@@ -175,9 +175,6 @@ exports.getLibrosDisponibles = async (req, res) => {
       )
       ORDER BY l.libro
     `;
-    console.log("Consulta: ", query);
-    console.log ("Parametros curso: ", curso)
-    console.log ("Parametros uid: ", uid)
     const result = await db.query(query, [curso, uid]);
     res.json(result.rows);
   } catch (error) {

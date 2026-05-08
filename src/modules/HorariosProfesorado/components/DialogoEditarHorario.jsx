@@ -72,7 +72,6 @@ export function DialogoEditarHorario({ open, onClose, usuarioSeleccionado }) {
   const [openCeldaInsertar, setOpenCeldaInsertar] = useState(false);
   const [openEliminar, setOpenEliminar] = useState(false);
 
-  console.log ("EstanciaSeleccionada: ", estanciaSeleccionada);
 
   function esPeriodoActual(periodo) {
     if (!horaActual) return false;
@@ -122,7 +121,6 @@ export function DialogoEditarHorario({ open, onClose, usuarioSeleccionado }) {
           );
           if (!res.ok) throw new Error("Error obteniendo horario del profesor");
           const data = await res.json();
-          console.log("Horarios: ", data);
           // Llenamos la tabla
           const tabla = periodos.map((periodo) => {
             const fila = { periodo: periodo.nombre };

@@ -83,7 +83,7 @@ async function getExtraescolaresEnriquecidos(req, res) {
       filtros.push(`(e.uid = $${++i} OR $${i} = ANY(e.responsables_uids))`);
       vals.push(uid);
     }
-    
+
     if (tipo) {
       filtros.push(`e.tipo ILIKE $${++i}`);
       vals.push(`%${tipo}%`);
@@ -654,7 +654,6 @@ async function updateExtraescolar(req, res) {
 function validarActividad(body) {
   const errores = [];
 
-  console.log("Body recibido:", body);
 
   // =========================
   // CAMPOS BÁSICOS
