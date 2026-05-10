@@ -59,6 +59,7 @@ import { usePlanos } from "./hooks/usePlanos";
 import { Navigate } from "react-router-dom";
 
 import { useEffect } from "react";
+import { BajasIndex } from "./modules/BajasProfesorado/pages/BajasIndex";
 
 const queryClient = new QueryClient();
 
@@ -373,6 +374,16 @@ const router = createBrowserRouter(
             </ProtectedRoute>
           ),
         },
+
+        {
+          path: "bajas-profesorado",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+              {" "}
+              <BajasIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
         {
           path: "guardias-profesorado",
           element: (
@@ -396,7 +407,7 @@ const router = createBrowserRouter(
   ],
   {
     basename: "/gestionIES",
-  }
+  },
 );
 
 function TitleUpdater() {

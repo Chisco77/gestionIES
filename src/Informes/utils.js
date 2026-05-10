@@ -74,6 +74,7 @@ export function resolverRutaLogo(urlDb) {
   return `${baseUrl}${cleanPath.startsWith("/") ? "" : "/"}${cleanPath}`;
 }
 
+
 /**
  * Añade una nueva página y dibuja la cabecera
  * @param {jsPDF} doc

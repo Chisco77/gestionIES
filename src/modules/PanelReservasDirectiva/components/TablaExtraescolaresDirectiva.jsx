@@ -322,6 +322,8 @@ export function TablaExtraescolaresDirectiva({
       hasta = ddmmyyyyToISO(curso.finCurso);
     }
 
+    console.log ("Url logo para informes: ", urlLogoParaInformes);
+
     // informe
     generateListadoExtraescolaresMensual(
       filasFiltradas,

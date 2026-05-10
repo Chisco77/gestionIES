@@ -176,6 +176,11 @@ function SidebarComponent({
             icon: CalendarOff,
           },
           {
+            title: "Sustituciones",
+            url: "/bajas-profesorado",
+            icon: CalendarOff,
+          },
+          {
             title: "Histórico Guardias",
             url: "/guardias-profesorado",
             icon: CalendarOff,
@@ -414,7 +419,7 @@ function SidebarComponent({
           },
           ...itemsPlanosDinamicos.map((item) => {
             const planoOriginal = planos.find(
-              (p) => p.id === item.url.split("/").pop()
+              (p) => p.id === item.url.split("/").pop(),
             );
             return {
               ...item,
@@ -457,7 +462,7 @@ function SidebarComponent({
           },
         ],
       },
-     
+
       {
         title: "Administrador",
         url: "#",
@@ -473,7 +478,7 @@ function SidebarComponent({
             onClick: () => onOpenImportarHorariosUNTIS(),
             icon: Wrench,
           },
-                   {
+          {
             title: "Proyección Guardias",
             url: "#",
             onClick: () => onOpenAccessTokens(),
