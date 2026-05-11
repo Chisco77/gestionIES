@@ -103,7 +103,7 @@ async function insertReservaEstancia(req, res) {
     uid,
     fecha,
     descripcion = "",
-    idrepeticion = null, // 🔹 Nuevo campo opcional
+    idrepeticion = null, 
   } = req.body || {};
 
   if (!uid) {
@@ -113,7 +113,7 @@ async function insertReservaEstancia(req, res) {
   if (!idestancia || !idperiodo_inicio || !idperiodo_fin || !uid || !fecha) {
     return res
       .status(400)
-      .json({ ok: false, error: "Datos obligatorios faltan" });
+      .json({ ok: false, error: "Faltan datos obligatorios para la reserva" });
   }
 
   try {

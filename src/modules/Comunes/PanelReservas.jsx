@@ -103,7 +103,7 @@ export function PanelReservas({ uid, loading = false }) {
   const handleEliminarAsunto = (asunto) => {
     if (asunto.estado === 1) {
       toast.warning(
-        "No se puede eliminar un asunto propio que ha sido aceptado."
+        "No se puede eliminar un asunto propio que ha sido aceptado.",
       );
       return; // no abrir el diálogo
     }
@@ -119,7 +119,7 @@ export function PanelReservas({ uid, loading = false }) {
   const handleEliminarExtraescolar = (actividad) => {
     if (actividad.estado == 1) {
       toast.warning(
-        "No se puede eliminar una actividad extraescolar que ha sido aceptada."
+        "No se puede eliminar una actividad extraescolar que ha sido aceptada.",
       );
       return; // no abrir el diálogo
     }
@@ -218,7 +218,19 @@ export function PanelReservas({ uid, loading = false }) {
 
     if (!asuntosPropios.length)
       return (
-        <p className="text-gray-500 text-center">No hay asuntos propios</p>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center p-10 border-2 border-dashed rounded-xl bg-slate-50/50">
+            <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
+
+            <h3 className="mt-4 text-lg font-medium text-slate-600">
+              No tiene asuntos propios
+            </h3>
+
+            <p className="text-muted-foreground">
+              No has solicitado ningún asunto propio durante el curso
+            </p>
+          </div>
+        </div>
       );
 
     const estadoMap = {
@@ -314,7 +326,21 @@ export function PanelReservas({ uid, loading = false }) {
     const permisos = asuntos.filter((a) => a.tipo !== 13);
 
     if (!permisos.length)
-      return <p className="text-gray-500 text-center">No hay permisos</p>;
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center p-10 border-2 border-dashed rounded-xl bg-slate-50/50">
+            <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
+
+            <h3 className="mt-4 text-lg font-medium text-slate-600">
+              No tiene permisos registrados
+            </h3>
+
+            <p className="text-muted-foreground">
+              No has solicitado ningún permiso durante el curso
+            </p>
+          </div>
+        </div>
+      );
 
     const estadoMap = {
       0: { text: "Pendiente", color: "text-yellow-600 bg-yellow-100" },
@@ -579,128 +605,170 @@ export function PanelReservas({ uid, loading = false }) {
               value="estancias"
               className="m-0 border-none outline-none focus-visible:ring-0"
             >
-              <div
-                ref={parentRef}
-                className="h-[280px] w-full overflow-y-auto pr-2"
-              >
-                <div
-                  style={{
-                    height: `${rowVirtualizer.totalSize}px`,
-                    width: "100%",
-                    position: "relative",
-                  }}
-                >
-                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                    const startIndex = virtualRow.index * columnCount;
-                    const items = reservas.slice(
-                      startIndex,
-                      startIndex + columnCount
-                    );
+              {!reservas.length ? (
+                <div className="h-[280px] flex items-center justify-center">
+                  <div className="text-center p-10 border-2 border-dashed rounded-xl bg-slate-50/50">
+                    <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
 
-                    return (
-                      <div
-                        key={virtualRow.index}
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          width: "100%",
-                          transform: `translateY(${virtualRow.start}px)`,
-                          display: "flex",
-                          gap: "0.5rem", // espacio entre columnas
-                          paddingBottom: "4px", // espacio inferior entre filas
-                        }}
-                      >
-                        {items.map((r) => {
-                          const estancia = estanciasMap.get(
-                            r.idestancia.toString()
-                          );
-                          const periodoInicio = periodosMap.get(
-                            r.idperiodo_inicio.toString()
-                          );
-                          const periodoFin = periodosMap.get(
-                            r.idperiodo_fin.toString()
-                          );
-                          const fechaStr = new Date(r.fecha).toLocaleDateString(
-                            "es-ES",
-                            {
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                            }
-                          );
-                          const textoDescripcion =
-                            [estancia?.descripcion, r.descripcion || r.titulo]
-                              .filter(Boolean)
-                              .join(" - ") || "Sin descripción";
+                    <h3 className="mt-4 text-lg font-medium text-slate-600">
+                      No tiene reservas activas
+                    </h3>
 
-                          return (
-                            <Card
-                              key={r.id}
-                              className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative flex-1"
-                              onClick={() => handleClickReserva(r)}
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <p
-                                  className="font-semibold text-blue-600 truncate max-w-[80%]"
-                                  title={textoDescripcion}
-                                >
-                                  {textoDescripcion}
-                                </p>
-
-                                <button
-                                  type="button"
-                                  className="text-red-500 hover:text-red-700 flex-shrink-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEliminarReserva(r);
-                                  }}
-                                >
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Trash2 className="w-5 h-5" />
-                                      </TooltipTrigger>
-                                      <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
-                                        <p>Eliminar reserva</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </button>
-                              </div>
-                              {/* Estructura de textos inferior igual al resto de tabs */}
-                              <div className="mt-1">
-                                <p className="text-gray-700">
-                                  {periodoInicio?.nombre || r.idperiodo_inicio}{" "}
-                                  a {periodoFin?.nombre || r.idperiodo_fin}
-                                </p>
-                                <p className="text-gray-500">{fechaStr}</p>
-                              </div>
-                            </Card>
-                          );
-                        })}
-                        {/* Si solo hay 1 elemento en una fila de 2, metemos un div vacío para mantener el tamaño */}
-                        {items.length === 1 && <div className="flex-1" />}
-                      </div>
-                    );
-                  })}
+                    <p className="text-muted-foreground">
+                      No has realizado ninguna reserva de aulas o estancias
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div
+                  ref={parentRef}
+                  className="h-[280px] w-full overflow-y-auto pr-2"
+                >
+                  <div
+                    style={{
+                      height: `${rowVirtualizer.totalSize}px`,
+                      width: "100%",
+                      position: "relative",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: `${rowVirtualizer.totalSize}px`,
+                        width: "100%",
+                        position: "relative",
+                      }}
+                    >
+                      {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                        const startIndex = virtualRow.index * columnCount;
+                        const items = reservas.slice(
+                          startIndex,
+                          startIndex + columnCount,
+                        );
+
+                        return (
+                          <div
+                            key={virtualRow.index}
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "100%",
+                              transform: `translateY(${virtualRow.start}px)`,
+                              display: "flex",
+                              gap: "0.5rem", // espacio entre columnas
+                              paddingBottom: "4px", // espacio inferior entre filas
+                            }}
+                          >
+                            {items.map((r) => {
+                              const estancia = estanciasMap.get(
+                                r.idestancia.toString(),
+                              );
+                              const periodoInicio = periodosMap.get(
+                                r.idperiodo_inicio.toString(),
+                              );
+                              const periodoFin = periodosMap.get(
+                                r.idperiodo_fin.toString(),
+                              );
+                              const fechaStr = new Date(
+                                r.fecha,
+                              ).toLocaleDateString("es-ES", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              });
+                              const textoDescripcion =
+                                [
+                                  estancia?.descripcion,
+                                  r.descripcion || r.titulo,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" - ") || "Sin descripción";
+
+                              return (
+                                <Card
+                                  key={r.id}
+                                  className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative flex-1"
+                                  onClick={() => handleClickReserva(r)}
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p
+                                      className="font-semibold text-blue-600 truncate max-w-[80%]"
+                                      title={textoDescripcion}
+                                    >
+                                      {textoDescripcion}
+                                    </p>
+
+                                    <button
+                                      type="button"
+                                      className="text-red-500 hover:text-red-700 flex-shrink-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEliminarReserva(r);
+                                      }}
+                                    >
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Trash2 className="w-5 h-5" />
+                                          </TooltipTrigger>
+                                          <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
+                                            <p>Eliminar reserva</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    </button>
+                                  </div>
+                                  {/* Estructura de textos inferior igual al resto de tabs */}
+                                  <div className="mt-1">
+                                    <p className="text-gray-700">
+                                      {periodoInicio?.nombre ||
+                                        r.idperiodo_inicio}{" "}
+                                      a {periodoFin?.nombre || r.idperiodo_fin}
+                                    </p>
+                                    <p className="text-gray-500">{fechaStr}</p>
+                                  </div>
+                                </Card>
+                              );
+                            })}
+                            {/* Si solo hay 1 elemento en una fila de 2, metemos un div vacío para mantener el tamaño */}
+                            {items.length === 1 && <div className="flex-1" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
             </TabsContent>
             {/* RESTO DE TABS (No virtualizadas) */}
-            {["actividades", "asuntos", "permisos"].map((tab) => (
-              <TabsContent
-                key={tab}
-                value={tab}
-                className="m-0 border-none outline-none"
-              >
-                <div className="h-[280px] overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 gap-3 content-start">
-                  {tab === "actividades" && renderActividadesExtraescolares()}
-                  {tab === "asuntos" && renderAsuntosPropios()}
-                  {tab === "permisos" && renderPermisos()}
-                </div>
-              </TabsContent>
-            ))}
+            {["actividades", "asuntos", "permisos"].map((tab) => {
+              const isEmpty =
+                (tab === "actividades" && !extraescolares.length) ||
+                (tab === "asuntos" &&
+                  !asuntos.filter((a) => a.tipo === 13).length) ||
+                (tab === "permisos" &&
+                  !asuntos.filter((a) => a.tipo !== 13).length);
+
+              return (
+                <TabsContent
+                  key={tab}
+                  value={tab}
+                  className="m-0 border-none outline-none h-full"
+                >
+                  <div
+                    className={
+                      isEmpty
+                        ? "h-[280px] flex items-center justify-center"
+                        : "h-[280px] overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 gap-3 content-start"
+                    }
+                  >
+                    {tab === "actividades" && renderActividadesExtraescolares()}
+                    {tab === "asuntos" && renderAsuntosPropios()}
+                    {tab === "permisos" && renderPermisos()}
+                  </div>
+                </TabsContent>
+              );
+            })}
           </div>
         </Tabs>
       </CardContent>
@@ -714,7 +782,8 @@ export function PanelReservas({ uid, loading = false }) {
           periodos={periodos}
           descripcionEstancia={
             estancias.find(
-              (e) => parseInt(e.id) === parseInt(reservaSeleccionada.idestancia)
+              (e) =>
+                parseInt(e.id) === parseInt(reservaSeleccionada.idestancia),
             )?.descripcion || ""
           }
         />

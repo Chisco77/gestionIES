@@ -90,55 +90,6 @@ export function DialogoInsertarReserva({
     }
   }, [open, inicioSeleccionado, finSeleccionado]);
 
-  // Mutation de React Query
-  /*const mutation = useMutation({
-    mutationFn: async () => {
-      if (!inicio || !fin) {
-        throw new Error("Selecciona periodo de inicio y fin");
-      }
-      if (parseInt(fin) < parseInt(inicio)) {
-        throw new Error("El periodo final no puede ser anterior al inicial");
-      }
-      if (!user?.username) {
-        throw new Error("Usuario no autenticado");
-      }
-
-      const res = await fetch(`${API_URL}/db/reservas-estancias`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          idestancia,
-          idperiodo_inicio: parseInt(inicio),
-          idperiodo_fin: parseInt(fin),
-          uid: user.username,
-          fecha,
-          descripcion,
-        }),
-      });
-
-      const data = await res.json();
-
-
-
-      if (!res.ok) {
-        throw new Error(data.error || "Error desconocido al insertar reserva");
-      }
-
-      return data;
-    },
-    onSuccess: () => {
-      toast.success("Reserva insertada correctamente");
-      // Invalidar queries para recargar grid y panel
-      queryClient.invalidateQueries(["reservas", "dia", fecha]); // grid del día
-      queryClient.invalidateQueries(["reservas", "uid", user.username]); // panel de usuario
-      onSuccess?.();
-      onClose();
-    },
-    onError: (err) => {
-      toast.error(err.message || "Error al insertar reserva");
-    },
-  });*/
 
   const reservarEnOtraEstancia = (id) => {
     setDialogConfirmacion({ open: false, estancias: [] });

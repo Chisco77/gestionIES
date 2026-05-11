@@ -164,26 +164,39 @@ export function DialogoInsertarExtraescolar({
 
       const json = await resp.json();
 
-      // Si la respuesta no es correcta, lanzamos un objeto literal estructurado
       if (!resp.ok || !json.ok) {
-        throw json; // 👈 Lanzamos directamente el JSON devuelto por el backend
+        // Lanzamos el JSON para que onError lo reciba directamente
+        throw json;
       }
-      return json.actividad;
+      // Retornamos todo el json para poder leer el 'aviso' si existiera
+      return json;
     },
-    onSuccess: (act) => {
+    onSuccess: (data) => {
+      const { actividad: act, aviso } = data;
+
+      // 1. Refrescar cachés
       queryClient.invalidateQueries(["extraescolares"]);
       queryClient.invalidateQueries(["reservasPanel", user.username]);
       queryClient.invalidateQueries(["notificacionesDirectiva"]);
+
+      // 2. Notificación de éxito
       toast.success("Actividad creada correctamente", {
         description: act.titulo,
       });
+
+      // 3. Manejo de aviso opcional (por si en el futuro permites avisos no bloqueantes)
+      if (aviso) {
+        toast.warning("Nota informativa", {
+          description: aviso,
+          duration: 8000,
+        });
+      }
+
       onGuardado?.(act);
       onClose();
     },
     onError: (serverData) => {
-      // 👈 El parámetro aquí es directamente lo que lanzas en el throw (el JSON)
-
-      // 1. Si el backend nos devolvió un array de errores de validación
+      // 1. Errores de validación (el listado con <ul> que ya tenías, que es genial)
       if (serverData?.errores && Array.isArray(serverData.errores)) {
         toast.error("Revisa los siguientes errores:", {
           description: (
@@ -198,14 +211,17 @@ export function DialogoInsertarExtraescolar({
           duration: 6000,
         });
       }
-      // 2. Si es un error único del backend
+      // 2. Error de conflicto de estancia (procedente del throw Error del backend)
       else if (serverData?.error) {
-        toast.error(serverData.error);
+        toast.error("No se pudo crear la actividad", {
+          description: serverData.error,
+          duration: 8000,
+        });
       }
-      // 3. Error genérico de red/conexión si no hay serverData
+      // 3. Error de red o crash del servidor
       else {
         toast.error(
-          serverData?.message || "Error inesperado al conectar con el servidor"
+          serverData?.message || "Error inesperado al conectar con el servidor",
         );
       }
     },
@@ -248,7 +264,10 @@ export function DialogoInsertarExtraescolar({
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
-      <DialogContent className="p-0 overflow-hidden rounded-lg max-w-5xl w-full flex flex-col max-h-[95vh] border-none">
+      <DialogContent
+        className="p-0 overflow-hidden rounded-lg max-w-5xl w-full flex flex-col max-h-[95vh] border-none"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader className="py-4 px-6 text-white bg-blue-600 flex flex-row items-center justify-center space-y-0">
           <DialogTitle className="text-xl font-bold">
             Nueva Solicitud de Actividad

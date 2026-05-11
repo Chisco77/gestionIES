@@ -149,10 +149,10 @@ export function DialogoEditarExtraescolar({
 
     setDepartamento(actividad.gidnumber ? String(actividad.gidnumber) : "");
     setPeriodoInicio(
-      actividad.idperiodo_inicio ? String(actividad.idperiodo_inicio) : ""
+      actividad.idperiodo_inicio ? String(actividad.idperiodo_inicio) : "",
     );
     setPeriodoFin(
-      actividad.idperiodo_fin ? String(actividad.idperiodo_fin) : ""
+      actividad.idperiodo_fin ? String(actividad.idperiodo_fin) : "",
     );
     setCursosSeleccionados(actividad.cursos_gids?.map(String) || []);
     setProfesoresSeleccionados(actividad.responsables_uids || []);
@@ -199,38 +199,56 @@ export function DialogoEditarExtraescolar({
       const json = await resp.json();
 
       if (!resp.ok || !json.ok) {
-        // Lanzamos un error y le adjuntamos el JSON del backend
         const error = new Error("Error en la petición");
         error.serverData = json;
         throw error;
       }
-      return json.actividad;
+      return json;
     },
-    onSuccess: (act) => {
+    onSuccess: (data) => {
+      const { actividad: act, aviso } = data;
+
+      // 1. Refrescamos datos
       queryClient.invalidateQueries(["extraescolares"]);
       queryClient.invalidateQueries(["reservasPanel", user.username]);
-      toast.success("Actividad actualizada", { description: act.titulo });
+
+      // 2. Notificación
+      // El 'aviso' ahora solo llegará si el backend envía algo informativo
+      // que NO sea un error bloqueante.
+      if (aviso) {
+        toast.warning("Actualizado con observaciones", {
+          description: aviso,
+          duration: 8000,
+        });
+      } else {
+        toast.success("Actividad actualizada", {
+          description: act.titulo,
+        });
+      }
+
       onGuardado?.(act);
       onClose();
     },
     onError: (err) => {
-      // Extraemos los datos que guardamos en la mutación
       const serverData = err.serverData;
 
-      // 1. Si el backend envió un array de "errores" (validación)
+      // 1. Errores de validación (array de strings)
       if (serverData?.errores && Array.isArray(serverData.errores)) {
         serverData.errores.forEach((msg) => {
           toast.error(msg, { duration: 5000 });
         });
       }
-      // 2. Si el backend envió un string simple "error" (permisos, base de datos)
+      // 2. Error de conflicto de estancia o multidía (el throw Error del backend)
       else if (serverData?.error) {
-        toast.error(serverData.error);
+        // Aquí es donde el profesor verá: "La estancia seleccionada ya está ocupada..."
+        toast.error(serverData.error, {
+          duration: 8000, // Le damos tiempo para leer el motivo del bloqueo
+        });
       }
-      // 3. Error de red o error de código (err.message)
+      // 3. Fallo de red o error de servidor sin JSON
       else {
         toast.error(
-          err.message || "Error inesperado al conectar con el servidor"
+          err.message || "Error inesperado al conectar con el servidor",
         );
       }
     },
