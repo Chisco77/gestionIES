@@ -584,6 +584,28 @@ export function DialogoInsertarExtraescolar({
                           ))}
                         </SelectContent>
                       </Select>
+                      {estancia && estancia !== "0" && (
+                        <div className="w-80 animate-in slide-in-from-top-2 duration-300">
+                          {estancias.find((e) => String(e.id) === estancia)
+                            ?.reservable ? (
+                            <div className="flex gap-3 p-3 rounded-lg bg-blue-50 border border-blue-100 text-blue-800 shadow-sm">
+                              <span className="text-lg">🗓️</span>
+                              <p className="text-[11px] leading-relaxed">
+                                <strong>Estancia reservable:</strong> Al
+                                guardar, se creará automáticamente una reserva
+                                en el cuadrante de aulas asociada al organizador de la actividad.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="flex gap-3 p-3 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 shadow-sm">
+                              <span className="text-lg">📍</span>
+                              <p className="text-[11px] leading-relaxed">
+                                Esta estancia no necesita reserva previa. 
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">

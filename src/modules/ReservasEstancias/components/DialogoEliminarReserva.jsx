@@ -35,13 +35,13 @@ export function DialogoEliminarReserva({
   if (!reserva) return null;
 
   const estancia = estancias.find(
-    (e) => parseInt(e.id) === parseInt(reserva.idestancia)
+    (e) => parseInt(e.id) === parseInt(reserva.idestancia),
   );
   const periodoInicio = periodos.find(
-    (p) => parseInt(p.id) === parseInt(reserva.idperiodo_inicio)
+    (p) => parseInt(p.id) === parseInt(reserva.idperiodo_inicio),
   );
   const periodoFin = periodos.find(
-    (p) => parseInt(p.id) === parseInt(reserva.idperiodo_fin)
+    (p) => parseInt(p.id) === parseInt(reserva.idperiodo_fin),
   );
 
   const API_URL = import.meta.env.VITE_API_URL;
@@ -53,31 +53,43 @@ export function DialogoEliminarReserva({
     mutationFn: async () => {
       const res = await fetch(
         `${API_URL}/db/reservas-estancias/${reserva.id}`,
-        { method: "DELETE", credentials: "include" }
+        { method: "DELETE", credentials: "include" },
       );
 
-      if (!res.ok) throw new Error("Error al eliminar la reserva");
-      return true;
+      // Intentamos parsear el JSON incluso si la respuesta no es 200
+      const json = await res.json();
+
+      if (!res.ok) {
+        // Creamos un error y le adjuntamos el mensaje del backend
+        const error = new Error(json.error || "Error al eliminar la reserva");
+        error.serverData = json;
+        throw error;
+      }
+
+      return json;
     },
     onSuccess: () => {
-      toast.success("Reserva eliminada correctamente");
-
-      // Invalidate → refresca grid del día
+      // Invalida las queries necesarias
       queryClient.invalidateQueries(["reservas", "dia", reserva.fecha]);
-
-      // Invalidate → refresca panel del usuario
       queryClient.invalidateQueries(["reservas", "uid", user?.username]);
       queryClient.invalidateQueries([
         "reservas",
         "curso-actual",
         user?.username,
       ]);
+      toast.success("Reserva eliminada correctamente");
 
       onOpenChange(false);
     },
     onError: (err) => {
-      console.error(err);
-      toast.error(err.message || "No se pudo eliminar la reserva");
+      // Ahora err.message contendrá la frase:
+      // "No se puede eliminar: esta reserva está vinculada a la actividad..."
+      console.error("Error eliminando reserva:", err);
+
+      toast.error("Operación cancelada", {
+        description: err.message, // Aquí se verá el detalle del vínculo
+        duration: 6000,
+      });
     },
   });
 
