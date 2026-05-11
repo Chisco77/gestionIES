@@ -28,7 +28,6 @@ import { DialogoEditarReserva } from "../components/DialogoEditarReserva";
 import { DialogoPlanoEstancia } from "../components/DialogoPlanoEstancia";
 import { DialogoInsertarReservaPeriodica } from "./DialogoInsertarReservaPeriodica";
 import { DialogoEditarReservaPeriodica } from "./DialogoEditarReservaPeriodica";
-import { getCursoActual, ddmmyyyyToISO } from "@/utils/fechasHoras";
 import { toast } from "sonner";
 
 import {

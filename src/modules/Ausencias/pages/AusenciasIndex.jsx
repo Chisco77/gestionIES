@@ -68,6 +68,7 @@ import { eachDayOfInterval } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { resolverRutaLogo } from "@/Informes/utils";
 import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+import { useSustituciones } from "@/hooks/useSustituciones";
 
 export function AusenciasIndex() {
   const { user } = useAuth(); // Extraemos el usuario actual
@@ -83,6 +84,8 @@ export function AusenciasIndex() {
   // Usamos refetch para actualizar la tabla tras insertar
   const { data: ausencias, isLoading, error, refetch } = useAusencias();
   const { data: centro } = useConfiguracionCentro(); // Traemos los datos del centro
+  const { data: listaSustituciones, isLoading: cargandoSustituciones } =
+    useSustituciones();
 
   const { data: periodos = [] } = usePeriodosHorarios();
   const esDirectiva = user?.perfil === "directiva";
@@ -207,13 +210,13 @@ export function AusenciasIndex() {
   };
 
   const handleConfirmarGenerarPdf = async (fechaInicio, fechaFin) => {
-    // 1. Resolvemos el logo una sola vez para todo el proceso
+    // 1. Resolvemos el logo una sola vez
     const urlParaPdf =
       typeof resolverRutaLogo === "function"
         ? resolverRutaLogo(centro?.logoCentroUrl)
         : centro?.logoCentroUrl;
 
-    // 2. Generamos el array de todos los días incluidos en el rango
+    // 2. Generamos el array de días
     const diasAProcesar = eachDayOfInterval({
       start: fechaInicio,
       end: fechaFin,
@@ -221,6 +224,9 @@ export function AusenciasIndex() {
 
     let generadosExitosos = 0;
     let diasSinAusencias = 0;
+
+    // Aseguramos que tratamos la lista de sustituciones como un array, incluso si está cargando o vacía
+    const sustituciones = listaSustituciones || [];
 
     // 3. Iteramos sobre cada día del rango
     for (const fechaSeleccionada of diasAProcesar) {
@@ -232,12 +238,32 @@ export function AusenciasIndex() {
       const curso = getCursoActual(fechaSeleccionada).label;
       const fechaFormateada = format(fechaSeleccionada, "yyyy-MM-dd");
 
-      // 4. Filtramos las ausencias que caen en este día específico
+      // 4. Filtramos las ausencias que caen en este día Y que NO tienen sustituto
       const ausenciasDia = (ausencias || []).filter((a) => {
-        return (
+        // Primero: ¿El profesor falta este día?
+        const estaAusente =
           fechaFormateada >= a.fecha_inicio &&
-          fechaFormateada <= (a.fecha_fin || a.fecha_inicio)
-        );
+          fechaFormateada <= (a.fecha_fin || a.fecha_inicio);
+
+        if (!estaAusente) return false;
+
+        // Segundo: ¿Tiene alguien que le sustituya en esta fecha?
+        // Buscamos en la tabla de sustituciones por uid_titular y rango de fechas
+        const tieneSustituto = sustituciones.some((s) => {
+          const coincideTitular =
+            String(s.uid_titular) === String(a.uid_profesor);
+          const fechaInicioSust = s.fecha_inicio; // Ya viene formateada YYYY-MM-DD del hook
+          const fechaFinSust = s.fecha_fin;
+
+          const estaEnRangoSustitucion =
+            fechaFormateada >= fechaInicioSust &&
+            (!fechaFinSust || fechaFormateada <= fechaFinSust);
+
+          return coincideTitular && estaEnRangoSustitucion;
+        });
+
+        // Si tiene sustituto, lo EXCLUIMOS del parte de guardias (return false)
+        return !tieneSustituto;
       });
 
       if (ausenciasDia.length === 0) {
@@ -258,12 +284,15 @@ export function AusenciasIndex() {
           { credentials: "include" }
         );
 
+        if (!res.ok) throw new Error("Error al obtener horarios");
+
         const data = await res.json();
         const horarios = data.horario || [];
 
         const datosInforme = periodos.map((p) => {
           const filasFiltradas = ausenciasDia
             .map((a) => {
+              // Validar si la ausencia cubre este periodo horario específico
               if (a.idperiodo_inicio && a.idperiodo_fin) {
                 if (p.id < a.idperiodo_inicio || p.id > a.idperiodo_fin) {
                   return null;
@@ -296,7 +325,6 @@ export function AusenciasIndex() {
         const tieneContenido = datosInforme.some((d) => d.filas.length > 0);
 
         if (tieneContenido) {
-          // 5. Pasamos el logo como tercer argumento
           await generarParteDiarioAusencias(
             datosInforme,
             fechaSeleccionada,
@@ -310,13 +338,14 @@ export function AusenciasIndex() {
       }
     }
 
+    // Feedback final
     if (generadosExitosos > 0) {
       toast.success(
         `Proceso finalizado. ${generadosExitosos} partes de ausencias generados.`
       );
-    } else if (diasSinAusencias > 0) {
+    } else {
       toast.info(
-        "No se encontraron ausencias registradas para los días seleccionados."
+        "No hay ausencias pendientes de guardia (o todas están cubiertas por sustitutos)."
       );
     }
   };
@@ -350,7 +379,8 @@ export function AusenciasIndex() {
                     Ausencias
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setAbrirDialogoMes(true)}>
-                    <CalendarOff className="mr-2 h-4 w-4" /> Parte mensual de Faltas
+                    <CalendarOff className="mr-2 h-4 w-4" /> Parte mensual de
+                    Faltas
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

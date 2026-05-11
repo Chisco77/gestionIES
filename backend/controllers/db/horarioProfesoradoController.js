@@ -82,7 +82,6 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
 
     const where = filtros.length ? "WHERE " + filtros.join(" AND ") : "";
 
-
     // Consulta principal con ordenación cronológica real
     const { rows } = await db.query(
       `SELECT h.*, 
@@ -97,12 +96,12 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
    LEFT JOIN estancias e ON h.idestancia = e.id
    ${where}
    ORDER BY h.uid, h.dia_semana, p.inicio ASC`,
-      vals,
+      vals
     );
 
     // Obtenemos los nombres de los profesores desde LDAP
     const uidsUnicos = Array.from(
-      new Set(rows.map((r) => r.uid).filter(Boolean)),
+      new Set(rows.map((r) => r.uid).filter(Boolean))
     );
     await Promise.all(uidsUnicos.map((u) => getNombreProfesor(u)));
 
@@ -111,7 +110,7 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
       let nombresGrupos = [];
       if (Array.isArray(item.gidnumber)) {
         nombresGrupos = item.gidnumber.map(
-          (g) => gruposCache[String(g)] || `Grupo ${g}`,
+          (g) => gruposCache[String(g)] || `Grupo ${g}`
         );
       }
 
@@ -190,7 +189,7 @@ async function insertHorarioProfesorado(req, res) {
         idmateria || null,
         idestancia || null,
         curso_academico,
-      ],
+      ]
     );
 
     res.status(201).json({ ok: true, fila: rows[0] });
@@ -241,7 +240,7 @@ async function updateHorarioProfesorado(req, res) {
         idestancia || null,
         curso_academico,
         id,
-      ],
+      ]
     );
 
     res.json({ ok: true, fila: rows[0] });
@@ -260,85 +259,71 @@ async function duplicarHorarioProfesorado(req, res) {
     if (!usuarioSesion)
       return res.status(401).json({ ok: false, error: "No autenticado" });
 
-    const { uidOrigen, uidDestino, curso_academico } = req.body;
+    const { uidOrigen, uidDestino } = req.body;
 
+    // LEER DEL MIDDLEWARE: Accedemos a req.curso.label que inyectó setCursoContext
+    const curso_academico = req.curso?.label;
+
+    // Validación de seguridad
     if (!uidOrigen || !uidDestino || !curso_academico) {
       return res.status(400).json({
         ok: false,
-        error: "uidOrigen, uidDestino y curso_academico son obligatorios",
+        error:
+          "Faltan datos: uidOrigen, uidDestino o curso_academico no detectado",
       });
     }
 
     if (uidOrigen === uidDestino) {
-      return res.status(400).json({
-        ok: false,
-        error: "El profesor origen y destino no pueden ser el mismo",
-      });
+      return res
+        .status(400)
+        .json({ ok: false, error: "Origen y destino coinciden" });
     }
 
-    // 1. Obtener el horario del profesor origen
+    // 1. Verificar si el origen tiene horario
     const { rows: filasOrigen } = await db.query(
-      `SELECT * FROM horario_profesorado WHERE uid = $1 AND curso_academico = $2`,
-      [uidOrigen, curso_academico],
+      `SELECT id FROM horario_profesorado WHERE uid = $1 AND curso_academico = $2 LIMIT 1`,
+      [uidOrigen, curso_academico]
     );
 
     if (filasOrigen.length === 0) {
       return res.status(404).json({
         ok: false,
-        error:
-          "No se encontró horario para el profesor origen en el curso especificado",
+        error: `El titular no tiene horario para el curso ${curso_academico}`,
       });
     }
 
-    // 2. Validar que el profesor destino NO tenga ya un horario (evitar colisiones)
+    // 2. Verificar si el destino ya tiene algo (evitar duplicados accidentales)
     const { rows: filasDestino } = await db.query(
       `SELECT id FROM horario_profesorado WHERE uid = $1 AND curso_academico = $2 LIMIT 1`,
-      [uidDestino, curso_academico],
+      [uidDestino, curso_academico]
     );
 
     if (filasDestino.length > 0) {
       return res.status(409).json({
         ok: false,
-        error:
-          "El profesor destino ya tiene un horario asignado en este curso. Bórralo primero si quieres duplicar.",
+        error: "El sustituto ya tiene un horario asignado.",
       });
     }
 
-    // 3. Ejecutar las inserciones
-    // Nota: f.gidnumber ya viene como array desde la DB, así que se inserta directamente de forma correcta.
-    const insertPromises = filasOrigen.map((f) => {
-      return db.query(
-        `INSERT INTO horario_profesorado (
-          uid, dia_semana, idperiodo, tipo, gidnumber, idmateria, idestancia, curso_academico
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING *`,
-        [
-          uidDestino,
-          f.dia_semana,
-          f.idperiodo,
-          f.tipo,
-          f.gidnumber, // Se mantiene como array integer[]
-          f.idmateria,
-          f.idestancia,
-          f.curso_academico,
-        ],
-      );
-    });
-
-    const resultados = await Promise.all(insertPromises);
+    // 3. DUPLICAR (Sentencia atómica INSERT SELECT)
+    // Copiamos todas las filas de golpe cambiando el UID
+    await db.query(
+      `INSERT INTO horario_profesorado (
+        uid, dia_semana, idperiodo, tipo, gidnumber, idmateria, idestancia, curso_academico
+      )
+      SELECT $2, dia_semana, idperiodo, tipo, gidnumber, idmateria, idestancia, curso_academico
+      FROM horario_profesorado
+      WHERE uid = $1 AND curso_academico = $3`,
+      [uidOrigen, uidDestino, curso_academico]
+    );
 
     res.status(201).json({
       ok: true,
-      mensaje: `Se han duplicado ${resultados.length} sesiones correctamente`,
-      total: resultados.length,
-      filas: resultados.map((r) => r.rows[0]),
+      mensaje: `Horario duplicado con éxito para el curso ${curso_academico}`,
     });
   } catch (err) {
     console.error("[duplicarHorarioProfesorado] Error:", err);
-    res.status(500).json({
-      ok: false,
-      error: "Error interno al intentar duplicar el horario",
-    });
+    res.status(500).json({ ok: false, error: "Error al duplicar el horario" });
   }
 }
 
@@ -356,7 +341,7 @@ async function deleteHorarioProfesorado(req, res) {
     // 🔍 comprobar existencia previa
     const { rows } = await db.query(
       `SELECT * FROM horario_profesorado WHERE id=$1`,
-      [id],
+      [id]
     );
 
     if (!rows[0]) {
@@ -397,7 +382,7 @@ async function insertCuadranteGuardias(req, res) {
     // 1️⃣ Borramos las guardias actuales del curso para reinsertar el nuevo estado
     await db.query(
       `DELETE FROM horario_profesorado WHERE tipo='guardia' AND curso_academico=$1`,
-      [curso_academico],
+      [curso_academico]
     );
 
     const insertPromises = [];
@@ -425,8 +410,8 @@ async function insertCuadranteGuardias(req, res) {
               p.idmateria || null,
               p.gidnumber || null,
               curso_academico,
-            ],
-          ),
+            ]
+          )
         );
       });
     });
@@ -443,7 +428,7 @@ async function insertCuadranteGuardias(req, res) {
 
       // Buscamos los datos del profesor original en el body para no perder el nombre
       const profeOriginal = cuadrante[clave]?.find(
-        (orig) => orig.uid === fila.uid,
+        (orig) => orig.uid === fila.uid
       );
 
       cuadranteActualizado[clave].push({
@@ -475,7 +460,7 @@ async function deleteCuadranteGuardias(req, res) {
 
     await db.query(
       `DELETE FROM horario_profesorado WHERE tipo='guardia' AND curso_academico=$1`,
-      [curso_academico],
+      [curso_academico]
     );
 
     res.json({ ok: true, message: "Cuadrante borrado correctamente" });

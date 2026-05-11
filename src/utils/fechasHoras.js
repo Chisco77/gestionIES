@@ -1,7 +1,7 @@
 // src/utils/cursoAcademico.js
 
 function formatDate(dia, mes, year) {
-  return `${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}/${year}`
+  return `${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}/${year}`;
 }
 
 /**
@@ -9,8 +9,8 @@ function formatDate(dia, mes, year) {
  * El curso empieza el 1 de septiembre y termina el 30 de junio
  */
 export function getCursoActual(fecha = new Date()) {
-  const year = fecha.getFullYear()
-  const month = fecha.getMonth() + 1 // 1-12
+  const year = fecha.getFullYear();
+  const month = fecha.getMonth() + 1; // 1-12
 
   // Septiembre - Diciembre → curso que empieza este año
   if (month >= 9) {
@@ -20,7 +20,7 @@ export function getCursoActual(fecha = new Date()) {
       label: `${year}-${year + 1}`,
       yearInicio: year,
       yearFin: year + 1,
-    }
+    };
   }
 
   // Enero - Agosto → curso iniciado el año anterior
@@ -30,13 +30,13 @@ export function getCursoActual(fecha = new Date()) {
     label: `${year - 1}-${year}`,
     yearInicio: year - 1,
     yearFin: year,
-  }
+  };
 }
 
 export function ddmmyyyyToISO(fecha) {
   // "01/09/2024" -> "2024-09-01"
-  const [dd, mm, yyyy] = fecha.split("/")
-  return `${yyyy}-${mm}-${dd}`
+  const [dd, mm, yyyy] = fecha.split("/");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 export function getHoraActualMadrid() {
@@ -76,4 +76,18 @@ export function getDiaSemanaMadrid() {
   };
 
   return mapa[dia.toLowerCase()];
+}
+
+export function getFechaHoyMadridISO() {
+  // Crea una cadena tipo "22/5/2024" forzada a Europa/Madrid
+  const fechaMadrid = new Date().toLocaleDateString("es-ES", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  // La convertimos de DD/MM/YYYY a YYYY-MM-DD para el input y la DB
+  const [d, m, y] = fechaMadrid.split("/");
+  return `${y}-${m}-${d}`;
 }

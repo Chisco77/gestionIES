@@ -143,6 +143,7 @@ const {
   insertSustitucion,
   finalizarSustitucion,
   deleteSustitucion,
+  updateSustitucion,
 } = require("../controllers/db/sustitucionesController");
 
 const {
@@ -502,6 +503,7 @@ router.get("/guardias-enriquecidas", getGuardiasEnriquecidas);
 router.get("/sustituciones", getSustituciones);
 router.post("/sustituciones", insertSustitucion);
 router.patch("/sustituciones/:id/finalizar", finalizarSustitucion); // Usamos PATCH para actualización parcial (fecha_fin)
+router.patch("/sustituciones/:id", updateSustitucion); // Ruta para editar metadatos (fecha_inicio, observaciones)
 router.delete("/sustituciones/:id", deleteSustitucion);
 
 // --- Tokens de Acceso ---
