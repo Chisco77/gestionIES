@@ -176,7 +176,7 @@ function SidebarComponent({
             icon: CalendarOff,
           },
           {
-            title: "Sustituciones",
+            title: "Sustituciones/Bajas",
             url: "/bajas-profesorado",
             icon: CalendarOff,
           },
