@@ -108,7 +108,7 @@ export function TablaGuardias({
     getFilteredRowModel: getFilteredRowModel(),
     enableRowSelection: true,
     enableMultiRowSelection: false,
-    initialState: { pagination: { pageIndex: 0, pageSize: 12 } },
+    initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
   });
 
   const selectedItem = table.getSelectedRowModel().rows[0]?.original;
@@ -253,7 +253,7 @@ export function TablaGuardias({
                   {row.getVisibleCells().map((cell, index) => (
                     <TableCell
                       key={cell.id}
-                      className={`py-2 px-3 ${
+                      className={`py-1 px-3 ${
                         index === 0 && row.original.fecha === hoyStr
                           ? "border-l-4 border-l-orange-500"
                           : "border-l-4 border-l-transparent"

@@ -48,10 +48,14 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useAlumnosLdap } from "@/hooks/useAlumnosLdap";
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+import { resolverRutaLogo } from "@/Informes/utils";
+
 
 import { generarPdfListadoPorCurso } from "@/Informes/usuarios";
 
 const handleInsertar = () => alert("Inserción de alumno: No implementado");
+
 const handleEliminar = (seleccionado) => {
   if (!seleccionado) {
     alert("Selecciona un alumno para eliminar.");
@@ -67,6 +71,10 @@ export function AlumnosIndex() {
   const [abrirEditar, setAbrirEditar] = useState(false);
 
   const { data: alumnos, isLoading, error } = useAlumnosLdap();
+  const { data: centro } = useConfiguracionCentro();
+
+  // Resolvemos la URL una sola vez para usarla en todos los botones
+  const urlLogoParaInformes = resolverRutaLogo(centro?.logoCentroUrl);
 
   const handleEditar = (seleccionado) => {
     if (!seleccionado) {
@@ -111,7 +119,8 @@ export function AlumnosIndex() {
                   onClick={() =>
                     generarPdfListadoPorCurso(
                       alumnosFiltrados,
-                      "alumnos_por_grupo"
+                      "alumnos_por_grupo",
+                      urlLogoParaInformes
                     )
                   }
                 >

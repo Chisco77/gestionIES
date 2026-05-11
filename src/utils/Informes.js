@@ -2,12 +2,8 @@ import { jsPDF } from "jspdf";
 
 import { MAPEO_TIPOS_PERMISOS } from "./mapeoTiposPermisos";
 
-
 const getDescripcionTipoPermiso = (tipo) =>
   MAPEO_TIPOS_PERMISOS[tipo] ?? "Otros";
-
-
-
 
 /**
  * Genera un PDF de etiquetas genéricas
@@ -130,7 +126,7 @@ export async function generateEtiquetasGenericasPdf({
  *
  * @param {Array} profesores - Array de objetos profesor con propiedades `sn` y `givenName`
  */
-export function generateListadoAPs(profesores = []) {
+/*export function generateListadoAPs(profesores = [], logoUrl) {
   if (!profesores || profesores.length === 0) {
     alert("No hay profesores para generar el listado.");
     return;
@@ -190,7 +186,9 @@ export function generateListadoAPs(profesores = []) {
   });
 
   doc.save("Listado_Profesores.pdf");
-}
+}*/
+
+
 
 export const generarListadoPrestamosLibrosAlumnosPdf = ({
   alumnos = [],

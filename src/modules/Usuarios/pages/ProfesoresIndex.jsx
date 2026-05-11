@@ -35,6 +35,8 @@ import { useState, useEffect } from "react";
 import { columns } from "../components/colums";
 import { TablaUsuarios } from "../components/TablaUsuarios";
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+import { resolverRutaLogo } from "@/Informes/utils";
 import { Loader, Plus, Pencil, Trash2, Users, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DialogoEditarUsuario from "../components/DialogoEditarUsuario";
@@ -45,7 +47,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-import { generateListadoAPs } from "../../../utils/Informes";
+import { generateListadoAPs } from "@/Informes/usuarios";
 
 export function ProfesoresIndex() {
   const [profesoresFiltrados, setProfesoresFiltrados] = useState([]);
@@ -58,6 +60,11 @@ export function ProfesoresIndex() {
     isLoading: loadingProfesores,
     error: errorProfesores,
   } = useProfesoresLdap();
+
+  const { data: centro } = useConfiguracionCentro();
+
+  // Resolvemos la URL una sola vez para usarla en todos los botones
+  const urlLogoParaInformes = resolverRutaLogo(centro?.logoCentroUrl);
 
   //const { data: empleados = [], isLoading: loadingEmpleados } = useEmpleados();
 
@@ -88,7 +95,6 @@ export function ProfesoresIndex() {
     alert(`Eliminación de profesor ${profesor.uid}: No implementado`);
   };
 
-
   const handleGenerarPdf = () => {
     // Ahora los datos de empleado ya están en cada profesor
     const listadoCombinado = profesoresFiltrados.map((profesor) => ({
@@ -98,7 +104,7 @@ export function ProfesoresIndex() {
       tipo_empleado: profesor.tipo_empleado || "",
     }));
 
-    generateListadoAPs(listadoCombinado);
+    generateListadoAPs(listadoCombinado, urlLogoParaInformes);
   };
 
   const isLoading = loadingProfesores;

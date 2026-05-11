@@ -45,7 +45,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-import { generateListadoAPs } from "../../../utils/Informes";
+import { generateListadoAPs } from "@/Informes/usuarios";
 
 export function StaffIndex() {
   const [staffFiltrados, setstaffFiltrados] = useState([]);

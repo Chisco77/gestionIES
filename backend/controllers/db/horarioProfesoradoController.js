@@ -11,8 +11,6 @@ const { obtenerGruposPorTipo } = require("../ldap/gruposController");
 /**
  * Obtener horario del profesorado enriquecido
  */
-// Backend: getHorarioProfesoradoEnriquecido.js
-
 async function getHorarioProfesoradoEnriquecido(req, res) {
   try {
     const ldapSession = req.session?.ldap;
@@ -456,7 +454,7 @@ async function deleteCuadranteGuardias(req, res) {
   try {
     const { curso_academico } = req.body;
     if (!curso_academico)
-      return res.status(400).json({ ok: false, error: "Curso requerido" });
+      return res.status(400).json({ ok: false, error: "Curso académico requerido" });
 
     await db.query(
       `DELETE FROM horario_profesorado WHERE tipo='guardia' AND curso_academico=$1`,
