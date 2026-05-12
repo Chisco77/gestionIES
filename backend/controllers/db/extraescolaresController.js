@@ -12,7 +12,7 @@ const { obtenerGruposPorTipo } = require("../ldap/gruposController");
 /**
  * Intenta reservar una estancia para una actividad de un solo día.
  * Devuelve el id de la reserva o null si no se pudo (ocupada o no reservable).
- * Si la estancia es reservable, intenta crear la reserva de dicha estancia. si no 
+ * Si la estancia es reservable, intenta crear la reserva de dicha estancia. si no
  * puede, informa al frontend y no deja guardar la actividad, obligando al usuario a escoger
  * un slot libre para la estancai reservable u otra estancia (o dejar la estancia en blanco.)
  */
@@ -25,7 +25,7 @@ async function gestionarReservaEstancia(client, actividad, usuario) {
   // 1. Comprobar si la estancia es reservable
   const { rows: estancia } = await client.query(
     "SELECT reservable FROM estancias WHERE id = $1",
-    [idestancia],
+    [idestancia]
   );
 
   if (!estancia[0]?.reservable) {
@@ -39,7 +39,7 @@ async function gestionarReservaEstancia(client, actividad, usuario) {
      WHERE idestancia = $1 
      AND fecha = $2 
      AND NOT (idperiodo_fin < $3 OR idperiodo_inicio > $4)`,
-    [idestancia, fecha_inicio, idperiodo_inicio, idperiodo_fin],
+    [idestancia, fecha_inicio, idperiodo_inicio, idperiodo_fin]
   );
 
   if (solapamientos.length > 0) {
@@ -66,7 +66,7 @@ async function gestionarReservaEstancia(client, actividad, usuario) {
       idperiodo_fin, // $4
       usuario, // $5 (el dueño de la actividad)
       titulo, // $6 (ahora la descripción es el título)
-    ],
+    ]
   );
 
   return { id_reserva: nuevaReserva[0].id, conflicto: false };
@@ -111,11 +111,11 @@ async function getExtraescolaresEnriquecidos(req, res) {
     ]);
 
     const departamentosMap = Object.fromEntries(
-      departamentos.map((d) => [String(d.gidNumber), d.cn]),
+      departamentos.map((d) => [String(d.gidNumber), d.cn])
     );
 
     const cursosMap = Object.fromEntries(
-      cursos.map((c) => [String(c.gidNumber), c.cn]),
+      cursos.map((c) => [String(c.gidNumber), c.cn])
     );
 
     // Filtros
@@ -198,7 +198,7 @@ LEFT JOIN estancias est
 
 ${where}
 ORDER BY e.fecha_inicio ASC`,
-      vals,
+      vals
     );
 
     // Resolver UIDs
@@ -212,7 +212,7 @@ ORDER BY e.fecha_inicio ASC`,
     }
 
     await Promise.all(
-      Array.from(uidsUnicos).map((uid) => getNombrePorUid(uid)),
+      Array.from(uidsUnicos).map((uid) => getNombrePorUid(uid))
     );
 
     // Info empleados en DB
@@ -220,11 +220,11 @@ ORDER BY e.fecha_inicio ASC`,
       `SELECT uid, dni, tipo_empleado, cuerpo, grupo
        FROM empleados
        WHERE uid = ANY($1::text[])`,
-      [Array.from(uidsUnicos)],
+      [Array.from(uidsUnicos)]
     );
 
     const empleadosMap = Object.fromEntries(
-      empleadosInfo.map((e) => [e.uid, e]),
+      empleadosInfo.map((e) => [e.uid, e])
     );
 
     // Enriquecimiento final
@@ -323,7 +323,7 @@ async function updateEstadoExtraescolar(req, res) {
        SET estado = $1, updated_at = NOW(), updated_by = $2
        WHERE id = $3 
        RETURNING *`,
-      [estado, usuarioSesion.username, id],
+      [estado, usuarioSesion.username, id]
     );
 
     if (!rows[0]) {
@@ -331,6 +331,24 @@ async function updateEstadoExtraescolar(req, res) {
     }
 
     const actividad = rows[0];
+
+    // --- LÓGICA DE RECHAZO (Estado 2): Borrar reserva y limpiar referencias ---
+    if (estado === 2) {
+      // Si tiene una reserva de estancia asociada, la borramos de su tabla
+      if (actividad.id_reserva_estancia) {
+        await client.query(`DELETE FROM reservas_estancias WHERE id = $1`, [
+          actividad.id_reserva_estancia,
+        ]);
+        const { rows: rowsUpdate } = await client.query(
+          `UPDATE extraescolares 
+           SET id_reserva_estancia = NULL, idestancia = NULL 
+           WHERE id = $1 
+           RETURNING *`,
+          [id]
+        );
+        actividad = rowsUpdate[0]; // Refrescamos el objeto actividad
+      }
+    }
 
     // Pasamos el cliente para mantener la transacción
     await sincronizarAusenciasActividad(actividad, client);
@@ -370,7 +388,7 @@ async function sincronizarAusenciasActividad(actividad, client) {
   // 1. Limpieza total de ausencias previas de ESTA actividad (por si se re-acepta)
   await client.query(
     `DELETE FROM ausencias_profesorado WHERE idextraescolar = $1`,
-    [id],
+    [id]
   );
 
   // 2. Si está ACEPTADA (1) y GENERA AUSENCIAS, procedemos
@@ -401,7 +419,7 @@ async function sincronizarAusenciasActividad(actividad, client) {
           fFin,
           idperiodo_inicio || null,
           idperiodo_fin || null,
-        ],
+        ]
       );
 
       // 🛡️ Inserción de la ausencia oficial de la actividad
@@ -421,7 +439,7 @@ async function sincronizarAusenciasActividad(actividad, client) {
           `Extraescolar: ${titulo}`,
           uid, // El profesor que creó la actividad consta como creador de la ausencia
           id,
-        ],
+        ]
       );
     }
   }
@@ -540,7 +558,7 @@ async function insertExtraescolar(req, res) {
       // 1. Primero comprobamos si es reservable
       const { rows: estanciaInfo } = await client.query(
         "SELECT reservable FROM estancias WHERE id = $1",
-        [finalEstancia],
+        [finalEstancia]
       );
       const esReservable = estanciaInfo[0]?.reservable || false;
 
@@ -548,19 +566,19 @@ async function insertExtraescolar(req, res) {
         // 2. SOLO si es reservable, aplicamos las restricciones
         if (esMultidia) {
           throw new Error(
-            "Las actividades multidía con estancias RESERVABLES requieren gestión manual. Por favor, desmarca la estancia o cambia las fechas.",
+            "Las actividades multidía con estancias RESERVABLES requieren gestión manual. Por favor, desmarca la estancia o cambia las fechas."
           );
         } else {
           console.log("Rama UN SOLO DÍA (Reservable): Gestionando reserva...");
           const { id_reserva, conflicto } = await gestionarReservaEstancia(
             client,
             data,
-            usuarioSesion.username,
+            usuarioSesion.username
           );
 
           if (conflicto) {
             throw new Error(
-              "La estancia seleccionada ya está ocupada para esa fecha/hora. Elige otra o cambia el horario.",
+              "La estancia seleccionada ya está ocupada para esa fecha/hora. Elige otra o cambia el horario."
             );
           }
           idReserva = id_reserva;
@@ -569,7 +587,7 @@ async function insertExtraescolar(req, res) {
         // 3. Si NO es reservable, no hacemos nada más. idReserva se queda en null
         // y se guardará la actividad asociada a la estancia sin crear reserva.
         console.log(
-          "Estancia no reservable. Se asocia sin crear reserva en calendario.",
+          "Estancia no reservable. Se asocia sin crear reserva en calendario."
         );
       }
     }
@@ -604,7 +622,7 @@ async function insertExtraescolar(req, res) {
         finalEstancia,
         esFuera,
         idReserva,
-      ],
+      ]
     );
 
     await client.query("COMMIT");
@@ -652,7 +670,7 @@ async function deleteExtraescolar(req, res) {
     // 1. Obtener los datos de la actividad incluyendo id_reserva_estancia
     const { rows } = await client.query(
       `SELECT estado, fecha_inicio, id_reserva_estancia FROM extraescolares WHERE id = $1`,
-      [id],
+      [id]
     );
 
     if (rows.length === 0) {
@@ -682,7 +700,7 @@ async function deleteExtraescolar(req, res) {
     // Borramos primero las ausencias
     await client.query(
       `DELETE FROM ausencias_profesorado WHERE idextraescolar = $1`,
-      [id],
+      [id]
     );
 
     // Borrar la reserva de la estancia si existía vinculada
@@ -695,7 +713,7 @@ async function deleteExtraescolar(req, res) {
     // Borramos la actividad
     const { rowCount } = await client.query(
       `DELETE FROM extraescolares WHERE id = $1`,
-      [id],
+      [id]
     );
 
     await client.query("COMMIT");
@@ -848,7 +866,7 @@ async function updateExtraescolar(req, res) {
 
     const { rows: actuales } = await client.query(
       `SELECT * FROM extraescolares WHERE id = $1`,
-      [id],
+      [id]
     );
     const actividadPrevia = actuales[0];
     if (!actividadPrevia)
@@ -888,7 +906,7 @@ async function updateExtraescolar(req, res) {
       // 1. Primero comprobamos si es reservable
       const { rows: estanciaInfo } = await client.query(
         "SELECT reservable FROM estancias WHERE id = $1",
-        [finalEstancia],
+        [finalEstancia]
       );
       const esReservable = estanciaInfo[0]?.reservable || false;
 
@@ -896,19 +914,19 @@ async function updateExtraescolar(req, res) {
         // 2. SOLO si es reservable, aplicamos las restricciones
         if (esMultidia) {
           throw new Error(
-            "Las actividades multidía con estancias RESERVABLES requieren gestión manual. Por favor, desmarca la estancia o cambia las fechas.",
+            "Las actividades multidía con estancias RESERVABLES requieren gestión manual. Por favor, desmarca la estancia o cambia las fechas."
           );
         } else {
           console.log("Rama UN SOLO DÍA (Reservable): Gestionando reserva...");
           const { id_reserva, conflicto } = await gestionarReservaEstancia(
             client,
             data,
-            actividadPrevia.uid,
+            actividadPrevia.uid
           );
 
           if (conflicto) {
             throw new Error(
-              "La estancia seleccionada ya está ocupada para esa fecha/hora. Elige otra o cambia el horario.",
+              "La estancia seleccionada ya está ocupada para esa fecha/hora. Elige otra o cambia el horario."
             );
           }
           idReserva = id_reserva;
@@ -917,12 +935,12 @@ async function updateExtraescolar(req, res) {
         // 3. Si NO es reservable, no hacemos nada más. idReserva se queda en null
         // y se guardará la actividad asociada a la estancia sin crear reserva.
         console.log(
-          "Estancia no reservable. Se asocia sin crear reserva en calendario.",
+          "Estancia no reservable. Se asocia sin crear reserva en calendario."
         );
       }
     } else {
       console.log(
-        "No se intenta reserva: es fuera del centro o no hay estancia.",
+        "No se intenta reserva: es fuera del centro o no hay estancia."
       );
     }
     // 3. Update de la actividad
@@ -953,7 +971,7 @@ async function updateExtraescolar(req, res) {
         esFuera,
         idReserva,
         id,
-      ],
+      ]
     );
 
     const actividadActualizada = rows[0];
@@ -963,7 +981,7 @@ async function updateExtraescolar(req, res) {
       console.log("Sincronizando ausencias...");
       await client.query(
         `DELETE FROM ausencias_profesorado WHERE idextraescolar = $1`,
-        [id],
+        [id]
       );
       if (actividadActualizada.genera_ausencias) {
         await sincronizarAusenciasActividad(actividadActualizada, client);
@@ -1027,7 +1045,7 @@ function validarActividad(body) {
   // =========================
   const responsablesValidos = Array.isArray(body.responsables_uids)
     ? body.responsables_uids.filter(
-        (uid) => typeof uid === "string" && uid.trim() !== "",
+        (uid) => typeof uid === "string" && uid.trim() !== ""
       )
     : [];
 
@@ -1056,7 +1074,7 @@ function validarActividad(body) {
     // CASO: FUERA DEL CENTRO
     if (!body.ubicacion || body.ubicacion.trim().length < 5) {
       errores.push(
-        "Para actividades fuera del centro, debe indicar una ubicación o dirección válida",
+        "Para actividades fuera del centro, debe indicar una ubicación o dirección válida"
       );
     }
     // para validar coordenadas
@@ -1086,7 +1104,7 @@ function validarActividad(body) {
 async function enviarEmailActividad(actividad, origen, ldapSession) {
   try {
     const { rows: avisos } = await db.query(
-      `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`,
+      `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
     );
     const emails = (avisos[0]?.emails || [])
       .map((e) => e.trim())
@@ -1097,7 +1115,7 @@ async function enviarEmailActividad(actividad, origen, ldapSession) {
     const nombreOrganizador = await new Promise((resolve) => {
       buscarPorUid(ldapSession, actividad.uid, (err, datos) => {
         resolve(
-          !err && datos ? `${datos.sn}, ${datos.givenName}` : actividad.uid,
+          !err && datos ? `${datos.sn}, ${datos.givenName}` : actividad.uid
         );
       });
     });
@@ -1109,8 +1127,8 @@ async function enviarEmailActividad(actividad, origen, ldapSession) {
             buscarPorUid(ldapSession, uid, (err, datos) => {
               resolve(!err && datos ? `${datos.sn}, ${datos.givenName}` : uid);
             });
-          }),
-      ),
+          })
+      )
     );
 
     // 2. Info de Periodos y Fechas
@@ -1118,7 +1136,7 @@ async function enviarEmailActividad(actividad, origen, ldapSession) {
     if (actividad.idperiodo_inicio) {
       const { rows: pRows } = await db.query(
         `SELECT id, nombre FROM periodos_horarios WHERE id IN ($1, $2)`,
-        [actividad.idperiodo_inicio, actividad.idperiodo_fin],
+        [actividad.idperiodo_inicio, actividad.idperiodo_fin]
       );
       const pMap = Object.fromEntries(pRows.map((p) => [p.id, p.nombre]));
       const pIni = pMap[actividad.idperiodo_inicio] || "N/A";
@@ -1142,7 +1160,7 @@ async function enviarEmailActividad(actividad, origen, ldapSession) {
       if (actividad.idestancia) {
         const { rows: stRows } = await db.query(
           `SELECT descripcion FROM estancias WHERE id = $1`,
-          [actividad.idestancia],
+          [actividad.idestancia]
         );
         if (stRows.length > 0) nombreEstancia = stRows[0].descripcion;
       }
