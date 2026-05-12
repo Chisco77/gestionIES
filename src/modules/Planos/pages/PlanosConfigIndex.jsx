@@ -2,9 +2,11 @@ import { useState } from "react";
 import { columns } from "../components/columns";
 import { TablaPlanos } from "../components/TablaPlanos";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, Pencil } from "lucide-react";
 import { DialogoInsertarPlano } from "../components/DialogoInsertarPlano";
 import { DialogoEliminarPlano } from "../components/DialogoEliminarPlano";
+import { DialogoEditarPlano } from "../components/DialogoEditarPlano";
+
 import { usePlanos } from "@/hooks/usePlanos"; // Tu nuevo hook
 import {
   Tooltip,
@@ -17,7 +19,13 @@ export function PlanosConfigIndex() {
   const { data: planos = [], isLoading, refetch } = usePlanos();
   const [abrirDialogoInsertar, setAbrirDialogoInsertar] = useState(false);
   const [abrirDialogoEliminar, setAbrirDialogoEliminar] = useState(false);
+  const [abrirDialogoEditar, setAbrirDialogoEditar] = useState(false);
   const [planoSeleccionado, setPlanoSeleccionado] = useState(null);
+
+  const handleEditar = (plano) => {
+    setPlanoSeleccionado(plano);
+    setAbrirDialogoEditar(true);
+  };
 
   const handleEliminar = (plano) => {
     setPlanoSeleccionado(plano);
@@ -48,6 +56,25 @@ export function PlanosConfigIndex() {
               </Tooltip>
             </TooltipProvider>
 
+            {/* Botón Editar */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEditar(seleccionado)}
+                    disabled={!seleccionado}
+                  >
+                    <Pencil className="w-4 h-4 text-green-600" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-green-600 text-white">
+                  <p>Editar plano</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -73,8 +100,6 @@ export function PlanosConfigIndex() {
         open={abrirDialogoInsertar}
         onOpenChange={setAbrirDialogoInsertar}
         onSuccess={() => {
-          // Ya no hace falta fetchPlanos manual,
-          // React Query lo hace solo por la invalidación en el hijo
           setAbrirDialogoInsertar(false);
         }}
       />
@@ -86,6 +111,13 @@ export function PlanosConfigIndex() {
         onSuccess={() => {
           setAbrirDialogoEliminar(false);
         }}
+      />
+
+      <DialogoEditarPlano
+        open={abrirDialogoEditar}
+        onOpenChange={setAbrirDialogoEditar}
+        plano={planoSeleccionado}
+        onSuccess={() => setAbrirDialogoEditar(false)}
       />
     </div>
   );

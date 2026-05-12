@@ -102,28 +102,61 @@ exports.insertPlano = async (req, res) => {
 
 // Actualizar un plano existente
 exports.updatePlano = async (req, res) => {
-  const { id } = req.params; // El ID actual del plano
-  const { label, svg_url, orden } = req.body;
+  const { id } = req.params;
+  const { label, orden } = req.body;
+
+  // 1. Validación de campos obligatorios
+  if (!label || label.trim() === "") {
+    return res.status(400).json({
+      ok: false,
+      message: "La etiqueta (label) es obligatoria.",
+    });
+  }
+
+  const ordenNum = parseInt(orden) || 0;
 
   try {
-    const result = await db.query(
-      `UPDATE planos 
-       SET label = $1, 
-           svg_url = $2, 
-           orden = $3 
-       WHERE id = $4 
-       RETURNING *`,
-      [label, svg_url, orden, id]
-    );
+    // 2. VALIDACIÓN DE ORDEN (Excluyendo al propio plano actual)
+    // Buscamos si hay OTRO plano (id != $2) que ya use ese orden
+    const checkQuery = "SELECT id FROM planos WHERE orden = $1 AND id != $2";
+    const checkResult = await db.query(checkQuery, [ordenNum, id]);
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Plano no encontrado" });
+    if (checkResult.rowCount > 0) {
+      return res.status(400).json({
+        ok: false,
+        message: `Ya existe otro plano con el orden ${ordenNum}. Por favor, elige una posición diferente.`,
+      });
     }
 
-    res.json(result.rows[0]);
+    // 3. Ejecutar la actualización
+    const query = `
+      UPDATE planos 
+      SET label = $1, 
+          orden = $2 
+      WHERE id = $3 
+      RETURNING *
+    `;
+
+    const result = await db.query(query, [label, ordenNum, id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        ok: false,
+        message: "Plano no encontrado.",
+      });
+    }
+
+    res.json({
+      ok: true,
+      message: "Plano actualizado correctamente",
+      plano: result.rows[0],
+    });
   } catch (error) {
     console.error("❌ Error al modificar plano:", error);
-    res.status(500).json({ message: "Error interno al modificar plano" });
+    res.status(500).json({
+      ok: false,
+      message: "Error interno al modificar el plano.",
+    });
   }
 };
 

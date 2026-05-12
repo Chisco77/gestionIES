@@ -137,13 +137,20 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
       console.log("Payload: ", payload);
       const data = new FormData();
       Object.keys(payload).forEach((key) => {
-        // Excluimos las URLs de previsualización
         if (payload[key] !== null && !key.endsWith("_url")) {
-          // GESTIÓN ESPECIAL PARA EL ARRAY
           if (key === "uids_adjuntos") {
-            // Si es el array, lo añadimos uno a uno o como JSON string
-            // Tu backend espera un array, así que lo mandamos como string y el backend lo parseará
-            data.append(key, payload[key]);
+            // ⬇️ ENVIAMOS SOLO UIDs REALES
+            const validUids = payload[key].filter(
+              (uid) => uid && uid.trim() !== ""
+            );
+            // Si el array queda vacío tras filtrar, enviamos un array vacío o nada
+            if (validUids.length > 0) {
+              validUids.forEach((uid) => data.append("uids_adjuntos", uid));
+            } else {
+              // Dependiendo de tu backend, puedes enviar una cadena vacía
+              // o simplemente no hacer el append para que el backend lo limpie
+              data.append("uids_adjuntos", "");
+            }
           } else {
             data.append(key, payload[key]);
           }
