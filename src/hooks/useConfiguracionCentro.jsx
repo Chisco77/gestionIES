@@ -60,8 +60,9 @@ export function useConfiguracionCentro() {
         // 🔹 UID (mantener por compatibilidad)
         uidDirectora: c.uid_directora || null,
         uidSecretaria: c.uid_secretaria || null,
+        uidJefaEstudios: c.uid_jefa_estudios || null,
+        uidsAdjuntos: c.uids_adjuntos || [],
 
-        // 🔥 NUEVO: datos enriquecidos
         directora: c.directora
           ? {
               uid: c.directora.uid,
@@ -79,6 +80,26 @@ export function useConfiguracionCentro() {
               nombreCompleto: c.secretaria.nombreCompleto,
             }
           : null,
+
+        // Jefatura de Estudios enriquecida
+        jefaEstudios: c.jefa_estudios
+          ? {
+              uid: c.jefa_estudios.uid,
+              nombre: c.jefa_estudios.nombre,
+              apellidos: c.jefa_estudios.apellidos,
+              nombreCompleto: c.jefa_estudios.nombreCompleto,
+            }
+          : null,
+
+        // Adjuntos enriquecidos (Mapeamos el array de objetos que viene de la BD)
+        adjuntos: Array.isArray(c.adjuntos)
+          ? c.adjuntos.map((adj) => ({
+              uid: adj.uid,
+              nombre: adj.nombre,
+              apellidos: adj.apellidos,
+              nombreCompleto: adj.nombreCompleto,
+            }))
+          : [],
 
         updatedAt: c.updated_at,
       };

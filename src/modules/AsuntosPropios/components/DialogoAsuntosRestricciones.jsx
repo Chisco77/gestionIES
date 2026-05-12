@@ -38,13 +38,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
+
 
 import { DialogoEliminarRango } from "./DialogoEliminarRango";
 import { DialogoEliminarAutorizacion } from "./DialogoEliminarAutorizacion";
@@ -64,7 +58,7 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     antelacionMaxima: 0,
     maxConsecutivos: 0,
     ofuscar: false,
-    mostrarPeticionesDia: false, // ✅ nueva
+    mostrarPeticionesDia: false, 
   });
 
   const { data: profesores = [], isLoading, error } = useProfesoresActivos();
@@ -291,12 +285,13 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 rounded-xl h-[750px] w-[900px] flex flex-col overflow-hidden border-none"
+        className="p-0 rounded-xl h-[765px] w-[900px] flex flex-col overflow-hidden border-none"
       >
         {/* HEADER: Fijo arriba */}
-     <DialogHeader className="bg-green-600 text-white flex items-center justify-center py-5 px-6 shrink-0">
+        <DialogHeader className="bg-green-600 text-white flex items-center justify-center py-5 px-6 shrink-0">
           <DialogTitle className="text-xl font-bold flex items-center gap-3">
-            <CalendarDays className="w-5 h-5" /> Restricciones de Asuntos Propios
+            <CalendarDays className="w-5 h-5" /> Restricciones de Asuntos
+            Propios
           </DialogTitle>
         </DialogHeader>
 
@@ -364,6 +359,27 @@ export function DialogoAsuntosRestricciones({ open, onOpenChange }) {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Cupo máximo de ausencias simultáneas permitidas en el centro.
+                </p>
+              </div>
+
+              {/* Máximo por día */}
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="maxConsecutivos" className="text-sm font-semibold">
+                    Máximo de días consecutivos
+                  </Label>
+                  <Input
+                    id="maxConsecutivos"
+                    type="number"
+                    value={restricciones.maxConsecutivos}
+                    onChange={(e) =>
+                      handleChange("maxConsecutivos", Number(e.target.value))
+                    }
+                    className="w-28 text-right"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Máximo de días consecutivos de asuntos propios que se pueden concatenar.
                 </p>
               </div>
 

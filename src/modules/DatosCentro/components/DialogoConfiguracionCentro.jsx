@@ -34,8 +34,10 @@ import {
   Save,
   UserCheck,
   Palette,
+  Trash2,
 } from "lucide-react";
 import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+import { useProfesoresActivos } from "@/hooks/useProfesoresActivos";
 import { SelectProfesoresSimple } from "@/modules/Utilidades/components/SelectProfesoresSimple";
 
 export function DialogoConfiguracionCentro({ open, onOpenChange }) {
@@ -48,6 +50,15 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
   const fileInputFaviconRef = useRef(null);
 
   const { data: centro, isLoading } = useConfiguracionCentro();
+
+  const { data: profesores = [] } = useProfesoresActivos();
+
+  // Función auxiliar para obtener el nombre desde el UID
+  const getNombreCompleto = (uid) => {
+    const p = profesores.find((prof) => prof.uid === uid);
+    if (!p) return uid;
+    return `${p.givenName} ${p.sn}`;
+  };
 
   const [formData, setFormData] = useState({
     id: null,
@@ -67,6 +78,8 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
     favicon_url: "",
     uid_directora: null,
     uid_secretaria: null,
+    uid_jefa_estudios: null,
+    uids_adjuntos: [],
   });
 
   const [selectedFiles, setSelectedFiles] = useState({
@@ -95,6 +108,10 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
         favicon_url: centro.faviconUrl || "",
         uid_directora: centro.uidDirectora || null,
         uid_secretaria: centro.uidSecretaria || null,
+        uid_jefa_estudios: centro.uidJefaEstudios || null,
+        uids_adjuntos: Array.isArray(centro.uidsAdjuntos)
+          ? centro.uidsAdjuntos.filter((uid) => uid && uid.trim() !== "")
+          : [],
       });
     }
   }, [centro, open]);
@@ -117,10 +134,19 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
 
   const guardarMutation = useMutation({
     mutationFn: async (payload) => {
+      console.log("Payload: ", payload);
       const data = new FormData();
       Object.keys(payload).forEach((key) => {
+        // Excluimos las URLs de previsualización
         if (payload[key] !== null && !key.endsWith("_url")) {
-          data.append(key, payload[key]);
+          // GESTIÓN ESPECIAL PARA EL ARRAY
+          if (key === "uids_adjuntos") {
+            // Si es el array, lo añadimos uno a uno o como JSON string
+            // Tu backend espera un array, así que lo mandamos como string y el backend lo parseará
+            data.append(key, payload[key]);
+          } else {
+            data.append(key, payload[key]);
+          }
         }
       });
       if (selectedFiles.logo_miies)
@@ -147,7 +173,6 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
   });
 
   const handleSave = () => {
-
     if (!formData.nombre_ies)
       return toast.error("El nombre del centro es obligatorio");
     guardarMutation.mutate(formData);
@@ -375,10 +400,11 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
                   {/* TAB: DIRECTIVA */}
                   <TabsContent
                     value="directiva"
-                    className="space-y-8 mt-0 py-4"
+                    className="space-y-6 mt-0 py-4"
                   >
                     <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-6">
-                      <div className="space-y-3">
+                      {/* 1. Directora (Línea independiente) */}
+                      <div className="space-y-2">
                         <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                           <UserCheck className="w-4 h-4 text-green-600" />{" "}
                           Director / Directora
@@ -390,12 +416,12 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
                           }
                         />
                         <p className="text-[11px] text-slate-400">
-                          Este usuario aparecerá como firmante en documentos
-                          oficiales.
+                          Firmante principal de documentos oficiales.
                         </p>
                       </div>
 
-                      <div className="space-y-3">
+                      {/* 2. Secretaria (Línea independiente) */}
+                      <div className="space-y-2">
                         <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                           <UserCheck className="w-4 h-4 text-blue-600" />{" "}
                           Secretario / Secretaria
@@ -406,6 +432,89 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
                             setFormData((p) => ({ ...p, uid_secretaria: val }))
                           }
                         />
+                      </div>
+
+                      <hr className="border-slate-200" />
+
+                      {/* 3. Jefa de Estudios */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                          <UserCheck className="w-4 h-4 text-amber-600" />{" "}
+                          Jefe/a de Estudios
+                        </Label>
+                        <SelectProfesoresSimple
+                          value={formData.uid_jefa_estudios}
+                          onChange={(val) =>
+                            setFormData((p) => ({
+                              ...p,
+                              uid_jefa_estudios: val,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      {/* 4. Jefaturas Adjuntas con Nombres Completos */}
+                      <div className="space-y-3 pt-2">
+                        <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                          <UserCheck className="w-4 h-4 text-amber-600" />{" "}
+                          Jefaturas de Estudios Adjuntas
+                        </Label>
+
+                        <SelectProfesoresSimple
+                          value=""
+                          placeholder="Añadir adjunto a la lista..."
+                          onChange={(val) => {
+                            if (val && !formData.uids_adjuntos.includes(val)) {
+                              setFormData((p) => ({
+                                ...p,
+                                uids_adjuntos: [...p.uids_adjuntos, val],
+                              }));
+                            }
+                          }}
+                        />
+
+                        <div className="space-y-2 mt-3">
+                          {/* Solo mapeamos si hay elementos en el array */}
+                          {formData.uids_adjuntos.length > 0 ? (
+                            formData.uids_adjuntos.map((uid) => (
+                              <div
+                                key={uid}
+                                className="flex items-center justify-between bg-white border border-slate-200 pl-4 pr-2 py-2 rounded-xl shadow-sm hover:border-blue-200 transition-colors group"
+                              >
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-slate-700">
+                                    {getNombreCompleto(uid)}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-mono">
+                                    {uid}
+                                  </span>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() =>
+                                    setFormData((p) => ({
+                                      ...p,
+                                      uids_adjuntos: p.uids_adjuntos.filter(
+                                        (u) => u !== uid
+                                      ),
+                                    }))
+                                  }
+                                  className="h-8 w-8 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))
+                          ) : (
+                            /* Si el array está vacío ([]), mostramos este mensaje elegante en lugar de nada o de cards vacías */
+                            <div className="text-center py-4 border-2 border-dashed rounded-xl border-slate-100 bg-slate-50/30">
+                              <p className="text-xs text-slate-400 italic">
+                                No hay jefaturas adjuntas configuradas.
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </TabsContent>
