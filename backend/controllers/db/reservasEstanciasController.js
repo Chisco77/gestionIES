@@ -84,7 +84,7 @@ async function getReservasEstancias(req, res) {
        FROM reservas_estancias
        ${where}
        ORDER BY fecha ASC, idperiodo_inicio ASC`,
-      vals,
+      vals
     );
 
     res.json({ ok: true, reservas: rows });
@@ -117,13 +117,26 @@ async function insertReservaEstancia(req, res) {
   }
 
   try {
+    // Comprobar que los IDs de periodo existen de verdad ... a ver si cazo el bug
+    const { rows: periodosValidos } = await pool.query(
+      "SELECT id FROM periodos_horarios WHERE id IN ($1, $2)",
+      [idperiodo_inicio, idperiodo_fin]
+    );
+
+    // Si no encuentra los dos IDs, es que uno es inválido
+    if (periodosValidos.length < 2 && idperiodo_inicio !== idperiodo_fin) {
+      return res.status(400).json({
+        ok: false,
+        error: "Uno de los periodos seleccionados no es válido.",
+      });
+    }
     // 1️⃣ Verificar solape
     const { rows: existentes } = await pool.query(
       `SELECT id, idperiodo_inicio, idperiodo_fin
        FROM reservas_estancias
        WHERE idestancia = $1 AND fecha = $2
        AND NOT (idperiodo_fin < $3 OR idperiodo_inicio > $4)`,
-      [idestancia, fecha, idperiodo_inicio, idperiodo_fin],
+      [idestancia, fecha, idperiodo_inicio, idperiodo_fin]
     );
     if (existentes.length > 0) {
       return res.status(409).json({
@@ -154,7 +167,7 @@ async function insertReservaEstancia(req, res) {
         WHERE fecha = $2
         AND NOT (idperiodo_fin < $3 OR idperiodo_inicio > $4)
      )`,
-        [otrasEstancias, fecha, idperiodo_inicio, idperiodo_fin],
+        [otrasEstancias, fecha, idperiodo_inicio, idperiodo_fin]
       );
 
       if (libres.length > 0) {
@@ -180,7 +193,7 @@ async function insertReservaEstancia(req, res) {
         fecha,
         descripcion,
         idrepeticion,
-      ],
+      ]
     );
 
     res.status(201).json({ ok: true, reserva: rows[0] });
@@ -218,14 +231,14 @@ async function deleteReservaEstancia(req, res) {
       `SELECT titulo, fecha_inicio 
        FROM extraescolares 
        WHERE id_reserva_estancia = $1`,
-      [id],
+      [id]
     );
 
     if (vinculadas.length > 0) {
       const actividad = vinculadas[0];
       // Formateamos la fecha para que sea legible (DD/MM/YYYY)
       const fechaFormateada = new Date(
-        actividad.fecha_inicio,
+        actividad.fecha_inicio
       ).toLocaleDateString("es-ES");
 
       return res.status(400).json({
@@ -237,7 +250,7 @@ async function deleteReservaEstancia(req, res) {
     // 2. Si no hay vínculos, procedemos al borrado normal
     const { rowCount } = await pool.query(
       `DELETE FROM reservas_estancias WHERE id = $1`,
-      [id],
+      [id]
     );
 
     if (rowCount === 0) {
@@ -249,12 +262,10 @@ async function deleteReservaEstancia(req, res) {
     res.json({ ok: true });
   } catch (err) {
     console.error("[deleteReservaEstancia] Error:", err);
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: "Error interno al intentar eliminar la reserva",
-      });
+    res.status(500).json({
+      ok: false,
+      error: "Error interno al intentar eliminar la reserva",
+    });
   }
 }
 
@@ -276,7 +287,7 @@ async function getReservasEstanciasPorDia(req, res) {
     const { rows: periodos } = await pool.query(
       `SELECT id, nombre, inicio, fin
        FROM periodos_horarios
-       ORDER BY id`,
+       ORDER BY id`
     );
 
     // 2️⃣ Obtener estancias filtradas (solo reservables)
@@ -305,7 +316,7 @@ async function getReservasEstanciasPorDia(req, res) {
        WHERE TO_CHAR(fecha, 'YYYY-MM-DD') = $1
        AND idestancia = ANY($2::int[])
        ORDER BY idperiodo_inicio`,
-      [fecha, idsEstancias],
+      [fecha, idsEstancias]
     );
 
     // 4️⃣ Añadir nombres LDAP a las reservas
@@ -414,7 +425,7 @@ async function getReservasFiltradas(req, res) {
        FROM reservas_estancias
        ${where}
        ORDER BY fecha ASC, idperiodo_inicio ASC, idestancia ASC`,
-      vals,
+      vals
     );
 
     // 4️⃣ Añadir nombres LDAP
@@ -437,7 +448,7 @@ async function getReservasFiltradas(req, res) {
     const { rows: periodos } = await pool.query(
       `SELECT id, nombre, inicio, fin
        FROM periodos_horarios
-       ORDER BY id`,
+       ORDER BY id`
     );
 
     res.json({ ok: true, periodos, estancias, reservas });
@@ -459,12 +470,25 @@ async function updateReservaEstancia(req, res) {
   }
 
   try {
+    // Comprobar que los IDs de periodo existen de verdad ... a ver si cazo el bug
+    const { rows: periodosValidos } = await pool.query(
+      "SELECT id FROM periodos_horarios WHERE id IN ($1, $2)",
+      [idperiodo_inicio, idperiodo_fin]
+    );
+
+    // Si no encuentra los dos IDs, es que uno es inválido
+    if (periodosValidos.length < 2 && idperiodo_inicio !== idperiodo_fin) {
+      return res.status(400).json({
+        ok: false,
+        error: "Uno de los periodos seleccionados no es válido.",
+      });
+    }
     // Primero obtenemos la reserva actual
     const { rows: existentes } = await pool.query(
       `SELECT id, idestancia, fecha, uid
        FROM reservas_estancias
        WHERE id = $1`,
-      [id],
+      [id]
     );
 
     if (existentes.length === 0) {
@@ -482,7 +506,7 @@ async function updateReservaEstancia(req, res) {
        AND id <> $3
        AND NOT (idperiodo_fin < $4 OR idperiodo_inicio > $5)
        LIMIT 1`,
-      [idestancia, fecha, id, idperiodo_inicio, idperiodo_fin],
+      [idestancia, fecha, id, idperiodo_inicio, idperiodo_fin]
     );
 
     if (solapes.length > 0) {
@@ -500,7 +524,7 @@ async function updateReservaEstancia(req, res) {
            descripcion = $3
        WHERE id = $4
        RETURNING *`,
-      [idperiodo_inicio, idperiodo_fin, descripcion, id],
+      [idperiodo_inicio, idperiodo_fin, descripcion, id]
     );
 
     res.json({ ok: true, reserva: rows[0] });
@@ -550,7 +574,7 @@ async function insertReservaEstanciaPeriodica(req, res) {
         fechaLimite,
         descripcion,
         repeticion === "diaria" ? "daily" : "weekly",
-      ],
+      ]
     );
     const idRepeticion = repRows[0].id;
 
@@ -585,7 +609,7 @@ async function insertReservaEstanciaPeriodica(req, res) {
            AND fecha = $2
            AND idperiodo_inicio <= $4
            AND idperiodo_fin >= $3`,
-        [idestancia, f, idperiodo_inicio, idperiodo_fin],
+        [idestancia, f, idperiodo_inicio, idperiodo_fin]
       );
 
       if (existentes.length > 0) continue;
@@ -603,7 +627,7 @@ async function insertReservaEstanciaPeriodica(req, res) {
           f,
           descripcion,
           idRepeticion,
-        ],
+        ]
       );
       reservasInsertadas.push(rows[0]);
     }

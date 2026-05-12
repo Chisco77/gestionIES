@@ -155,6 +155,7 @@ export function GridReservasEstancias({
 
   // Handlers
   const handleEditarReserva = (reserva) => {
+    console.log ("Reserva: ", reserva);
     if (!esDirectiva && reserva.uid !== uid) {
       toast.error("Solo puedes modificar tus propias reservas.");
       return;

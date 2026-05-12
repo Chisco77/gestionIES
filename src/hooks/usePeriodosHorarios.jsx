@@ -23,7 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 const API_URL = import.meta.env.VITE_API_URL;
 const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
 
-export function usePeriodosHorarios() {
+/*export function usePeriodosHorarios() {
   return useQuery({
     queryKey: ["periodos-horarios"],
     queryFn: async () => {
@@ -41,6 +41,34 @@ export function usePeriodosHorarios() {
         inicio: p.inicio,
         fin: p.fin,
       }));
+
+      
+    },
+    staleTime: 1000 * 60 * 30, // 30 minutos
+  });
+}*/
+
+export function usePeriodosHorarios() {
+  return useQuery({
+    queryKey: ["periodos-horarios"],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/periodos-horarios`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Error obteniendo los periodos horarios");
+
+      const data = await res.json();
+
+      const periodos = (data.periodos || []).map((p) => ({
+        id: Number(p.id),
+        nombre: p.nombre,
+        inicio: p.inicio,
+        fin: p.fin,
+      }));
+
+      // Ordenamos por la hora de inicio
+      return periodos.sort((a, b) => a.inicio.localeCompare(b.inicio));
     },
     staleTime: 1000 * 60 * 30, // 30 minutos
   });

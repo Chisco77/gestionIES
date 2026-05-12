@@ -103,7 +103,7 @@ export function PanelReservas({ uid, loading = false }) {
   const handleEliminarAsunto = (asunto) => {
     if (asunto.estado === 1) {
       toast.warning(
-        "No se puede eliminar un asunto propio que ha sido aceptado.",
+        "No se puede eliminar un asunto propio que ha sido aceptado."
       );
       return; // no abrir el diálogo
     }
@@ -119,7 +119,7 @@ export function PanelReservas({ uid, loading = false }) {
   const handleEliminarExtraescolar = (actividad) => {
     if (actividad.estado == 1) {
       toast.warning(
-        "No se puede eliminar una actividad extraescolar que ha sido aceptada.",
+        "No se puede eliminar una actividad extraescolar que ha sido aceptada."
       );
       return; // no abrir el diálogo
     }
@@ -158,7 +158,7 @@ export function PanelReservas({ uid, loading = false }) {
   const rowVirtualizer = useVirtualizer({
     count: Math.ceil(reservas.length / columnCount), // filas virtuales
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 105, // altura aproximada de cada fila
+    estimateSize: () => 120, // altura aproximada de cada fila
     overscan: 5,
   });
 
@@ -642,7 +642,7 @@ export function PanelReservas({ uid, loading = false }) {
                         const startIndex = virtualRow.index * columnCount;
                         const items = reservas.slice(
                           startIndex,
-                          startIndex + columnCount,
+                          startIndex + columnCount
                         );
 
                         return (
@@ -655,22 +655,23 @@ export function PanelReservas({ uid, loading = false }) {
                               width: "100%",
                               transform: `translateY(${virtualRow.start}px)`,
                               display: "flex",
-                              gap: "0.5rem", // espacio entre columnas
-                              paddingBottom: "4px", // espacio inferior entre filas
+                              gap: "1rem",
+                              paddingBottom: "12px",
+                              alignItems: "stretch",
                             }}
                           >
                             {items.map((r) => {
                               const estancia = estanciasMap.get(
-                                r.idestancia.toString(),
+                                r.idestancia.toString()
                               );
                               const periodoInicio = periodosMap.get(
-                                r.idperiodo_inicio.toString(),
+                                r.idperiodo_inicio.toString()
                               );
                               const periodoFin = periodosMap.get(
-                                r.idperiodo_fin.toString(),
+                                r.idperiodo_fin.toString()
                               );
                               const fechaStr = new Date(
-                                r.fecha,
+                                r.fecha
                               ).toLocaleDateString("es-ES", {
                                 day: "numeric",
                                 month: "long",
@@ -687,51 +688,62 @@ export function PanelReservas({ uid, loading = false }) {
                               return (
                                 <Card
                                   key={r.id}
-                                  className="border shadow-sm rounded-xl p-2 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative flex-1"
+                                  className="flex-1 flex flex-col justify-between border shadow-sm rounded-xl p-3 bg-white cursor-pointer hover:bg-blue-50 transition-colors relative min-h-[110px]"
                                   onClick={() => handleClickReserva(r)}
                                 >
-                                  <div className="flex items-center justify-between gap-2">
-                                    <p
-                                      className="font-semibold text-blue-600 truncate max-w-[80%]"
-                                      title={textoDescripcion}
-                                    >
-                                      {textoDescripcion}
-                                    </p>
+                                  <div>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <p
+                                        className="font-semibold text-blue-600 leading-tight line-clamp-2"
+                                        title={textoDescripcion}
+                                      >
+                                        {textoDescripcion}
+                                      </p>
 
-                                    <button
-                                      type="button"
-                                      className="text-red-500 hover:text-red-700 flex-shrink-0"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEliminarReserva(r);
-                                      }}
-                                    >
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Trash2 className="w-5 h-5" />
-                                          </TooltipTrigger>
-                                          <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
-                                            <p>Eliminar reserva</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    </button>
-                                  </div>
-                                  {/* Estructura de textos inferior igual al resto de tabs */}
-                                  <div className="mt-1">
-                                    <p className="text-gray-700">
-                                      {periodoInicio?.nombre ||
-                                        r.idperiodo_inicio}{" "}
-                                      a {periodoFin?.nombre || r.idperiodo_fin}
-                                    </p>
-                                    <p className="text-gray-500">{fechaStr}</p>
+                                      <button
+                                        type="button"
+                                        className="text-red-500 hover:text-red-700 flex-shrink-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEliminarReserva(r);
+                                        }}
+                                      >
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Trash2 className="w-5 h-5" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
+                                              <p>Eliminar reserva</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      </button>
+                                    </div>
+                                    {/* Estructura de textos inferior igual al resto de tabs */}
+                                    <div className="mt-2 space-y-0.5">
+                                      <p className="text-sm text-gray-700 font-medium">
+                                        {periodoInicio?.nombre} a{" "}
+                                        {periodoFin?.nombre}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {fechaStr}
+                                      </p>
+                                    </div>
                                   </div>
                                 </Card>
                               );
                             })}
-                            {/* Si solo hay 1 elemento en una fila de 2, metemos un div vacío para mantener el tamaño */}
-                            {items.length === 1 && <div className="flex-1" />}
+                            {/* Relleno para que la última fila no se desparrame si está impar */}
+                            {items.length < columnCount &&
+                              Array.from({
+                                length: columnCount - items.length,
+                              }).map((_, i) => (
+                                <div
+                                  key={`empty-${i}`}
+                                  className="flex-1 invisible"
+                                />
+                              ))}
                           </div>
                         );
                       })}
@@ -782,8 +794,7 @@ export function PanelReservas({ uid, loading = false }) {
           periodos={periodos}
           descripcionEstancia={
             estancias.find(
-              (e) =>
-                parseInt(e.id) === parseInt(reservaSeleccionada.idestancia),
+              (e) => parseInt(e.id) === parseInt(reservaSeleccionada.idestancia)
             )?.descripcion || ""
           }
         />
