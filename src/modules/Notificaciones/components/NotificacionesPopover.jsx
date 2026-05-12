@@ -127,7 +127,7 @@ export default function NotificacionesPopover({
           className="p-0 overflow-visible rounded-lg max-w-7xl w-full"
           onInteractOutside={(e) => e.preventDefault()}
         >
-          <DialogHeader className="bg-green-500 text-white rounded-t-lg flex flex-col items-center justify-center py-3 px-6">
+          <DialogHeader className="bg-green-600 text-white rounded-t-lg flex flex-col items-center justify-center py-3 px-6">
             <DialogTitle className="text-lg font-semibold text-center leading-snug">
               {tipoDialogo === "permisos"
                 ? "Gestión de Permisos"

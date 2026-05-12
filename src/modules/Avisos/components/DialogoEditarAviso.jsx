@@ -76,7 +76,7 @@ export function DialogoEditarAviso({ open, onClose, avisoSeleccionado }) {
         onInteractOutside={(e) => e.preventDefault()}
         className="p-0 overflow-hidden rounded-lg border-none"
       >
-        <DialogHeader className="bg-green-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
+        <DialogHeader className="bg-green-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle className="text-lg font-semibold text-center leading-snug">
             Editar Aviso
           </DialogTitle>
