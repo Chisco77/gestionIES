@@ -71,7 +71,8 @@ import {
 } from "@/Informes/extraescolares";
 
 import { getCursoActual, ddmmyyyyToISO } from "@/utils/fechasHoras";
-import { format } from "date-fns";
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+import { resolverRutaLogo } from "@/Informes/utils";
 
 // Función de filtrado por rango de fechas
 const dateRangeFilter = (row, columnId, value) => {
@@ -102,6 +103,9 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
   const { data: cursos = [] } = useCursosLdap();
   const { data: periodos = [] } = usePeriodosHorarios();
   const { data: extraescolaresTodas = [] } = useExtraescolaresAll();
+
+  const { data: centro } = useConfiguracionCentro(); // Traemos los datos del centro
+  const urlLogoParaInformes = resolverRutaLogo(centro?.logoCentroUrl);
 
   // Dietas XLS
   const handleGenerarExcel = async (actividad) => {
@@ -380,7 +384,8 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
                   onClick={() =>
                     generateListadoExtraescolaresMensual(
                       table.getFilteredRowModel().rows.map((r) => r.original),
-                      getFiltrosFechas()
+                      getFiltrosFechas(),
+                      urlLogoParaInformes
                     )
                   }
                 >
@@ -391,7 +396,8 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
                   onClick={() =>
                     generateListadoExtraescolaresPorProfesor(
                       table.getFilteredRowModel().rows.map((r) => r.original),
-                      getFiltrosFechas()
+                      getFiltrosFechas(),
+                      urlLogoParaInformes
                     )
                   }
                 >
@@ -402,7 +408,8 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
                   onClick={() =>
                     generateListadoExtraescolaresPorDepartamento(
                       table.getFilteredRowModel().rows.map((r) => r.original),
-                      getFiltrosFechas()
+                      getFiltrosFechas(),
+                      urlLogoParaInformes
                     )
                   }
                 >

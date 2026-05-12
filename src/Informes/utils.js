@@ -61,7 +61,7 @@
  * Función auxiliar para resolver la ruta del logo
  */
 export function resolverRutaLogo(urlDb) {
-  if (!urlDb) return DEFAULT_LOGO;
+  if (!urlDb) return;
   if (urlDb.startsWith("http")) return urlDb;
 
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");

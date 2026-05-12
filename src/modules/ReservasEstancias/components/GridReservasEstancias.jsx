@@ -51,6 +51,7 @@ import {
 
 import { generateCalendarioOcupacionPorEstancia } from "@/Informes/reservas";
 import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+import { resolverRutaLogo } from "@/Informes/utils";
 
 export function GridReservasEstancias({
   uid,
@@ -86,6 +87,7 @@ export function GridReservasEstancias({
   const [reservaEditarPeriodica, setReservaEditarPeriodica] = useState(null);
 
   const { data: centro } = useConfiguracionCentro(); // Traemos los datos del centro
+  const urlLogoParaInformes = resolverRutaLogo(centro?.logoCentroUrl);
 
   // Handler para abrir el diálogo de edición de reserva periódica
   const handleEditarReservaPeriodica = (reserva) => {
@@ -155,7 +157,7 @@ export function GridReservasEstancias({
 
   // Handlers
   const handleEditarReserva = (reserva) => {
-    console.log ("Reserva: ", reserva);
+    console.log("Reserva: ", reserva);
     if (!esDirectiva && reserva.uid !== uid) {
       toast.error("Solo puedes modificar tus propias reservas.");
       return;
@@ -192,10 +194,6 @@ export function GridReservasEstancias({
   };
 
   const handleGenerarCalendarioOcupacionPorEstancia = async () => {
-    const urlParaPdf =
-      typeof resolverRutaLogo === "function"
-        ? resolverRutaLogo(centro?.logoCentroUrl)
-        : centro?.logoCentroUrl;
     try {
       if (!tipoEstancia) {
         toast.info("Selecciona un tipo de estancia.");
@@ -251,11 +249,16 @@ export function GridReservasEstancias({
         ),
       }));
 
-      generateCalendarioOcupacionPorEstancia(resultados, periodosDB, {
-        tipoEstancia,
-        desde: fechaDesde,
-        hasta: fechaHasta,
-      });
+      generateCalendarioOcupacionPorEstancia(
+        resultados,
+        periodosDB,
+        {
+          tipoEstancia,
+          desde: fechaDesde,
+          hasta: fechaHasta,
+        },
+        urlLogoParaInformes
+      );
     } catch (err) {
       console.error(err);
       toast.error("Error generando el informe.");
