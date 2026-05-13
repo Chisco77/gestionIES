@@ -13,11 +13,6 @@
  * ================================================================
  */
 
-/**
- * ================================================================
- * Controller: configuracionCentroController.js
- * ================================================================
- */
 
 const db = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
@@ -104,7 +99,6 @@ async function getConfiguracionCentro(req, res) {
 
 async function saveConfiguracionCentro(req, res) {
   const body = req.body;
-  console.log ("Body al backed: ", body);
 
   if (!body.nombre_ies) {
     return res

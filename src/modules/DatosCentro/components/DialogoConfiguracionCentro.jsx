@@ -155,6 +155,7 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
             data.append(key, payload[key]);
           }
         }
+        data.set("web_url", payload.web_url || "");
       });
       if (selectedFiles.logo_miies)
         data.append("logo_miies", selectedFiles.logo_miies);
