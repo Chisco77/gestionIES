@@ -1093,7 +1093,7 @@ async function enviarEmailActividad(actividad, origen, ldapSession) {
             </div>
           </div>
           <div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 0.8rem; color: #64748b;">
-            Este es un mensaje automático del Sistema de Gestión IES Fco de Orellana.<br>
+            Este es un mensaje automático del Sistema de Gestión.<br>
             <span style="color: #f1f5f9;">ID: ${actividad.id}-${Date.now()}</span>
           </div>
         </div>`,

@@ -1132,7 +1132,7 @@ async function enviarEmailPermiso(permiso, origen, ldapSession) {
             </div>
           </div>
           <div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 0.8rem; color: #64748b;">
-            Sistema de Gestión IES Francisco de Orellana<br>
+            Mensaje automático del Sistema de Gestión<br>
             <span style="color: #f1f5f9; font-size: 1px; display: none !important;">Ref: ${tokenSeguridad}</span>
           </div>
         </div>`,
