@@ -448,87 +448,6 @@ async function sincronizarAusenciasActividad(actividad, client) {
 /**
  * Insertar nueva actividad extraescolar o complementaria
  */
-/*async function insertExtraescolar(req, res) {
-  try {
-    const usuarioSesion = req.session?.user;
-    if (!usuarioSesion)
-      return res.status(401).json({ ok: false, error: "No autenticado" });
-
-    const errores = validarActividad(req.body);
-    if (errores.length) return res.status(400).json({ ok: false, errores });
-
-    const {
-      gidnumber,
-      cursos_gids,
-      tipo,
-      titulo,
-      descripcion,
-      fecha_inicio,
-      fecha_fin,
-      idperiodo_inicio,
-      idperiodo_fin,
-      responsables_uids = [],
-      ubicacion,
-      coords,
-      idestancia,
-      fuera_del_centro,
-    } = req.body;
-
-    // Lógica de limpieza antes de insertar
-    const esFuera = fuera_del_centro === true || fuera_del_centro === "true";
-
-    // Si es dentro: ubicación vacía y coords null.
-    // Si es fuera: idestancia null.
-    const finalUbicacion = esFuera ? ubicacion : "";
-    const finalCoords = esFuera ? coords : null;
-    const finalEstancia = esFuera ? null : idestancia || null;
-
-    const genera_ausencias =
-      tipo === "extraescolar" ? true : (req.body.genera_ausencias ?? false);
-
-    const { rows } = await db.query(
-      `INSERT INTO extraescolares (
-        uid, gidnumber, cursos_gids, tipo, titulo, descripcion,
-        fecha_inicio, fecha_fin, idperiodo_inicio, idperiodo_fin,
-        responsables_uids, ubicacion, coords, updated_by, genera_ausencias, 
-        idestancia, fuera_del_centro
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
-      RETURNING *`,
-      [
-        usuarioSesion.username,
-        gidnumber,
-        cursos_gids,
-        tipo,
-        titulo,
-        descripcion,
-        fecha_inicio,
-        fecha_fin,
-        idperiodo_inicio || null,
-        idperiodo_fin || null,
-        responsables_uids,
-        finalUbicacion,
-        finalCoords,
-        usuarioSesion.username,
-        genera_ausencias,
-        finalEstancia,
-        esFuera,
-      ],
-    );
-
-    const actividad = rows[0];
-    res.status(201).json({ ok: true, actividad });
-
-    // Enviamos el mail con el formato "fino"
-    setImmediate(() => {
-      enviarEmailActividad(actividad, "insercion", req.session.ldap);
-    });
-  } catch (err) {
-    console.error("[insertExtraescolar] Error:", err);
-    res.status(500).json({ ok: false, error: "Error insertando actividad" });
-  }
-}*/
-
 async function insertExtraescolar(req, res) {
   const client = await db.connect();
   try {
@@ -551,8 +470,6 @@ async function insertExtraescolar(req, res) {
     let avisoExtra = null;
 
     // --- Dentro de updateExtraescolar (y también en insert) ---
-
-    // --- SUSTITUIR EL BLOQUE DE RESERVA POR ESTE ---
 
     if (!esFuera && finalEstancia) {
       // 1. Primero comprobamos si es reservable
@@ -737,121 +654,6 @@ async function deleteExtraescolar(req, res) {
     client.release();
   }
 }
-
-/*async function updateExtraescolar(req, res) {
-  const client = await db.connect();
-  try {
-    const id = req.params.id;
-    const usuarioSesion = req.session?.user;
-    if (!usuarioSesion)
-      return res.status(401).json({ ok: false, error: "No autenticado" });
-
-    const errores = validarActividad(req.body);
-    if (errores.length) return res.status(400).json({ ok: false, errores });
-
-    const { rows: actuales } = await client.query(
-      `SELECT * FROM extraescolares WHERE id = $1`,
-      [id],
-    );
-    const actividadPrevia = actuales[0];
-    if (!actividadPrevia)
-      return res.status(404).json({ ok: false, error: "No encontrado" });
-
-    // Permisos: Solo el creador o la directiva pueden editar
-    if (
-      actividadPrevia.uid !== usuarioSesion.username &&
-      usuarioSesion.perfil !== "directiva"
-    ) {
-      return res.status(403).json({ ok: false, error: "No autorizado" });
-    }
-
-    const {
-      gidnumber,
-      cursos_gids,
-      tipo,
-      titulo,
-      descripcion,
-      fecha_inicio,
-      fecha_fin,
-      idperiodo_inicio,
-      idperiodo_fin,
-      responsables_uids = [],
-      ubicacion,
-      coords,
-      idestancia,
-      fuera_del_centro,
-    } = req.body;
-
-    const genera_ausencias =
-      tipo === "extraescolar" ? true : (req.body.genera_ausencias ?? false);
-
-    // Lógica de limpieza antes de insertar
-    const esFuera = fuera_del_centro === true || fuera_del_centro === "true";
-
-    // Si es dentro: ubicación vacía y coords null.
-    // Si es fuera: idestancia null.
-    const finalUbicacion = esFuera ? ubicacion : "";
-    const finalCoords = esFuera ? coords : null;
-    const finalEstancia = esFuera ? null : idestancia || null;
-    await client.query("BEGIN");
-
-    const { rows } = await client.query(
-      `UPDATE extraescolares
-       SET gidnumber = $1, cursos_gids = $2, tipo = $3, titulo = $4,
-           descripcion = $5, fecha_inicio = $6, fecha_fin = $7,
-           idperiodo_inicio = $8, idperiodo_fin = $9, responsables_uids = $10,
-           ubicacion = $11, coords = $12, updated_by = $13, genera_ausencias = $14,
-           idestancia = $15, fuera_del_centro = $16  -- <--- Añadido el campo
-       WHERE id = $17 RETURNING *`,
-      [
-        gidnumber,
-        cursos_gids,
-        tipo,
-        titulo,
-        descripcion,
-        fecha_inicio,
-        fecha_fin,
-        idperiodo_inicio || null,
-        idperiodo_fin || null,
-        responsables_uids,
-        finalUbicacion,
-        finalCoords,
-        usuarioSesion.username,
-        genera_ausencias,
-        finalEstancia,
-        esFuera,
-        id, // <--- No olvides actualizar el índice del ID
-      ],
-    );
-
-    const actividadActualizada = rows[0];
-
-    // Sincronizar ausencias si ya estaba aceptada
-    if (actividadPrevia.estado === 1) {
-      await client.query(
-        `DELETE FROM ausencias_profesorado WHERE idextraescolar = $1`,
-        [id],
-      );
-      if (genera_ausencias) {
-        await sincronizarAusenciasActividad(actividadActualizada, client);
-      }
-    }
-
-    await client.query("COMMIT");
-    res.json({ ok: true, actividad: actividadActualizada });
-
-    // --- AVISO POR EMAIL DE LA EDICIÓN ---
-    setImmediate(() => {
-      enviarEmailActividad(actividadActualizada, "edicion", req.session.ldap);
-    });
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("[updateExtraescolar] Error:", err);
-    res.status(500).json({ ok: false, error: "Error actualizando" });
-  } finally {
-    client.release();
-  }
-}*/
 
 async function updateExtraescolar(req, res) {
   const client = await db.connect();
@@ -1103,13 +905,46 @@ function validarActividad(body) {
  */
 async function enviarEmailActividad(actividad, origen, ldapSession) {
   try {
+    // 1. Obtener configuración de avisos
     const { rows: avisos } = await db.query(
-      `SELECT emails FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
+      `SELECT emails, avisar_profesores FROM avisos WHERE modulo = 'extraescolares' LIMIT 1`
     );
-    const emails = (avisos[0]?.emails || [])
+
+    const configAviso = avisos[0] || {};
+    const emailsDirectiva = (configAviso.emails || [])
       .map((e) => e.trim())
       .filter(Boolean);
-    if (!emails.length) return;
+    const avisarProfe = configAviso.avisar_profesores === true;
+
+    // 2. Obtener emails de todos los implicados (Organizador + Responsables)
+    // Combinamos uid (organizador) con los elementos del array responsables_uids
+    const todosUids = [actividad.uid, ...(actividad.responsables_uids || [])];
+
+    // Eliminamos duplicados por si el organizador también está en responsables_uids
+    const uidsUnicos = [...new Set(todosUids)];
+
+    // Buscamos los emails de todos ellos en una sola consulta
+    const { rows: empRows } = await db.query(
+      "SELECT email FROM empleados WHERE uid = ANY($1)",
+      [uidsUnicos]
+    );
+
+    const emailsProfesores = empRows
+      .map((r) => r.email)
+      .filter((email) => email && email.includes("@"));
+
+    // 3. Preparar destinatarios
+    let destinatarios = [...emailsDirectiva];
+
+    // Solo añadimos a los profes si es cambio de estado y el flag está activo
+    if (avisarProfe && origen === "estado") {
+      destinatarios.push(...emailsProfesores);
+    }
+
+    // Eliminamos duplicados en la lista final (por si un email está en Directiva y también es Profe)
+    destinatarios = [...new Set(destinatarios)];
+
+    if (!destinatarios.length) return;
 
     // 1. Obtener nombres de LDAP
     const nombreOrganizador = await new Promise((resolve) => {
@@ -1215,8 +1050,8 @@ async function enviarEmailActividad(actividad, origen, ldapSession) {
 
     // 4. Construcción del HTML con el Badge alineado a la derecha
     await mailer.sendMail({
-      from: `"Gestión IES" <comunicaciones@iesfcodeorellana.es>`,
-      to: emails.join(", "),
+      from: `"Gestión IES"`,
+      to: destinatarios.join(", "),
       subject: `${tagAsunto} ${actividad.tipo.toUpperCase()}: ${actividad.titulo}`,
       html: `
         <div style="font-family: sans-serif; color: #334155; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin: 0 auto;">

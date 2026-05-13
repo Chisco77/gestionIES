@@ -34,8 +34,7 @@ const db = require("../../db");
 exports.getAvisos = async (req, res) => {
   try {
     const { modulo } = req.query;
-
-    let text = "SELECT id, modulo, emails FROM avisos";
+    let text = "SELECT id, modulo, emails, avisar_profesores FROM avisos";
     const params = [];
 
     if (modulo) {
@@ -44,7 +43,6 @@ exports.getAvisos = async (req, res) => {
     }
 
     text += " ORDER BY id";
-
     const result = await db.query(text, params);
     res.json(result.rows);
   } catch (error) {
@@ -85,7 +83,7 @@ exports.getAvisosSMTP = async (req, res) => {
 // Body: { modulo: "...", emails: ["a@b.com","c@d.com"] }
 // ================================================================
 exports.insertAviso = async (req, res) => {
-  const { modulo, emails } = req.body;
+  const { modulo, emails, avisar_profesores } = req.body;
 
   if (!modulo || !emails || !Array.isArray(emails)) {
     return res.status(400).json({
@@ -94,9 +92,19 @@ exports.insertAviso = async (req, res) => {
   }
 
   try {
+    // Verificar si el módulo ya existe
+    const check = await db.query("SELECT id FROM avisos WHERE modulo = $1", [
+      modulo,
+    ]);
+    if (check.rowCount > 0) {
+      return res
+        .status(409)
+        .json({ message: "Ya existe una configuración para este módulo" });
+    }
+
     const result = await db.query(
-      "INSERT INTO avisos (modulo, emails, app_password) VALUES ($1, $2, $3) RETURNING *",
-      [modulo, emails, ""]
+      "INSERT INTO avisos (modulo, emails, app_password, avisar_profesores) VALUES ($1, $2, $3, $4) RETURNING *",
+      [modulo, emails, "", avisar_profesores ?? false]
     );
 
     res.status(201).json(result.rows[0]);
@@ -122,6 +130,16 @@ exports.insertAvisoSMTP = async (req, res) => {
   }
 
   try {
+    // Verificar si el módulo ya existe
+    const check = await db.query("SELECT id FROM avisos WHERE modulo = $1", [
+      modulo,
+    ]);
+    if (check.rowCount > 0) {
+      return res
+        .status(409)
+        .json({ message: "Ya existe una configuración para este módulo" });
+    }
+
     const result = await db.query(
       "INSERT INTO avisos (modulo, emails, app_password) VALUES ($1, $2, $3) RETURNING *",
       [modulo, emails, app_password]
@@ -150,6 +168,18 @@ exports.updateAvisoSMTP = async (req, res) => {
   }
 
   try {
+    // Buscamos si existe OTRO registro con ese módulo que NO sea el que estamos editando
+    const check = await db.query(
+      "SELECT id FROM avisos WHERE modulo = $1 AND id != $2",
+      [modulo, id]
+    );
+
+    if (check.rowCount > 0) {
+      return res.status(409).json({
+        message: "Ya existe otro aviso configurado para este módulo",
+      });
+    }
+
     const result = await db.query(
       "UPDATE avisos SET modulo = $1, emails = $2, app_password = $3 WHERE id = $4 RETURNING *",
       [modulo, emails, app_password, id]
@@ -168,18 +198,30 @@ exports.updateAvisoSMTP = async (req, res) => {
 
 exports.updateAviso = async (req, res) => {
   const { id } = req.params;
-  const { modulo, emails } = req.body;
+  const { modulo, emails, avisar_profesores } = req.body;
+
   if (!modulo || !emails || !Array.isArray(emails)) {
-    return res
-      .status(400)
-      .json({
-        message: 'Los campos "modulo" y "emails" (array) son obligatorios',
-      });
+    return res.status(400).json({
+      message: 'Los campos "modulo" y "emails" (array) son obligatorios',
+    });
   }
+
   try {
+    // Buscamos si existe OTRO registro con ese módulo que NO sea el que estamos editando
+    const check = await db.query(
+      "SELECT id FROM avisos WHERE modulo = $1 AND id != $2",
+      [modulo, id]
+    );
+
+    if (check.rowCount > 0) {
+      return res.status(409).json({
+        message: "Ya existe otro aviso configurado para este módulo",
+      });
+    }
+
     const result = await db.query(
-      "UPDATE avisos SET modulo = $1, emails = $2 WHERE id = $3 RETURNING *",
-      [modulo, emails, id]
+      "UPDATE avisos SET modulo = $1, emails = $2, avisar_profesores = $3 WHERE id = $4 RETURNING *",
+      [modulo, emails, avisar_profesores, id]
     );
     if (result.rowCount === 0) {
       return res.status(404).json({ message: "Aviso no encontrado" });

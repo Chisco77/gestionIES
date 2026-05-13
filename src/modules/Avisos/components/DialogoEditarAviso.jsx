@@ -20,6 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 const API_BASE = import.meta.env.VITE_API_URL
@@ -29,6 +31,7 @@ const API_BASE = import.meta.env.VITE_API_URL
 export function DialogoEditarAviso({ open, onClose, avisoSeleccionado }) {
   const [modulo, setModulo] = useState("");
   const [emails, setEmails] = useState("");
+  const [avisarProfesores, setAvisarProfesores] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -36,24 +39,33 @@ export function DialogoEditarAviso({ open, onClose, avisoSeleccionado }) {
     if (avisoSeleccionado) {
       setModulo(avisoSeleccionado.modulo || "");
       setEmails(avisoSeleccionado.emails?.join(", ") || "");
+      setAvisarProfesores(!!avisoSeleccionado.avisar_profesores);
     }
   }, [avisoSeleccionado]);
 
   const mutation = useMutation({
-    mutationFn: async ({ id, modulo, emails }) => {
+    mutationFn: async ({ id, modulo, emails, avisar_profesores }) => {
       const res = await fetch(`${API_BASE}/avisos/${id}`, {
-        method: "PUT",
-        credentials: "include",
+        // ID en la URL
+        method: "PUT", // PUT explícito
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modulo, emails }),
+        credentials: "include",
+        body: JSON.stringify({ modulo, emails, avisar_profesores }),
       });
-      if (!res.ok) throw new Error("Error al actualizar aviso");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Error al actualizar aviso");
+      }
       return res.json();
     },
     onSuccess: () => {
-      toast.success("Aviso modificado correctamente");
-      queryClient.invalidateQueries(["avisos"]);
+      toast.success("Operación realizada correctamente");
+      queryClient.invalidateQueries({ queryKey: ["avisos"] });
       onClose();
+    },
+    onError: (err) => {
+      // 3. error
+      toast.error(err.message);
     },
   });
 
@@ -67,7 +79,12 @@ export function DialogoEditarAviso({ open, onClose, avisoSeleccionado }) {
       .map((e) => e.trim())
       .filter(Boolean);
 
-    mutation.mutate({ id: avisoSeleccionado.id, modulo, emails: emailsArray });
+    mutation.mutate({
+      id: avisoSeleccionado.id,
+      modulo,
+      emails: emailsArray,
+      avisar_profesores: avisarProfesores,
+    });
   };
 
   return (
@@ -82,9 +99,9 @@ export function DialogoEditarAviso({ open, onClose, avisoSeleccionado }) {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col space-y-4 p-6">
+        <div className="flex flex-col space-y-6 p-6">
           <div>
-            <label className="block text-sm font-medium">Módulo</label>
+            <label className="block text-sm font-medium mb-2">Módulo</label>
             <Select value={modulo} onValueChange={setModulo} disabled>
               <SelectTrigger>
                 <SelectValue placeholder="Selecciona un módulo" />
@@ -101,7 +118,27 @@ export function DialogoEditarAviso({ open, onClose, avisoSeleccionado }) {
             <label className="block text-sm font-medium">
               Emails (separados por coma)
             </label>
+            <span className="text-xs text-muted-foreground">
+              Lista de emails de miembros de la directiva o responsables que
+              recibirián notificaciones relacionadas con este elemento.
+            </span>
             <Input value={emails} onChange={(e) => setEmails(e.target.value)} />
+          </div>
+
+          <div className="flex items-center justify-between space-x-2 border p-3 rounded-md bg-gray-50">
+            <div className="flex flex-col space-y-0.5">
+              <Label className="text-sm font-medium">
+                Notificar automáticamente
+              </Label>
+              <span className="text-xs text-muted-foreground">
+                Si está activado, se enviarán notificaciones a los profesores
+                implicados en este tipo de actividad.
+              </span>
+            </div>
+            <Switch
+              checked={avisarProfesores}
+              onCheckedChange={setAvisarProfesores}
+            />
           </div>
         </div>
 
@@ -109,8 +146,8 @@ export function DialogoEditarAviso({ open, onClose, avisoSeleccionado }) {
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={mutation.isLoading}>
-            {mutation.isLoading ? "Guardando..." : "Guardar"}
+          <Button onClick={handleSubmit} disabled={mutation.isPending}>
+            {mutation.isPending ? "Guardando..." : "Guardar"}
           </Button>
         </DialogFooter>
       </DialogContent>

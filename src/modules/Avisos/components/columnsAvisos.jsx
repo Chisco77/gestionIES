@@ -1,5 +1,6 @@
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Bell, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge"; // Asumo que usas el componente Badge de shadcn
 
 export const columns = [
   {
@@ -21,6 +22,34 @@ export const columns = [
   {
     accessorKey: "emails",
     header: "Emails",
-    cell: ({ row }) => (Array.isArray(row.original.emails) ? row.original.emails.join(", ") : ""),
+    cell: ({ row }) =>
+      Array.isArray(row.original.emails) ? row.original.emails.join(", ") : "",
+  },
+  {
+    accessorKey: "avisar_profesores",
+    header: "Notificar a profesores",
+    cell: ({ row }) => {
+      const activo = row.original.avisar_profesores;
+      return (
+        <Badge
+          variant={activo ? "outline" : "secondary"}
+          className={`flex w-fit items-center gap-1 ${
+            activo ? "border-green-600 text-green-600 bg-green-50" : ""
+          }`}
+        >
+          {activo ? (
+            <>
+              <Bell className="h-3 w-3" />
+              Activado
+            </>
+          ) : (
+            <>
+              <BellOff className="h-3 w-3" />
+              Desactivado
+            </>
+          )}
+        </Badge>
+      );
+    },
   },
 ];

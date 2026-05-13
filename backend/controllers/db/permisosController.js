@@ -268,7 +268,6 @@ async function insertAsuntoPropio(req, res) {
   const idperiodo_inicio = null;
   const idperiodo_fin = null;
 
-
   if (!uid || !fecha || !descripcion || tipo === undefined)
     return res.status(400).json({
       ok: false,
@@ -855,13 +854,6 @@ async function updateEstadoPermiso(req, res) {
     // ================================================================
     // 2. ACTUALIZACIÓN DEL REGISTRO DE PERMISO
     // ================================================================
-    /* const { rows } = await client.query(
-      `UPDATE permisos 
-       SET estado = $1 
-       WHERE id = $2 
-       RETURNING id, uid, fecha, fecha_fin, descripcion, estado, tipo, idperiodo_inicio, idperiodo_fin, dia_completo`,
-      [estado, id]
-    );*/
 
     const { rows } = await client.query(
       `UPDATE permisos 
@@ -885,7 +877,7 @@ async function updateEstadoPermiso(req, res) {
     // 3. SINCRONIZAR TABLA DE AUSENCIAS (Política de Absorción)
     // ================================================================
     if (estado === 1) {
-      // 🛡️ PASO A: Limpieza preventiva de ausencias manuales solapadas
+      // PASO A: Limpieza preventiva de ausencias manuales solapadas
       // Borramos ausencias que NO tengan idpermiso ni idextraescolar en ese rango
       await client.query(
         `DELETE FROM ausencias_profesorado 
@@ -907,7 +899,7 @@ async function updateEstadoPermiso(req, res) {
         ]
       );
 
-      // 🛡️ PASO B: Inserción de la ausencia oficial
+      // PASO B: Inserción de la ausencia oficial
       await client.query(
         `INSERT INTO ausencias_profesorado (
           uid_profesor,
@@ -985,14 +977,43 @@ async function enviarEmailPermiso(permiso, origen, ldapSession) {
     // 1. Determinar el módulo para buscar emails de aviso
     const moduloAvisos = permiso.tipo === 13 ? "asuntos-propios" : "permisos";
 
+    // Obtenemos tanto los emails de directiva como el flag de avisar_profesores
     const { rows: avisos } = await db.query(
-      `SELECT emails FROM avisos WHERE modulo = $1 LIMIT 1`,
+      `SELECT emails, avisar_profesores FROM avisos WHERE modulo = $1 LIMIT 1`,
       [moduloAvisos]
     );
-    const emails = (avisos[0]?.emails || [])
+
+    // obtenemos emails de la directiva, supuestamente, que aparecenn en el registro del aviso
+    const configAviso = avisos[0] || {};
+    const emailsDirectiva = (configAviso.emails || [])
       .map((e) => e.trim())
       .filter(Boolean);
-    if (!emails.length) return;
+    const avisarProfe = configAviso.avisar_profesores === true;
+
+    // 2. Obtener email del profesor (tabla empleados)
+    const { rows: empRows } = await db.query(
+      "SELECT email FROM empleados WHERE uid = $1",
+      [permiso.uid]
+    );
+    const emailProfesor = empRows[0]?.email;
+
+    // Preparar lista de destinatarios
+    let destinatarios = [...emailsDirectiva];
+
+    // Solo añadimos al profesor si:
+    // 1. El flag está activo
+    // 2. El email es válido
+    // 3. El origen es "estado" (cuando se acepta o rechaza)
+    if (
+      avisarProfe &&
+      emailProfesor &&
+      emailProfesor.includes("@") &&
+      origen === "estado"
+    ) {
+      destinatarios.push(emailProfesor);
+    }
+
+    if (!destinatarios.length) return;
 
     // 2. Datos de LDAP (Profesor)
     const nombreProfesor = await new Promise((resolve) => {
@@ -1035,6 +1056,10 @@ async function enviarEmailPermiso(permiso, origen, ldapSession) {
       colorBadge = "#dc2626";
     }
 
+    // Lógica de Personalización para el Profesor
+    // Ajustamos el sujeto y cabeceras si se notifica al interesado
+    const esProfe = (email) => email === emailProfesor;
+
     const tipoTexto = MAPA_TIPOS[permiso.tipo] || "Otros";
 
     switch (origen) {
@@ -1072,8 +1097,8 @@ async function enviarEmailPermiso(permiso, origen, ldapSession) {
 
     // 5. Envío del Mail
     await mailer.sendMail({
-      from: `"Gestión IES" <comunicaciones@iesfcodeorellana.es>`,
-      to: emails.join(", "),
+      from: `"Gestión IES"`,
+      to: destinatarios.join(", "),
       subject: `${tagAsunto} ${permiso.tipo === 13 ? "AP" : "Permiso"}: ${nombreProfesor} (${fIni})`,
       html: `
         <div style="font-family: sans-serif; color: #334155; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin: 0 auto;">

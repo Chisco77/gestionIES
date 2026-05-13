@@ -8,9 +8,9 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Componente principal de gestión de avisos del sistema.
- * 
+ *
  * Este módulo permite visualizar y administrar los avisos
  * registrados en la aplicación, incluyendo la creación de
  * nuevos avisos, edición y eliminación de los existentes.
@@ -37,8 +37,15 @@ import { DialogoEditarAviso } from "../components/DialogoEditarAviso";
 import { DialogoEliminarAviso } from "../components/DialogoEliminarAviso";
 import { DialogoSMTP } from "../components/DialogoSMTP";
 
-import { useAuth } from "@/context/AuthContext"; // ajusta ruta si cambia
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function AvisosIndex() {
   const [abrirDialogoInsertar, setAbrirDialogoInsertar] = useState(false);
@@ -47,19 +54,20 @@ export function AvisosIndex() {
   const [avisoSeleccionado, setAvisoSeleccionado] = useState(null);
   const [abrirDialogoSMTP, setAbrirDialogoSMTP] = useState(false);
 
-  // 🔹 Hook React Query para obtener todos los avisos
   const { data: avisos = [], isLoading } = useAvisos();
-
   const { user } = useAuth();
 
+  // Verificamos si ya existe el módulo SMTP para bloquear la inserción duplicada
+  const existeSMTP = avisos.some((a) => a.modulo === "smtp");
+
   const handleEditar = (aviso) => {
-    if (!aviso) return alert("Selecciona un aviso para editar.");
+    if (!aviso) return toast.error("Selecciona un aviso para editar.");
     setAvisoSeleccionado(aviso);
     setAbrirDialogoEditar(true);
   };
 
   const handleEliminar = (aviso) => {
-    if (!aviso) return alert("Selecciona un aviso para eliminar.");
+    if (!aviso) return toast.error("Selecciona un aviso para eliminar.");
     setAvisoSeleccionado(aviso);
     setAbrirDialogoEliminar(true);
   };
@@ -69,7 +77,6 @@ export function AvisosIndex() {
       toast.error("Solo el administrador puede modificar los datos SMTP.");
       return;
     }
-
     setAbrirDialogoSMTP(true);
   };
 
@@ -79,38 +86,90 @@ export function AvisosIndex() {
         columns={columns}
         data={avisos}
         loading={isLoading}
-        acciones={(seleccionado) => (
-          <>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setAbrirDialogoInsertar(true)}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
+        acciones={(seleccionado) => {
+          // Calculamos el estado de la fila seleccionada en tiempo real
+          const esSMTP = seleccionado?.modulo === "smtp";
 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleEditar(seleccionado)}
-              disabled={!seleccionado}
-            >
-              <Pencil className="w-4 h-4" />
-            </Button>
+          return (
+            <TooltipProvider>
+              <div className="flex gap-2">
+                {/* Botón Insertar */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setAbrirDialogoInsertar(true)}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {existeSMTP
+                      ? "La configuración SMTP ya existe"
+                      : "Insertar aviso"}
+                  </TooltipContent>
+                </Tooltip>
 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleEliminar(seleccionado)}
-              disabled={!seleccionado}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={handleAbrirSMTP}>
-              <Mail className="w-4 h-4" />
-            </Button>
-          </>
-        )}
+                {/* Botón Editar */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEditar(seleccionado)}
+                        disabled={!seleccionado || esSMTP}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {esSMTP
+                      ? "SMTP se gestiona desde el icono de Mail"
+                      : "Editar aviso"}
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Botón Eliminar */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEliminar(seleccionado)}
+                        disabled={!seleccionado || esSMTP}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {esSMTP ? "SMTP no se puede eliminar" : "Eliminar aviso"}
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Botón SMTP */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleAbrirSMTP}
+                    >
+                      <Mail className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Configuración SMTP</TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
+          );
+        }}
       />
 
       {/* Diálogos */}

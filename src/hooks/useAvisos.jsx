@@ -18,7 +18,6 @@
  * const { data: avisos, isLoading } = useAvisos();               // todos
  * const { data: avisosExtra } = useAvisos("extraescolares");    // filtrados
  */
-
 import { useQuery } from "@tanstack/react-query";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -36,11 +35,12 @@ export function useAvisos() {
 
       const data = await res.json();
 
-      // Normalización ligera opcional
+      // Mapeamos incluyendo el nuevo atributo avisar_profesores
       return (data || []).map((a) => ({
         id: Number(a.id),
         modulo: a.modulo,
         emails: Array.isArray(a.emails) ? a.emails : [],
+        avisar_profesores: !!a.avisar_profesores, // Aseguramos que sea booleano
       }));
     },
     staleTime: 1000 * 60 * 10, // 10 minutos
