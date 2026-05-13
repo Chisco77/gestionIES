@@ -87,7 +87,7 @@ export function DialogoSMTP({ open, onClose }) {
     },
     onSuccess: () => {
       toast.success("Configuración SMTP creada");
-      queryClient.invalidateQueries({ queryKey: ["smtp-config"] });
+      queryClient.invalidateQueries({ queryKey: ["avisos"] });
       onClose();
     },
     onError: (err) => toast.error(err.message),
@@ -111,7 +111,7 @@ export function DialogoSMTP({ open, onClose }) {
     },
     onSuccess: () => {
       toast.success("Configuración SMTP actualizada");
-      queryClient.invalidateQueries({ queryKey: ["smtp-config"] });
+      queryClient.invalidateQueries({ queryKey: ["avisos"] });
       onClose();
     },
     onError: (err) => toast.error(err.message),
