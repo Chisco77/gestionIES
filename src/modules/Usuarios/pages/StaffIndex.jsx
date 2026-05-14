@@ -46,6 +46,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { generateListadoAPs } from "@/Informes/usuarios";
+import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
+import { resolverRutaLogo } from "@/Informes/utils";
 
 export function StaffIndex() {
   const [staffFiltrados, setstaffFiltrados] = useState([]);
@@ -53,12 +55,14 @@ export function StaffIndex() {
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
   const [abrirEditar, setAbrirEditar] = useState(false);
 
+  const { data: centro } = useConfiguracionCentro();
+  const urlLogoParaInformes = resolverRutaLogo(centro?.logoCentroUrl);
+
   const {
     data: staff,
     isLoading: loadingStaff,
     error: errorStaff,
   } = useStaffLdap();
-
 
   //const { data: empleados = [], isLoading: loadingEmpleados } = useEmpleados();
 
@@ -86,9 +90,10 @@ export function StaffIndex() {
       alert("Selecciona un profesor para eliminar.");
       return;
     }
-    alert(`Eliminación de personal no docente ${profesor.uid}: No implementado`);
+    alert(
+      `Eliminación de personal no docente ${profesor.uid}: No implementado`
+    );
   };
-
 
   const handleGenerarPdf = () => {
     // Ahora los datos de empleado ya están en cada profesor
@@ -99,7 +104,7 @@ export function StaffIndex() {
       tipo_empleado: staff.tipo_empleado || "",
     }));
 
-    generateListadoAPs(listadoCombinado);
+    generateListadoAPs(listadoCombinado, urlLogoParaInformes);
   };
 
   const isLoading = loadingStaff;

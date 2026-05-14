@@ -40,7 +40,7 @@ async function simularGuardiasDia(req, res) {
     const { rows: ausencias } = await db.query(
       `SELECT a.* FROM ausencias_profesorado a 
        WHERE fecha_inicio <= $1 AND (fecha_fin IS NULL OR fecha_fin >= $1)`,
-      [fecha],
+      [fecha]
     );
 
     // Obtener sustituciones activas para esa fecha
@@ -49,17 +49,17 @@ async function simularGuardiasDia(req, res) {
       `SELECT uid_titular, uid_sustituto 
        FROM sustituciones 
        WHERE fecha_inicio <= $1 AND (fecha_fin IS NULL OR fecha_fin >= $1)`,
-      [fecha],
+      [fecha]
     );
 
     // Creamos un Set o Map para búsqueda rápida de titulares con sustituto
     const titularesCubiertos = new Set(
-      sustitucionesActivas.map((s) => s.uid_titular),
+      sustitucionesActivas.map((s) => s.uid_titular)
     );
 
     const { rows: confirmadas } = await db.query(
       `SELECT * FROM guardias_asignadas WHERE fecha = $1 AND estado = 'activa'`,
-      [fecha],
+      [fecha]
     );
 
     // 4. Obtener contadores de guardias LIMITADOS AL CURSO ACTUAL
@@ -69,12 +69,12 @@ async function simularGuardiasDia(req, res) {
        FROM guardias_asignadas 
        WHERE fecha BETWEEN $1 AND $2 AND estado = 'activa' AND confirmada = true
        GROUP BY uid_profesor_cubridor`,
-      [inicioCurso, finCurso],
+      [inicioCurso, finCurso]
     );
 
     const contadores = {};
     contadoresRows.forEach(
-      (r) => (contadores[r.uid_profesor_cubridor] = parseInt(r.total)),
+      (r) => (contadores[r.uid_profesor_cubridor] = parseInt(r.total))
     );
 
     let simulacion = [];
@@ -85,7 +85,7 @@ async function simularGuardiasDia(req, res) {
       // Si el profesor ausente tiene un sustituto hoy, no generamos propuestas de guardia
       if (titularesCubiertos.has(ausencia.uid_profesor)) {
         console.log(
-          `INFO: Saltando guardias para ${ausencia.uid_profesor} (Tiene sustituto activo)`,
+          `INFO: Saltando guardias para ${ausencia.uid_profesor} (Tiene sustituto activo)`
         );
         continue;
       }
@@ -98,7 +98,7 @@ async function simularGuardiasDia(req, res) {
          LEFT JOIN estancias e ON h.idestancia = e.id
          LEFT JOIN periodos_horarios p ON h.idperiodo = p.id
          WHERE h.uid = $1 AND h.dia_semana = $2 AND (h.tipo = 'lectiva' OR h.tipo = 'guardia')`,
-        [ausencia.uid_profesor, diaSemana],
+        [ausencia.uid_profesor, diaSemana]
       );
 
       for (const slot of horarioAusente) {
@@ -115,7 +115,7 @@ async function simularGuardiasDia(req, res) {
         const yaConfirmada = confirmadas.find(
           (c) =>
             c.idperiodo === slot.idperiodo &&
-            c.uid_profesor_ausente === ausencia.uid_profesor,
+            c.uid_profesor_ausente === ausencia.uid_profesor
         );
 
         if (yaConfirmada) {
@@ -127,7 +127,7 @@ async function simularGuardiasDia(req, res) {
             observaciones_guardia: ausencia.observaciones_guardia,
             nombre_ausente: await getNombreProfesor(ausencia.uid_profesor),
             nombre_cubridor: await getNombreProfesor(
-              yaConfirmada.uid_profesor_cubridor,
+              yaConfirmada.uid_profesor_cubridor
             ),
             materia: slot.materia_nombre || "Guardia",
             aula: slot.estancia_nombre,
@@ -149,7 +149,7 @@ async function simularGuardiasDia(req, res) {
               SELECT uid_profesor_cubridor FROM guardias_asignadas
               WHERE fecha = $3 AND idperiodo = $2 AND estado = 'activa'
            )`,
-          [diaSemana, slot.idperiodo, fecha],
+          [diaSemana, slot.idperiodo, fecha]
         );
 
         const candidatosEnriquecidos = await Promise.all(
@@ -157,7 +157,7 @@ async function simularGuardiasDia(req, res) {
             uid: c.uid,
             nombre: await getNombreProfesor(c.uid),
             guardias: contadores[c.uid] || 0,
-          })),
+          }))
         );
 
         candidatosEnriquecidos.sort((a, b) => a.guardias - b.guardias);
@@ -218,7 +218,7 @@ async function autoasignarGuardia(req, res) {
     const { rows: horarioPropio } = await db.query(
       `SELECT id FROM horario_profesorado 
        WHERE uid = $1 AND dia_semana = $2 AND idperiodo = $3 AND tipo = 'guardia'`,
-      [uid_cubridor, diaSemana, idperiodo],
+      [uid_cubridor, diaSemana, idperiodo]
     );
 
     if (horarioPropio.length === 0) {
@@ -240,7 +240,7 @@ async function autoasignarGuardia(req, res) {
            OR 
            ($3 BETWEEN COALESCE(idperiodo_inicio, 0) AND COALESCE(idperiodo_fin, 99)) -- Periodo concreto
          )`,
-      [uid_cubridor, fecha, idperiodo],
+      [uid_cubridor, fecha, idperiodo]
     );
 
     if (ausenciaCubridor.length > 0) {
@@ -255,7 +255,7 @@ async function autoasignarGuardia(req, res) {
     const { rows: yaAsignada } = await db.query(
       `SELECT id FROM guardias_asignadas 
        WHERE fecha = $1 AND idperiodo = $2 AND uid_profesor_ausente = $3 AND estado = 'activa'`,
-      [fecha, idperiodo, uid_profesor_ausente],
+      [fecha, idperiodo, uid_profesor_ausente]
     );
 
     if (yaAsignada.length > 0) {
@@ -272,7 +272,7 @@ async function autoasignarGuardia(req, res) {
      AND idperiodo = $2 
      AND uid_profesor_cubridor = $3 
      AND estado = 'activa'`,
-      [idausencia, idperiodo, uid_cubridor],
+      [idausencia, idperiodo, uid_cubridor]
     );
 
     if (yaCubreEsteSlot.length > 0) {
@@ -287,7 +287,7 @@ async function autoasignarGuardia(req, res) {
     const { rows: yaTieneOtraGuardia } = await db.query(
       `SELECT id FROM guardias_asignadas 
        WHERE fecha = $1 AND idperiodo = $2 AND uid_profesor_cubridor = $3 AND estado = 'activa'`,
-      [fecha, idperiodo, uid_cubridor],
+      [fecha, idperiodo, uid_cubridor]
     );
 
     if (yaTieneOtraGuardia.length > 0 && !fuerza_doble) {
@@ -311,7 +311,7 @@ VALUES ($1, $2, $3, $4, $5, 'activa', $6)`,
         idausencia,
         uid_cubridor,
         !!fuerza_doble,
-      ],
+      ]
     );
 
     res.json({ ok: true, mensaje: "Guardia autoasignada con éxito" });
@@ -336,7 +336,7 @@ async function cancelarAutoasignacion(req, res) {
     const { rows } = await db.query(
       `SELECT uid_profesor_cubridor, fecha, idperiodo 
        FROM guardias_asignadas WHERE id = $1`,
-      [id_guardia_asignada],
+      [id_guardia_asignada]
     );
 
     if (rows.length === 0) {
@@ -398,99 +398,6 @@ async function confirmarGuardias(req, res) {
  * @param {*} req
  * @param {*} res
  */
-/*async function getProfesoresDeGuardia(req, res) {
-  const { fecha, idperiodo } = req.params;
-  const ldapSession = req.session?.ldap;
-  const curso = getCursoActual(new Date(fecha));
-  const diaSemana = new Date(fecha).getDay();
-
-  try {
-    // 1. Obtenemos solo los UIDs y el conteo de la DB
-    const query = `
-SELECT 
-    h.uid, 
-    -- Contamos periodos distintos para la equidad (2 clases en 1 hora = 1 guardia)
-    (SELECT COUNT(DISTINCT (ga.fecha, ga.idperiodo)) 
-     FROM guardias_asignadas ga 
-     WHERE ga.uid_profesor_cubridor = h.uid 
-     AND ga.fecha BETWEEN $1 AND $2 
-     AND ga.estado = 'activa') as total_guardias,
-    -- Contamos cuántas tiene asignadas EN ESTE MOMENTO (0, 1 o más)
-    (SELECT COUNT(*) 
-     FROM guardias_asignadas ga2
-     WHERE ga2.uid_profesor_cubridor = h.uid
-       AND ga2.fecha = $5
-       AND ga2.idperiodo = $4
-       AND ga2.estado = 'activa') as num_asignadas_ahora
-  FROM horario_profesorado h
-  WHERE h.dia_semana = $3 
-    AND h.idperiodo = $4 
-    AND h.tipo = 'guardia'
-    AND NOT EXISTS (
-      SELECT 1 FROM ausencias_profesorado aus
-      WHERE aus.uid_profesor = h.uid
-        AND aus.fecha_inicio <= $5
-        AND (aus.fecha_fin IS NULL OR aus.fecha_fin >= $5)
-        AND (
-          (aus.idperiodo_inicio IS NULL AND aus.idperiodo_fin IS NULL)
-          OR 
-          ($4 BETWEEN COALESCE(aus.idperiodo_inicio, 0) AND COALESCE(aus.idperiodo_fin, 99))
-        )
-    )
-  ORDER BY total_guardias ASC -- <--- ORDEN ASCENDENTE POR GUARDIAS
-`;
-
-    const { rows: uidsDisponibles } = await db.query(query, [
-      curso.inicioCurso,
-      curso.finCurso,
-      diaSemana,
-      idperiodo,
-      fecha,
-    ]);
-
-    // 2. "Humanizar" los resultados con LDAP
-    // Usamos una caché local para esta petición para ser eficientes
-    const cacheNombres = {};
-
-    const profesEnriquecidos = await Promise.all(
-      uidsDisponibles.map(async (row) => {
-        return new Promise((resolve) => {
-          buscarPorUid(ldapSession, row.uid, (err, datos) => {
-            // Objeto base con los datos de la DB
-            const baseData = {
-              uid: row.uid,
-              total_guardias: parseInt(row.total_guardias),
-              // Ahora pasamos ambos datos al frontend:
-              num_asignadas_ahora: parseInt(row.num_asignadas_ahora),
-              ya_asignado: parseInt(row.num_asignadas_ahora) > 0,
-            };
-
-            if (!err && datos) {
-              resolve({
-                ...baseData,
-                nombre: datos.givenName || "",
-                apellido1: datos.sn || "",
-                apellido2: "",
-              });
-            } else {
-              resolve({
-                ...baseData,
-                nombre: row.uid,
-                apellido1: "",
-                apellido2: "",
-              });
-            }
-          });
-        });
-      })
-    );
-
-    res.json(profesEnriquecidos);
-  } catch (err) {
-    console.error("[getProfesoresDeGuardia] Error:", err);
-    res.status(500).json({ error: "Error al consultar disponibilidad real" });
-  }
-}*/
 
 async function getProfesoresDeGuardia(req, res) {
   const { fecha, idperiodo } = req.params;
@@ -501,32 +408,35 @@ async function getProfesoresDeGuardia(req, res) {
   try {
     const query = `
       SELECT 
-          h.uid, 
-          -- Equidad TOTAL (limitada al curso actual vía $1 y $2)
-          (SELECT COUNT(DISTINCT (ga.fecha, ga.idperiodo)) 
-           FROM guardias_asignadas ga 
-           WHERE ga.uid_profesor_cubridor = h.uid 
-           AND ga.fecha BETWEEN $1 AND $2 
-           AND ga.estado = 'activa'
-           AND ga.confirmada = true) as total_guardias,
+    h.uid, 
+    -- Equidad TOTAL (Curso completo, igual que tenías)
+    (SELECT COUNT(DISTINCT (ga.fecha, ga.idperiodo)) 
+     FROM guardias_asignadas ga 
+     WHERE ga.uid_profesor_cubridor = h.uid 
+     AND ga.fecha BETWEEN $1 AND $2 
+     AND ga.estado = 'activa'
+     AND ga.confirmada = true) as total_guardias,
 
-          -- Equidad ESPECÍFICA del periodo (limitada al curso actual)
-          (SELECT COUNT(*) 
-           FROM guardias_asignadas ga_slot
-           WHERE ga_slot.uid_profesor_cubridor = h.uid
-             AND ga_slot.idperiodo = $4
-             AND ga_slot.fecha BETWEEN $1 AND $2
-             AND ga_slot.estado = 'activa'
-             AND ga_slot.confirmada = true) as guardias_periodo_acumuladas,
+    -- CORRECCIÓN: Conteo por DÍA DE LA SEMANA y PERIODO
+    (SELECT COUNT(*) 
+     FROM guardias_asignadas ga_slot
+     WHERE ga_slot.uid_profesor_cubridor = h.uid
+       AND ga_slot.idperiodo = $4
+       AND ga_slot.estado = 'activa'
+       AND ga_slot.confirmada = true
+       -- Filtrar por el mismo día de la semana que el parámetro $3
+       AND EXTRACT(DOW FROM ga_slot.fecha) = $3 
+       -- Opcional: mantener el límite del curso actual
+       AND ga_slot.fecha BETWEEN $1 AND $2) as guardias_periodo_acumuladas,
 
-          -- Ocupación EN ESTE MOMENTO (Hoy)
-          (SELECT COUNT(*) 
-           FROM guardias_asignadas ga2
-           WHERE ga2.uid_profesor_cubridor = h.uid
-             AND ga2.fecha = $5
-             AND ga2.idperiodo = $4
-             AND ga2.estado = 'activa') as num_asignadas_ahora
-        FROM horario_profesorado h
+    -- Ocupación específica para HOY (esto SÍ debe ser por fecha concreta)
+    (SELECT COUNT(*) 
+     FROM guardias_asignadas ga2
+     WHERE ga2.uid_profesor_cubridor = h.uid
+       AND ga2.fecha = $5
+       AND ga2.idperiodo = $4
+       AND ga2.estado = 'activa') as num_asignadas_ahora
+FROM horario_profesorado h
         WHERE h.dia_semana = $3 
           AND h.idperiodo = $4 
           AND h.tipo = 'guardia'
@@ -564,7 +474,7 @@ async function getProfesoresDeGuardia(req, res) {
               total_guardias: parseInt(row.total_guardias),
               // Añadimos el nuevo dato por si el frontend decide pintarlo
               guardias_periodo_acumuladas: parseInt(
-                row.guardias_periodo_acumuladas,
+                row.guardias_periodo_acumuladas
               ),
               num_asignadas_ahora: parseInt(row.num_asignadas_ahora),
               ya_asignado: parseInt(row.num_asignadas_ahora) > 0,
@@ -587,7 +497,7 @@ async function getProfesoresDeGuardia(req, res) {
             }
           });
         });
-      }),
+      })
     );
 
     res.json(profesEnriquecidos);
@@ -655,7 +565,7 @@ async function getGuardiasEnriquecidas(req, res) {
       FROM guardias_asignadas g
       ${where}
       ORDER BY g.fecha DESC, g.idperiodo ASC`,
-      vals,
+      vals
     );
 
     // 2. Resolución de nombres mediante LDAP
@@ -683,13 +593,13 @@ async function getGuardiasEnriquecidas(req, res) {
 
     // 3. Resolución de Periodos Horarios
     const periodosIds = [...new Set(guardias.map((g) => g.idperiodo))].filter(
-      Boolean,
+      Boolean
     );
     let periodosMap = {};
     if (periodosIds.length > 0) {
       const { rows: periodos } = await db.query(
         `SELECT id, nombre, inicio, fin FROM periodos_horarios WHERE id = ANY($1)`,
-        [periodosIds],
+        [periodosIds]
       );
       periodosMap = periodos.reduce((acc, p) => {
         acc[p.id] = p;

@@ -371,7 +371,7 @@ export function PanelGuardias({
                         )}
                       </div>
 
-                      {/* Glow sutil de fondo solo si es el periodo cronológico actual */}
+                      {/* marcar periodo cronológico actual */}
                       {esElActual && (
                         <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
                       )}
@@ -706,96 +706,6 @@ function GuardiaCard({
     </Card>
   );
 }
-
-/*function ListaProfesGuardia({ fecha, idPeriodo }) {
-  const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
-
-  if (isLoading) return <div className="animate-pulse space-y-2">...</div>;
-
-  return (
-    <div className="space-y-3">
-      {profes?.map((profe) => {
-        const numGuardias = profe.num_asignadas_ahora || 0;
-        const estaOcupado = numGuardias > 0;
-        const esDoble = numGuardias > 1;
-
-        return (
-          <Card
-            key={profe.uid}
-            className={`transition-all duration-300 border shadow-none ${
-              estaOcupado
-                ? esDoble
-                  ? "bg-indigo-50 border-indigo-200 ring-1 ring-indigo-100" // Color distinto si es doble
-                  : "bg-blue-50 border-blue-200 ring-1 ring-blue-100"
-                : "bg-white border-slate-200 shadow-sm"
-            }`}
-          >
-            <CardContent className="p-3 flex justify-between items-center">
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    estaOcupado
-                      ? esDoble
-                        ? "bg-indigo-600 animate-bounce"
-                        : "bg-blue-500 animate-pulse"
-                      : "bg-slate-300"
-                  }`}
-                />
-
-                <div className="min-w-0">
-                  <p
-                    className={`text-sm font-bold truncate ${
-                      estaOcupado
-                        ? esDoble
-                          ? "text-indigo-900"
-                          : "text-blue-900"
-                        : "text-slate-700"
-                    }`}
-                  >
-                    {profe.apellido1}
-                    {profe.nombre ? `, ${profe.nombre}` : ""}
-                  </p>
-
-                  {estaOcupado && (
-                    <div className="flex items-center gap-1.5">
-                      <p
-                        className={`text-[10px] font-extrabold uppercase tracking-tight ${
-                          esDoble ? "text-indigo-600" : "text-blue-600"
-                        }`}
-                      >
-                        {esDoble ? `Doble Guardia` : "Guardia asignada"}
-                      </p>
-                      {esDoble && (
-                        <Badge className="h-4 px-1 bg-indigo-600 text-[9px] hover:bg-indigo-600">
-                          x{numGuardias}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className={`ml-2 font-mono h-6 ${
-                    estaOcupado
-                      ? esDoble
-                        ? "bg-indigo-700 text-white border-transparent"
-                        : "bg-blue-600 text-white border-transparent"
-                      : "bg-slate-100"
-                  }`}
-                >
-                  {profe.total_guardias} <Clock className="w-3 h-3 ml-1" />
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}*/
 
 function ListaProfesGuardia({ fecha, idPeriodo }) {
   const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
