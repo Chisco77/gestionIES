@@ -20,43 +20,31 @@ export async function generarPdfControlGuardias(
     return !nombrePeriodo.toLowerCase().includes("recreo");
   });
 
+  const fechaInicioCurso = new Date(yearInicio, 8, 1); // 1 de Septiembre del año inicio
+  const fechaFinCurso = new Date(yearInicio + 1, 6, 31); // 31 de Julio del año siguiente
+
   // 2. Cálculo de estadísticas
   const statsTotales = {}; // { uid: total_unico }
   const statsPorSlot = {}; // { "uid-idperiodo": conteo_slot }
   const periodosCubiertos = new Set(); // Para evitar contar doble (guardias dobles)
 
   guardiasRealizadas.forEach((g) => {
-    /*if (g.confirmada) {
-      const claveDia = `${g.uid_profesor_cubridor}-${g.fecha}-${g.idperiodo}`;
-      const claveSlot = `${g.uid_profesor_cubridor}-${g.idperiodo}`;
-
-      if (!periodosCubiertos.has(claveDia)) {
-        // Incrementar total global
-        statsTotales[g.uid_profesor_cubridor] =
-          (statsTotales[g.uid_profesor_cubridor] || 0) + 1;
-
-        // Incrementar total del slot específico
-        statsPorSlot[claveSlot] = (statsPorSlot[claveSlot] || 0) + 1;
-
-        periodosCubiertos.add(claveDia);
-      }
-    }*/
     if (g.confirmada) {
-      // Convertir fecha a índice de día (0=Domingo, 1=Lunes, ..., 5=Viernes)
       const fechaObj = new Date(g.fecha);
-      const diaSemana = fechaObj.getDay();
 
+      // FILTRO CRÍTICO: Asegurarse de que la guardia es del curso actual
+      if (fechaObj < fechaInicioCurso || fechaObj > fechaFinCurso) return;
+
+      const diaSemana = fechaObj.getDay(); // 0-6
       const claveDia = `${g.uid_profesor_cubridor}-${g.fecha}-${g.idperiodo}`;
 
-      // CORRECCIÓN: Incluir el día de la semana en la clave
-      const claveSlot = `${g.uid_profesor_cubridor}-${g.idperiodo}-${diaSemana}`;
+      // CLAVE DE SLOT: Asegúrate de que idperiodo sea String para evitar problemas de tipos
+      const claveSlot = `${g.uid_profesor_cubridor}-${String(g.idperiodo)}-${diaSemana}`;
 
       if (!periodosCubiertos.has(claveDia)) {
         statsTotales[g.uid_profesor_cubridor] =
           (statsTotales[g.uid_profesor_cubridor] || 0) + 1;
-
         statsPorSlot[claveSlot] = (statsPorSlot[claveSlot] || 0) + 1;
-
         periodosCubiertos.add(claveDia);
       }
     }
@@ -188,7 +176,7 @@ export async function generarPdfControlGuardias(
         doc.rect(margin + colHoraWidth, yFila, colProfeWidth, 6);
 
         // CORRECCIÓN: Usar la misma clave con el día de la semana
-        const claveSlot = `${profe.uid}-${p.id}-${diaSemanaLdap}`;
+        const claveSlot = `${profe.uid}-${String(p.id)}-${diaSemanaLdap}`;
         const totalEnEsteSlot = statsPorSlot[claveSlot] || 0;
 
         doc.setFont("helvetica", "normal");
