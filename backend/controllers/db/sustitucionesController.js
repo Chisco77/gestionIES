@@ -166,9 +166,6 @@ async function insertSustitucion(req, res) {
 
 /**
  * Finalizar una sustitución (poner fecha_fin)
- */
-/**
- * Finalizar una sustitución (poner fecha_fin)
  * También limpia el horario del sustituto ya que su labor termina.
  */
 async function finalizarSustitucion(req, res) {

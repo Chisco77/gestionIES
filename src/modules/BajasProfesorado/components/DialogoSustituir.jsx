@@ -29,8 +29,6 @@ export function DialogoSustituir({ open, onOpenChange, onSuccess }) {
   const [observaciones, setObservaciones] = useState("");
   const [cargando, setCargando] = useState(false);
 
-
-
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -93,6 +91,12 @@ export function DialogoSustituir({ open, onOpenChange, onSuccess }) {
 
       const dataHorario = await resHorario.json();
 
+      // Validamos la respuesta del backend
+      if (!resHorario.ok || !dataHorario.ok) {
+        throw new Error(
+          dataHorario.error || "Error al duplicar el horario del profesorado"
+        );
+      }
       // 3. Invalidar cachés
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["sustituciones"] }),
@@ -166,7 +170,6 @@ export function DialogoSustituir({ open, onOpenChange, onSuccess }) {
                     onChange={(e) => setFechaInicio(e.target.value)}
                   />
                 </div>
-               
               </div>
 
               <div className="space-y-1">
