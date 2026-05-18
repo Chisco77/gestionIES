@@ -1,3 +1,37 @@
+/**
+ * ================================================================
+ *  Controller: ausenciasController.js
+ *  Proyecto: gestionIES
+ * ================================================================
+ *
+ *  Descripción:
+ *    Controlador para la gestión de ausencias del profesorado.
+ *    Permite realizar el seguimiento, inserción, modificación y
+ *    eliminación de faltas/asistencias vinculando datos de
+ *    PostgreSQL y el servidor LDAP del centro.
+ *
+ *  Funcionalidades:
+ *    - Verificar solapamientos de horarios/fechas (verificarColision)
+ *    - Obtener ausencias combinadas con datos LDAP, periodos, 
+ *      permisos y extraescolares (getAusenciasEnriquecidas)
+ *    - Insertar de forma manual una nueva ausencia con control de 
+ *      colisiones (insertAusencia)
+ *    - Modificar campos de ausencias con lógica de permisos según 
+ *      rol -directiva o propietario- y limpieza automática de 
+ *      guardias (updateAusencia)
+ *    - Eliminar ausencias no vinculadas a permisos oficiales con 
+ *      limpieza de guardias asignadas (deleteAusencia)
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
+ * ================================================================
+ */
+
 const db = require("../../db");
 const { buscarPorUid } = require("../ldap/usuariosController");
 

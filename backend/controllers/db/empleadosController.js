@@ -1,3 +1,35 @@
+/**
+ * ================================================================
+ *  Controller: empleadosController.js
+ *  Proyecto: gestionIES
+ * ================================================================
+ *
+ *  Descripción:
+ *    Controlador para la gestión de los datos del personal y
+ *    empleados del centro educativo. Gestiona el almacenamiento, 
+ *    actualización y consulta de perfiles en la base de datos PostgreSQL.
+ * 
+ *    La aplicación autentica contra LDAP, pero mantiene esta tabla para
+ *    almacenar datos de usuarios (empleados) que no pueden ser almacenados
+ *    en LDAP.
+ *
+ *  Funcionalidades:
+ *    - Insertar un nuevo empleado ignorando duplicados (insertEmpleado)
+ *    - Obtener la información de un empleado por su UID (getEmpleado)
+ *    - Actualizar de forma dinámica cualquier campo de un empleado (updateEmpleado)
+ *    - Listar la totalidad de los empleados registrados (listEmpleados)
+ *    - Función interna auxiliar para recuperar el perfil del empleado (obtenerEmpleado)
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
+ * ================================================================
+ */
+
 const db = require("../../db");
 
 // ----------------------------------------

@@ -1,6 +1,46 @@
 /**
  * ================================================================
  *  Controller: extraescolaresController.js
+ *  Proyecto: gestionIES
+ * ================================================================
+ *
+ *  Descripción:
+ *    Controlador para la gestión completa de actividades extraescolares
+ *    y complementarias. Integra la reserva inteligente de estancias, 
+ *    la sincronización en tiempo real con el cuadrante de ausencias del 
+ *    profesorado, la consulta concurrente de grupos/departamentos LDAP 
+ *    y notificaciones automáticas por correo electrónico.
+ *
+ *  Funcionalidades:
+ *    - Gestión automática de reservas y control estricto de conflictos 
+ *      horarios en espacios reservables (gestionarReservaEstancia)
+ *    - Obtención y enriquecimiento  de actividades cruzando 
+ *      los límites del año académico con datos de la BD y LDAP para obtener
+ *      datos de profesores.
+ *      (getExtraescolaresEnriquecidos)
+ *    - Modificación de estado (Aceptar/Rechazar) por parte del equipo directivo, 
+ *      con mecanismos de liberación automática de recursos ante rechazos 
+ *      (updateEstadoExtraescolar)
+ *    - Sincronización avanzada bajo la "Política de Absorción" (elimina ausencias 
+ *      manuales previas del profesor para evitar duplicidades al generar la 
+ *      ausencia oficial de la actividad) (sincronizarAusenciasActividad)
+ *    - Inserción de nuevas actividades evaluando restricciones geográficas 
+ *      (dentro/fuera del centro) y casuísticas multidía (insertExtraescolar)
+ *    - Protección del histórico de guardias impidiendo el borrado de 
+ *      actividades pasadas ya consolidadas (deleteExtraescolar)
+ *    - Actualización integral de parámetros de la actividad con reevaluación 
+ *      de reservas previas y refresco de ausencias (updateExtraescolar)
+ *    - Envío asíncrono de correos informativos sobre inserciones, ediciones 
+ *      y cambios de estado administrativos (enviarEmailActividad [Omitido]) a directiva
+ *      y participantes en la actividad.
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
  * ================================================================
  */
 

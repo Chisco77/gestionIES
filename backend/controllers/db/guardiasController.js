@@ -472,7 +472,7 @@ FROM horario_profesorado h
             const baseData = {
               uid: row.uid,
               total_guardias: parseInt(row.total_guardias),
-              // Añadimos el nuevo dato por si el frontend decide pintarlo
+              // Añadimos el nuevo dato de guardias acumuladas
               guardias_periodo_acumuladas: parseInt(
                 row.guardias_periodo_acumuladas
               ),

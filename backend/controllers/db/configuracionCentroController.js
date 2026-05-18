@@ -62,14 +62,14 @@ async function getConfiguracionCentro(req, res) {
     let adjuntos = [];
 
     if (ldapSession) {
-      // 1. Cargamos cargos individuales
+      // Cargamos cargos individuales
       [directora, secretaria, jefaEstudios] = await Promise.all([
         obtenerDatosLDAP(ldapSession, centro.uid_directora),
         obtenerDatosLDAP(ldapSession, centro.uid_secretaria),
         obtenerDatosLDAP(ldapSession, centro.uid_jefa_estudios),
       ]);
 
-      // 2. Cargamos el array de adjuntos (si existe)
+      // Cargamos el array de adjuntos (si existe)
       if (centro.uids_adjuntos && Array.isArray(centro.uids_adjuntos)) {
         adjuntos = await Promise.all(
           centro.uids_adjuntos.map((uid) => obtenerDatosLDAP(ldapSession, uid))
@@ -106,7 +106,7 @@ async function saveConfiguracionCentro(req, res) {
       .json({ ok: false, error: "El nombre del IES es obligatorio" });
   }
 
-  // 📁 Archivos
+  // Archivos
   const logo_miies_url = req.files?.["logo_miies"]
     ? `/gestionIES/public/logos/${req.files["logo_miies"][0].filename}`
     : null;

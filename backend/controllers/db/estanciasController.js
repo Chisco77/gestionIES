@@ -1,10 +1,30 @@
 /**
  * ================================================================
- * Controller: estanciasController.js
- * Proyecto: gestionIES
+ *  Controller: estanciasController.js
+ *  Proyecto: gestionIES
  * ================================================================
- * Descripción:
- * Controlador para la gestión de estancias vinculado a planos (idplano).
+ *
+ *  Descripción:
+ *    Controlador para la gestión de las estancias, aulas y espacios
+ *    del centro educativo. Vincula cada estancia a un plano (idplano)
+ *    y permite su geolocalización mediante un polígono de coordenadas.
+ *
+ *  Funcionalidades:
+ *    - Validación de estructura de polígonos (isValidCoordenadas)
+ *    - Obtener estancias filtradas por su tipo (getEstanciasByTipoEstancia)
+ *    - Insertar nuevas estancias con mapeo y volcado de coordenadas a JSON (insertEstancia)
+ *    - Actualizar de forma dinámica datos técnicos, capacidad informática, llaves y zonas (updateEstancia)
+ *    - Eliminar estancias con control de integridad referencial previo en tablas de reservas y préstamos (deleteEstancia)
+ *    - Recuperar el listado completo de espacios (getAllEstancias)
+ *    - Filtrado dinámico parametrizable por tipo de estancia y estado de reserva (getEstanciasFiltradas / filtrarEstancias)
+ *
+ *  Autor: Francisco Damian Mendez Palma
+ *  Email: adminies.franciscodeorellana@educarex.es
+ *  GitHub: https://github.com/Chisco77
+ *  Repositorio: https://github.com/Chisco77/gestionIES.git
+ *  IES Francisco de Orellana - Trujillo
+ *
+ *  Fecha de creación: 2025
  * ================================================================
  */
 

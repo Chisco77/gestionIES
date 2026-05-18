@@ -141,7 +141,7 @@ async function insertSustitucion(req, res) {
       ]
     );
 
-    // 3. Limpieza de guardias (Mantenemos tu lógica actual)
+    // 3. Limpieza de guardias
     const { rowCount: borradas } = await db.query(
       `DELETE FROM guardias_asignadas 
        WHERE uid_profesor_ausente = $1 
