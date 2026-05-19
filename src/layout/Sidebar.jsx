@@ -110,11 +110,11 @@ function SidebarComponent({
         ],
       },
       {
-        title: "Reservas",
+        title: "Planificación",
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
+          { title: "Reservas de Aulas", url: "/reservasEstancias", icon: Building2 },
           {
             title: "Extraescolares",
             url: "/extraescolares",
@@ -273,11 +273,11 @@ function SidebarComponent({
         items: [{ title: "Alumnos", url: "/alumnos", icon: GraduationCap }],
       },
       {
-        title: "Reservas",
+        title: "Planificación",
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
+          { title: "Reservas de Aulas", url: "/reservasEstancias", icon: Building2 },
           {
             title: "Extraescolares",
             url: "/extraescolares",
@@ -360,11 +360,11 @@ function SidebarComponent({
         items: [{ title: "Alumnos", url: "/alumnos", icon: GraduationCap }],
       },
       {
-        title: "Reservas",
+        title: "Planificación",
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
+          { title: "Reservas de Aulas", url: "/reservasEstancias", icon: Building2 },
           {
             title: "Extraescolares",
             url: "/extraescolares",
@@ -506,11 +506,11 @@ function SidebarComponent({
         items: [{ title: "Alumnos", url: "/alumnos", icon: GraduationCap }],
       },
       {
-        title: "Reservas",
+        title: "Planificación",
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Aulas", url: "/reservasEstancias", icon: Building2 },
+          { title: "Reservas de Aulas", url: "/reservasEstancias", icon: Building2 },
           {
             title: "Extraescolares",
             url: "/extraescolares",
