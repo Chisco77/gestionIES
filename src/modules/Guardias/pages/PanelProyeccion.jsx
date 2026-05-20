@@ -81,23 +81,15 @@ export function PanelProyeccion() {
       </header>
 
       {/* CUERPO: El PanelGuardias ya trae sus fondos blancos y bordes suaves */}
-      <main className="p-8 pb-24">
+      <main className="p-4 pb-24">
         {/* --- MENSAJE DE ADVERTENCIA (SÓLO EN PRUEBAS) --- */}
-        <div className="max-w-4xl mx-auto mb-8">
-          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-sm">
+        <div className="max-w-4xl mx-auto mb-2">
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-2 rounded-r-lg shadow-sm">
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
               <div className="space-y-1">
                 <p className="text-amber-900 font-bold text-sm uppercase tracking-tight">
                   Panel en fase de pruebas
-                </p>
-                <p className="text-amber-800 text-xs leading-relaxed">
-                  La información mostrada es utilizada exclusivamente por el
-                  grupo de profesores participantes en las pruebas. El sistema
-                  de gestión de guardias{" "}
-                  <span className="underline font-bold">NO HA CAMBIADO</span>:
-                  debe seguir realizándose en los{" "}
-                  <strong>registros de papel correspondientes</strong>. Gracias.
                 </p>
               </div>
             </div>
