@@ -8,6 +8,7 @@ export const MAPEO_TIPOS_PERMISOS = {
   14: "(Art. 14) Funciones sindicales / representación del personal",
   15: "(Art. 15) Exámenes finales o pruebas selectivas",
   32: "(Art. 32) Reducción de jornada para mayores de 55 años",
+  10: "FORMACIÓN",
   0: "Otros",
 };
 

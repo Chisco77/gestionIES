@@ -79,7 +79,6 @@ export function AsuntosPropiosIndex() {
   const { data: periodos } = usePeriodosHorarios();
   const { data: permisosEspeciales = [] } = useAsuntosPermitidosUid(uid);
 
-
   // filtrar solo asuntos propios
   const asuntosPropiosFiltrados = (asuntosPropios || []).filter(
     (a) => Number(a.tipo) === 13
@@ -107,18 +106,16 @@ export function AsuntosPropiosIndex() {
     }
   }
 
-
   // === Hook para asuntos del mes ===
   /*const { data: asuntosPropiosMes = [], refetch: refetchAsuntosMes } =
     usePermisosMes(currentYear, currentMonth + 1);*/
 
   const { data: asuntosPropiosMes = [], refetch: refetchAsuntosMes } =
     usePermisosMes({
-      // 
+      //
       year: currentYear,
       month: currentMonth,
     });
-
 
   // --- Función para recargar PanelReservas ---
   const recargarPanel = () => setReloadPanel((r) => r + 1);
@@ -207,26 +204,31 @@ export function AsuntosPropiosIndex() {
   };
   return (
     <div className="p-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <CalendarioAsuntos
-          currentMonth={currentMonth}
-          currentYear={currentYear}
-          todayStr={todayStr}
-          selectedDate={selectedDate}
-          asuntosPorDia={asuntosPorDia}
-          asuntosPropiosUsuario={asuntosPropiosUsuario}
-          autorizacionesUsuario={autorizacionesUsuario}
-          rangosBloqueados={rangosBloqueados}
-          maxConcurrentes={maxConcurrentes}
-          onDiaClick={handleDiaClick}
-          onMonthChange={({ newMonth, newYear }) => {
-            setCurrentMonth(newMonth);
-            setCurrentYear(newYear);
-          }}
-        />
-
-        {/* Panel Reservas */}
+      {/* 1. Añadimos una altura definida (ej. h-[500px] o h-[calc(100vh-150px)]) */}
+      {/* 2. Usamos 'items-start' para evitar que los elementos se estiren de forma extraña */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[350px] items-start">
+        {/* El Calendario mantendrá su altura interna */}
         <div className="h-full">
+          <CalendarioAsuntos
+            currentMonth={currentMonth}
+            currentYear={currentYear}
+            todayStr={todayStr}
+            selectedDate={selectedDate}
+            asuntosPorDia={asuntosPorDia}
+            asuntosPropiosUsuario={asuntosPropiosUsuario}
+            autorizacionesUsuario={autorizacionesUsuario}
+            rangosBloqueados={rangosBloqueados}
+            maxConcurrentes={maxConcurrentes}
+            onDiaClick={handleDiaClick}
+            onMonthChange={({ newMonth, newYear }) => {
+              setCurrentMonth(newMonth);
+              setCurrentYear(newYear);
+            }}
+          />
+        </div>
+
+        {/* 3. Panel Reservas limitado al espacio del grid con overflow-hidden */}
+        <div className="h-full overflow-hidden">
           <PanelReservas
             uid={uid}
             reservasEstancias={reservasEstancias || []}

@@ -73,7 +73,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
-  CalendarIcon,
   Check,
   X,
   Pencil,
@@ -81,13 +80,6 @@ import {
   Search,
 } from "lucide-react";
 
-import { es } from "date-fns/locale";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -148,14 +140,16 @@ export function TablaExtraescolaresDirectiva({
   fecha,
   soloPendientesInicial = false,
 }) {
-  const hoyStr = format(new Date(), "yyyy-MM-dd"); // Obtenemos hoy en formato ISO
+  const hoyStr = format(new Date(), "yyyy-MM-dd");
 
   const [sorting, setSorting] = useState([{ id: "fecha_inicio", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
 
-  //  const API_URL = import.meta.env.VITE_API_URL;
+  // SOLUCIÓN AL MISTERIO: Controlamos el estado de paginación explícitamente en el componente
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 6 });
+
   const API_URL = `${import.meta.env.VITE_SERVER_URL}${import.meta.env.VITE_API_URL}`;
 
   // Estados de diálogos
@@ -172,7 +166,6 @@ export function TablaExtraescolaresDirectiva({
   const { data: extraescolaresTodas = [] } = useExtraescolaresAll();
   const { data: centro } = useConfiguracionCentro();
 
-  // Resolvemos la URL una sola vez para usarla en todos los botones
   const urlLogoParaInformes = resolverRutaLogo(centro?.logoCentroUrl);
 
   const handleGenerarExcel = async (actividad) => {
@@ -222,10 +215,9 @@ export function TablaExtraescolaresDirectiva({
     let desde = fechaDesde;
     let hasta = fechaHasta;
 
-    // Si el filtro de fechas está vacío, usamos el curso actual
     if (!desde || !hasta) {
       const curso = getCursoActual();
-      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      desde = ddmmyyyyToISO(curso.inicioCurso);
       hasta = ddmmyyyyToISO(curso.finCurso);
     }
 
@@ -249,13 +241,12 @@ export function TablaExtraescolaresDirectiva({
     let desde = fechaDesde;
     let hasta = fechaHasta;
 
-    // Si el filtro de fechas está vacío, usamos el curso actual
     if (!desde || !hasta) {
       const curso = getCursoActual();
-      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      desde = ddmmyyyyToISO(curso.inicioCurso);
       hasta = ddmmyyyyToISO(curso.finCurso);
     }
-    // informe
+
     generateListadoExtraescolaresPorDepartamento(
       filasFiltradas,
       { desde, hasta },
@@ -276,13 +267,12 @@ export function TablaExtraescolaresDirectiva({
     let desde = fechaDesde;
     let hasta = fechaHasta;
 
-    // Si el filtro de fechas está vacío, usamos el curso actual
     if (!desde || !hasta) {
       const curso = getCursoActual();
-      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      desde = ddmmyyyyToISO(curso.inicioCurso);
       hasta = ddmmyyyyToISO(curso.finCurso);
     }
-    // informe
+
     generateListadoExtraescolaresPorDepartamentoXLS(filasFiltradas, {
       desde,
       hasta,
@@ -294,7 +284,6 @@ export function TablaExtraescolaresDirectiva({
       .getFilteredRowModel()
       .rows.map((row) => row.original);
 
-    // informe
     generateListadoExtraescolaresPorFecha(filasFiltradas, {
       desde: fechaDesde,
       hasta: fechaHasta,
@@ -315,20 +304,19 @@ export function TablaExtraescolaresDirectiva({
     let desde = fechaDesde;
     let hasta = fechaHasta;
 
-    // Si el filtro de fechas está vacío, usamos el curso actual
     if (!desde || !hasta) {
       const curso = getCursoActual();
-      desde = ddmmyyyyToISO(curso.inicioCurso); // "dd/mm/yyyy" -> "yyyy-mm-dd"
+      desde = ddmmyyyyToISO(curso.inicioCurso);
       hasta = ddmmyyyyToISO(curso.finCurso);
     }
 
-    // informe
     generateListadoExtraescolaresMensual(
       filasFiltradas,
       { desde, hasta },
       urlLogoParaInformes
     );
   };
+
   // Tabla
   const table = useReactTable({
     data: extraescolaresTodas,
@@ -340,20 +328,19 @@ export function TablaExtraescolaresDirectiva({
         cell: ({ row }) => (
           <div className="flex gap-2">
             {/* ACEPTAR */}
-
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="text-green-600"
+                    className="text-green-600 h-6 w-6"
                     onClick={() => handleAccion(row.original, "aceptar")}
                   >
-                    <Check size={16} />
+                    <Check size={14} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-green-500 text-white">
+                <TooltipContent className="bg-green-500 text-white text-[10px]">
                   <p>Aceptar actividad</p>
                 </TooltipContent>
               </Tooltip>
@@ -366,13 +353,13 @@ export function TablaExtraescolaresDirectiva({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="text-red-600"
+                    className="text-red-600 h-6 w-6"
                     onClick={() => handleAccion(row.original, "rechazar")}
                   >
-                    <X size={16} />
+                    <X size={14} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-red-600 text-white rounded-lg shadow-md">
+                <TooltipContent className="bg-red-600 text-white text-[10px] rounded-lg shadow-md">
                   <p>Rechazar actividad</p>
                 </TooltipContent>
               </Tooltip>
@@ -385,15 +372,16 @@ export function TablaExtraescolaresDirectiva({
                   <Button
                     size="icon"
                     variant="ghost"
+                    className="h-6 w-6"
                     onClick={() => {
                       setEditItem(row.original);
                       setEditOpen(true);
                     }}
                   >
-                    <Pencil className="w-4 h-4 text-blue-600" />
+                    <Pencil className="w-3.5 h-3.5 text-blue-600" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-[#1DA1F2] text-white">
+                <TooltipContent className="bg-slate-800 text-white text-[10px]">
                   <p>Editar/Ver actividad</p>
                 </TooltipContent>
               </Tooltip>
@@ -406,12 +394,12 @@ export function TablaExtraescolaresDirectiva({
                   <Button
                     variant="ghost"
                     onClick={() => handleGenerarExcel(row.original)}
-                    className="p-0 h-auto bg-transparent hover:bg-transparent text-green-600 hover:text-green-700 font-bold text-xs"
+                    className="p-0 h-6 px-1 bg-transparent hover:bg-transparent text-green-600 hover:text-green-700 font-bold text-[11px]"
                   >
                     XLS
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-[#1DA1F2] text-white">
+                <TooltipContent className="bg-slate-800 text-white text-[10px]">
                   <p>Generar Excel Dietas</p>
                 </TooltipContent>
               </Tooltip>
@@ -423,24 +411,31 @@ export function TablaExtraescolaresDirectiva({
     filterFns: {
       dateRange: dateRangeFilter,
     },
-    state: { sorting, columnFilters },
+    state: {
+      sorting,
+      columnFilters,
+      pagination,
+    },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageIndex: 0, pageSize: 5 } },
+    initialState: {
+      pagination: { pageIndex: 0, pageSize: 6 },
+    },
   });
 
-  // Para filtrar actividades pedientes
+  // Para filtrar actividades pendientes
   useEffect(() => {
     if (soloPendientesInicial) {
       table.getColumn("estado")?.setFilterValue(true);
     }
   }, [soloPendientesInicial, table]);
 
-  // ----- Actualizamos el filtro de rango cuando cambia la prop fecha -----
+  // Actualizamos el filtro de rango cuando cambia la prop fecha
   useEffect(() => {
     if (fecha) {
       setFechaDesde(fecha);
@@ -451,7 +446,7 @@ export function TablaExtraescolaresDirectiva({
     }
   }, [fecha]);
 
-  // Efecto simplificado para disparar el filtro
+  // Efecto para disparar el filtro por rango
   useEffect(() => {
     if (fechaDesde || fechaHasta) {
       table.getColumn("fecha_inicio")?.setFilterValue([fechaDesde, fechaHasta]);
@@ -460,7 +455,7 @@ export function TablaExtraescolaresDirectiva({
     }
   }, [fechaDesde, fechaHasta]);
 
-  // ----- Confirmar aceptar / rechazar -----
+  // Confirmar aceptar / rechazar
   const handleAccion = (item, tipo) => {
     setSeleccionado(item);
     setAccion(tipo);
@@ -495,62 +490,52 @@ export function TablaExtraescolaresDirectiva({
     }
   };
 
-  const formatLocalDate = (d) => d.toLocaleDateString("sv-SE");
-
-  const currentPage = table.getState().pagination.pageIndex + 1;
+  // Leemos las variables directamente del useState controlado
+  const currentPage = pagination.pageIndex + 1;
   const totalPages = table.getPageCount();
 
   const limpiarTodosLosFiltros = () => {
-    setFechaDesde(""); // Vaciamos para ver todo el histórico
+    setFechaDesde("");
     setFechaHasta("");
     table.resetColumnFilters();
     table.resetGlobalFilter();
+    table.resetSorting();
+
+    setPagination({ pageIndex: 0, pageSize: 6 });
+
     toast.info("Filtros restablecidos: mostrando todo el histórico");
   };
 
   return (
-    <div className="space-y-1">
-      {/* PANEL DE FILTROS ESTILO CLOUD */}
-      <div className="p-3 border rounded-xl bg-slate-50/50 shadow-sm mb-3">
-        <div className="flex flex-wrap items-end gap-3 w-full">
-          {/* 1. RANGO DE FECHAS (POR DEFECTO HOY) */}
-          <div className="flex items-end gap-2 p-1.5 bg-white rounded-lg border border-slate-200 shadow-sm">
-            <div className="space-y-0.5">
-              <label className="block text-[10px] uppercase font-bold text-slate-400 text-center">
-                Desde
-              </label>
+    <div className="space-y-2 flex flex-col h-full overflow-hidden">
+      {/* PANEL DE FILTROS */}
+      <div className="p-2 border border-slate-200/80 rounded-xl bg-slate-50/50 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2 w-full justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* 1. MICRO RANGO DE FECHAS CON INLINE LABELS UNIFORMES */}
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 shadow-2xs h-7 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span>Desde</span>
               <Input
                 type="date"
                 value={fechaDesde}
                 onChange={(e) => setFechaDesde(e.target.value)}
-                className="w-[135px] h-7 border-none focus-visible:ring-0 p-0 text-xs text-center bg-transparent"
+                className="w-[110px] h-full border-none focus-visible:ring-0 p-0 text-[11px] text-center bg-transparent font-medium text-slate-700 normal-case tracking-normal"
               />
-            </div>
-            <div className="h-7 w-[1px] bg-slate-100 mx-0.5" />
-            <div className="space-y-0.5">
-              <label className="block text-[10px] uppercase font-bold text-slate-400 text-center">
-                Hasta
-              </label>
+              <span>Hasta</span>
               <Input
                 type="date"
                 value={fechaHasta}
                 onChange={(e) => setFechaHasta(e.target.value)}
-                className="w-[135px] h-7 border-none focus-visible:ring-0 p-0 text-xs text-center bg-transparent"
+                className="w-[110px] h-full border-none focus-visible:ring-0 p-0 text-[11px] text-center bg-transparent font-medium text-slate-700 normal-case tracking-normal"
               />
             </div>
-          </div>
 
-          {/* 2. FILTRO PROFESOR */}
-          <div className="flex-1 min-w-[150px] space-y-1">
-            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">
-              Profesor/a responsable
-            </label>
-            {/* FILTRO PROFESOR responsable*/}
-            <div className="relative flex-1 min-w-[130px]">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            {/* 2. FILTRO PROFESOR */}
+            <div className="relative w-[160px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
               <Input
-                className="h-8 w-full text-[11px] bg-white pl-7 shadow-sm"
-                placeholder="Profesor/a..."
+                className="h-7 w-full text-[11px] bg-white pl-7 pr-2 shadow-2xs border-slate-200 focus-visible:ring-slate-300"
+                placeholder="Filtrar por profesor..."
                 value={table.getColumn("responsables")?.getFilterValue() ?? ""}
                 onChange={(e) =>
                   table
@@ -559,49 +544,39 @@ export function TablaExtraescolaresDirectiva({
                 }
               />
             </div>
+
+            {/* 3. FILTRO TÍTULO */}
+            <div className="relative w-[190px]">
+              <Input
+                className="h-7 w-full text-[11px] bg-white px-2 shadow-2xs border-slate-200 focus-visible:ring-slate-300"
+                placeholder="Filtrar por actividad..."
+                value={table.getColumn("titulo")?.getFilterValue() ?? ""}
+                onChange={(e) =>
+                  table.getColumn("titulo")?.setFilterValue(e.target.value)
+                }
+              />
+            </div>
+
+            {/* 4. BOTÓN LIMPIAR */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-colors rounded-md gap-1 flex items-center"
+              onClick={limpiarTodosLosFiltros}
+            >
+              <Eraser className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">
+                Limpiar
+              </span>
+            </Button>
           </div>
 
-          {/* 3. FILTRO TÍTULO */}
-          <div className="flex-1 min-w-[150px] space-y-1">
-            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">
-              Actividad
-            </label>
-            <Input
-              className="h-9 w-full text-xs bg-white shadow-sm"
-              placeholder="Título de la actividad..."
-              value={table.getColumn("titulo")?.getFilterValue() ?? ""}
-              onChange={(e) =>
-                table.getColumn("titulo")?.setFilterValue(e.target.value)
-              }
-            />
-          </div>
-
-          {/* 4. BOTÓN LIMPIAR */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                  onClick={limpiarTodosLosFiltros}
-                >
-                  <Eraser className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Limpiar todos los filtros</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          {/* 5. SECCIÓN FINAL (SWITCH E INFORMES) */}
-          <div className="flex items-center gap-4 ml-auto pl-4 border-l border-slate-200 h-10">
-            {/* Switch Estado */}
-            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-100 shadow-sm">
+          {/* 5. SECCIÓN FINAL ACCIONES */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 bg-white px-2.5 h-7 rounded-lg border border-slate-200/60 shadow-2xs">
               <Switch
                 id="pendientes-ext"
-                className="scale-75 data-[state=checked]:bg-yellow-600"
+                className="scale-65 data-[state=checked]:bg-yellow-600"
                 checked={table.getColumn("estado")?.getFilterValue() === true}
                 onCheckedChange={(checked) =>
                   table
@@ -611,51 +586,50 @@ export function TablaExtraescolaresDirectiva({
               />
               <label
                 htmlFor="pendientes-ext"
-                className="text-[11px] font-semibold text-slate-600 cursor-pointer select-none"
+                className="text-[10px] font-bold text-slate-500 uppercase tracking-tight cursor-pointer select-none"
               >
-                Solo Pendientes
+                Pendientes
               </label>
             </div>
 
-            {/* Menú Informes */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="default"
                   size="sm"
-                  className="h-9 px-3 bg-slate-800 hover:bg-slate-900 shadow-md"
+                  className="h-7 px-2.5 bg-slate-800 hover:bg-slate-900 shadow-2xs rounded-lg text-white"
                 >
-                  <Printer className="h-4 w-4 mr-2" />
-                  <span className="text-xs">Informes</span>
+                  <Printer className="h-3.5 w-3.5 mr-1.5" />
+                  <span className="text-[11px] font-medium">Informes</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-52 text-xs">
                 <DropdownMenuItem
                   onClick={handleGenerarExtraescolaresMensual}
-                  className="cursor-pointer"
+                  className="cursor-pointer py-1.5 text-slate-700"
                 >
-                  <FileText className="mr-2 h-4 w-4 text-red-500" /> Agenda
+                  <FileText className="mr-2 h-3.5 w-3.5 text-red-500" /> Agenda
                   mensual
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleGenerarExtraescolaresProfesor}
-                  className="cursor-pointer"
+                  className="cursor-pointer py-1.5 text-slate-700"
                 >
-                  <FileText className="mr-2 h-4 w-4 text-blue-500" /> Por
+                  <FileText className="mr-2 h-3.5 w-3.5 text-blue-500" /> Por
                   profesor
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleGenerarExtraescolaresDepartamento}
-                  className="cursor-pointer"
+                  className="cursor-pointer py-1.5 text-slate-700"
                 >
-                  <FileText className="mr-2 h-4 w-4 text-orange-500" /> Por
+                  <FileText className="mr-2 h-3.5 w-3.5 text-orange-500" /> Por
                   departamento (PDF)
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleGenerarExtraescolaresDepartamentoXLS}
-                  className="cursor-pointer"
+                  className="cursor-pointer py-1.5 text-slate-700"
                 >
-                  <Grid className="mr-2 h-4 w-4 text-green-600" /> Por
+                  <Grid className="mr-2 h-3.5 w-3.5 text-green-600" /> Por
                   departamento (XLS)
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -664,97 +638,100 @@ export function TablaExtraescolaresDirectiva({
         </div>
       </div>
 
-      {/* TABLA PRINCIPAL */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader className="bg-slate-50/80">
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id} className="hover:bg-transparent">
-                {hg.headers.map((h) => (
-                  <TableHead
-                    key={h.id}
-                    className="h-10 text-[11px] font-bold text-slate-600 uppercase"
-                  >
-                    <div
-                      className={cn(
-                        "flex items-center gap-1",
-                        h.column.getCanSort() && "cursor-pointer select-none"
-                      )}
-                      onClick={h.column.getToggleSortingHandler()}
-                    >
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                      {{ asc: " ↑", desc: " ↓" }[h.column.getIsSorted()] ?? ""}
-                    </div>
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
+      {/* TABLA PRINCIPAL ALTA DENSIDAD */}
+      <div className="flex-1 rounded-xl border border-slate-200 bg-white shadow-3xs overflow-hidden min-h-0 flex flex-col">
+        <div className="overflow-y-auto flex-1 scrollbar-none">
+          <Table>
+            <TableHeader className="bg-slate-50/60 sticky top-0 z-10 border-b border-slate-200">
+              {table.getHeaderGroups().map((hg) => (
                 <TableRow
-                  key={row.id}
-                  className="hover:bg-slate-50/50 transition-colors border-slate-100 h-8"
+                  key={hg.id}
+                  className="hover:bg-transparent border-none"
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="py-1 px-4 text-[11px] text-slate-700 whitespace-nowrap"
+                  {hg.headers.map((h) => (
+                    <TableHead
+                      key={h.id}
+                      className="h-7 text-[10px] font-bold text-slate-500 uppercase tracking-wider py-0"
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
+                      <div
+                        className={cn(
+                          "flex items-center gap-1 px-2",
+                          h.column.getCanSort() && "cursor-pointer select-none"
+                        )}
+                        onClick={h.column.getToggleSortingHandler()}
+                      >
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                        {{ asc: " ↑", desc: " ↓" }[h.column.getIsSorted()] ??
+                          ""}
+                      </div>
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getAllColumns().length}
-                  className="h-32 text-center text-slate-400 italic"
-                >
-                  No se han encontrado actividades extraescolares para el rango
-                  seleccionado.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="hover:bg-slate-50/40 transition-colors border-b border-slate-100/50 h-[26px]"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="py-0.5 px-4 text-[11px] text-slate-600 whitespace-nowrap align-middle"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={table.getAllColumns().length}
+                    className="h-24 text-center text-slate-400 italic text-[11px]"
+                  >
+                    No se han encontrado actividades extraescolares.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* PAGINACIÓN Y TOTALES INTEGRADOS */}
-      <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 bg-white border border-t-0 border-slate-200 rounded-b-xl shadow-sm -mt-4">
-        {/* 1. ESPACIADOR IZQUIERDO (Para que la paginación quede centrada realmente) */}
+      <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-1.5 bg-slate-50/50 border border-slate-200 rounded-xl shadow-3xs flex-shrink-0">
         <div className="hidden sm:block flex-1" />
 
-        {/* 2. PAGINACIÓN CENTRADA */}
-        <div className="flex items-center space-x-1.5 flex-1 justify-center">
+        <div className="flex items-center space-x-1 flex-1 justify-center">
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-slate-500 hover:text-slate-900"
+            className="h-6 w-6 text-slate-400 hover:text-slate-800"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronsLeft className="w-4 h-4" />
+            <ChevronsLeft className="w-3.5 h-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-slate-500 hover:text-slate-900"
+            className="h-6 w-6 text-slate-400 hover:text-slate-800"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3.5 h-3.5" />
           </Button>
 
-          <div className="flex items-center justify-center min-w-[80px] text-[10px] uppercase tracking-wider font-bold text-slate-400">
+          <div className="flex items-center justify-center min-w-[70px] text-[9px] uppercase tracking-wider font-bold text-slate-400">
             Pág.{" "}
-            <span className="text-slate-900 ml-1">
+            <span className="text-slate-800 ml-1">
               {currentPage} / {totalPages}
             </span>
           </div>
@@ -762,28 +739,27 @@ export function TablaExtraescolaresDirectiva({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-slate-500 hover:text-slate-900"
+            className="h-6 w-6 text-slate-400 hover:text-slate-800"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3.5 h-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-slate-500 hover:text-slate-900"
+            className="h-6 w-6 text-slate-400 hover:text-slate-800"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronsRight className="w-4 h-4" />
+            <ChevronsRight className="w-3.5 h-3.5" />
           </Button>
         </div>
 
-        {/* 3. TOTAL REGISTROS A LA DERECHA */}
         <div className="flex-1 flex justify-end">
-          <div className="text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3 py-1 rounded-md uppercase tracking-tight">
+          <div className="text-[9px] font-bold text-slate-400 bg-white border border-slate-200/60 px-2 py-0.5 rounded-md uppercase tracking-tight shadow-3xs">
             Total:{" "}
-            <span className="text-blue-600 font-extrabold">
+            <span className="text-blue-600 font-bold">
               {table.getFilteredRowModel().rows.length}
             </span>
           </div>

@@ -91,3 +91,24 @@ export function getFechaHoyMadridISO() {
   const [d, m, y] = fechaMadrid.split("/");
   return `${y}-${m}-${d}`;
 }
+
+// src/utils/fechasHoras.js
+
+export const formatDatePretty = (dateString) => {
+  if (!dateString) return "";
+
+  // 1. Crear el objeto Date correctamente
+  // Si la cadena tiene hora, la interpreta correctamente.
+  // Si no, el formato ISO estándar es suficiente.
+  const date = new Date(dateString);
+
+  // 2. Comprobar si es una fecha válida
+  if (isNaN(date.getTime())) return "";
+
+  // 3. Formatear
+  return date.toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+};

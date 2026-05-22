@@ -60,7 +60,12 @@ const getDescripcionTipoPermiso = (tipo) =>
  *
  */
 
-export function generatePermisosPdf({ empleado, permiso, periodos, directora }) {
+export function generatePermisosPdf({
+  empleado,
+  permiso,
+  periodos,
+  directora,
+}) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = 210;
   const marginLeft = 20;
@@ -338,9 +343,12 @@ export function generatePermisosPdf({ empleado, permiso, periodos, directora }) 
   doc.rect(tableX, startY, tableWidth, y - startY); // Cierre del cuadro de la sección 1
 
   // --- 2. PERMISO QUE SOLICITA ---
-  y += 0; // Pegado al cuadro anterior
+
+  // --- 2. PERMISO QUE SOLICITA ---
+  y += 0;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
+  // Reutilizamos la variable, no usamos 'let' porque ya existe arriba
   startY = y;
   const row2_1Height = 8;
   doc.text("2. PERMISO QUE SOLICITA", tableX + textPad, y + row2_1Height - 2);
@@ -390,6 +398,7 @@ export function generatePermisosPdf({ empleado, permiso, periodos, directora }) 
   let yLeft = y + 12;
   let yRight = y + 12;
 
+  // Renderizado columna izquierda
   PERMISOS_CHECKLIST.slice(0, 6).forEach(({ tipo, texto }) => {
     doc.rect(tableX + 2, yLeft - 3, 3.5, 3.5);
     if (permiso.tipo === tipo) {
@@ -402,15 +411,42 @@ export function generatePermisosPdf({ empleado, permiso, periodos, directora }) 
     yLeft += 15;
   });
 
+  // Renderizado columna derecha
   PERMISOS_CHECKLIST.slice(6).forEach(({ tipo, texto }) => {
-    doc.rect(colSplitX + 2, yRight - 3, 3.5, 3.5);
-    if (permiso.tipo === tipo) {
+    const xCheckbox = colSplitX + 2;
+    const yCheckbox = yRight - 3;
+
+    doc.rect(xCheckbox, yCheckbox, 3.5, 3.5);
+
+    const esMarcado =
+      permiso.tipo === tipo || (tipo === 0 && permiso.tipo === 10);
+
+    if (esMarcado) {
       doc.setFont("helvetica", "bold");
-      doc.text("X", colSplitX + 2.8, yRight - 0.2);
+      doc.text("X", xCheckbox + 0.8, yRight - 0.2);
     } else {
       doc.setFont("helvetica", "normal");
     }
+
     doc.text(doc.splitTextToSize(texto, 75), colSplitX + 7, yRight);
+
+    // Si es "Otras situaciones" y es tipo 10, pintamos la descripción debajo
+    if (tipo === 0 && (permiso.tipo === 0 || permiso.tipo === 10)) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+
+      // Definimos la variable fuera del if/else para poder usarla después
+      let textoDesc = "";
+      if (permiso.tipo === 10) {
+        textoDesc = `Formación: ${permiso.descripcion || ""}`;
+      } else {
+        textoDesc = `${permiso.descripcion || ""}`;
+      }
+
+      doc.text(doc.splitTextToSize(textoDesc, 75), colSplitX + 7, yRight + 5);
+      yRight += 5;
+    }
+
     yRight += 15;
   });
 
@@ -639,7 +675,7 @@ export function generateListadoPermisosProfesores(permisos = [], logoUrl) {
 
     if (y + totalHeightNeeded > pageHeight - marginBottom) {
       doc.addPage();
-      y = drawHeader(doc, "Listado de Permisos por Profesor",logoUrl);
+      y = drawHeader(doc, "Listado de Permisos por Profesor", logoUrl);
       resetContentStyle();
     }
 

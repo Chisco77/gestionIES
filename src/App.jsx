@@ -60,6 +60,8 @@ import { Navigate } from "react-router-dom";
 
 import { useEffect } from "react";
 import { BajasIndex } from "./modules/BajasProfesorado/pages/BajasIndex";
+import { DashboardAgendaExtraescolares } from "./modules/Dashboard/pages/DashboardAgendaExtraescolares";
+import { FormacionIndex } from "./modules/Formacion/pages/FormacionIndex";
 
 const queryClient = new QueryClient();
 
@@ -318,6 +320,8 @@ const router = createBrowserRouter(
 
         { path: "asuntos", element: <AsuntosPropiosIndex /> },
         { path: "permisos", element: <PermisosIndex /> },
+        { path: "asistencia-cursos", element: <FormacionIndex /> },
+        { path: "agenda-extraescolares", element: <DashboardAgendaExtraescolares /> },
 
         { path: "extraescolares", element: <ExtraescolaresIndex /> },
         { path: "reservasEstancias", element: <ReservasEstanciasIndex /> },
@@ -407,7 +411,7 @@ const router = createBrowserRouter(
   ],
   {
     basename: "/gestionIES",
-  },
+  }
 );
 
 function TitleUpdater() {

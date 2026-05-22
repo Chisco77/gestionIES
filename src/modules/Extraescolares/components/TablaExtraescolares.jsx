@@ -270,44 +270,35 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
 
   return (
     <div className="space-y-1 w-full max-w-full overflow-hidden">
-      {/* FILTROS */}
-      <div className="p-3 border rounded-xl bg-slate-50/50 shadow-sm mb-3">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex items-end gap-2 p-1.5 bg-white rounded-lg border border-slate-200 shadow-sm">
-            <div className="space-y-0.5">
-              <label className="block text-[10px] uppercase font-bold text-slate-400 text-center">
-                Desde
-              </label>
+      {/* CONTENEDOR DE FILTROS */}
+      <div className="p-2 border border-slate-200/80 rounded-xl bg-slate-50/50 flex-shrink-0 mb-4">
+        <div className="flex flex-wrap items-center gap-2 w-full justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* 1. RANGO DE FECHAS */}
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 shadow-2xs h-7 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span>Desde</span>
               <Input
                 type="date"
                 value={fechaDesde}
                 onChange={(e) => setFechaDesde(e.target.value)}
-                className="w-[130px] h-7 border-none p-0 text-xs text-center bg-transparent focus-visible:ring-0"
+                className="w-[125px] h-full border-none focus-visible:ring-0 p-0 text-[11px] text-center bg-transparent font-medium text-slate-700 normal-case tracking-normal"
               />
-            </div>
-            <div className="h-7 w-[1px] bg-slate-100 mx-0.5" />
-            <div className="space-y-0.5">
-              <label className="block text-[10px] uppercase font-bold text-slate-400 text-center">
-                Hasta
-              </label>
+              <span className="text-slate-200">|</span>
+              <span>Hasta</span>
               <Input
                 type="date"
                 value={fechaHasta}
                 onChange={(e) => setFechaHasta(e.target.value)}
-                className="w-[130px] h-7 border-none p-0 text-xs text-center bg-transparent focus-visible:ring-0"
+                className="w-[125px] h-full border-none focus-visible:ring-0 p-0 text-[11px] text-center bg-transparent font-medium text-slate-700 normal-case tracking-normal"
               />
             </div>
-          </div>
 
-          <div className="flex-1 min-w-[140px] space-y-1">
-            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">
-              Responsable
-            </label>
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            {/* 2. FILTRO RESPONSABLE */}
+            <div className="relative w-[200px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
               <Input
-                className="h-8 w-full text-[11px] bg-white pl-7 shadow-sm"
-                placeholder="Buscar..."
+                className="h-7 w-full text-[11px] bg-white pl-7 pr-2 shadow-2xs border-slate-200 focus-visible:ring-slate-300"
+                placeholder="Responsable..."
                 value={table.getColumn("responsables")?.getFilterValue() ?? ""}
                 onChange={(e) =>
                   table
@@ -316,45 +307,39 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
                 }
               />
             </div>
+
+            {/* 3. FILTRO ACTIVIDAD */}
+            <div className="relative w-[200px]">
+              <Input
+                className="h-7 w-full text-[11px] bg-white px-2 shadow-2xs border-slate-200 focus-visible:ring-slate-300"
+                placeholder="Filtrar actividad..."
+                value={table.getColumn("titulo")?.getFilterValue() ?? ""}
+                onChange={(e) =>
+                  table.getColumn("titulo")?.setFilterValue(e.target.value)
+                }
+              />
+            </div>
+
+            {/* 4. BOTÓN LIMPIAR */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-colors rounded-md gap-1"
+              onClick={limpiarTodosLosFiltros}
+            >
+              <Eraser className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">
+                Limpiar
+              </span>
+            </Button>
           </div>
 
-          <div className="flex-[1.5] min-w-[180px] space-y-1">
-            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">
-              Actividad
-            </label>
-            <Input
-              className="h-8 w-full text-[11px] bg-white shadow-sm"
-              placeholder="Título..."
-              value={table.getColumn("titulo")?.getFilterValue() ?? ""}
-              onChange={(e) =>
-                table.getColumn("titulo")?.setFilterValue(e.target.value)
-              }
-            />
-          </div>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                  onClick={limpiarTodosLosFiltros}
-                >
-                  <Eraser className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Limpiar todos los filtros</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <div className="flex items-center gap-3 ml-auto pl-4 border-l border-slate-200">
-            <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-slate-100 shadow-sm">
+          {/* 5. SECCIÓN FINAL: SWITCH Y ACCIONES */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 bg-white px-2.5 h-7 rounded-lg border border-slate-200/60 shadow-2xs">
               <Switch
                 id="pend-ext"
-                className="scale-75 data-[state=checked]:bg-yellow-600"
+                className="scale-65 data-[state=checked]:bg-yellow-600"
                 checked={table.getColumn("estado")?.getFilterValue() === true}
                 onCheckedChange={(c) =>
                   table.getColumn("estado")?.setFilterValue(c ? true : null)
@@ -362,7 +347,7 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
               />
               <label
                 htmlFor="pend-ext"
-                className="text-[10px] font-bold text-slate-600 uppercase cursor-pointer"
+                className="text-[10px] font-bold text-slate-500 uppercase tracking-tight cursor-pointer select-none"
               >
                 Pendientes
               </label>
@@ -373,13 +358,13 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
                 <Button
                   variant="default"
                   size="sm"
-                  className="h-8 px-3 bg-slate-800 hover:bg-slate-900 shadow-md"
+                  className="h-7 px-2.5 bg-slate-800 hover:bg-slate-900 shadow-2xs rounded-lg text-white"
                 >
-                  <Printer className="h-3.5 w-3.5 mr-2" />{" "}
-                  <span className="text-[11px]">Informes</span>
+                  <Printer className="h-3.5 w-3.5 mr-1.5" />
+                  <span className="text-[11px] font-medium">Informes</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuContent align="end" className="w-52 text-xs">
                 <DropdownMenuItem
                   onClick={() =>
                     generateListadoExtraescolaresMensual(
@@ -388,8 +373,9 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
                       urlLogoParaInformes
                     )
                   }
+                  className="cursor-pointer py-1.5 text-slate-700"
                 >
-                  <FileText className="mr-2 h-4 w-4 text-red-500" /> Agenda
+                  <FileText className="mr-2 h-3.5 w-3.5 text-red-500" /> Agenda
                   mensual
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -400,8 +386,9 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
                       urlLogoParaInformes
                     )
                   }
+                  className="cursor-pointer py-1.5 text-slate-700"
                 >
-                  <FileText className="mr-2 h-4 w-4 text-blue-500" /> Por
+                  <FileText className="mr-2 h-3.5 w-3.5 text-blue-500" /> Por
                   profesor
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -412,9 +399,10 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
                       urlLogoParaInformes
                     )
                   }
+                  className="cursor-pointer py-1.5 text-slate-700"
                 >
-                  <FileText className="mr-2 h-4 w-4 text-orange-500" />{" "}
-                  Departamento (PDF)
+                  <FileText className="mr-2 h-3.5 w-3.5 text-orange-500" />{" "}
+                  Depto (PDF)
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
@@ -423,8 +411,9 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
                       getFiltrosFechas()
                     )
                   }
+                  className="cursor-pointer py-1.5 text-slate-700"
                 >
-                  <Grid className="mr-2 h-4 w-4 text-green-600" /> Departamento
+                  <Grid className="mr-2 h-3.5 w-3.5 text-green-600" /> Depto
                   (XLS)
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -432,7 +421,6 @@ export function TablaExtraescolares({ fecha, soloPendientesInicial = false }) {
           </div>
         </div>
       </div>
-
       {/* TABLA CON SCROLL HORIZONTAL CONTROLADO */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">

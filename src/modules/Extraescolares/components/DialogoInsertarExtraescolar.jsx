@@ -221,7 +221,7 @@ export function DialogoInsertarExtraescolar({
       // 3. Error de red o crash del servidor
       else {
         toast.error(
-          serverData?.message || "Error inesperado al conectar con el servidor",
+          serverData?.message || "Error inesperado al conectar con el servidor"
         );
       }
     },
@@ -283,7 +283,7 @@ export function DialogoInsertarExtraescolar({
                 <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
               </TabsList>
             </div>
-            <div className="px-8 py-6 min-h-[520px]">
+            <div className="px-8 py-4 min-h-0">
               {/* --- TAB GENERAL --- */}
               <TabsContent value="general" className="mt-0 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
@@ -478,7 +478,6 @@ export function DialogoInsertarExtraescolar({
                   </div>
                 </div>
               </TabsContent>
-
               {/* --- TAB PARTICIPANTES --- */}
               <TabsContent value="detalles" className="mt-0 space-y-6">
                 <div className="space-y-2">
@@ -526,7 +525,6 @@ export function DialogoInsertarExtraescolar({
                   />
                 </div>
               </TabsContent>
-
               {/* --- TAB UBICACIÓN --- */}
               <TabsContent value="ubicacion" className="mt-0 space-y-6">
                 <div className="space-y-4">
@@ -593,14 +591,15 @@ export function DialogoInsertarExtraescolar({
                               <p className="text-[11px] leading-relaxed">
                                 <strong>Estancia reservable:</strong> Al
                                 guardar, se creará automáticamente una reserva
-                                en el cuadrante de aulas asociada al organizador de la actividad.
+                                en el cuadrante de aulas asociada al organizador
+                                de la actividad.
                               </p>
                             </div>
                           ) : (
                             <div className="flex gap-3 p-3 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 shadow-sm">
                               <span className="text-lg">📍</span>
                               <p className="text-[11px] leading-relaxed">
-                                Esta estancia no necesita reserva previa. 
+                                Esta estancia no necesita reserva previa.
                               </p>
                             </div>
                           )}

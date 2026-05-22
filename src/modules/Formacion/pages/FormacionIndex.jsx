@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { PanelReservas } from "@/modules/Comunes/PanelReservas";
-import { DialogoInsertarPermiso } from "../components/DialogoInsertarPermiso";
-import { DialogoEditarPermiso } from "../components/DialogoEditarPermiso";
 
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 
@@ -13,7 +11,9 @@ import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUi
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
 import { usePermisosMes } from "@/hooks/Permisos/usePermisosMes";
 
-import { CalendarioPermisos } from "../components/CalendarioPermisos";
+import { CalendarioFormacion } from "../components/CalendarioFormacion";
+import { DialogoInsertarFormacion } from "../components/DialogoInsertarFormacion";
+import { DialogoEditarFormacion } from "../components/DialogoEditarFormacion";
 
 const formatDateKey = (date) => {
   const y = date.getFullYear();
@@ -22,7 +22,7 @@ const formatDateKey = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-export function PermisosIndex() {
+export function FormacionIndex() {
   const { user } = useAuth();
   const uid = user?.username;
   const todayStr = formatDateKey(new Date());
@@ -41,9 +41,7 @@ export function PermisosIndex() {
   // ===== Hooks de PanelReservas =====
   const { data: reservasEstancias } = useReservasUid(uid);
   const { data: permisos } = usePermisosUid(uid);
-  const asuntosPropios = (permisos || []).filter(
-    (a) => a.tipo !== 13 && a.tipo !== 10
-  );
+  const asuntosPropios = permisos.filter((a) => a.tipo !== 13);
   const { data: extraescolares } = useExtraescolaresUid(uid);
   const { data: estancias } = useEstancias();
   const { data: periodos } = usePeriodosHorarios();
@@ -54,15 +52,16 @@ export function PermisosIndex() {
     currentMonth + 1 // el hook espera mes 1-12
   );
 
-  const asuntosPropiosMes = (permisos || []).filter((a) => {
+  const asuntosPropiosMes = permisos.filter((a) => {
     const fechaObj = new Date(a.fecha);
     return (
-      a.tipo !== 13 &&
-      a.tipo !== 10 &&
+      a.tipo == 10 && // Filtro de tipo
       fechaObj.getMonth() === currentMonth &&
       fechaObj.getFullYear() === currentYear
     );
   });
+  console.log("Asuntos mes: ", asuntosPropiosMes);
+  console.log("Permisos del usuario: ", permisos);
 
   // --- Función para recargar PanelReservas ---
   const recargarPanel = () => setReloadPanel((r) => r + 1);
@@ -148,7 +147,7 @@ export function PermisosIndex() {
       {/* Contenedor del grid con altura fija o relativa para limitar el crecimiento */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[350px] items-start">
         <div className="h-full">
-          <CalendarioPermisos
+          <CalendarioFormacion
             currentMonth={currentMonth}
             currentYear={currentYear}
             todayStr={todayStr}
@@ -177,7 +176,7 @@ export function PermisosIndex() {
 
       {/* Diálogos */}
       {abrirDialogo && (
-        <DialogoInsertarPermiso
+        <DialogoInsertarFormacion
           open={abrirDialogo}
           onClose={() => setAbrirDialogo(false)}
           fecha={selectedDate}
@@ -186,7 +185,7 @@ export function PermisosIndex() {
         />
       )}
       {abrirDialogoEdicion && asuntoSeleccionado && (
-        <DialogoEditarPermiso
+        <DialogoEditarFormacion
           open={abrirDialogoEdicion}
           onClose={() => setAbrirDialogoEdicion(false)}
           permiso={asuntoSeleccionado}

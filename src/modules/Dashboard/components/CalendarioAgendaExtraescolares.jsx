@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useExtraescolaresUid } from "@/hooks/Extraescolares/useExtraescolaresUid";
+import { useExtraescolaresAll } from "@/hooks/Extraescolares/useExtraescolaresAll";
 import { usePermisosUid } from "@/hooks/Permisos/usePermisosUid";
 import { useAuth } from "@/context/AuthContext";
 
@@ -12,7 +12,7 @@ const formatDateKey = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
+export function CalendarioAgendaExtraescolares({ onSelectDate, disableInsert = false }) {
   const { user } = useAuth();
   const uid = user?.username;
   const todayStr = formatDateKey(new Date());
@@ -21,7 +21,7 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
   const currentMonth = referenceDate.getMonth();
   const currentYear = referenceDate.getFullYear();
 
-  const { data: extraescolares = [] } = useExtraescolaresUid(uid);
+  const { data: extraescolares = [] } = useExtraescolaresAll();
   const { data: asuntos = [] } = usePermisosUid(uid);
 
   // --- Generar semanas del mes ---
@@ -59,12 +59,9 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
 
   const asuntosPorDia = useMemo(() => {
     const map = {};
-    // Filtramos para que solo procese los que tienen estado 1 (Aceptado)
-    asuntos
-      .filter((a) => a.estado === 1)
-      .forEach((a) => {
-        map[formatDateKey(new Date(a.fecha))] = true;
-      });
+    asuntos.forEach((a) => {
+      map[formatDateKey(new Date(a.fecha))] = true;
+    });
     return map;
   }, [asuntos]);
 

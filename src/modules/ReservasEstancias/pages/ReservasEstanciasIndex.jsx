@@ -46,12 +46,11 @@
  *   - Contexto de autenticación: useAuth
  */
 
-import {  useState } from "react";
+import { useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { PanelReservas } from "../../Comunes/PanelReservas";
 import { toast } from "sonner";
-
 
 import { CalendarioReservas } from "../components/CalendarioReservas";
 import { GridReservasEstancias } from "../components/GridReservasEstancias";
@@ -79,10 +78,9 @@ export function ReservasEstanciasIndex() {
   const [currentMonth, setCurrentMonth] = useState(fechaHora.getMonth());
   const [currentYear, setCurrentYear] = useState(fechaHora.getFullYear());
 
-
   const [periodosDB, setPeriodosDB] = useState([]);
 
-    useState(null);
+  useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
   const API_BASE = API_URL ? `${API_URL.replace(/\/$/, "")}/db` : "/db";
@@ -125,7 +123,6 @@ export function ReservasEstanciasIndex() {
     weeks.push(week);
   }
 
-
   const handleDiaClick = (dateKey, estanciaId, periodoId) => {
     setSelectedDate(dateKey);
     if (estanciaId && periodoId) {
@@ -141,29 +138,32 @@ export function ReservasEstanciasIndex() {
   };
 
   return (
-    <div className="p-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <CalendarioReservas
-          selectedDate={selectedDate}
-          onSelectDate={(dateKey) => setSelectedDate(dateKey)}
-          uid={uid}
-        />
-
+    <div className="p-4 space-y-4">
+      {/* Contenedor superior para el Calendario y Panel con altura sincronizada */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[350px] items-start">
         <div className="h-full">
-          <PanelReservas uid={uid} />
-        </div>
-
-        {/* Grid de reservas del día */}
-        <div className="mt-2 w-full md:col-span-2">
-          <GridReservasEstancias
-            uid={uid}
+          <CalendarioReservas
             selectedDate={selectedDate}
-            esReservaFutura={esReservaFutura}
-            fechaSeleccionada={selectedDate}
-            handleEditarReserva={handleEditarReserva}
-            handleDiaClick={handleDiaClick}
+            onSelectDate={(dateKey) => setSelectedDate(dateKey)}
+            uid={uid}
           />
         </div>
+
+        <div className="h-full overflow-hidden">
+          <PanelReservas uid={uid} />
+        </div>
+      </div>
+
+      {/* Grid de reservas del día */}
+      <div className="w-full">
+        <GridReservasEstancias
+          uid={uid}
+          selectedDate={selectedDate}
+          esReservaFutura={esReservaFutura}
+          fechaSeleccionada={selectedDate}
+          handleEditarReserva={handleEditarReserva}
+          handleDiaClick={handleDiaClick}
+        />
       </div>
     </div>
   );

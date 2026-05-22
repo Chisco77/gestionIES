@@ -114,7 +114,11 @@ function SidebarComponent({
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Reservas de Aulas", url: "/reservasEstancias", icon: Building2 },
+          {
+            title: "Reservas de Aulas",
+            url: "/reservasEstancias",
+            icon: Building2,
+          },
           {
             title: "Extraescolares",
             url: "/extraescolares",
@@ -128,6 +132,11 @@ function SidebarComponent({
           {
             title: "Permisos",
             url: "/permisos",
+            icon: ListChecks,
+          },
+          {
+            title: "Asistencia a cursos",
+            url: "/asistencia-cursos",
             icon: ListChecks,
           },
         ],
@@ -267,6 +276,11 @@ function SidebarComponent({
         icon: Home,
       },
       {
+        title: "Agenda de Extraescolares",
+        url: "/agenda-extraescolares",
+        icon: GraduationCap,
+      },
+      {
         title: "Usuarios",
         url: "#",
         icon: Users,
@@ -277,7 +291,11 @@ function SidebarComponent({
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Reservas de Aulas", url: "/reservasEstancias", icon: Building2 },
+          {
+            title: "Reservas de Aulas",
+            url: "/reservasEstancias",
+            icon: Building2,
+          },
           {
             title: "Extraescolares",
             url: "/extraescolares",
@@ -291,6 +309,11 @@ function SidebarComponent({
           {
             title: "Permisos",
             url: "/permisos",
+            icon: ListChecks,
+          },
+          {
+            title: "Asistencia a cursos",
+            url: "/asistencia-cursos",
             icon: ListChecks,
           },
         ],
@@ -364,7 +387,11 @@ function SidebarComponent({
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Reservas de Aulas", url: "/reservasEstancias", icon: Building2 },
+          {
+            title: "Reservas de Aulas",
+            url: "/reservasEstancias",
+            icon: Building2,
+          },
           {
             title: "Extraescolares",
             url: "/extraescolares",
@@ -419,7 +446,7 @@ function SidebarComponent({
           },
           ...itemsPlanosDinamicos.map((item) => {
             const planoOriginal = planos.find(
-              (p) => p.id === item.url.split("/").pop(),
+              (p) => p.id === item.url.split("/").pop()
             );
             return {
               ...item,
@@ -510,7 +537,11 @@ function SidebarComponent({
         url: "#",
         icon: CalendarCheck,
         items: [
-          { title: "Reservas de Aulas", url: "/reservasEstancias", icon: Building2 },
+          {
+            title: "Reservas de Aulas",
+            url: "/reservasEstancias",
+            icon: Building2,
+          },
           {
             title: "Extraescolares",
             url: "/extraescolares",

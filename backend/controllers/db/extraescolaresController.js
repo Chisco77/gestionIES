@@ -6,31 +6,31 @@
  *
  *  Descripción:
  *    Controlador para la gestión completa de actividades extraescolares
- *    y complementarias. Integra la reserva inteligente de estancias, 
- *    la sincronización en tiempo real con el cuadrante de ausencias del 
- *    profesorado, la consulta concurrente de grupos/departamentos LDAP 
+ *    y complementarias. Integra la reserva inteligente de estancias,
+ *    la sincronización en tiempo real con el cuadrante de ausencias del
+ *    profesorado, la consulta concurrente de grupos/departamentos LDAP
  *    y notificaciones automáticas por correo electrónico.
  *
  *  Funcionalidades:
- *    - Gestión automática de reservas y control estricto de conflictos 
+ *    - Gestión automática de reservas y control estricto de conflictos
  *      horarios en espacios reservables (gestionarReservaEstancia)
- *    - Obtención y enriquecimiento  de actividades cruzando 
+ *    - Obtención y enriquecimiento  de actividades cruzando
  *      los límites del año académico con datos de la BD y LDAP para obtener
  *      datos de profesores.
  *      (getExtraescolaresEnriquecidos)
- *    - Modificación de estado (Aceptar/Rechazar) por parte del equipo directivo, 
- *      con mecanismos de liberación automática de recursos ante rechazos 
+ *    - Modificación de estado (Aceptar/Rechazar) por parte del equipo directivo,
+ *      con mecanismos de liberación automática de recursos ante rechazos
  *      (updateEstadoExtraescolar)
- *    - Sincronización avanzada bajo la "Política de Absorción" (elimina ausencias 
- *      manuales previas del profesor para evitar duplicidades al generar la 
+ *    - Sincronización avanzada bajo la "Política de Absorción" (elimina ausencias
+ *      manuales previas del profesor para evitar duplicidades al generar la
  *      ausencia oficial de la actividad) (sincronizarAusenciasActividad)
- *    - Inserción de nuevas actividades evaluando restricciones geográficas 
+ *    - Inserción de nuevas actividades evaluando restricciones geográficas
  *      (dentro/fuera del centro) y casuísticas multidía (insertExtraescolar)
- *    - Protección del histórico de guardias impidiendo el borrado de 
+ *    - Protección del histórico de guardias impidiendo el borrado de
  *      actividades pasadas ya consolidadas (deleteExtraescolar)
- *    - Actualización integral de parámetros de la actividad con reevaluación 
+ *    - Actualización integral de parámetros de la actividad con reevaluación
  *      de reservas previas y refresco de ausencias (updateExtraescolar)
- *    - Envío asíncrono de correos informativos sobre inserciones, ediciones 
+ *    - Envío asíncrono de correos informativos sobre inserciones, ediciones
  *      y cambios de estado administrativos (enviarEmailActividad [Omitido]) a directiva
  *      y participantes en la actividad.
  *
@@ -237,7 +237,12 @@ LEFT JOIN estancias est
   ON e.idestancia = est.id
 
 ${where}
-ORDER BY e.fecha_inicio ASC`,
+ORDER BY 
+  e.fecha_inicio ASC,
+  -- 1. Forzamos que las de "Todo el día" (idperiodo_inicio es NULL) salgan arriba
+  (e.idperiodo_inicio IS NOT NULL) ASC, 
+  -- 2. Ordenamos el resto cronológicamente por la hora de inicio del periodo
+  p_ini.inicio ASC`,
       vals
     );
 

@@ -11,12 +11,12 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-
-import { MAPEO_TIPOS_PERMISOS } from "@/utils/mapeoTiposPermisos";
-
 import { Checkbox } from "@/components/ui/checkbox";
+
+import { format } from "date-fns";
+import { SelectorFecha } from "@/modules/Comunes/SelectorFecha";
+
 import {
   Select,
   SelectTrigger,
@@ -25,10 +25,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-import { format } from "date-fns";
-import { SelectorFecha } from "@/modules/Comunes/SelectorFecha";
-
-export function DialogoEditarPermiso({
+export function DialogoEditarFormacion({
   open,
   onClose,
   permiso,
@@ -36,13 +33,13 @@ export function DialogoEditarPermiso({
   onSuccess,
 }) {
   const [descripcion, setDescripcion] = useState("");
-  const [tipo, setTipo] = useState(null);
   const [diaCompleto, setDiaCompleto] = useState(true);
   const [periodoInicio, setPeriodoInicio] = useState(null);
   const [periodoFin, setPeriodoFin] = useState(null);
   const [fechaFin, setFechaFin] = useState(new Date());
-  const [fechaFinStr, setFechaFinStr] = useState(""); // para backend
+  const [fechaFinStr, setFechaFinStr] = useState("");
 
+  const TIPO_FORMACION = 10;
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -50,8 +47,6 @@ export function DialogoEditarPermiso({
   useEffect(() => {
     if (open && permiso) {
       setDescripcion(permiso.descripcion || "");
-      setTipo(permiso.tipo?.toString() || null);
-
       const esDiaCompleto = permiso.dia_completo ?? true;
       setDiaCompleto(esDiaCompleto);
 
@@ -61,20 +56,16 @@ export function DialogoEditarPermiso({
       setPeriodoFin(
         permiso.idperiodo_fin ? String(permiso.idperiodo_fin) : null
       );
-
       setFechaFin(permiso.fecha_fin || permiso.fecha);
     }
   }, [open, permiso]);
 
   useEffect(() => {
     if (!diaCompleto && permiso) {
-      setFechaFin(permiso.fecha); // bloqueamos
+      setFechaFin(permiso.fecha);
     }
   }, [diaCompleto, permiso]);
 
-  // --------------------------
-  // Mutation con React Query
-  // --------------------------
   const mutation = useMutation({
     mutationFn: async (data) => {
       const res = await fetch(`${API_URL}/db/permisos/${permiso.id}`, {
@@ -90,9 +81,7 @@ export function DialogoEditarPermiso({
     },
     onSuccess: () => {
       toast.success("Permiso actualizado correctamente");
-
       queryClient.invalidateQueries(["panel", "permisos", user.username]);
-
       const fechaObj = new Date(permiso.fecha);
       const month = fechaObj.getMonth();
       const year = fechaObj.getFullYear();
@@ -104,7 +93,6 @@ export function DialogoEditarPermiso({
       onClose();
     },
     onError: (err) => {
-      console.error(err);
       toast.error(err.message || "Error al actualizar permiso");
     },
   });
@@ -115,26 +103,17 @@ export function DialogoEditarPermiso({
       return;
     }
 
-    if (!tipo) {
-      toast.error("Debe seleccionar un tipo de permiso");
-      return;
-    }
-
     if (!diaCompleto) {
       if (!periodoInicio || !periodoFin) {
         toast.error("Debe seleccionar periodo inicio y fin");
         return;
       }
-
       if (Number(periodoInicio) > Number(periodoFin)) {
         toast.error("El periodo inicio no puede ser mayor que el fin");
         return;
       }
     }
 
-    // --------------------------
-    // Manejo seguro de fechas
-    // --------------------------
     const fechaFinStr = fechaFin
       ? format(
           fechaFin instanceof Date ? fechaFin : new Date(fechaFin),
@@ -144,9 +123,9 @@ export function DialogoEditarPermiso({
 
     mutation.mutate({
       descripcion,
-      tipo: Number(tipo),
+      tipo: TIPO_FORMACION, // Forzado a 10
       uid: user.username,
-      fecha_fin: diaCompleto ? fechaFinStr : permiso.fecha, // 👈 ahora seguro
+      fecha_fin: diaCompleto ? fechaFinStr : permiso.fecha,
       dia_completo: diaCompleto,
       idperiodo_inicio: diaCompleto ? null : Number(periodoInicio),
       idperiodo_fin: diaCompleto ? null : Number(periodoFin),
@@ -155,31 +134,20 @@ export function DialogoEditarPermiso({
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
-      <DialogContent
-        onInteractOutside={(e) => e.preventDefault()}
-        className="p-0 overflow-hidden rounded-lg border-none"
-      >
+      <DialogContent className="p-0 overflow-hidden rounded-lg border-none">
         <DialogHeader className="bg-green-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
-          <DialogTitle className="text-lg font-semibold text-center leading-snug">
-            Editar Permiso (
-            {new Date(permiso?.fecha).toLocaleDateString("es-ES")})
-          </DialogTitle>
+          <DialogTitle>Editar Solicitud de Formación</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col space-y-6 p-6">
-          {/* Descripción */}
           <div>
-            <Label
-              htmlFor="descripcion"
-              className="mb-2 block text-sm font-medium"
-            >
+            <Label className="mb-2 block text-sm font-medium">
               Descripción
             </Label>
             <Input
-              id="descripcion"
-              placeholder="Descripción del permiso"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Descripción del permiso"
             />
           </div>
 
@@ -227,7 +195,6 @@ export function DialogoEditarPermiso({
                   </SelectContent>
                 </Select>
               </div>
-
               {/* Periodo fin */}
               <div>
                 <Label className="mb-2 block text-sm font-medium">
@@ -251,47 +218,11 @@ export function DialogoEditarPermiso({
               </div>
             </div>
           )}
-
-          {/* Tipo de permiso */}
-          <div>
-            <Label className="mb-2 block text-sm font-medium">
-              Tipo de permiso
-            </Label>
-            <div className="border rounded-md p-2 hover:bg-gray-50">
-              <RadioGroup
-                value={tipo}
-                onValueChange={setTipo}
-                className="space-y-3"
-              >
-                {Object.entries(MAPEO_TIPOS_PERMISOS)
-                  .filter(([key]) => Number(key) !== 10) // Excluye el tipo 10
-                  .sort(([a], [b]) => Number(a) - Number(b))
-                  .map(([key, label]) => (
-                    <div key={key} className="flex items-start space-x-2">
-                      <RadioGroupItem
-                        value={key}
-                        id={`tipo-${key}`}
-                        className="mt-1"
-                      />
-                      <Label
-                        htmlFor={`tipo-${key}`}
-                        className="text-sm cursor-pointer leading-tight"
-                      >
-                        {label}
-                      </Label>
-                    </div>
-                  ))}
-              </RadioGroup>
-            </div>
-          </div>
+          {/* RadioGroup de tipo eliminado */}
         </div>
 
         <DialogFooter className="px-6 py-4 bg-gray-50">
-          <Button
-            variant="outline"
-            onClick={handleGuardar}
-            disabled={mutation.isLoading}
-          >
+          <Button onClick={handleGuardar} disabled={mutation.isLoading}>
             {mutation.isLoading ? "Guardando..." : "Guardar cambios"}
           </Button>
         </DialogFooter>

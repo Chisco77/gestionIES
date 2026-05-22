@@ -149,10 +149,10 @@ export function DialogoEditarExtraescolar({
 
     setDepartamento(actividad.gidnumber ? String(actividad.gidnumber) : "");
     setPeriodoInicio(
-      actividad.idperiodo_inicio ? String(actividad.idperiodo_inicio) : "",
+      actividad.idperiodo_inicio ? String(actividad.idperiodo_inicio) : ""
     );
     setPeriodoFin(
-      actividad.idperiodo_fin ? String(actividad.idperiodo_fin) : "",
+      actividad.idperiodo_fin ? String(actividad.idperiodo_fin) : ""
     );
     setCursosSeleccionados(actividad.cursos_gids?.map(String) || []);
     setProfesoresSeleccionados(actividad.responsables_uids || []);
@@ -248,7 +248,7 @@ export function DialogoEditarExtraescolar({
       // 3. Fallo de red o error de servidor sin JSON
       else {
         toast.error(
-          err.message || "Error inesperado al conectar con el servidor",
+          err.message || "Error inesperado al conectar con el servidor"
         );
       }
     },
@@ -331,7 +331,7 @@ export function DialogoEditarExtraescolar({
               </TabsList>
             </div>
 
-            <div className="px-8 py-6 min-h-[520px]">
+            <div className="px-8 py-4 min-h-0">
               {/* --- TAB GENERAL --- */}
               <TabsContent value="general" className="mt-0 space-y-6">
                 {/* BLOQUE INICIAL: CONFIGURACIÓN BÁSICA */}
@@ -543,7 +543,6 @@ export function DialogoEditarExtraescolar({
                   </div>
                 </div>
               </TabsContent>
-
               {/* --- TAB DETALLES */}
               <TabsContent value="detalles" className="mt-0 space-y-6">
                 <div className="space-y-2">
@@ -595,7 +594,6 @@ export function DialogoEditarExtraescolar({
                   />
                 </div>
               </TabsContent>
-
               {/* --- TAB UBICACIÓN --- */}
               <TabsContent value="ubicacion" className="mt-0 space-y-6">
                 <div className="space-y-4">
@@ -672,8 +670,8 @@ export function DialogoEditarExtraescolar({
                               <p className="text-[11px] leading-relaxed">
                                 <strong>Estancia reservable:</strong> Al
                                 guardar, se creará automáticamente una reserva
-                                en el cuadrante de aulas asociada al organizador de
-                                la actividad.
+                                en el cuadrante de aulas asociada al organizador
+                                de la actividad.
                               </p>
                             </div>
                           ) : (

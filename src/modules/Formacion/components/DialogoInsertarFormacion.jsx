@@ -12,14 +12,11 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { generatePermisosPdf } from "@/Informes/permisos";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { usePeriodosHorarios } from "@/hooks/usePeriodosHorarios";
 import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
 import { SelectorFecha } from "@/modules/Comunes/SelectorFecha";
-
 import { format } from "date-fns";
-
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -29,31 +26,29 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-import { MAPEO_TIPOS_PERMISOS } from "@/utils/mapeoTiposPermisos";
-
-export function DialogoInsertarPermiso({
+export function DialogoInsertarFormacion({
   open,
   onClose,
   fecha,
   periodos_horarios,
 }) {
   const [descripcion, setDescripcion] = useState("");
-  const [tipo, setTipo] = useState(null);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
   const [permisoCreado, setPermisoCreado] = useState(null);
   const [diaCompleto, setDiaCompleto] = useState(true);
   const [periodoInicio, setPeriodoInicio] = useState(null);
   const [periodoFin, setPeriodoFin] = useState(null);
-  const [fechaFin, setFechaFin] = useState(fecha); // Date para el calendario
-  const [fechaFinStr, setFechaFinStr] = useState(""); // String seguro para backend
+  const [fechaFin, setFechaFin] = useState(fecha);
+  const [fechaFinStr, setFechaFinStr] = useState("");
+
+  const TIPO_FORMACION = 10; // Definimos la constante del tipo de permiso
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: periodos = [] } = usePeriodosHorarios();
-  const { data: configuracion } = useConfiguracionCentro(); // Obtener configuración del centro
+  const { data: configuracion } = useConfiguracionCentro();
 
-  // Reset en carga de diálogo
   useEffect(() => {
     if (open) {
       setDiaCompleto(true);
@@ -61,7 +56,6 @@ export function DialogoInsertarPermiso({
       setPeriodoFin(null);
       setDescripcion("");
       setShowPdfDialog(false);
-      setTipo(null);
       setPermisoCreado(null);
       setFechaFin(fecha);
       setFechaFinStr(`${format(new Date(fecha), "yyyy-MM-dd")} 00:00:00`);
@@ -88,24 +82,10 @@ export function DialogoInsertarPermiso({
         throw new Error(data.error || "Error insertando permiso");
       return data.asunto;
     },
-    // `variables` contiene los datos pasados a mutate()
     onSuccess: (asuntoCreado, variables) => {
-      const nuevoPermiso = {
-        uid: variables.uid,
-        fecha: variables.fecha,
-        fecha_fin: variables.fecha_fin,
-        descripcion: variables.descripcion,
-        tipo: variables.tipo,
-        dia_completo: variables.dia_completo,
-        idperiodo_inicio: variables.idperiodo_inicio,
-        idperiodo_fin: variables.idperiodo_fin,
-      };
-      setPermisoCreado(nuevoPermiso);
-
-      toast.success("Permiso insertado correctamente");
-
+      setPermisoCreado(variables);
+      toast.success("Solicitud de formación insertada correctamente");
       queryClient.invalidateQueries(["asuntosPropios", user.username]);
-
       const month = new Date(fecha).getMonth();
       const year = new Date(fecha).getFullYear();
       const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
@@ -120,10 +100,33 @@ export function DialogoInsertarPermiso({
       setShowPdfDialog(true);
     },
     onError: (err) => {
-      console.error(err);
       toast.error(err.message || "Error al insertar permiso");
     },
   });
+
+  const handleGuardar = () => {
+    if (!descripcion.trim())
+      return toast.error("La descripción no puede estar vacía");
+    if (!user?.username) return toast.error("Usuario no autenticado");
+
+    if (!diaCompleto) {
+      if (!periodoInicio || !periodoFin)
+        return toast.error("Debe seleccionar periodo inicio y fin");
+      if (Number(periodoInicio) > Number(periodoFin))
+        return toast.error("El periodo inicio no puede ser mayor que el fin");
+    }
+
+    mutation.mutate({
+      uid: user.username,
+      fecha,
+      fecha_fin: diaCompleto ? fechaFinStr : fecha,
+      descripcion,
+      tipo: TIPO_FORMACION, // Usamos la constante fija
+      dia_completo: diaCompleto,
+      idperiodo_inicio: diaCompleto ? null : Number(periodoInicio),
+      idperiodo_fin: diaCompleto ? null : Number(periodoFin),
+    });
+  };
 
   const handleConfirmarPdf = async () => {
     if (!permisoCreado) return;
@@ -156,86 +159,44 @@ export function DialogoInsertarPermiso({
     }
   };
 
-  const handleGuardar = () => {
-    if (!descripcion.trim())
-      return toast.error("La descripción no puede estar vacía");
-    if (!user?.username) return toast.error("Usuario no autenticado");
-
-    // Validación y conversión de tipo
-    const tipoNumber = tipo !== null ? Number(tipo) : null;
-    if (!tipoNumber && tipoNumber !== 0)
-      return toast.error("Debe seleccionar un tipo de permiso");
-    if (!diaCompleto) {
-      if (!periodoInicio || !periodoFin)
-        return toast.error("Debe seleccionar periodo inicio y fin");
-
-      if (Number(periodoInicio) > Number(periodoFin))
-        return toast.error("El periodo inicio no puede ser mayor que el fin");
-    }
-
-    mutation.mutate({
-      uid: user.username,
-      fecha,
-      fecha_fin: diaCompleto ? fechaFinStr : fecha,
-      descripcion,
-      tipo: tipoNumber,
-      dia_completo: diaCompleto,
-      idperiodo_inicio: diaCompleto ? null : Number(periodoInicio),
-      idperiodo_fin: diaCompleto ? null : Number(periodoFin),
-    });
-  };
-
   return (
     <>
       <Dialog open={open} onOpenChange={onClose} modal={true}>
-        <DialogContent
-          onInteractOutside={(e) => e.preventDefault()}
-          className="p-0 overflow-hidden rounded-lg"
-        >
+        <DialogContent className="p-0 overflow-hidden rounded-lg">
           <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
-            <DialogTitle className="text-lg font-semibold text-center leading-snug">
-              Solicitud de Permiso (
-              {new Date(fecha).toLocaleDateString("es-ES")})
-            </DialogTitle>
+            <DialogTitle>Solicitud de Formación</DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-col space-y-6 p-6">
-            {/* Descripción */}
             <div>
-              <Label
-                htmlFor="descripcion"
-                className="mb-2 block text-sm font-medium"
-              >
+              <Label className="mb-2 block text-sm font-medium">
                 Descripción
               </Label>
               <Input
-                id="descripcion"
-                placeholder="Descripción del permiso"
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
-                className="w-full"
+                placeholder="Nombre del curso o actividad formativa"
               />
             </div>
-            {/* Día completo */}
+
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="diaCompleto"
                 checked={diaCompleto}
                 onCheckedChange={(value) => setDiaCompleto(!!value)}
               />
-              <Label htmlFor="diaCompleto" className="text-sm cursor-pointer">
-                Permiso de día completo
+              <Label htmlFor="diaCompleto" className="cursor-pointer">
+                Día completo
               </Label>
             </div>
 
-            {/* Fecha fin */}
             {diaCompleto && (
               <SelectorFecha
-                label="Fecha finalización del permiso (incluída)"
+                label="Fecha finalización"
                 fecha={fechaFin}
                 setFecha={setFechaFin}
-                setFechaStr={setFechaFinStr} // aquí generamos string seguro
-                minDate={new Date(fecha)} // no puede ser anterior a la fecha de inicio
+                setFechaStr={setFechaFinStr}
+                minDate={new Date(fecha)}
               />
             )}
 
@@ -262,7 +223,6 @@ export function DialogoInsertarPermiso({
                     </SelectContent>
                   </Select>
                 </div>
-
                 {/* Periodo fin */}
                 <div>
                   <Label className="mb-2 block text-sm font-medium">
@@ -286,52 +246,16 @@ export function DialogoInsertarPermiso({
                 </div>
               </div>
             )}
-            {/* Tipo de permiso */}
-            <div>
-              <Label className="mb-2 block text-sm font-medium">
-                Tipo de permiso
-              </Label>
-              <div className="border rounded-md p-2 hover:bg-gray-50">
-                <RadioGroup
-                  value={tipo}
-                  onValueChange={setTipo}
-                  className="space-y-3"
-                >
-                  {Object.entries(MAPEO_TIPOS_PERMISOS)
-                    .filter(([key]) => Number(key) !== 10) // <-- Filtramos el índice 10
-                    .sort(([a], [b]) => Number(a) - Number(b))
-                    .map(([key, label]) => (
-                      <div key={key} className="flex items-start space-x-2">
-                        <RadioGroupItem
-                          value={key}
-                          id={`tipo-${key}`}
-                          className="mt-1"
-                        />
-                        <Label
-                          htmlFor={`tipo-${key}`}
-                          className="text-sm cursor-pointer leading-tight"
-                        >
-                          {label}
-                        </Label>
-                      </div>
-                    ))}
-                </RadioGroup>
-              </div>
-            </div>
+            {/* Se ha eliminado el RadioGroup de tipos de permiso */}
           </div>
 
           <DialogFooter className="px-6 py-4 bg-gray-50">
-            <Button
-              variant="outline"
-              onClick={handleGuardar}
-              disabled={mutation.isLoading}
-            >
-              {mutation.isLoading ? "Guardando..." : "Guardar"}
+            <Button onClick={handleGuardar} disabled={mutation.isLoading}>
+              {mutation.isLoading ? "Guardando..." : "Enviar Solicitud"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Diálogo PDF */}
       <Dialog open={showPdfDialog} onOpenChange={setShowPdfDialog}>
         <DialogContent className="max-w-sm rounded-lg">

@@ -99,6 +99,8 @@ export default function Layout(props) {
       "/guardias-profesorado": "Histórico de guardias del Profesorado",
       "/panel-guardias": "Panel de Guardias",
       "/edicionPlanos": "Edición de Planos",
+      "/asistencia-cursos": "Asistencia a Cursos",
+      "/agenda-extraescolares": "Agenda de Extraescolares y Complementarias",
     };
 
     let titulo = pathToTitleMap[location.pathname];

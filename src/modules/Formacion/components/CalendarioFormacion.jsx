@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export function CalendarioPermisos({
+export function CalendarioFormacion({
   currentMonth,
   currentYear,
   todayStr,
@@ -66,7 +66,7 @@ export function CalendarioPermisos({
       <CardHeader className="relative flex flex-row items-center justify-center py-3 px-6 bg-slate-50/80 border-b border-slate-200/60 flex-shrink-0">
         <div className="absolute left-6 flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 z-10">
           <div className="w-3 h-3 bg-yellow-50 border border-yellow-200 rounded-sm"></div>
-          <span>Permisos</span>
+          <span>Asistencia a formación</span>
         </div>
 
         <div className="flex items-center gap-2 z-10 bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs">

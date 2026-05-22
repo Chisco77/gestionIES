@@ -43,11 +43,12 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { generateCalendarioOcupacionPorEstancia } from "@/Informes/reservas";
 import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
@@ -266,10 +267,10 @@ export function GridReservasEstancias({
   };
 
   return (
-    <Card className="shadow-lg rounded-2xl w-full">
-      <CardHeader className="py-1 px-3 border-b">
-        <CardTitle className="text-center text-sm font-semibold">
-          <h2 className="text-base font-semibold mb-0.5">
+    <Card className="shadow-md rounded-xl w-full border border-slate-200">
+      <CardHeader className="py-3 px-6 bg-slate-50/80 border-b border-slate-200/60">
+        <CardTitle className="text-sm font-bold text-slate-700 tracking-tight flex flex-col items-center gap-3">
+          <h2 className="text-base font-semibold">
             Reservas del día{" "}
             {new Date(selectedDate).toLocaleDateString("es-ES", {
               day: "2-digit",
@@ -278,86 +279,80 @@ export function GridReservasEstancias({
             })}
           </h2>
 
-          <div className="flex items-end justify-between mt-2">
-            {/* Espacio vacío a la izquierda para equilibrar */}
+          <div className="flex items-center justify-between w-full mt-2">
+            {/* Espaciador invisible para balancear con el botón de la derecha */}
             <div className="w-8" />
 
-            {/* Select centrado */}
-            <div className="max-w-sm w-full">
-              <label className="text-xs font-medium">Tipo de Estancia</label>
-              <select
-                value={tipoEstancia}
-                onChange={(e) => setTipoEstancia(e.target.value)}
-                className="border p-1 rounded w-full text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                <option value="">Seleccionar tipo de estancia</option>
-                <option value="Aula Polivalente">Aula Polivalente</option>
-                <option value="Armario">Armario</option>
-                <option value="Infolab">Infolab</option>
-                <option value="Laboratorio">Laboratorio</option>
-                <option value="Optativa">Optativa</option>
-              </select>
+            {/* Bloque centrado: Label + Select */}
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] uppercase font-bold text-slate-400 whitespace-nowrap">
+                Estancia:
+              </label>
+              <Select value={tipoEstancia} onValueChange={setTipoEstancia}>
+                <SelectTrigger className="h-8 w-[200px] text-xs">
+                  <SelectValue placeholder="Seleccionar tipo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Aula Polivalente">
+                    Aula Polivalente
+                  </SelectItem>
+                  <SelectItem value="Armario">Armario</SelectItem>
+                  <SelectItem value="Infolab">Infolab</SelectItem>
+                  <SelectItem value="Laboratorio">Laboratorio</SelectItem>
+                  <SelectItem value="Optativa">Optativa</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Menú impresora a la derecha */}
-            <div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <Printer className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={handleGenerarCalendarioOcupacionPorEstancia}
-                  >
-                    <FileText className="mr-2 h-4 w-4 text-red-500" />
-                    Calendario Mensual de Reservas
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 text-slate-500"
+                >
+                  <Printer className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={handleGenerarCalendarioOcupacionPorEstancia}
+                >
+                  <FileText className="mr-2 h-4 w-4 text-red-500" />
+                  Calendario Mensual de Reservas
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-2">
+      <CardContent className="p-3">
         {estanciasDelGrid.length === 0 ? (
-          <div className="p-4 text-center text-gray-600">
+          <div className="p-8 text-center text-slate-400 text-sm">
             No hay estancias reservables disponibles para el tipo seleccionado.
           </div>
         ) : (
-          <div className="overflow-x-auto w-full">
-            <table className="w-full border-collapse text-center text-sm table-fixed">
+          <div className="overflow-x-auto w-full rounded-lg border border-slate-200">
+            <table className="w-full border-collapse text-center text-xs table-fixed">
               <thead>
-                <tr>
-                  <th className="p-2 font-semibold border bg-gray-50 w-32 text-center">
+                <tr className="bg-slate-50">
+                  <th className="p-2 font-bold text-slate-500 border-b w-24">
                     Periodo
                   </th>
                   {estanciasDelGrid.map((e) => (
                     <th
                       key={e.id}
-                      className="p-2 font-semibold border bg-gray-50 cursor-pointer hover:bg-blue-50 transition"
+                      className="p-2 font-bold text-slate-600 border-b border-l cursor-pointer hover:bg-slate-100 transition"
                       onClick={() => {
                         setEstanciaSeleccionadaPlano(e);
                         setAbrirPlano(true);
                       }}
-                      title={`Ver plano de ${e.descripcion} - ${e.numero_ordenadores} ordenadores`}
                     >
-                      <div className="relative w-full">
-                        {/* CONTENIDO TEXTO */}
-                        <div className="flex items-center justify-center gap-2 pr-8 overflow-hidden">
-                          <MapPin
-                            size={18}
-                            className="shrink-0 text-gray-500 hover:text-blue-600 transition-colors"
-                          />
-                          <span className="truncate whitespace-nowrap">
-                            {e.descripcion} ({e.numero_ordenadores})
-                          </span>
-                        </div>
-
-                        {/* BOTÓN DERECHA */}
+                      <div className="relative flex items-center justify-center gap-1.5 px-6 truncate">
+                        <MapPin size={14} className="shrink-0" />
+                        {e.descripcion} ({e.numero_ordenadores})
                         {esDirectiva && (
                           <button
                             onClick={(ev) => {
@@ -365,10 +360,9 @@ export function GridReservasEstancias({
                               setEstanciaParaProgramar(e);
                               setAbrirDialogoPeriodico(true);
                             }}
-                            title="Programar reservas periódicas"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-gray-500 hover:text-blue-600 hover:bg-gray-100 transition"
+                            className="absolute right-0 p-1 rounded-md text-slate-400 hover:text-blue-600"
                           >
-                            <Repeat2 size={18} />
+                            <Repeat2 size={14} />
                           </button>
                         )}
                       </div>
@@ -376,131 +370,60 @@ export function GridReservasEstancias({
                   ))}
                 </tr>
               </thead>
-
               <tbody>
                 {gridData.map((rowData) => (
                   <tr key={rowData.periodoId}>
-                    <td className="p-2 border font-medium bg-gray-50 w-32">
+                    <td className="p-2 border-b font-medium text-slate-600 bg-slate-50/50">
                       {
                         periodosDB.find((p) => p.id === rowData.periodoId)
                           ?.nombre
                       }
                     </td>
-
                     {estanciasDelGrid.map((e) => {
                       const reserva = rowData.row[e.id];
-                      const periodoActual = periodosDB.find(
-                        (p) => p.id === rowData.periodoId
+                      const esFutura = esReservaFutura(
+                        selectedDate,
+                        periodosDB.find((p) => p.id === rowData.periodoId)?.fin
                       );
-                      const horaFin = periodoActual?.fin;
-                      const esFutura = esReservaFutura(selectedDate, horaFin);
-
                       if (
                         reserva &&
                         parseInt(reserva.idperiodo_inicio) === rowData.periodoId
                       ) {
-                        const rowspan =
-                          parseInt(reserva.idperiodo_fin) -
-                          parseInt(reserva.idperiodo_inicio) +
-                          1;
-                        const esMia = reserva.uid === uid;
-
-                        const claseFondo = esMia
-                          ? "bg-green-200 text-green-900"
-                          : "bg-yellow-200 text-yellow-900";
-
                         return (
                           <td
                             key={e.id}
-                            rowSpan={rowspan}
-                            className={`p-2 border cursor-pointer transition ${
-                              reserva.uid === uid
-                                ? "bg-green-200 hover:bg-green-300"
-                                : "bg-yellow-200 hover:bg-yellow-300"
-                            }`}
+                            rowSpan={
+                              parseInt(reserva.idperiodo_fin) -
+                              parseInt(reserva.idperiodo_inicio) +
+                              1
+                            }
+                            className={`p-2 border-b border-l cursor-pointer transition ${reserva.uid === uid ? "bg-green-100 hover:bg-green-200" : "bg-yellow-100 hover:bg-yellow-200"}`}
                             onClick={() => handleEditarReserva(reserva)}
                           >
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="relative flex items-center justify-center w-full h-full">
-                                    <span className="max-w-[90%] truncate text-center px-2">
-                                      {reserva.descripcion || "Reserva"}
-                                    </span>
-
-                                    {/* Icono reserva periódica */}
-                                    {reserva.idrepeticion && esDirectiva && (
-                                      <div
-                                        className="absolute right-1"
-                                        onClick={(ev) => {
-                                          ev.stopPropagation();
-                                          const reservaPadre =
-                                            reservasPeriodicas.find(
-                                              (r) =>
-                                                r.id === reserva.idrepeticion
-                                            );
-                                          if (!reservaPadre) {
-                                            toast.error(
-                                              "No se encontró la reserva periódica padre."
-                                            );
-                                            return;
-                                          }
-                                          const estancia = estancias.find(
-                                            (e) =>
-                                              e.id ===
-                                              parseInt(reservaPadre.idestancia)
-                                          );
-                                          setReservaEditarPeriodica({
-                                            ...reservaPadre,
-                                            descripcionEstancia:
-                                              estancia?.descripcion || "",
-                                          });
-                                          setAbrirDialogoEditarReservaPeriodica(
-                                            true
-                                          );
-                                        }}
-                                      >
-                                        <Repeat2
-                                          size={16}
-                                          className="text-gray-600 cursor-pointer"
-                                        />
-                                      </div>
-                                    )}
-                                  </div>
-                                </TooltipTrigger>
-
-                                <TooltipContent className="text-white border border-blue-300 shadow-md">
-                                  <p className="text-xs font-medium">
-                                    {reserva.uid === uid
-                                      ? "Mi reserva"
-                                      : `Reserva de ${reserva.nombre}`}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <div className="flex items-center justify-center w-full">
+                              <span className="truncate">
+                                {reserva.descripcion || "Reserva"}
+                              </span>
+                            </div>
                           </td>
                         );
                       }
-
                       if (
                         reserva &&
                         parseInt(reserva.idperiodo_inicio) < rowData.periodoId
                       )
                         return null;
-
                       return (
                         <td
                           key={e.id}
-                          className={`p-2 border text-gray-700 transition ${esFutura ? "bg-blue-200 cursor-pointer hover:bg-blue-300" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
-                          onClick={() => {
-                            if (!esFutura) {
-                              toast.error(
-                                "No puedes crear reservas en periodos pasados."
-                              );
-                              return;
-                            }
-                            handleDiaClick(e.id, rowData.periodoId);
-                          }}
+                          className={`p-2 border-b border-l transition ${esFutura ? "bg-white hover:bg-slate-50 cursor-pointer" : "bg-slate-50 text-slate-300"}`}
+                          onClick={() =>
+                            esFutura
+                              ? handleDiaClick(e.id, rowData.periodoId)
+                              : toast.error(
+                                  "No puedes crear reservas en periodos pasados."
+                                )
+                          }
                         >
                           {esFutura ? "Libre" : ""}
                         </td>

@@ -10,10 +10,15 @@ export function ExtraescolaresIndex() {
 
   return (
     <div className="p-4 space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <CalendarioExtraescolares />
-
+      {/* Contenedor padre con altura fija o definida */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[350px]">
+        {/* Calendario: se adapta a la altura del grid */}
         <div className="h-full">
+          <CalendarioExtraescolares />
+        </div>
+
+        {/* PanelReservas: forzamos a que tenga la altura del contenedor padre */}
+        <div className="h-full overflow-hidden">
           <PanelReservas uid={uid} />
         </div>
       </div>

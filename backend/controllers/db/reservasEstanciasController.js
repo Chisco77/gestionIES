@@ -203,25 +203,6 @@ async function insertReservaEstancia(req, res) {
   }
 }
 
-// Elimina una reserva por ID
-/*async function deleteReservaEstancia(req, res) {
-  const id = req.params.id;
-  try {
-    const { rowCount } = await pool.query(
-      `DELETE FROM reservas_estancias WHERE id = $1`,
-      [id]
-    );
-    if (rowCount === 0)
-      return res
-        .status(404)
-        .json({ ok: false, error: "Reserva no encontrada" });
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("[deleteReservaEstancia] Error:", err);
-    res.status(500).json({ ok: false, error: "Error eliminando reserva" });
-  }
-}*/
-
 // Elimina una reserva por ID con protección de actividades extraescolares
 async function deleteReservaEstancia(req, res) {
   const id = req.params.id;
@@ -421,10 +402,20 @@ async function getReservasFiltradas(req, res) {
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
     // 3️⃣ Obtener reservas
     const { rows: reservas } = await pool.query(
-      `SELECT id, idestancia, idperiodo_inicio, idperiodo_fin, uid, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, descripcion, idrepeticion
-       FROM reservas_estancias
-       ${where}
-       ORDER BY fecha ASC, idperiodo_inicio ASC, idestancia ASC`,
+      `SELECT 
+    r.id, 
+    r.idestancia, 
+    r.idperiodo_inicio, 
+    r.idperiodo_fin, 
+    r.uid, 
+    TO_CHAR(r.fecha, 'YYYY-MM-DD') AS fecha, 
+    r.descripcion, 
+    r.idrepeticion,
+    e.descripcion AS nombre_estancia -- Añadimos el nombre de la estancia
+   FROM reservas_estancias r
+   LEFT JOIN estancias e ON r.idestancia = e.id -- Hacemos el JOIN
+   ${where}
+   ORDER BY r.fecha ASC, r.idperiodo_inicio ASC, r.idestancia ASC`,
       vals
     );
 

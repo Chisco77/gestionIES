@@ -8,11 +8,11 @@
  * Repositorio: https://github.com/Chisco77/gestionIES.git
  * IES Francisco de Orellana - Trujillo
  * ------------------------------------------------------------
- * 
+ *
  * Componente que renderiza dashboard de inicio para usuarios con perfil profesor.
  *       Muestra calendario a la izquierda, panel de reservas del usuario a la derecha y
  *       tabla con detalles de actividades extraescolares en la parte inferior.
- * 
+ *
  */
 
 import { useState } from "react";
@@ -22,6 +22,7 @@ import { TablaExtraescolares } from "@/modules/Extraescolares/components/TablaEx
 
 import { Card } from "@/components/ui/card";
 import { CalendarioProfesor } from "../components/CalendarioProfesor";
+import { PanelContadoresUsuario } from "@/modules/Comunes/PanelContadoresUsuario";
 
 // Para evitar problemas con el tiempo UTC
 const formatDateKey = (date) => {
@@ -40,35 +41,33 @@ export function DashboardProfesor() {
   );
 
   return (
-    <div className="p-4">
-      {/* Grid con calendario y detalles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Calendario */}
-
-        <CalendarioProfesor
-          selectedDate={fechaSeleccionada}
-          onSelectDate={(dateKey) => setFechaSeleccionada(dateKey)}
-          disableInsert={true}
-        />
-
-        {/* Detalles del día */}
-        <PanelReservas uid={uid} />
-      </div>
-
-      {/* Card de la tabla de extraescolares */}
-      <Card className="shadow-lg rounded-2xl flex flex-col p-2 mt-6">
-        <div className="px-4 py-2 border-b">
-          <h2 className="text-lg font-semibold text-center">
-            Agenda de extraescolares del {" "}
-            {new Date(fechaSeleccionada).toLocaleDateString("es-ES", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })}
-          </h2>
+    <div className="p-4 space-y-6">
+      {" "}
+      {/* Añadido space-y para separar bloques */}
+      {/* 1. Grid Principal */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[350px]">
+        <div className="h-full">
+          <CalendarioProfesor
+            selectedDate={fechaSeleccionada}
+            onSelectDate={(dateKey) => setFechaSeleccionada(dateKey)}
+            disableInsert={true}
+          />
         </div>
-        <TablaExtraescolares user={user} fecha={fechaSeleccionada} />
-      </Card>
+        <div className="h-full overflow-hidden">
+          <PanelReservas uid={uid} />
+        </div>
+      </div>
+      {/* 2. Sección Contadores Integrada */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider ml-1">
+          Resumen de actividad
+        </h3>
+        <Card className="p-4 border-slate-200 shadow-sm bg-white/50">
+          <PanelContadoresUsuario uid={uid} />
+        </Card>
+      </div>
+      {/* 3. Opcional la tabla de extraescolares */}
+      {/* <TablaExtraescolares uid={uid} /> */}
     </div>
   );
 }
