@@ -206,11 +206,11 @@ export function CalendarioDirectiva({ onSelectDate, disableInsert = false }) {
           {/* LEYENDA INTEGRADA EN LA IZQUIERDA */}
           <div className="absolute left-6 hidden sm:flex items-center gap-4 text-[10px] font-semibold text-slate-500 z-10">
             <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 bg-green-50 border border-green-200 rounded-xs"></div>
+              <div className="w-2.5 h-2.5 bg-green-100 border border-green-200 rounded-xs"></div>
               <span>Permisos</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 bg-purple-50 border border-purple-200 rounded-xs"></div>
+              <div className="w-2.5 h-2.5 bg-purple-100 border border-purple-200 rounded-xs"></div>
               <span>Extraescolares</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -289,7 +289,7 @@ export function CalendarioDirectiva({ onSelectDate, disableInsert = false }) {
                       if (!d) return <td key={j} className="p-1"></td>;
 
                       const dateKey = formatDateKey(
-                        new Date(currentYear, currentMonth, d)
+                        new Date(currentYear, currentMonth, d),
                       );
 
                       const actividades = extraescolaresPorDia[dateKey] || [];
@@ -307,9 +307,9 @@ export function CalendarioDirectiva({ onSelectDate, disableInsert = false }) {
                                 numExtra && numAsuntos
                                   ? "bg-diagonal-extra-asuntos"
                                   : numExtra
-                                    ? "bg-purple-50 border border-purple-100/70 text-purple-950"
+                                    ? "bg-purple-100 border border-purple-100/70 text-purple-950"
                                     : numAsuntos
-                                      ? "bg-green-50 border border-green-100/70 text-green-950"
+                                      ? "bg-green-100 border border-green-100/70 text-green-950"
                                       : "hover:bg-slate-50"
                               }
                               ${esHoy ? "ring-2 ring-slate-800 ring-offset-1 bg-slate-100 z-20" : ""}
@@ -351,7 +351,7 @@ export function CalendarioDirectiva({ onSelectDate, disableInsert = false }) {
                     onClick={() => handleDiaClick(dateObj)}
                     className={`
                       flex flex-col border rounded-xl p-1.5 cursor-pointer transition-all h-full overflow-hidden
-                      ${esHoy ? "border-green-300 bg-green-50/10 shadow-xs" : "border-slate-100 bg-white hover:bg-slate-50/50"}
+                      ${esHoy ? "border-green-300 bg-green-100/10 shadow-xs" : "border-slate-100 bg-white hover:bg-slate-50/50"}
                     `}
                   >
                     {/* Encabezado del Día */}
@@ -370,7 +370,7 @@ export function CalendarioDirectiva({ onSelectDate, disableInsert = false }) {
                       </span>
                     </div>
 
-                    {/* Listado de Actividades Suavizado y Elegante */}
+                    {/* Listado de Actividades */}
                     <div className="flex-grow flex flex-col gap-1 mt-2 overflow-y-auto pr-0.5 scrollbar-none">
                       {actividades.length === 0 ? (
                         <span className="text-[9px] text-slate-300 text-center italic mt-3">
@@ -388,17 +388,24 @@ export function CalendarioDirectiva({ onSelectDate, disableInsert = false }) {
                             <div
                               key={actIdx}
                               onClick={(e) => handleActividadClick(e, act)}
-                              className="border-l-[3px] border-purple-200 bg-slate-50 border-y border-r border-slate-200/60 p-1 pl-1.5 text-left flex-shrink-0 rounded-r-md hover:bg-slate-100/80 transition-colors"
+                              // Estilos mejorados: borde izquierdo más marcado, fondo muy sutil y sombras suaves
+                              className="group relative border-l-4 border-purple-500 bg-white border-y border-r border-slate-200/50 p-2 pl-2.5 
+                 text-left flex-shrink-0 rounded-r-lg shadow-sm hover:shadow-md hover:border-purple-300 
+                 transition-all duration-200 cursor-pointer"
                             >
-                              <p
-                                className="text-[9px] font-semibold text-slate-800 truncate leading-tight"
-                                title={act.titulo || act.nombre}
-                              >
-                                {act.titulo || act.nombre || "Extraescolar"}
-                              </p>
-                              <p className="text-[8px] text-slate-400 font-medium truncate mt-0.5 tracking-tight">
-                                {textoPeriodo}
-                              </p>
+                              <div className="flex flex-col">
+                                <p
+                                  className="text-[10px] font-bold text-slate-800 truncate leading-tight group-hover:text-purple-700"
+                                  title={act.titulo || act.nombre}
+                                >
+                                  {act.titulo || act.nombre || "Extraescolar"}
+                                </p>
+                                <p className="text-[9px] text-slate-500 font-medium truncate mt-0.5 flex items-center gap-1">
+                                  {/* Un puntito de color para reforzar la marca */}
+                                  <span className="w-1 h-1 rounded-full bg-purple-400"></span>
+                                  {textoPeriodo}
+                                </p>
+                              </div>
                             </div>
                           );
                         })

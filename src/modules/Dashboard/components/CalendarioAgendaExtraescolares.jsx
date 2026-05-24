@@ -129,7 +129,7 @@ export function CalendarioAgendaExtraescolares({ onSelectDate, disableInsert = f
                           tieneExtra && tieneAsunto
                             ? "bg-diagonal-extra-asuntos border border-slate-300"
                             : tieneExtra
-                              ? "bg-purple-50 border border-purple-100 text-purple-950"
+                              ? "bg-purple-100 border border-purple-100 text-purple-950"
                               : tieneAsunto
                                 ? "bg-green-50 border border-green-100 text-green-950"
                                 : "hover:bg-slate-50"
@@ -157,7 +157,7 @@ export function CalendarioAgendaExtraescolares({ onSelectDate, disableInsert = f
           Permisos
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 bg-purple-50 border border-purple-200 rounded-xs"></div>{" "}
+          <div className="w-2.5 h-2.5 bg-purple-100 border border-purple-200 rounded-xs"></div>{" "}
           Extraescolares
         </div>
         <div className="flex items-center gap-1.5">

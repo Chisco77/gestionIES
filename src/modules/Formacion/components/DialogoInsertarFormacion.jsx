@@ -92,7 +92,7 @@ export function DialogoInsertarFormacion({
       const end = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(
         year,
         month + 1,
-        0
+        0,
       ).getDate()}`;
       queryClient.invalidateQueries({ queryKey: ["asuntosMes", start, end] });
       queryClient.invalidateQueries(["notificacionesDirectiva"]);
@@ -133,7 +133,7 @@ export function DialogoInsertarFormacion({
 
     if (diaCompleto && fechaFin < fecha)
       return toast.error(
-        "La fecha fin no puede ser anterior a la fecha inicio"
+        "La fecha fin no puede ser anterior a la fecha inicio",
       );
     try {
       const res = await fetch(`/api/db/empleados/${user.username}`);
@@ -162,7 +162,10 @@ export function DialogoInsertarFormacion({
   return (
     <>
       <Dialog open={open} onOpenChange={onClose} modal={true}>
-        <DialogContent className="p-0 overflow-hidden rounded-lg">
+        <DialogContent
+          onInteractOutside={(e) => e.preventDefault()}
+          className="p-0 overflow-hidden rounded-lg"
+        >
           <DialogHeader className="bg-blue-500 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
             <DialogTitle>Solicitud de Formación</DialogTitle>
           </DialogHeader>
@@ -261,7 +264,7 @@ export function DialogoInsertarFormacion({
         <DialogContent className="max-w-sm rounded-lg">
           <DialogHeader>
             <DialogTitle className="text-center">
-              Permiso insertado correctamente
+              Solicitud creada correctamente
             </DialogTitle>
           </DialogHeader>
           <p className="text-center text-sm text-gray-600">

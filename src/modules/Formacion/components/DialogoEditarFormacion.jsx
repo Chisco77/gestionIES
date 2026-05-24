@@ -51,10 +51,10 @@ export function DialogoEditarFormacion({
       setDiaCompleto(esDiaCompleto);
 
       setPeriodoInicio(
-        permiso.idperiodo_inicio ? String(permiso.idperiodo_inicio) : null
+        permiso.idperiodo_inicio ? String(permiso.idperiodo_inicio) : null,
       );
       setPeriodoFin(
-        permiso.idperiodo_fin ? String(permiso.idperiodo_fin) : null
+        permiso.idperiodo_fin ? String(permiso.idperiodo_fin) : null,
       );
       setFechaFin(permiso.fecha_fin || permiso.fecha);
     }
@@ -80,7 +80,7 @@ export function DialogoEditarFormacion({
       return result.permiso;
     },
     onSuccess: () => {
-      toast.success("Permiso actualizado correctamente");
+      toast.success("Solicitud actualizada correctamente");
       queryClient.invalidateQueries(["panel", "permisos", user.username]);
       const fechaObj = new Date(permiso.fecha);
       const month = fechaObj.getMonth();
@@ -93,7 +93,7 @@ export function DialogoEditarFormacion({
       onClose();
     },
     onError: (err) => {
-      toast.error(err.message || "Error al actualizar permiso");
+      toast.error(err.message || "Error al actualizar solicitud de formación");
     },
   });
 
@@ -117,7 +117,7 @@ export function DialogoEditarFormacion({
     const fechaFinStr = fechaFin
       ? format(
           fechaFin instanceof Date ? fechaFin : new Date(fechaFin),
-          "yyyy-MM-dd"
+          "yyyy-MM-dd",
         ) + " 00:00:00"
       : null;
 
@@ -134,7 +134,10 @@ export function DialogoEditarFormacion({
 
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
-      <DialogContent className="p-0 overflow-hidden rounded-lg border-none">
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        className="p-0 overflow-hidden rounded-lg border-none"
+      >
         <DialogHeader className="bg-green-600 text-white rounded-t-lg flex items-center justify-center py-3 px-6">
           <DialogTitle>Editar Solicitud de Formación</DialogTitle>
         </DialogHeader>

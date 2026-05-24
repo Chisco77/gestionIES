@@ -36,6 +36,7 @@ import { generatePermisosPdf } from "@/Informes/permisos";
 import { useAuth } from "@/context/AuthContext";
 import { DialogoEliminarPermiso } from "../Permisos/components/DialogoEliminarPermiso";
 import { DialogoEditarPermiso } from "../Permisos/components/DialogoEditarPermiso";
+import { DialogoEditarFormacion } from "../Formacion/components/DialogoEditarFormacion";
 import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
 import {
   Tooltip,
@@ -73,6 +74,9 @@ export function PanelReservas({ uid, loading = false }) {
     useState(false);
   const [extraescolarAEliminar, setExtraescolarAEliminar] = useState(null);
   const [dialogoEliminarExtraAbierto, setDialogoEliminarExtraAbierto] =
+    useState(false);
+
+  const [dialogoEditarFormacionAbierto, setDialogoEditarFormacionAbierto] =
     useState(false);
 
   // ===== Carga de datos =====
@@ -116,7 +120,7 @@ export function PanelReservas({ uid, loading = false }) {
   const handleEliminarAsunto = (asunto) => {
     if (asunto.estado === 1) {
       toast.warning(
-        "No se puede eliminar un asunto propio que ha sido aceptado."
+        "No se puede eliminar un asunto propio que ha sido aceptado.",
       );
       return;
     }
@@ -130,17 +134,26 @@ export function PanelReservas({ uid, loading = false }) {
   const handleEliminarExtraescolar = (actividad) => {
     if (actividad.estado == 1) {
       toast.warning(
-        "No se puede eliminar una actividad extraescolar que ha sido aceptada."
+        "No se puede eliminar una actividad extraescolar que ha sido aceptada.",
       );
       return;
     }
     setExtraescolarAEliminar(actividad);
     setDialogoEliminarExtraAbierto(true);
   };
+
   const handleClickPermiso = (permiso) => {
     setPermisoSeleccionado(permiso);
-    setDialogoEditarPermisoAbierto(true);
+
+    if (permiso.tipo === 10) {
+      // Si es especial de formación, abrimos el diálogo de formación
+      setDialogoEditarFormacionAbierto(true);
+    } else {
+      // Si no, el de permiso estándar
+      setDialogoEditarPermisoAbierto(true);
+    }
   };
+
   const handleEliminarPermiso = (permiso) => {
     if (permiso.estado === 1) {
       toast.warning("No se puede eliminar un permiso que ha sido aceptado.");
@@ -248,11 +261,11 @@ export function PanelReservas({ uid, loading = false }) {
 
     if (!asuntosPropios.length)
       return (
-        <div className="flex items-center justify-center h-full col-span-full py-6">
+        <div className="flex-1 flex flex-col overflow-hidden p-3 min-h-0">
           <div className="text-center p-6 border border-dashed rounded-xl bg-slate-50/50 w-full">
             <CalendarIcon className="mx-auto h-8 w-8 text-slate-300" />
             <h3 className="mt-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-              No tiene asuntos propios
+              No has solicitado asuntos propios
             </h3>
           </div>
         </div>
@@ -341,11 +354,11 @@ export function PanelReservas({ uid, loading = false }) {
 
     if (!permisos.length)
       return (
-        <div className="flex items-center justify-center h-full col-span-full py-6">
+        <div className="flex-1 flex flex-col overflow-hidden p-3 min-h-0">
           <div className="text-center p-6 border border-dashed rounded-xl bg-slate-50/50 w-full">
             <CalendarIcon className="mx-auto h-8 w-8 text-slate-300" />
             <h3 className="mt-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-              No tiene permisos registrados
+              No has solicitado permisos / actividades formativas
             </h3>
           </div>
         </div>
@@ -469,11 +482,11 @@ export function PanelReservas({ uid, loading = false }) {
   const renderActividadesExtraescolares = () => {
     if (!extraescolares.length)
       return (
-        <div className="flex items-center justify-center h-full col-span-full py-6">
+        <div className="flex-1 flex flex-col overflow-hidden p-3 min-h-0">
           <div className="text-center p-6 border border-dashed rounded-xl bg-slate-50/50 w-full">
             <CalendarIcon className="mx-auto h-8 w-8 text-slate-300" />
             <h3 className="mt-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-              No hay actividades
+              No participas en u organizas extraescolares
             </h3>
           </div>
         </div>
@@ -551,7 +564,7 @@ export function PanelReservas({ uid, loading = false }) {
 
   return (
     <div className="space-y-4 flex flex-col h-full overflow-hidden">
-      {/* ─── CONTENEDOR PRINCIPAL ESTILO UNIFICADO ─── */}
+      {/* ─── CONTENEDOR PRINCIPAL ─── */}
       <Card className="border border-slate-200 shadow-md rounded-xl flex-1 flex flex-col min-h-0 bg-white overflow-hidden">
         <Tabs
           value={tabActual}
@@ -571,7 +584,7 @@ export function PanelReservas({ uid, loading = false }) {
                   >
                     {val === "estancias" ? "Mis Reservas" : val}
                   </TabsTrigger>
-                )
+                ),
               )}
             </TabsList>
 
@@ -593,7 +606,7 @@ export function PanelReservas({ uid, loading = false }) {
                     <div className="text-center p-6 border border-dashed rounded-xl bg-slate-50/50 w-full">
                       <CalendarIcon className="mx-auto h-8 w-8 text-slate-300" />
                       <h3 className="mt-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        No tiene reservas activas
+                        No tienes reservas activas
                       </h3>
                     </div>
                   </div>
@@ -646,7 +659,8 @@ export function PanelReservas({ uid, loading = false }) {
           periodos={periodos}
           descripcionEstancia={
             estancias.find(
-              (e) => parseInt(e.id) === parseInt(reservaSeleccionada.idestancia)
+              (e) =>
+                parseInt(e.id) === parseInt(reservaSeleccionada.idestancia),
             )?.descripcion || ""
           }
         />
@@ -716,6 +730,15 @@ export function PanelReservas({ uid, loading = false }) {
           onDeleteSuccess={() => {
             setPermisoAEliminar(null);
           }}
+        />
+      )}
+
+      {permisoSeleccionado && permisoSeleccionado.tipo === 10 && (
+        <DialogoEditarFormacion
+          permiso={permisoSeleccionado}
+          open={dialogoEditarFormacionAbierto}
+          periodos_horarios={periodos}
+          onClose={() => setDialogoEditarFormacionAbierto(false)}
         />
       )}
     </div>
