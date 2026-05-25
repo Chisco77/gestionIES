@@ -132,9 +132,9 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
                           tieneExtra && tieneAsunto
                             ? "bg-diagonal-extra-asuntos border border-slate-300"
                             : tieneExtra
-                              ? "bg-purple-50 border border-purple-100 text-purple-950"
+                              ? "bg-purple-100 border border-purple-100 text-purple-950"
                               : tieneAsunto
-                                ? "bg-green-50 border border-green-100 text-green-950"
+                                ? "bg-green-100 border border-green-100 text-green-950"
                                 : "hover:bg-slate-50"
                         } ${esHoy ? "ring-2 ring-slate-800 ring-offset-1 bg-slate-100" : ""}`}
                       >
@@ -156,11 +156,11 @@ export function CalendarioProfesor({ onSelectDate, disableInsert = false }) {
       {/* Leyenda ajustada */}
       <div className="py-2 px-4 border-t border-slate-100 text-[9px] font-semibold text-slate-500 flex justify-center gap-3 bg-slate-50/50 rounded-b-xl">
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 bg-green-50 border border-green-200 rounded-xs"></div>{" "}
+          <div className="w-2.5 h-2.5 bg-green-100 border border-green-200 rounded-xs"></div>{" "}
           Permisos
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 bg-purple-50 border border-purple-200 rounded-xs"></div>{" "}
+          <div className="w-2.5 h-2.5 bg-purple-100 border border-purple-200 rounded-xs"></div>{" "}
           Extraescolares
         </div>
         <div className="flex items-center gap-1.5">
