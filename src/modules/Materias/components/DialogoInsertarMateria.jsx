@@ -24,6 +24,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 export function DialogoInsertarMateria({ open, onClose, onSuccess }) {
   const [nombre, setNombre] = useState("");
+  const [acronimoUntis, setAcronimoUntis] = useState(""); 
   const API_URL = import.meta.env.VITE_API_URL;
 
   // 2. Inicializamos el cliente
@@ -40,7 +41,11 @@ export function DialogoInsertarMateria({ open, onClose, onSuccess }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ nombre }),
+        // 👈 Enviamos el acrónimo (si está vacío, enviamos null o string vacío, el backend ya lo gestiona)
+        body: JSON.stringify({
+          nombre,
+          acronimo_untis: acronimoUntis.trim() || null,
+        }),
       });
 
       if (!res.ok) throw new Error("Error al insertar");
@@ -51,6 +56,7 @@ export function DialogoInsertarMateria({ open, onClose, onSuccess }) {
 
       toast.success("Materia insertada correctamente");
       setNombre("");
+      setAcronimoUntis(""); // 👈 Limpiamos el estado al terminar
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -65,13 +71,38 @@ export function DialogoInsertarMateria({ open, onClose, onSuccess }) {
         <DialogHeader>
           <DialogTitle>Insertar materia</DialogTitle>
         </DialogHeader>
-        <Input
-          placeholder="Nombre de la materia"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleGuardar()}
-        />
+
+        <div className="space-y-4 py-2">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Nombre de la materia
+            </label>
+            <Input
+              placeholder="Ej: Lengua Castellana y Literatura"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleGuardar()}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Acrónimo Untis
+            </label>
+            <Input
+              placeholder="Ej: LCL"
+              value={acronimoUntis}
+              onChange={(e) => setAcronimoUntis(e.target.value.toUpperCase())} // Forzado a mayúsculas opcional
+              onKeyDown={(e) => e.key === "Enter" && handleGuardar()}
+              maxLength={15}
+            />
+          </div>
+        </div>
+
         <DialogFooter>
+          <Button variant="outline" onClick={onClose} className="mr-2">
+            Cancelar
+          </Button>
           <Button onClick={handleGuardar}>Guardar</Button>
         </DialogFooter>
       </DialogContent>

@@ -27,7 +27,7 @@ const db = require("../../db");
 exports.getMaterias = async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT id, nombre
+      `SELECT id, nombre, acronimo_untis -- 👈 Añadido
        FROM materias
        ORDER BY id`
     );
@@ -41,7 +41,7 @@ exports.getMaterias = async (req, res) => {
 
 // Insertar nueva materia
 exports.insertMateria = async (req, res) => {
-  const { nombre } = req.body;
+  const { nombre, acronimo_untis = null } = req.body; // 👈 Añadido con valor por defecto null
 
   if (!nombre) {
     return res.status(400).json({
@@ -51,8 +51,10 @@ exports.insertMateria = async (req, res) => {
 
   try {
     const result = await db.query(
-      "INSERT INTO materias (nombre) VALUES ($1) RETURNING *",
-      [nombre]
+      `INSERT INTO materias (nombre, acronimo_untis) -- 👈 Añadido
+       VALUES ($1, $2)                              -- 👈 Añadido $2
+       RETURNING *`,
+      [nombre, acronimo_untis] // 👈 Añadido al array de parámetros
     );
 
     res.status(201).json(result.rows[0]);
@@ -65,7 +67,7 @@ exports.insertMateria = async (req, res) => {
 // Actualizar materia
 exports.updateMateria = async (req, res) => {
   const { id } = req.params;
-  const { nombre } = req.body;
+  const { nombre, acronimo_untis } = req.body; // 👈 Recogemos acronimo_untis de la petición
 
   if (!nombre) {
     return res.status(400).json({
@@ -74,12 +76,13 @@ exports.updateMateria = async (req, res) => {
   }
 
   try {
+    // 💡 Al actualizar, permitimos que acronimo_untis venga como string, vacío o null
     const result = await db.query(
       `UPDATE materias
-       SET nombre = $1
-       WHERE id = $2
+       SET nombre = $1, acronimo_untis = $2 -- 👈 Añadido a la asignación
+       WHERE id = $3                        -- 👈 El ID pasa a ser $3
        RETURNING *`,
-      [nombre, id]
+      [nombre, acronimo_untis || null, id] // 👈 Si viene un string vacío del front, guardamos NULL en BD
     );
 
     if (result.rowCount === 0) {

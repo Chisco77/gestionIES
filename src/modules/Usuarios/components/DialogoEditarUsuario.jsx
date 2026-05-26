@@ -74,6 +74,9 @@ export default function DialogoEditarUsuario({
   const [telefono, setTelefono] = useState("");
   const [cuerpo, setCuerpo] = useState(""); // Nuevo select Cuerpo
   const [personal, setPersonal] = useState("");
+
+  const [acronimoUntis, setAcronimoUntis] = useState("");
+
   // Estado para baja
   const [baja, setBaja] = useState(false);
 
@@ -107,6 +110,7 @@ export default function DialogoEditarUsuario({
     setGrupo(usuarioSeleccionado.grupo || ""); // <-- A1 o A2
     setPersonal(usuarioSeleccionado.personal || "");
     setBaja(usuarioSeleccionado.baja ?? false);
+    setAcronimoUntis(usuarioSeleccionado.acronimo_untis || "");
 
     setFotoUrl(null);
 
@@ -192,6 +196,7 @@ export default function DialogoEditarUsuario({
       datos.cuerpo = cuerpo;
       datos.grupo = grupo;
       datos.baja = baja;
+      datos.acronimo_untis = acronimoUntis || null;
     }
 
     mutation.mutate(datos);
@@ -291,6 +296,18 @@ export default function DialogoEditarUsuario({
                     Tipo de Personal
                   </label>
                   <Input value={getTextoPersonal()} disabled />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">
+                    Acrónimo Untis
+                  </label>
+                  <Input
+                    value={acronimoUntis}
+                    onChange={(e) => setAcronimoUntis(e.target.value)}
+                    disabled={!puedeEditarAvanzados}
+                    placeholder="Ej: MEND"
+                    maxLength={20}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium">Cuerpo</label>

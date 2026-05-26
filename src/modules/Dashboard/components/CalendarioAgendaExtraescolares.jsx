@@ -12,7 +12,10 @@ const formatDateKey = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-export function CalendarioAgendaExtraescolares({ onSelectDate, disableInsert = false }) {
+export function CalendarioAgendaExtraescolares({
+  onSelectDate,
+  disableInsert = false,
+}) {
   const { user } = useAuth();
   const uid = user?.username;
   const todayStr = formatDateKey(new Date());
@@ -125,7 +128,7 @@ export function CalendarioAgendaExtraescolares({ onSelectDate, disableInsert = f
                     <td key={j} className="p-0.5">
                       <div
                         onClick={() => onSelectDate?.(dateKey)}
-                        className={`w-full aspect-square max-h-[36px] flex items-center justify-center rounded-lg cursor-pointer transition-all relative ${
+                        className={`w-full aspect-square max-h-[36px] flex items-center justify-center rounded-lg cursor-pointer transition-all relative overflow-hidden ${
                           tieneExtra && tieneAsunto
                             ? "bg-diagonal-extra-asuntos border border-slate-300"
                             : tieneExtra
@@ -136,7 +139,13 @@ export function CalendarioAgendaExtraescolares({ onSelectDate, disableInsert = f
                         } ${esHoy ? "ring-2 ring-slate-800 ring-offset-1 bg-slate-100" : ""}`}
                       >
                         <span
-                          className={`text-[11px] font-semibold ${esHoy ? "text-slate-900" : "text-slate-700"}`}
+                          className={`relative z-10 text-[11px] ${
+                            tieneExtra && tieneAsunto
+                              ? "text-slate-900"
+                              : esHoy
+                                ? "text-slate-900"
+                                : "text-slate-700"
+                          }`}
                         >
                           {d}
                         </span>

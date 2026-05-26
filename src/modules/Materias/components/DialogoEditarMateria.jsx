@@ -29,13 +29,17 @@ export function DialogoEditarMateria({
   onSuccess,
 }) {
   const [nombre, setNombre] = useState("");
+  const [acronimoUntis, setAcronimoUntis] = useState(""); 
   const API_URL = import.meta.env.VITE_API_URL;
 
   // 2. Inicializamos el cliente
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (materiaSeleccionada) setNombre(materiaSeleccionada.nombre || "");
+    if (materiaSeleccionada) {
+      setNombre(materiaSeleccionada.nombre || "");
+      setAcronimoUntis(materiaSeleccionada.acronimo_untis || ""); // 👈 SINCRONIZAR AL CARGAR
+    }
   }, [materiaSeleccionada]);
 
   const handleEditar = async () => {
@@ -51,7 +55,11 @@ export function DialogoEditarMateria({
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ nombre }),
+          // 👈 Enviamos ambos campos actualizados al backend
+          body: JSON.stringify({
+            nombre,
+            acronimo_untis: acronimoUntis.trim() || null,
+          }),
         }
       );
 
@@ -76,12 +84,37 @@ export function DialogoEditarMateria({
         <DialogHeader>
           <DialogTitle>Editar materia</DialogTitle>
         </DialogHeader>
-        <Input
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleEditar()}
-        />
+
+        <div className="space-y-4 py-2">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Nombre de la materia
+            </label>
+            <Input
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleEditar()}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Acrónimo Untis
+            </label>
+            <Input
+              placeholder="Ej: LCL"
+              value={acronimoUntis}
+              onChange={(e) => setAcronimoUntis(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === "Enter" && handleEditar()}
+              maxLength={15}
+            />
+          </div>
+        </div>
+
         <DialogFooter>
+          <Button variant="outline" onClick={onClose} className="mr-2">
+            Cancelar
+          </Button>
           <Button onClick={handleEditar}>Guardar cambios</Button>
         </DialogFooter>
       </DialogContent>

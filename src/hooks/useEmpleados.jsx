@@ -43,6 +43,7 @@ export function useEmpleados() {
         asuntos_propios: Number(e.asuntos_propios ?? 0),
         tipo_empleado: e.tipo_empleado ?? "",
         jornada: Number(e.jornada ?? 0),
+        acronimo_untis: e.acronimo_untis ?? "",
       }));
     },
     staleTime: 1000 * 60 * 10, // 10 minutos

@@ -6,9 +6,9 @@
  *
  *  Descripción:
  *    Controlador para la gestión de los datos del personal y
- *    empleados del centro educativo. Gestiona el almacenamiento, 
+ *    empleados del centro educativo. Gestiona el almacenamiento,
  *    actualización y consulta de perfiles en la base de datos PostgreSQL.
- * 
+ *
  *    La aplicación autentica contra LDAP, pero mantiene esta tabla para
  *    almacenar datos de usuarios (empleados) que no pueden ser almacenados
  *    en LDAP.
@@ -47,13 +47,14 @@ exports.insertEmpleado = async ({
   cuerpo,
   grupo,
   personal,
-  baja = false,   // 👈 NUEVO, por defecto false
+  baja = false,
+  acronimo_untis = null, // 👈 NUEVO campo con valor por defecto
 }) => {
   const query = `
     INSERT INTO empleados
       (uid, tipo_usuario, dni, asuntos_propios, tipo_empleado, jornada,
-       email, telefono, cuerpo, grupo, personal, baja)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       email, telefono, cuerpo, grupo, personal, baja, acronimo_untis) -- 👈 Añadido
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)    -- 👈 Añadido $13
     ON CONFLICT (uid) DO NOTHING
     RETURNING *;
   `;
@@ -71,6 +72,7 @@ exports.insertEmpleado = async ({
     grupo,
     personal,
     baja,
+    acronimo_untis, 
   ];
 
   try {
@@ -91,7 +93,7 @@ exports.getEmpleado = async (req, res) => {
 
     const result = await db.query(
       `SELECT uid, tipo_usuario, dni, asuntos_propios, tipo_empleado,
-              jornada, email, telefono, cuerpo, grupo, personal, baja
+              jornada, email, telefono, cuerpo, grupo, personal, baja, acronimo_untis 
        FROM empleados
        WHERE uid = $1`,
       [uid]
@@ -153,7 +155,7 @@ exports.listEmpleados = async (req, res) => {
   try {
     const result = await db.query(
       `SELECT uid, tipo_usuario, dni, asuntos_propios, tipo_empleado,
-              jornada, email, telefono, cuerpo, grupo, personal, baja
+              jornada, email, telefono, cuerpo, grupo, personal, baja, acronimo_untis 
        FROM empleados`
     );
 
@@ -170,7 +172,7 @@ exports.listEmpleados = async (req, res) => {
 async function obtenerEmpleado(uid) {
   const result = await db.query(
     `SELECT uid, tipo_usuario, dni, asuntos_propios, tipo_empleado,
-            jornada, email, telefono, cuerpo, grupo, personal, baja
+            jornada, email, telefono, cuerpo, grupo, personal, baja, acronimo_untis 
      FROM empleados
      WHERE uid = $1`,
     [uid]
