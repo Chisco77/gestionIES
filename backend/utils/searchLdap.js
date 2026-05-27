@@ -1,4 +1,4 @@
-export function searchLDAP(client, baseDN, options) {
+function searchLDAP(client, baseDN, options) {
   return new Promise((resolve, reject) => {
     const entries = [];
 
@@ -18,3 +18,7 @@ export function searchLDAP(client, baseDN, options) {
     });
   });
 }
+
+module.exports = {
+  searchLDAP
+};
