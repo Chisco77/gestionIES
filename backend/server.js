@@ -15,7 +15,7 @@ const ldapRoutes = require("./routes/ldapRoutes");
 const dbRoutes = require("./routes/dbRoutes");
 const excelDietasRoutes = require("./routes/excelDietasRoutes");
 
-const importHorariosRoutes = require("./routes/importHorariosRoutes");
+//const importHorariosRoutes = require("./routes/importHorariosRoutes");
 
 // middleware de curso
 const setCursoContext = require("./middleware/cursoContext");
@@ -100,7 +100,7 @@ async function initServer() {
     app.use("/api/ldap", ldapRoutes);
     app.use("/api/db", dbRoutes);
     app.use("/api/excel-dietas", excelDietasRoutes);
-    app.use("/api/import", importHorariosRoutes);
+    //app.use("/api/import", importHorariosRoutes);
 
     app.use(
       "/uploads/alumnos",
