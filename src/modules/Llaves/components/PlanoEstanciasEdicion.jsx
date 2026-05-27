@@ -202,8 +202,7 @@ export default function PlanoEstanciasEdicion() {
     }
 
     // Si la ruta viene de la DB como /gestionIES/public/planos/...
-    // Y tu BASE_URL de Vite ya es /gestionIES
-    // Solo necesitamos asegurarnos de que no duplicamos el prefijo.
+    // nos aseguramos de que no duplicamos el prefijo.
 
     const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, ""); // ej: /gestionIES
 
