@@ -106,7 +106,7 @@ export function AusenciasIndex() {
       const fechaReferencia = a.fecha_fin || a.fecha_inicio;
       const esFuturaOHoy = fechaReferencia >= hoyStr;
 
-      return esMio && esFuturaOHoy;
+      return esMio;
     });
   }, [ausencias, user, esDirectiva, hoyStr]);
 

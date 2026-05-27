@@ -15,10 +15,7 @@ export function CalendarioFormacion({
   onDiaClick,
   onMonthChange,
 }) {
-  console.log(
-    "Estructura de permisosUsuario:",
-    JSON.stringify(permisosUsuario, null, 2)
-  );
+
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
   const startDay = (firstDay + 6) % 7;
@@ -125,13 +122,6 @@ export function CalendarioFormacion({
                   const dateKey = formatDateKey(dateObj);
                   const isToday = dateKey === todayStr;
                   const hasPermiso = isDateInPermisos(dateObj);
-
-                  if (hasPermiso) {
-                    console.log(`✅ Permiso detectado para el día: ${dateKey}`);
-                  } else {
-                    // Opcional
-                    console.log(`Día ${dateKey} sin permiso`);
-                  }
 
                   return (
                     <TooltipProvider key={j}>

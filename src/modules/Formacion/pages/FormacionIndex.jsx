@@ -60,8 +60,7 @@ export function FormacionIndex() {
       fechaObj.getFullYear() === currentYear
     );
   });
-  console.log("Asuntos mes: ", asuntosPropiosMes);
-  console.log("Permisos del usuario: ", permisos);
+
 
   // --- Función para recargar PanelReservas ---
   const recargarPanel = () => setReloadPanel((r) => r + 1);

@@ -134,7 +134,6 @@ export function DialogoConfiguracionCentro({ open, onOpenChange }) {
 
   const guardarMutation = useMutation({
     mutationFn: async (payload) => {
-      console.log("Payload: ", payload);
       const data = new FormData();
       Object.keys(payload).forEach((key) => {
         if (payload[key] !== null && !key.endsWith("_url")) {
