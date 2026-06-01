@@ -50,13 +50,13 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar"; // El componente Calendar de Shadcn
+import { Calendar } from "@/components/ui/calendar"; 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { addDays, subDays, startOfDay } from "date-fns"; // Ayudantes de fecha
+import { addDays, subDays, startOfDay } from "date-fns"; // Helpers de fecha
 
 import { useProfesoresGuardia } from "@/hooks/useProfesoresGuardia";
 import { useEstancias } from "@/hooks/Estancias/useEstancias";
@@ -90,7 +90,7 @@ export function PanelGuardias({
   const { data: todosLosPeriodos, isLoading: loadingPeriodos } =
     usePeriodosHorarios();
   const { data, isLoading: loadingGuardias } = useGuardiasDia(fechaFmt, {
-    tokenTV: publicToken, // <--- ESTO ES LO QUE FALTABA
+    tokenTV: publicToken, //
     refetchInterval: modoTV ? 30000 : false,
   });
 

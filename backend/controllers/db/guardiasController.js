@@ -395,6 +395,7 @@ async function confirmarGuardias(req, res) {
 /**
  * profesores de guardia en fecha y periodo indicados por parámetro.
  * Tiene en cuenta que el profesor no esté ausente.
+ * Tiene en cuenta que el profesor no esté de baja.
  * @param {*} req
  * @param {*} res
  */
@@ -408,50 +409,60 @@ async function getProfesoresDeGuardia(req, res) {
   try {
     const query = `
       SELECT 
-    h.uid, 
-    -- Equidad TOTAL (Curso completo, igual que tenías)
-    (SELECT COUNT(DISTINCT (ga.fecha, ga.idperiodo)) 
-     FROM guardias_asignadas ga 
-     WHERE ga.uid_profesor_cubridor = h.uid 
-     AND ga.fecha BETWEEN $1 AND $2 
-     AND ga.estado = 'activa'
-     AND ga.confirmada = true) as total_guardias,
+        h.uid, 
+        -- Equidad TOTAL (Curso completo)
+        (SELECT COUNT(DISTINCT (ga.fecha, ga.idperiodo)) 
+         FROM guardias_asignadas ga 
+         WHERE ga.uid_profesor_cubridor = h.uid 
+         AND ga.fecha BETWEEN $1 AND $2 
+         AND ga.estado = 'activa'
+         AND ga.confirmada = true) as total_guardias,
 
-    -- CORRECCIÓN: Conteo por DÍA DE LA SEMANA y PERIODO
-    (SELECT COUNT(*) 
-     FROM guardias_asignadas ga_slot
-     WHERE ga_slot.uid_profesor_cubridor = h.uid
-       AND ga_slot.idperiodo = $4
-       AND ga_slot.estado = 'activa'
-       AND ga_slot.confirmada = true
-       -- Filtrar por el mismo día de la semana que el parámetro $3
-       AND EXTRACT(DOW FROM ga_slot.fecha) = $3 
-       -- Opcional: mantener el límite del curso actual
-       AND ga_slot.fecha BETWEEN $1 AND $2) as guardias_periodo_acumuladas,
+        -- Conteo por DÍA DE LA SEMANA y PERIODO
+        (SELECT COUNT(*) 
+         FROM guardias_asignadas ga_slot
+         WHERE ga_slot.uid_profesor_cubridor = h.uid
+           AND ga_slot.idperiodo = $4
+           AND ga_slot.estado = 'activa'
+           AND ga_slot.confirmada = true
+           AND EXTRACT(DOW FROM ga_slot.fecha) = $3 
+           AND ga_slot.fecha BETWEEN $1 AND $2) as guardias_periodo_acumuladas,
 
-    -- Ocupación específica para HOY (esto SÍ debe ser por fecha concreta)
-    (SELECT COUNT(*) 
-     FROM guardias_asignadas ga2
-     WHERE ga2.uid_profesor_cubridor = h.uid
-       AND ga2.fecha = $5
-       AND ga2.idperiodo = $4
-       AND ga2.estado = 'activa') as num_asignadas_ahora
-FROM horario_profesorado h
-        WHERE h.dia_semana = $3 
-          AND h.idperiodo = $4 
-          AND h.tipo = 'guardia'
-          AND NOT EXISTS (
-            SELECT 1 FROM ausencias_profesorado aus
-            WHERE aus.uid_profesor = h.uid
-              AND aus.fecha_inicio <= $5
-              AND (aus.fecha_fin IS NULL OR aus.fecha_fin >= $5)
-              AND (
-                (aus.idperiodo_inicio IS NULL AND aus.idperiodo_fin IS NULL)
-                OR 
-                ($4 BETWEEN COALESCE(aus.idperiodo_inicio, 0) AND COALESCE(aus.idperiodo_fin, 99))
-              )
-          )
-        ORDER BY guardias_periodo_acumuladas ASC, total_guardias ASC
+        -- Ocupación específica para HOY
+        (SELECT COUNT(*) 
+         FROM guardias_asignadas ga2
+         WHERE ga2.uid_profesor_cubridor = h.uid
+           AND ga2.fecha = $5
+           AND ga2.idperiodo = $4
+           AND ga2.estado = 'activa') as num_asignadas_ahora
+      FROM horario_profesorado h
+      WHERE h.dia_semana = $3 
+        AND h.idperiodo = $4 
+        AND h.tipo = 'guardia'
+        
+        -- 1. FILTRO DE AUSENCIAS PUNTUALES
+        AND NOT EXISTS (
+          SELECT 1 FROM ausencias_profesorado aus
+          WHERE aus.uid_profesor = h.uid
+            AND aus.fecha_inicio <= $5
+            AND (aus.fecha_fin IS NULL OR aus.fecha_fin >= $5)
+            AND (
+              (aus.idperiodo_inicio IS NULL AND aus.idperiodo_fin IS NULL)
+              OR 
+              ($4 BETWEEN COALESCE(aus.idperiodo_inicio, 0) AND COALESCE(aus.idperiodo_fin, 99))
+            )
+        )
+        
+        -- 2. NUEVO FILTRO: BAJAS / SUSTITUCIONES
+        -- Si el profesor está de baja en esa fecha, queda excluido
+        AND NOT EXISTS (
+          SELECT 1 FROM sustituciones s
+          WHERE s.uid_titular = h.uid
+            AND s.fecha_inicio <= $5
+            AND (s.fecha_fin IS NULL OR s.fecha_fin >= $5)
+        )
+        
+      ORDER BY guardias_periodo_acumuladas ASC, total_guardias ASC
     `;
 
     // Pasamos los límites del curso a la query ($1 y $2)
