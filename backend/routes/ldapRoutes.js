@@ -35,6 +35,7 @@ const router = express.Router();
 const {
   getLdapUsuarios,
   obtenerAlumnosPorGrupo,
+  obtenerUsuarioPorUid,
 } = require("../controllers/ldap/usuariosController");
 
 const {
@@ -46,5 +47,6 @@ router.get("/grupos", getLdapGrupos);
 router.get("/grupos/:gidNumber/miembros", getMiembrosPorGidNumber);
 router.get("/usuarios", getLdapUsuarios);
 router.get("/usuariosPorGrupo", obtenerAlumnosPorGrupo);
+router.get("/usuarios/:uid", obtenerUsuarioPorUid);
 
 module.exports = router;

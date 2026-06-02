@@ -43,6 +43,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import { Switch } from "@/components/ui/switch";
 
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
 export default function DialogoEditarUsuario({
   open,
   onClose,
@@ -88,7 +90,8 @@ export default function DialogoEditarUsuario({
     usuarioActivo?.perfil
   );
   const puedeEditarBasicos = esPropietario || puedeEditarAvanzados;
-
+  const [avatarLdap, setAvatarLdap] = useState(null);
+  const [cargandoAvatar, setCargandoAvatar] = useState(false);
   // ----------------------------------------
   // Efectos para sincronizar datos desde props
   // ----------------------------------------
@@ -112,18 +115,25 @@ export default function DialogoEditarUsuario({
     setBaja(usuarioSeleccionado.baja ?? false);
     setAcronimoUntis(usuarioSeleccionado.acronimo_untis || "");
 
-    setFotoUrl(null);
+    if (open && usuarioSeleccionado.uid) {
+      setAvatarLdap(null); // Reset anterior
+      setCargandoAvatar(true);
 
-    // Foto del alumno
-    if (esAlumno && usuarioSeleccionado.uid) {
-      const extensiones = ["jpg", "jpeg", "png"];
-      for (const ext of extensiones) {
-        const url = `/gestionIES/uploads/alumnos/${usuarioSeleccionado.uid}.${ext}`;
-        setFotoUrl(url);
-        break;
-      }
+      fetch(`${API_URL}/ldap/usuarios/${usuarioSeleccionado.uid}`, {
+        credentials: "include",
+      })
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error("No se pudo obtener el avatar");
+        })
+        .then((data) => {
+          // Guardamos el avatar (Base64) en el estado local
+          setAvatarLdap(data.avatar);
+        })
+        .catch((err) => console.error("Error al traer avatar de LDAP:", err))
+        .finally(() => setCargandoAvatar(false));
     }
-  }, [usuarioSeleccionado, esAlumno]);
+  }, [usuarioSeleccionado, esAlumno, open, API_URL]);
 
   // ----------------------------------------
   // Mutation para guardar empleado
@@ -208,9 +218,11 @@ export default function DialogoEditarUsuario({
     return "";
   };
 
-  // ----------------------------------------
-  // Render seguro
-  // ----------------------------------------
+  const iniciales =
+    nombre && apellidos
+      ? `${nombre[0] || ""}${apellidos[0] || ""}`.toUpperCase()
+      : uid?.substring(0, 2).toUpperCase() || "?";
+
   return (
     <Dialog open={open} onOpenChange={onClose} modal>
       <DialogContent
@@ -218,18 +230,17 @@ export default function DialogoEditarUsuario({
         className="max-w-md"
       >
         <DialogHeader className="flex flex-col items-center text-center space-y-2">
-          {fotoUrl ? (
-            <img
-              src={fotoUrl}
-              alt="Foto del usuario"
-              className="w-24 h-24 rounded-full border object-cover"
+          <Avatar className="w-24 h-24 border border-slate-200 shadow-sm bg-white">
+            <AvatarImage
+              src={avatarLdap} // ✅ Ahora sí lee la foto descargada bajo demanda
+              alt={`${nombre} ${apellidos}`}
+              className="object-cover"
             />
-          ) : esAlumno ? (
-            <div className="text-xs text-muted-foreground">
-              No se encontró imagen
-            </div>
-          ) : null}
-          <DialogTitle>
+            <AvatarFallback className="bg-slate-100 text-slate-600 text-lg font-bold font-mono">
+              {cargandoAvatar ? "..." : iniciales}
+            </AvatarFallback>
+          </Avatar>
+          <DialogTitle className="text-xl font-bold text-slate-900 mt-1">
             {usuarioSeleccionado?.givenName} {usuarioSeleccionado?.sn}
           </DialogTitle>
         </DialogHeader>

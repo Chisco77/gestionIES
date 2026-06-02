@@ -84,6 +84,8 @@ export function ProfesoresIndex() {
     //const empleado = empleados.find((e) => e.uid === seleccionado.uid) || null;
     setEmpleadoSeleccionado(seleccionado);
 
+    console.log ("usuario: ", seleccionado);
+
     setAbrirEditar(true);
   };
 

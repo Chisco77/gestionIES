@@ -167,67 +167,6 @@ exports.obtenerGruposPeople = async (req, res) => {
   }
 };
 
-/*exports.buscarPorUid = (ldapSession, uid, callback) => {
-  // Login externo o interno
-  const LDAP_URL = ldapSession.external
-    ? `ldap://${ldapSession.ldapHost}`
-    : process.env.LDAP_URL;
-
-  const client = ldap.createClient({
-    url: LDAP_URL,
-  });
-
-  client.bind(ldapSession.dn, ldapSession.password, (err) => {
-    if (err) {
-      console.error("❌ Error en LDAP bind:", err.message);
-      return callback(err);
-    }
-
-    const baseDN = "dc=instituto,dc=extremadura,dc=es";
-    const options = {
-      scope: "sub",
-      filter: `(uid=${uid})`,
-      attributes: ["givenName", "sn", "uid", "gidNumber"],
-    };
-
-    client.search(`ou=People,${baseDN}`, options, (err, res) => {
-      if (err) {
-        console.error("❌ Error en búsqueda LDAP:", err.message);
-        client.unbind();
-        return callback(err);
-      }
-
-      let alumno = null;
-
-      res.on("searchEntry", (entry) => {
-        const attrs = {};
-        entry.attributes.forEach((attr) => {
-          attrs[attr.type] = attr.vals;
-        });
-        alumno = {
-          uid: attrs.uid?.[0] || null,
-          givenName: attrs.givenName?.[0] || null,
-          sn: attrs.sn?.[0] || null,
-          gidNumber: attrs.gidNumber?.[0] || null,
-        };
-      });
-
-      res.on("end", () => {
-        client.unbind();
-
-        const alumnoFinal = alumno ? anonimizarUsuario(alumno) : null;
-
-        callback(null, alumnoFinal);
-      });
-
-      res.on("error", (err) => {
-        client.unbind();
-        callback(err);
-      });
-    });
-  });
-};*/
-
 exports.buscarPorUid = (ldapSession, uid, callback) => {
   const LDAP_URL = ldapSession.external
     ? `ldap://${ldapSession.ldapHost}`
@@ -665,5 +604,40 @@ exports.obtenerAlumnosPorGrupo = (req, res) => {
         );
       });
     });
+  });
+};
+
+// Obtener los datos frescos de un único usuario por su UID (incluyendo avatar en Base64) bajo demanda
+exports.obtenerUsuarioPorUid = (req, res) => {
+  const ldapSession = req.session?.ldap;
+  const { uid } = req.params;
+
+  if (!uid || uid.trim() === "") {
+    return res.status(400).json({ error: "El parámetro 'uid' es requerido." });
+  }
+
+  if (!ldapSession) {
+    return res
+      .status(401)
+      .json({ error: "No autenticado en el servidor LDAP" });
+  }
+  // obtenemos datos , incluido avatar
+  exports.buscarPorUid(ldapSession, uid, (err, usuarioLdap) => {
+    if (err) {
+      console.error(`❌ Error al buscar el UID ${uid} en LDAP:`, err.message);
+      return res.status(500).json({
+        error: "Error interno al consultar el servidor LDAP",
+        details: err.message,
+      });
+    }
+
+    if (!usuarioLdap) {
+      return res
+        .status(404)
+        .json({ error: `El usuario con UID '${uid}' no existe en LDAP.` });
+    }
+
+    // Devolvemos el objeto enriquecido con su avatar listo para el componente Avatar de Shadcn
+    res.json(usuarioLdap);
   });
 };
