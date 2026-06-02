@@ -101,6 +101,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -245,7 +246,6 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
         cursoSeleccionado: null,
       }));
       setActiveTab("asignaciones");
-      setFotoUrl(null); // Resetear la URL de la foto también
 
       // Normalizar los préstamos para el usuario actual
       const normalizados = usuario.prestamos.map((p) => ({
@@ -257,28 +257,9 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
         ...prev,
         prestamos: normalizados,
       }));
-
-      const fetchFoto = async () => {
-        const extensiones = ["jpg", "jpeg", "png"];
-        for (const ext of extensiones) {
-          try {
-            const res = await fetch(
-              `/gestionIES/uploads/alumnos/${usuario.uid}.${ext}`,
-              { method: "HEAD" }
-            );
-            if (res.ok) {
-              setFotoUrl(`/gestionIES/uploads/alumnos/${usuario.uid}.${ext}`);
-              return;
-            }
-          } catch (e) {
-            /* ignore */
-          }
-        }
-        setFotoUrl(null);
-      };
-      fetchFoto();
     }
-  }, [open, usuario, SERVER_URL]);
+  }, [open, usuario]);
+
   // Lista cursos
   useEffect(() => {
     const fetchCursos = async () => {
@@ -588,6 +569,16 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
     }
   };
 
+  const iniciales = usuario?.nombreUsuario
+    ? usuario.nombreUsuario
+        .split(", ") // Separamos por la coma el bloque apellidos del nombre
+        .reverse() // Lo giramos para tener primero el Nombre y luego Apellidos
+        .map((n) => n.trim()[0]) // Sacamos la primera letra de cada bloque
+        .join("") // Las unimos
+        .substring(0, 2) // Nos quedamos con las dos primeras
+        .toUpperCase()
+    : usuario?.uid?.substring(0, 2).toUpperCase() || "?";
+
   return (
     <Dialog open={open} onOpenChange={onClose} modal={true}>
       <DialogContent
@@ -595,18 +586,20 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
         className="max-w-6xl"
       >
         <DialogHeader className="w-full flex flex-col items-center justify-center text-center space-y-2">
-          {fotoUrl ? (
-            <img
-              src={fotoUrl}
-              alt="Foto del usuario"
-              className="w-24 h-24 rounded-full border object-cover"
+          <Avatar className="w-24 h-24 border border-slate-200 shadow-sm bg-white">
+            <AvatarImage
+              src={usuario?.avatar} // Base64 directo de LDAP inyectado en el backend
+              alt={usuario?.nombreUsuario || "Foto del usuario"}
+              className="object-cover"
             />
-          ) : (
-            <div className="text-xs text-muted-foreground">
-              No se encontró imagen
-            </div>
-          )}
-          <DialogTitle>{usuario?.nombreUsuario}</DialogTitle>
+            <AvatarFallback className="bg-slate-100 text-slate-600 text-lg font-bold font-mono">
+              {iniciales}
+            </AvatarFallback>
+          </Avatar>
+
+          <DialogTitle className="text-xl font-bold text-slate-900 mt-1">
+            {usuario?.nombreUsuario}
+          </DialogTitle>
         </DialogHeader>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
@@ -1033,7 +1026,7 @@ export function DialogoEditarPrestamos({ open, onClose, usuario, onSuccess }) {
                     const esCambioValido =
                       (valorActual === 0 && valorNuevo === 1) ||
                       (valorActual === 1 && valorNuevo === 0) ||
-                      (valorActual === 1 && valorNuevo === 2) 
+                      (valorActual === 1 && valorNuevo === 2);
                     if (!esCambioValido) {
                       toast.error("Cambio de estado no permitido.");
                       return;

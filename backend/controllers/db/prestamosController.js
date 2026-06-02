@@ -89,7 +89,7 @@ async function getPrestamosAgrupados(req, res) {
 
       if (!agrupado[p.prestamo_id]) {
         // Buscar datos de la persona en LDAP
-        const persona = await new Promise((resolve) => {
+        /*const persona = await new Promise((resolve) => {
           const buscar = buscarPorUid;
           buscar(ldapSession, p.uid, (err, datos) => {
             if (!err && datos) {
@@ -100,6 +100,24 @@ async function getPrestamosAgrupados(req, res) {
               );
             }
           });
+        });*/
+
+        const datosPersona = await new Promise((resolve) => {
+          buscarPorUid(ldapSession, p.uid, (err, datos) => {
+            if (!err && datos) {
+              resolve({
+                nombre: `${datos.sn || ""}, ${datos.givenName || ""}`.trim(),
+                avatar: datos.avatar || null, // Foto recuperada de LDAP
+              });
+            } else {
+              resolve({
+                nombre: esAlumnoBool
+                  ? "Alumno desconocido"
+                  : "Profesor desconocido",
+                avatar: null,
+              });
+            }
+          });
         });
 
         agrupado[p.prestamo_id] = {
@@ -107,7 +125,8 @@ async function getPrestamosAgrupados(req, res) {
           uid: p.uid,
           doc_compromiso: p.doc_compromiso,
           iniciocurso: p.iniciocurso,
-          nombreUsuario: persona,
+          nombreUsuario: datosPersona.nombre, 
+          avatar: datosPersona.avatar,
           curso,
           prestamos: [],
         };

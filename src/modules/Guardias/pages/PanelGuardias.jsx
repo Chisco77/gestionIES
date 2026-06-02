@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"; // O la ruta donde tengas tus componentes de UI
 import {
   UserCheck,
   Clock,
@@ -50,7 +51,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar"; 
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
@@ -524,6 +525,16 @@ function GuardiaCard({
     item.observaciones_guardia &&
     item.observaciones_guardia.trim() !== "";
 
+  // Generar iniciales del profesor ausente para el fallback (Ej: "Carlos Ortego" -> "CO")
+  const iniciales = item.nombre_ausente
+    ? item.nombre_ausente
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase()
+    : item.uid_ausente?.substring(0, 2).toUpperCase() || "?";
+
   return (
     <Card
       className={`group relative transition-all duration-200 border-none shadow-sm hover:shadow-md ring-1 ${
@@ -534,24 +545,40 @@ function GuardiaCard({
           : "ring-orange-200 bg-orange-50/20"
       }`}
     >
-      {/* Reducimos el padding de p-5 a p-3 para ganar espacio */}
       <CardContent className="p-3 flex items-center gap-3">
-        {/* Indicador visual más pequeño (w-10 h-10) */}
-        <div
-          className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-inner ${
-            esConfirmada
-              ? esMia
-                ? "bg-blue-100 text-blue-600"
-                : "bg-green-100 text-green-600"
-              : "bg-orange-100 text-orange-600"
-          }`}
-        >
-          {esConfirmada ? (
-            <CheckCircle2 className="w-5 h-5" />
-          ) : (
-            <AlertCircle className="w-5 h-5" />
-          )}
+        {/* ========================================== */}
+        {/* NUEVO CONTENEDOR DE AVATAR CON ESTADO FLOTANTE */}
+        {/* ========================================== */}
+        <div className="relative flex-shrink-0">
+          <Avatar className="w-10 h-10 border border-slate-200 shadow-sm bg-white">
+            <AvatarImage
+              src={item.avatar} // Recuerda añadir e.avatar en tu SELECT de Postgres
+              alt={item.nombre_ausente || item.uid_ausente}
+              className="object-cover"
+            />
+            <AvatarFallback className="bg-slate-100 text-slate-600 text-xs font-bold font-mono">
+              {iniciales}
+            </AvatarFallback>
+          </Avatar>
+
+          {/* Pequeño indicador de estado circular que flota sobre el avatar */}
+          <div
+            className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center shadow-sm text-white ${
+              esConfirmada
+                ? esMia
+                  ? "bg-blue-500"
+                  : "bg-green-500"
+                : "bg-orange-500 animate-pulse"
+            }`}
+          >
+            {esConfirmada ? (
+              <CheckCircle2 className="w-2.5 h-2.5" />
+            ) : (
+              <AlertCircle className="w-2.5 h-2.5" />
+            )}
+          </div>
         </div>
+        {/* ========================================== */}
 
         {/* Contenido principal */}
         <div className="flex-1 min-w-0">
@@ -587,7 +614,6 @@ function GuardiaCard({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-4 border-t-4 border-t-blue-500 shadow-xl">
-                  {/* ... contenido del Popover igual al anterior ... */}
                   <div className="space-y-3">
                     <h4 className="font-bold text-sm flex items-center gap-2 text-slate-900">
                       <BookOpen className="w-4 h-4 text-blue-500" />
@@ -624,6 +650,7 @@ function GuardiaCard({
               {item.materia || "Sin materia"}
             </span>
           </div>
+
           {/* NOMBRE DEL CUBRIDOR --- */}
           {esConfirmada && (
             <div className="mt-2 flex items-center gap-1.5 pt-2 border-t border-slate-100">
@@ -707,7 +734,194 @@ function GuardiaCard({
   );
 }
 
-function ListaProfesGuardia({ fecha, idPeriodo }) {
+/*function GuardiaCard({
+  item,
+  onAsignar,
+  onCancelar,
+  onOpenPlano,
+  loading,
+  uidUsuarioActual,
+  modoTV,
+}) {
+  const esConfirmada = item.tipo === "confirmada";
+  const esMia = esConfirmada && item.uid_profesor_cubridor === uidUsuarioActual;
+  const mostrarInstrucciones =
+    esConfirmada &&
+    item.observaciones_guardia &&
+    item.observaciones_guardia.trim() !== "";
+
+  return (
+    <Card
+      className={`group relative transition-all duration-200 border-none shadow-sm hover:shadow-md ring-1 ${
+        esConfirmada
+          ? esMia
+            ? "ring-blue-200 bg-blue-50/20"
+            : "ring-green-200 bg-green-50/20"
+          : "ring-orange-200 bg-orange-50/20"
+      }`}
+    >
+      <CardContent className="p-3 flex items-center gap-3">
+        <div
+          className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-inner ${
+            esConfirmada
+              ? esMia
+                ? "bg-blue-100 text-blue-600"
+                : "bg-green-100 text-green-600"
+              : "bg-orange-100 text-orange-600"
+          }`}
+        >
+          {esConfirmada ? (
+            <CheckCircle2 className="w-5 h-5" />
+          ) : (
+            <AlertCircle className="w-5 h-5" />
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-start gap-2 mb-1">
+            <span
+              className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                esConfirmada
+                  ? esMia
+                    ? "bg-blue-200/50 text-blue-700"
+                    : "bg-green-200/50 text-green-700"
+                  : "bg-orange-200/50 text-orange-700"
+              }`}
+            >
+              {esConfirmada ? (esMia ? "Tuya" : "Cubierta") : "Pendiente"}
+            </span>
+            {mostrarInstrucciones && !modoTV && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-6 px-2 gap-1 text-[10px] font-bold rounded-md transition-all
+            ${
+              esMia
+                ? "text-blue-600 hover:bg-blue-100 hover:text-blue-700"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-600"
+            }`}
+                  >
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    <span>Ver tareas</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4 border-t-4 border-t-blue-500 shadow-xl">
+                  <div className="space-y-3">
+                    <h4 className="font-bold text-sm flex items-center gap-2 text-slate-900">
+                      <BookOpen className="w-4 h-4 text-blue-500" />
+                      Instrucciones de guardia
+                    </h4>
+                    <div className="p-3 bg-blue-50/50 rounded-md border border-blue-100 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">
+                      {item.observaciones_guardia}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+
+          <h4 className="font-bold text-base truncate text-slate-800 leading-tight">
+            {item.nombre_ausente || item.uid_ausente}
+          </h4>
+
+          <div className="flex flex-wrap items-center gap-1 mt-1">
+            <Badge
+              variant="outline"
+              className="text-[9px] h-4 px-1 bg-white/50 border-slate-200 cursor-pointer hover:bg-blue-100 transition-colors"
+              onClick={() => onOpenPlano(item.aula)}
+            >
+              Aula: {item.aula || "---"}
+            </Badge>
+            <Badge
+              variant="outline"
+              className="text-[9px] h-4 px-1 bg-white/50 border-slate-200"
+            >
+              Grupos: {item.grupo || "---"}
+            </Badge>
+            <span className="text-[10px] italic text-slate-500 truncate max-w-[100px]">
+              {item.materia || "Sin materia"}
+            </span>
+          </div>
+          {esConfirmada && (
+            <div className="mt-2 flex items-center gap-1.5 pt-2 border-t border-slate-100">
+              <span
+                className={`text-[11px] font-semibold ${esMia ? "text-blue-700" : "text-green-700"}`}
+              >
+                Cubre:
+              </span>
+
+              <UserCheck
+                className={`w-3.5 h-3.5 ${esMia ? "text-blue-500" : "text-green-500"}`}
+              />
+
+              <span
+                className={`text-[11px] font-semibold truncate ${esMia ? "text-blue-700" : "text-green-700"}`}
+              >
+                {item.nombre_cubridor || item.uid_profesor_cubridor}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {!modoTV && (
+          <div className="ml-1">
+            {esConfirmada ? (
+              <div className="flex flex-col items-center gap-1">
+                {esMia ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onCancelar}
+                    disabled={loading}
+                    className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-full transition-colors"
+                    title="Liberar guardia"
+                  >
+                    <XCircle className="w-6 h-6" />
+                    <span className="sr-only">Liberar</span>
+                  </Button>
+                ) : (
+                  <div className="h-7 w-7 rounded-full flex items-center justify-center bg-green-600 shadow-sm">
+                    <UserCheck className="w-4 h-4 text-white" />
+                  </div>
+                )}
+
+                {esMia && (
+                  <span className="text-[9px] font-bold text-red-600 uppercase">
+                    Liberar
+                  </span>
+                )}
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                onClick={onAsignar}
+                disabled={loading}
+                className="h-9 px-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg shadow-sm transition-all active:scale-95"
+              >
+                Cubrir
+              </Button>
+            )}
+          </div>
+        )}
+
+        {modoTV && esConfirmada && (
+          <div className="flex flex-col items-end">
+            <div className="bg-green-600 p-1.5 rounded-full shadow-sm">
+              <UserCheck className="w-3 h-3 text-white" />
+            </div>
+            <span className="text-[8px] font-black text-green-700 mt-1 uppercase">
+              {item.uid_profesor_cubridor}
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}*/
+
+/*function ListaProfesGuardia({ fecha, idPeriodo }) {
   const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
 
   if (isLoading)
@@ -737,7 +951,6 @@ function ListaProfesGuardia({ fecha, idPeriodo }) {
           >
             <CardContent className="p-3 flex justify-between items-center">
               <div className="flex items-center gap-3 min-w-0">
-                {/* Indicador de estado circular */}
                 <div
                   className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
                     estaOcupado
@@ -784,8 +997,133 @@ function ListaProfesGuardia({ fecha, idPeriodo }) {
                 </div>
               </div>
 
-              {/* BLOQUE DEL CONTADOR DE SLOT  */}
               <div className="flex items-center gap-3 bg-white border border-slate-100 p-1.5 pl-3 rounded-xl shadow-sm">
+                <div className="flex flex-col items-end leading-none">
+                  <span className="text-[16px] font-black font-mono text-slate-800">
+                    {profe.guardias_periodo_acumuladas}
+                  </span>
+                </div>
+
+                <div
+                  className={`p-1.5 rounded-lg ${estaOcupado ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-500"}`}
+                >
+                  <Clock className="w-4 h-4" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}*/
+
+function ListaProfesGuardia({ fecha, idPeriodo }) {
+  const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
+
+  if (isLoading)
+    return (
+      <div className="animate-pulse space-y-2 text-slate-400">
+        Cargando disponibilidad...
+      </div>
+    );
+
+  return (
+    <div className="space-y-3">
+      {profes?.map((profe) => {
+        const numGuardiasHoy = profe.num_asignadas_ahora || 0;
+        const estaOcupado = numGuardiasHoy > 0;
+        const esDoble = numGuardiasHoy > 1;
+
+        // Generar iniciales para el Fallback (ej: "García, Juan" -> "JG")
+        const inicialNombre = profe.nombre
+          ? profe.nombre.charAt(0).toUpperCase()
+          : "";
+        const inicialApellido = profe.apellido1
+          ? profe.apellido1.charAt(0).toUpperCase()
+          : "";
+        const iniciales =
+          `${inicialNombre}${inicialApellido}` ||
+          profe.uid.substring(0, 2).toUpperCase();
+
+        return (
+          <Card
+            key={profe.uid}
+            className={`transition-all duration-300 border shadow-none ${
+              estaOcupado
+                ? esDoble
+                  ? "bg-indigo-50/50 border-indigo-200 ring-1 ring-indigo-100"
+                  : "bg-blue-50/50 border-blue-200 ring-1 ring-blue-100"
+                : "bg-white border-slate-200 shadow-sm hover:shadow-md"
+            }`}
+          >
+            <CardContent className="p-3 flex justify-between items-center">
+              <div className="flex items-center gap-3 min-w-0 w-full">
+                {/* CONTENEDOR DEL AVATAR CON EL INDICADOR DE ESTADO INTEGRADO */}
+                <div className="relative flex-shrink-0">
+                  <Avatar className="w-10 h-10 border border-slate-200 shadow-sm">
+                    {/* Al pasar el String 'data:image/jpeg;base64,...' el navegador lo renderiza nativamente */}
+                    <AvatarImage
+                      src={profe.avatar}
+                      alt={`${profe.nombre} ${profe.apellido1}`}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-slate-100 text-slate-600 text-xs font-bold font-mono">
+                      {iniciales}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  {/* El indicador circular ahora flota discretamente sobre la esquina del avatar */}
+                  <div
+                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white flex-shrink-0 ${
+                      estaOcupado
+                        ? esDoble
+                          ? "bg-indigo-600 animate-bounce"
+                          : "bg-blue-500 animate-pulse"
+                        : "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+                    }`}
+                  />
+                </div>
+
+                {/* DATOS DEL PROFESOR */}
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={`text-sm font-bold truncate ${
+                      estaOcupado
+                        ? esDoble
+                          ? "text-indigo-900"
+                          : "text-blue-900"
+                        : "text-slate-700"
+                    }`}
+                  >
+                    {profe.apellido1}
+                    {profe.nombre ? `, ${profe.nombre}` : ""}
+                  </p>
+
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {estaOcupado ? (
+                      <span
+                        className={`text-[10px] font-black uppercase tracking-tight ${
+                          esDoble ? "text-indigo-600" : "text-blue-600"
+                        }`}
+                      >
+                        {esDoble ? "Doble Guardia" : "Asignada"}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
+                        Disponible
+                      </span>
+                    )}
+                    <span className="text-slate-300">|</span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      Acumulado: {profe.total_guardias}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOQUE DEL CONTADOR DE SLOT */}
+              <div className="flex items-center gap-3 bg-white border border-slate-100 p-1.5 pl-3 rounded-xl shadow-sm flex-shrink-0">
                 <div className="flex flex-col items-end leading-none">
                   <span className="text-[16px] font-black font-mono text-slate-800">
                     {profe.guardias_periodo_acumuladas}

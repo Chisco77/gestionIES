@@ -36,6 +36,52 @@ async function simularGuardiasDia(req, res) {
       });
     };
 
+    // ==========================================
+    // Extraer nombre Y avatar de LDAP
+    // ==========================================
+    /*const getDatosProfesor = async (uid) => {
+      if (!uid) return { nombre: "Desconocido", avatar: null };
+      if (usuariosCache[uid]) return usuariosCache[uid];
+
+      return new Promise((resolve) => {
+        buscarPorUid(ldapSession, uid, (err, datos) => {
+          const nombreCompleto =
+            !err && datos
+              ? `${datos.sn || ""}, ${datos.givenName || ""}`.trim()
+              : uid;
+
+          const avatar = !err && datos ? datos.avatar : null;
+
+          // Guardamos el objeto completo en caché para no saturar los sockets LDAP
+          usuariosCache[uid] = { nombre: nombreCompleto, avatar };
+          resolve(usuariosCache[uid]);
+        });
+      });
+    };*/
+    // Función auxiliar unificada para obtener nombre Y avatar de LDAP
+    const getDatosProfesor = async (uid) => {
+      if (!uid) return { nombre: "Desconocido", avatar: null };
+
+      // Si ya lo buscamos antes, devolvemos el objeto guardado en caché
+      if (usuariosCache[uid]) return usuariosCache[uid];
+
+      return new Promise((resolve) => {
+        buscarPorUid(ldapSession, uid, (err, datos) => {
+          const nombreFormateado =
+            !err && datos
+              ? `${datos.sn || ""}, ${datos.givenName || ""}`.trim()
+              : uid;
+
+          // Extraemos el avatar que ya procesa tu buscarPorUid
+          const avatar = !err && datos ? datos.avatar : null;
+
+          // Guardamos el objeto completo en la caché
+          usuariosCache[uid] = { nombre: nombreFormateado, avatar };
+          resolve(usuariosCache[uid]);
+        });
+      });
+    };
+
     // 3. Obtener ausencias y guardias ya confirmadas
     const { rows: ausencias } = await db.query(
       `SELECT a.* FROM ausencias_profesorado a 
@@ -119,16 +165,22 @@ async function simularGuardiasDia(req, res) {
         );
 
         if (yaConfirmada) {
+          // Extraemos nombre y avatar del ausente de una sola tacada
+          const profAusente = await getDatosProfesor(ausencia.uid_profesor);
+          // Extraemos el nombre del cubridor (aquí el avatar nos da igual de momento)
+          const profCubridor = await getDatosProfesor(
+            yaConfirmada.uid_profesor_cubridor
+          );
+
           simulacion.push({
             ...yaConfirmada,
             id: yaConfirmada.id,
             tipo: "confirmada",
             idausencia: yaConfirmada.idausencia,
             observaciones_guardia: ausencia.observaciones_guardia,
-            nombre_ausente: await getNombreProfesor(ausencia.uid_profesor),
-            nombre_cubridor: await getNombreProfesor(
-              yaConfirmada.uid_profesor_cubridor
-            ),
+            nombre_ausente: profAusente.nombre,
+            avatar: profAusente.avatar,
+            nombre_cubridor: profCubridor.nombre,
             materia: slot.materia_nombre || "Guardia",
             aula: slot.estancia_nombre,
             periodo: slot.idperiodo,
@@ -152,12 +204,22 @@ async function simularGuardiasDia(req, res) {
           [diaSemana, slot.idperiodo, fecha]
         );
 
-        const candidatosEnriquecidos = await Promise.all(
+        /* const candidatosEnriquecidos = await Promise.all(
           candidatos.map(async (c) => ({
             uid: c.uid,
             nombre: await getNombreProfesor(c.uid),
             guardias: contadores[c.uid] || 0,
           }))
+        );*/
+        const candidatosEnriquecidos = await Promise.all(
+          candidatos.map(async (c) => {
+            const cand = await getDatosProfesor(c.uid); // Usamos la nueva función
+            return {
+              uid: c.uid,
+              nombre: cand.nombre, // Sacamos el string .nombre
+              guardias: contadores[c.uid] || 0,
+            };
+          })
         );
 
         candidatosEnriquecidos.sort((a, b) => a.guardias - b.guardias);
@@ -167,6 +229,9 @@ async function simularGuardiasDia(req, res) {
           ? slot.gidnumber.map((g) => gruposCache[String(g)] || `G:${g}`)
           : [];
 
+        // Extraemos nombre y avatar del profesor ausente
+        const profAusente = await getDatosProfesor(ausencia.uid_profesor);
+
         simulacion.push({
           tipo: "propuesta",
           idausencia: ausencia.id,
@@ -174,7 +239,8 @@ async function simularGuardiasDia(req, res) {
           observaciones_guardia: ausencia.observaciones_guardia,
           uid_ausente: ausencia.uid_profesor,
           nombre_periodo: slot.nombre_periodo,
-          nombre_ausente: await getNombreProfesor(ausencia.uid_profesor),
+          nombre_ausente: profAusente.nombre,
+          avatar: profAusente.avatar,
           materia:
             slot.materia_nombre ||
             (slot.tipo === "guardia" ? "Guardia propia" : "S/M"),
@@ -497,6 +563,7 @@ async function getProfesoresDeGuardia(req, res) {
                 nombre: datos.givenName || "",
                 apellido1: datos.sn || "",
                 apellido2: "",
+                avatar: datos.avatar || null,
               });
             } else {
               resolve({
@@ -504,6 +571,7 @@ async function getProfesoresDeGuardia(req, res) {
                 nombre: row.uid,
                 apellido1: "",
                 apellido2: "",
+                avatar: null,
               });
             }
           });

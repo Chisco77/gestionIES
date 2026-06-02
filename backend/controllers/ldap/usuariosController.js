@@ -167,7 +167,7 @@ exports.obtenerGruposPeople = async (req, res) => {
   }
 };
 
-exports.buscarPorUid = (ldapSession, uid, callback) => {
+/*exports.buscarPorUid = (ldapSession, uid, callback) => {
   // Login externo o interno
   const LDAP_URL = ldapSession.external
     ? `ldap://${ldapSession.ldapHost}`
@@ -212,10 +212,6 @@ exports.buscarPorUid = (ldapSession, uid, callback) => {
         };
       });
 
-      /*res.on("end", () => { anonimizar
-        client.unbind();
-        callback(null, alumno);
-      });*/
       res.on("end", () => {
         client.unbind();
 
@@ -225,6 +221,132 @@ exports.buscarPorUid = (ldapSession, uid, callback) => {
       });
 
       res.on("error", (err) => {
+        client.unbind();
+        callback(err);
+      });
+    });
+  });
+};*/
+
+exports.buscarPorUid = (ldapSession, uid, callback) => {
+  const LDAP_URL = ldapSession.external
+    ? `ldap://${ldapSession.ldapHost}`
+    : process.env.LDAP_URL;
+
+  const client = ldap.createClient({
+    url: LDAP_URL,
+  });
+
+  client.bind(ldapSession.dn, ldapSession.password, (err) => {
+    if (err) {
+      console.error("❌ Error en LDAP bind:", err.message);
+      return callback(err);
+    }
+
+    const baseDN = "dc=instituto,dc=extremadura,dc=es";
+    const options = {
+      scope: "sub",
+      filter: `(uid=${uid})`,
+      //attributes: ["givenName", "sn", "uid", "gidNumber", "jpegPhoto"],
+      attributes: ["*", "+"],
+    };
+
+    console.log(`\n🔍 [LDAP] Iniciando búsqueda para uid: ${uid}...`);
+
+    client.search(`ou=People,${baseDN}`, options, (err, res) => {
+      if (err) {
+        console.error("❌ Error en búsqueda LDAP:", err.message);
+        client.unbind();
+        return callback(err);
+      }
+
+      let alumno = null;
+
+      res.on("searchEntry", (entry) => {
+        console.log(`👤 [LDAP] Entrada encontrada para uid: ${uid}`);
+
+        // Log para ver TODOS los tipos de atributos que nos devuelve el servidor LDAP real
+        const listAtributosRecibidos = entry.attributes.map((a) => a.type);
+        console.log(
+          `📋 [LDAP] Atributos devueltos por servidor:`,
+          listAtributosRecibidos
+        );
+
+        const attrs = {};
+
+        entry.attributes.forEach((attr) => {
+          if (attr.type === "jpegPhoto") {
+            attrs[attr.type] = attr.buffers;
+            console.log(
+              `📸 [LDAP] ¡Atributo jpegPhoto detectado! ¿Tiene buffers?:`,
+              !!attr.buffers,
+              `| Cantidad:`,
+              attr.buffers?.length
+            );
+          } else {
+            attrs[attr.type] = attr.vals;
+          }
+        });
+
+        let fotoBase64 = null;
+        if (attrs.jpegPhoto && attrs.jpegPhoto.length > 0) {
+          const fotoBuffer = attrs.jpegPhoto[0];
+          const esUnBufferValido = Buffer.isBuffer(fotoBuffer);
+          console.log(
+            `🔄 [LDAP] Procesando buffer de imagen. ¿Es instancia de Buffer?:`,
+            esUnBufferValido
+          );
+
+          if (esUnBufferValido) {
+            // Sacamos solo los primeros 30 caracteres del base64 para el log, para no inundar la consola
+            const stringBase64 = fotoBuffer.toString("base64");
+            fotoBase64 = `data:image/jpeg;base64,${stringBase64}`;
+            console.log(
+              `✅ [LDAP] Conversión Base64 exitosa. Preview string (30 chars):`,
+              stringBase64.substring(0, 30) + "..."
+            );
+          }
+        } else {
+          console.log(
+            `⚠️ [LDAP] El campo 'jpegPhoto' vino vacío o no existía para el uid: ${uid}`
+          );
+        }
+
+        alumno = {
+          uid: attrs.uid?.[0] || null,
+          givenName: attrs.givenName?.[0] || null,
+          sn: attrs.sn?.[0] || null,
+          gidNumber: attrs.gidNumber?.[0] || null,
+          avatar: fotoBase64,
+        };
+
+        console.log(
+          `📦 [LDAP] Objeto 'alumno' pre-anonimizar creado. ¿Tiene avatar?:`,
+          !!alumno.avatar
+        );
+      });
+
+      res.on("end", () => {
+        client.unbind();
+
+        console.log(
+          `⚙️ [LDAP] Búsqueda finalizada. Pasando objeto por 'anonimizarUsuario'...`
+        );
+
+        const alumnoFinal = alumno ? anonimizarUsuario(alumno) : null;
+
+        console.log(`📤 [LDAP] Resultado final tras anonimizar de ${uid}:`, {
+          ...alumnoFinal,
+          avatar: alumnoFinal?.avatar
+            ? `${alumnoFinal.avatar.substring(0, 40)}... (Truncado para log)`
+            : null,
+        });
+
+        callback(null, alumnoFinal);
+      });
+
+      res.on("error", (err) => {
+        console.error(`❌ [LDAP] Error en evento 'res':`, err.message);
         client.unbind();
         callback(err);
       });
@@ -342,7 +464,7 @@ exports.getLdapUsuarios = (req, res) => {
       });
 
       // ==========================
-      //  Construir resultado final 
+      //  Construir resultado final
       // ==========================
       const result = people
         .filter((p) => {
