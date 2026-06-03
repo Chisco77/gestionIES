@@ -15,6 +15,14 @@
  * - Mantiene sesión mediante cookies.
  */
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -241,6 +249,88 @@ export function LoginForm({ className, ...props }) {
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-relaxed">
             Sistema de gestión para centros públicos de Extremadura
           </p>
+          <Dialog>
+            <DialogTrigger asChild>
+              <button className="text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest">
+                Protección de datos
+              </button>
+            </DialogTrigger>
+
+            <DialogContent
+              onInteractOutside={(e) => e.preventDefault()}
+              className="max-w-md"
+            >
+              <DialogHeader>
+                <DialogTitle>Protección de datos personales</DialogTitle>
+              </DialogHeader>
+
+              <div className="text-xs text-slate-600 space-y-3 leading-relaxed">
+                <p className="font-semibold text-slate-800">
+                  Protección de datos personales
+                </p>
+
+                <p>
+                  De conformidad con el Reglamento (UE) 2016/679 (RGPD) y la Ley
+                  Orgánica 3/2018, se informa a los usuarios de que los datos
+                  personales tratados en este sistema se utilizan exclusivamente
+                  para la gestión educativa y organizativa del centro.
+                </p>
+
+                <p>
+                  <span className="font-semibold">
+                    Responsable del tratamiento:
+                  </span>{" "}
+                  El centro educativo.
+                </p>
+
+                <p>
+                  <span className="font-semibold">Finalidad:</span> gestión de
+                  usuarios mediante LDAP, organización de guardias del
+                  profesorado, préstamos de libros a alumnos , reservas de
+                  espacios, gestión de ausencias, permisos y otros procesos
+                  internos del centro.
+                </p>
+
+                <p>
+                  <span className="font-semibold">Base jurídica:</span>{" "}
+                  cumplimiento de una misión en interés público y ejercicio de
+                  funciones propias del sistema educativo.
+                </p>
+
+                <p>
+                  <span className="font-semibold">Datos tratados:</span> datos
+                  identificativos y profesionales (usuario LDAP, nombre,
+                  apellidos, departamento, roles, horarios), así como
+                  información derivada de la actividad organizativa (guardias,
+                  préstamos, reservas y ausencias).
+                </p>
+
+                <p>
+                  <span className="font-semibold">Destinatarios:</span> personal
+                  autorizado del centro, equipo directivo y, en su caso, la
+                  Administración educativa.
+                </p>
+
+                <p>
+                  <span className="font-semibold">Conservación:</span> los datos
+                  se conservarán mientras el usuario mantenga relación con el
+                  centro y durante los plazos legales aplicables.
+                </p>
+
+                <p>
+                  <span className="font-semibold">Derechos:</span> acceso,
+                  rectificación, supresión, limitación y oposición, ejercitables
+                  ante la dirección del centro o responsable del tratamiento.
+                </p>
+
+                <p>
+                  Se aplican medidas de seguridad adecuadas, incluyendo
+                  autenticación mediante LDAP, control de acceso por roles y
+                  registro de actividad del sistema.
+                </p>
+              </div>
+            </DialogContent>
+          </Dialog>
         </footer>
       </div>
     </div>
