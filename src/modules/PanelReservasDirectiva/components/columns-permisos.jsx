@@ -53,6 +53,7 @@ export const columnsPermisos = () => [
       return true;
     },
   },
+
   {
     accessorKey: "nombreProfesor",
     header: "Profesor",
@@ -96,6 +97,52 @@ export const columnsPermisos = () => [
       // Convertimos ambos a String por seguridad para asegurar la comparación
       // o comparamos como números si estás seguro de que siempre vienen así.
       return String(row.getValue(columnId)) === String(filterValue);
+    },
+  },
+  {
+    id: "periodo", // Usamos id en lugar de accessorKey porque manejamos varios campos anidados
+    header: "Periodo",
+    cell: ({ row }) => {
+      const { dia_completo, periodo_inicio, periodo_fin } = row.original;
+
+      if (dia_completo) {
+        return (
+          <span className="text-[11px] font-medium text-slate-500 uppercase tracking-tight bg-slate-100 px-1.5 py-0.5 rounded">
+            Día completo
+          </span>
+        );
+      }
+
+      const inicio = periodo_inicio?.nombre;
+      const fin = periodo_fin?.nombre;
+
+      if (inicio && fin) {
+        // Si el periodo de inicio y fin es el mismo, solo mostramos uno
+        if (inicio === fin) {
+          return (
+            <span
+              className="text-[11px] font-medium text-slate-700"
+              title={`${periodo_inicio.inicio} - ${periodo_inicio.fin}`}
+            >
+              {inicio}
+            </span>
+          );
+        }
+        // Si son distintos, mostramos el rango (ej: "Recreo - 6ª Hora")
+        return (
+          <span
+            className="text-[11px] font-medium text-slate-700"
+            title={`${periodo_inicio.inicio} a ${periodo_fin.fin}`}
+          >
+            {inicio} — {fin}
+          </span>
+        );
+      }
+
+      if (inicio)
+        return <span className="text-[11px] text-slate-700">{inicio}</span>;
+
+      return <span className="text-[11px] text-slate-400 italic">—</span>;
     },
   },
   {

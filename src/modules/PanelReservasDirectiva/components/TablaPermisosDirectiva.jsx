@@ -144,6 +144,7 @@ export function TablaPermisosDirectiva({
   const [accion, setAccion] = useState(null);
 
   const { data: asuntosPropiosTodos = [] } = usePermisosTodos();
+  console.log ("Permisos: ", asuntosPropiosTodos);
   const { data: centro } = useConfiguracionCentro();
 
   const handleClick = (asunto, tipo) => {
