@@ -35,12 +35,48 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
 const INTERNAL_RANGE = "172.16.218.0/23";
 const PORT = process.env.PORT || 5000;
 
+const INTERNAL_RANGE_PREFIXES = ["172.16.218.", "172.16.219."];
+
+let restringirPorIP = false;
+
+function esIPCentro(ip) {
+  const normalizedIp = ip.replace("::ffff:", "");
+
+  return (
+    normalizedIp === "127.0.0.1" ||
+    normalizedIp.startsWith("172.16.218.") ||
+    normalizedIp.startsWith("172.16.219.")
+  );
+}
+
 // Función para inicializar el servidor
 async function initServer() {
   try {
     // Espera a que la base de datos esté disponible
     await pgPool.connect();
     console.log("✅ Conexión a la base de datos establecida");
+
+    // Restringir por IP. Solo desde los rangos de ip del centro se puede acceder a
+    // gestionIES
+    try {
+      const { rows } = await pgPool.query(`
+    SELECT nombre_ies
+    FROM configuracion_centro
+    LIMIT 1
+  `);
+
+      const nombreIES = rows?.[0]?.nombre_ies?.toLowerCase() || "";
+
+      restringirPorIP = nombreIES.includes("francisco de orellana");
+
+      console.log(
+        `🏫 Centro detectado: ${rows?.[0]?.nombre_ies || "desconocido"}`
+      );
+
+      console.log(`🔒 Restricción IP activada: ${restringirPorIP}`);
+    } catch (error) {
+      console.error("❌ Error leyendo configuracion_centro:", error);
+    }
 
     // Inicialización del envío de correos SMTP aquí
     const nodemailer = require("nodemailer");
@@ -72,6 +108,17 @@ async function initServer() {
     app.use(express.json({ limit: "10mb" }));
     app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
+    app.use((req, res, next) => {
+      console.log("=================================");
+      console.log("IP detectada:", req.ip);
+      console.log("X-Forwarded-For:", req.headers["x-forwarded-for"]);
+      console.log("RemoteAddress:", req.socket.remoteAddress);
+      console.log("URL:", req.originalUrl);
+      console.log("=================================");
+
+      next();
+    });
+
     app.use(
       session({
         store: new pgSession({
@@ -91,9 +138,27 @@ async function initServer() {
       })
     );
 
-    
+    // Restricción de acceso para el IES Francisco de Orellana
+    app.use((req, res, next) => {
+      if (!restringirPorIP) {
+        return next();
+      }
+
+      const ip = req.ip;
+
+      if (esIPCentro(ip)) {
+        return next();
+      }
+
+      console.warn(`⛔ Acceso denegado desde ${ip} a ${req.originalUrl}`);
+
+      return res.status(403).json({
+        error: "Acceso permitido únicamente desde la red interna del centro",
+      });
+    });
+
     // Aplicar el contexto del curso globalmente ---
-    app.use(setCursoContext)
+    app.use(setCursoContext);
 
     // Rutas
     app.use("/api", authRoutes);
