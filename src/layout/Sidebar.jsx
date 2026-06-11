@@ -377,6 +377,11 @@ function SidebarComponent({
         icon: Home,
       },
       {
+        title: "Agenda de Extraescolares",
+        url: "/agenda-extraescolares",
+        icon: GraduationCap,
+      },
+      {
         title: "Usuarios",
         url: "#",
         icon: Users,
