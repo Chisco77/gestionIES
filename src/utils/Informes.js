@@ -121,73 +121,6 @@ export async function generateEtiquetasGenericasPdf({
   doc.save(nombrePdf.endsWith(".pdf") ? nombrePdf : `${nombrePdf}.pdf`);
 }
 
-/**
- * Genera un PDF con el listado de profesores
- *
- * @param {Array} profesores - Array de objetos profesor con propiedades `sn` y `givenName`
- */
-/*export function generateListadoAPs(profesores = [], logoUrl) {
-  if (!profesores || profesores.length === 0) {
-    alert("No hay profesores para generar el listado.");
-    return;
-  }
-
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const pageWidth = 210;
-  const marginLeft = 15;
-  const marginTop = 20;
-  let y = marginTop;
-
-  // --- Cabecera ---
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("Listado de Profesores", pageWidth / 2, y, { align: "center" });
-  y += 10;
-
-  doc.setFontSize(12);
-  doc.text(`Total profesores: ${profesores.length}`, marginLeft, y);
-  y += 10;
-
-  // --- Encabezado de columnas ---
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  const col1X = marginLeft; // Apellidos
-  const col2X = marginLeft + 50; // Nombre
-  const col3X = marginLeft + 100; // DNI
-  const col4X = marginLeft + 140; // Asuntos propios
-
-  doc.text("Apellidos", col1X, y);
-  doc.text("Nombre", col2X, y);
-  doc.text("DNI", col3X, y);
-  doc.text("Asuntos Propios", col4X, y);
-  y += 4;
-  doc.setLineWidth(0.5);
-  doc.line(marginLeft, y, pageWidth - marginLeft, y);
-  y += 6;
-
-  // --- Datos ---
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  const lineHeight = 7;
-
-  profesores.forEach((profesor) => {
-    if (y > 285) {
-      // salto de página
-      doc.addPage();
-      y = marginTop;
-    }
-
-    doc.text(profesor.sn || "", col1X, y);
-    doc.text(profesor.givenName || "", col2X, y);
-    doc.text(profesor.dni || "", col3X, y);
-    doc.text(String(profesor.asuntos_propios || 0), col4X, y);
-
-    y += lineHeight;
-  });
-
-  doc.save("Listado_Profesores.pdf");
-}*/
-
 export const generarListadoPrestamosLibrosAlumnosPdf = ({
   alumnos = [],
   nombrePdf = "listado_prestamos_libros_alumnos",
@@ -197,6 +130,7 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
     unit: "mm",
     format: "a4",
   });
+  console.log("prestamos alumnos: ", alumnos);
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -272,15 +206,15 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
       const totalesLibros = {};
       librosCurso.forEach((libro) => {
         totalesLibros[libro.idlibro] = {
-          existente: 0, // Total asignados a alumnos
-          entregados: 0, // Tienen 'E'
-          devueltos: 0, // Tienen 'D'
-          pendientesRecoger: 0, // Registrados pero no entregados aún
+          existente: 0,
+          entregados: 0,
+          devueltos: 0,
+          pendientesRecoger: 0,
         };
       });
 
       /* ----------------------------------------------
-       * Cabecera (Corregida)
+       * Cabecera
        * ---------------------------------------------- */
       const dibujarCabecera = (y) => {
         doc.setFont("helvetica", "bold");
@@ -377,25 +311,27 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
           let texto = "";
 
           if (estado) {
-            // Sumamos 1 al total asignado de este libro
             totalesLibros[libro.idlibro].existente += 1;
 
             if (estado.entregado) {
               texto += "E";
               totalesLibros[libro.idlibro].entregados += 1;
-            } else {
-              // Si está asignado pero NO entregado, está pendiente de recoger
-              totalesLibros[libro.idlibro].pendientesRecoger += 1;
             }
 
             if (estado.devuelto) {
               texto += "D";
               totalesLibros[libro.idlibro].devueltos += 1;
             }
+
+            // --- CORRECCIÓN DE LA LÓGICA DE PENDIENTES ---
+            // Pendiente de recoger por el centro = entregado (true) y NO devuelto (false)
+            if (estado.entregado && !estado.devuelto) {
+              totalesLibros[libro.idlibro].pendientesRecoger += 1;
+            }
           }
 
           if (texto) {
-            doc.text(texto, x, y + 5, { align: "center" }); // Centrado queda mejor con la columna
+            doc.text(texto, x, y + 5, { align: "center" });
           }
         });
 
@@ -422,13 +358,12 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
 
       const alturaResumenTotal = 6 + filasResumen.length * rowHeight;
 
-      // Control de página para el bloque de resumen
       if (y + alturaResumenTotal > pageHeight - marginBottom) {
         doc.addPage();
         y = marginTop;
       }
 
-      y += 9; // Separación del listado de alumnos
+      y += 9;
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
@@ -436,26 +371,21 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
       y += 4;
 
       filasResumen.forEach((fila) => {
-        // Fondo gris suave para alternar o distinguir el pie
         doc.setFillColor(245, 245, 245);
         doc.rect(marginLeft, y, usableWidth, rowHeight, "F");
 
-        // Etiqueta de la fila (ej: "Total Entregados")
         doc.setFont("helvetica", "bold");
         doc.text(fila.etiqueta, marginLeft + 2, y + 5);
 
         doc.setFont("helvetica", "normal");
-        // Pintar el valor correspondiente debajo de cada columna de libro
         librosCurso.forEach((libro, i) => {
           const x =
             marginLeft + colWidthAlumno + i * colWidthLibro + colWidthLibro / 2;
           const valor = totalesLibros[libro.idlibro][fila.clave];
 
-          // Si el valor es 0, puedes optar por poner '-' o '0'. Ponemos el número.
           doc.text(valor.toString(), x, y + 5, { align: "center" });
         });
 
-        // Línea divisoria inferior de la fila
         doc.setLineWidth(0.2);
         doc.line(
           marginLeft,
@@ -484,6 +414,8 @@ export const generarListadoResumenLibrosAlumnosPdf = ({
     format: "a4",
   });
 
+  console.log("prestamos alumnos: ", alumnos);
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -500,9 +432,8 @@ export const generarListadoResumenLibrosAlumnosPdf = ({
   const headerHeight = 10;
 
   /* --------------------------------------------------
-   * NUEVO AJUSTE: Definición y Ancho de Columnas
+   * Definición y Ancho de Columnas
    * -------------------------------------------------- */
-  // Ampliamos el libro a 110mm. Quedan 70mm a repartir entre las 4 columnas (17.5mm cada una)
   const colWidthLibro = 110;
   const colWidthDato = (usableWidth - colWidthLibro) / 4;
 
@@ -537,12 +468,16 @@ export const generarListadoResumenLibrosAlumnosPdf = ({
 
       if (p.entregado) {
         resumenLibros[p.idlibro].entregados += 1;
-      } else {
-        resumenLibros[p.idlibro].pendientesRecoger += 1;
       }
 
       if (p.devuelto) {
         resumenLibros[p.idlibro].devueltos += 1;
+      }
+
+      // --- CORRECCIÓN DE LA LÓGICA DE PENDIENTES ---
+      // Pendiente de recoger por el centro = entregado (true) y NO devuelto (false)
+      if (p.entregado && !p.devuelto) {
+        resumenLibros[p.idlibro].pendientesRecoger += 1;
       }
     });
   });
@@ -635,7 +570,6 @@ export const generarListadoResumenLibrosAlumnosPdf = ({
     const nombreCompleto = `${libro.nombre} (${libro.nombreCurso})`;
 
     doc.setFont("helvetica", "bold");
-    // Ahora splitTextToSize cuenta con un margen mucho mayor (110 - 4 = 106mm)
     const nombreTruncado = doc.splitTextToSize(
       nombreCompleto,
       colWidthLibro - 4
