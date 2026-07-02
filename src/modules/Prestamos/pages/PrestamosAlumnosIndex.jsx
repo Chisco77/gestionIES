@@ -74,6 +74,7 @@ import {
 } from "lucide-react";
 
 import { usePrestamos } from "@/hooks/usePrestamos";
+import { useCursos } from "@/hooks/useCursos";
 
 import {
   Tooltip,
@@ -83,6 +84,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { generarListadoPrestamosLibrosAlumnosPdf } from "@/utils/Informes";
+import { generarListadoResumenLibrosAlumnosPdf } from "@/utils/Informes";
 
 export function PrestamosAlumnosIndex() {
   const [prestamosFiltrados, setPrestamosFiltrados] = useState([]);
@@ -112,6 +114,8 @@ export function PrestamosAlumnosIndex() {
       iniciocurso: p.iniciocurso,
     })) || [];
 
+  const { data: cursos } = useCursos();
+
   const handleGenerarListadoPrestamosLibrosAlumnosPdf = () => {
     if (!prestamosFiltrados || prestamosFiltrados.length === 0) {
       alert("No hay datos para generar el informe.");
@@ -121,6 +125,25 @@ export function PrestamosAlumnosIndex() {
     generarListadoPrestamosLibrosAlumnosPdf({
       alumnos: prestamosFiltrados,
       nombrePdf: "listado_prestamos_libros_alumnos",
+    });
+  };
+
+  const handleGenerarListadoResumenLibrosAlumnosPdf = () => {
+    if (!prestamosFiltrados || prestamosFiltrados.length === 0) {
+      alert("No hay datos para generar el informe.");
+      return;
+    }
+
+    // 3. OPTIMIZACIÓN: Limpiamos el avatar para no saturar la memoria
+    const alumnosOptimizados = prestamosFiltrados.map(
+      ({ avatar, ...resto }) => resto
+    );
+
+    // 4. Enviamos los alumnos limpios y la lista de cursos al informe
+    generarListadoResumenLibrosAlumnosPdf({
+      alumnos: alumnosOptimizados,
+      cursos: cursos || [], // Pasamos el catálogo de cursos
+      nombrePdf: "listado_resumen_libros_alumnos",
     });
   };
 
@@ -360,7 +383,13 @@ export function PrestamosAlumnosIndex() {
                 onClick={handleGenerarListadoPrestamosLibrosAlumnosPdf}
               >
                 <FileText className="mr-2 h-4 w-4 text-red-500" />
-                Litado de préstamos
+                Listado de préstamos por curso
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleGenerarListadoResumenLibrosAlumnosPdf}
+              >
+                <FileText className="mr-2 h-4 w-4 text-red-500" />
+                Listado resumen por libro
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

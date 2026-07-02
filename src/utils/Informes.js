@@ -188,8 +188,6 @@ export async function generateEtiquetasGenericasPdf({
   doc.save("Listado_Profesores.pdf");
 }*/
 
-
-
 export const generarListadoPrestamosLibrosAlumnosPdf = ({
   alumnos = [],
   nombrePdf = "listado_prestamos_libros_alumnos",
@@ -216,17 +214,6 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
   const rowHeight = 8;
   const headerHeight = 34;
   const colWidthAlumno = 60;
-
-  /* --------------------------------------------------
-   * Utilidad: partir texto en bloques
-   * -------------------------------------------------- */
-  const partirTexto = (texto, maxChars) => {
-    const partes = [];
-    for (let i = 0; i < texto.length; i += maxChars) {
-      partes.push(texto.substring(i, i + maxChars));
-    }
-    return partes;
-  };
 
   /* --------------------------------------------------
    * Agrupar alumnos por curso
@@ -262,18 +249,12 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
         y = marginTop;
       }
 
-      /* ----------------------------------------------
-       * idcurso del grupo
-       * ---------------------------------------------- */
       const idCursoGrupo = alumnosCurso
         .flatMap((a) => a.prestamos ?? [])
         .find((p) => p.idcurso)?.idcurso;
 
       if (!idCursoGrupo) return;
 
-      /* ----------------------------------------------
-       * Libros del curso
-       * ---------------------------------------------- */
       const librosCurso = [
         ...new Map(
           alumnosCurso
@@ -287,54 +268,53 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
 
       const colWidthLibro = (usableWidth - colWidthAlumno) / librosCurso.length;
 
-      /* ----------------------------------------------
-       * Cabecera
-       * ---------------------------------------------- */
+      // --- INICIALIZAR CONTADORES PARA EL PIE DEL CURSO ---
+      const totalesLibros = {};
+      librosCurso.forEach((libro) => {
+        totalesLibros[libro.idlibro] = {
+          existente: 0, // Total asignados a alumnos
+          entregados: 0, // Tienen 'E'
+          devueltos: 0, // Tienen 'D'
+          pendientesRecoger: 0, // Registrados pero no entregados aún
+        };
+      });
+
       /* ----------------------------------------------
        * Cabecera (Corregida)
        * ---------------------------------------------- */
       const dibujarCabecera = (y) => {
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(8); // Un pelín más pequeño ayuda al espacio
+        doc.setFontSize(8);
 
-        const librosPartes = librosCurso.map(
-          (libro) =>
-            // Usamos splitTextToSize para que jsPDF calcule los cortes por nosotros
-            doc.splitTextToSize(libro.nombre, 25) // 25mm es el "alto" máximo del texto vertical
+        const librosPartes = librosCurso.map((libro) =>
+          doc.splitTextToSize(libro.nombre, 25)
         );
 
         const maxLineas = Math.max(...librosPartes.map((p) => p.length));
-        const lineSpacing = 3; // Espacio entre líneas del mismo título
+        const lineSpacing = 3;
 
-        // Altura dinámica: margen + (líneas * espacio)
         const dynamicHeaderHeight = Math.max(
           headerHeight,
           10 + maxLineas * lineSpacing
         );
 
-        // Dibujar fondo
         doc.setFillColor(230, 230, 230);
         doc.rect(marginLeft, y, usableWidth, dynamicHeaderHeight, "F");
 
-        // Texto "Alumno"
         doc.text("Alumno", marginLeft + 2, y + dynamicHeaderHeight / 2, {
           baseline: "middle",
         });
 
         librosCurso.forEach((libro, i) => {
           const partes = librosPartes[i];
-          // Centro de la columna del libro
           const centerX =
             marginLeft + colWidthAlumno + i * colWidthLibro + colWidthLibro / 2;
 
-          // Calculamos el inicio en X para que el bloque de líneas esté centrado en su columna
-          // Si hay 2 líneas, la primera se mueve a la izquierda y la segunda a la derecha
           const totalWidthBlock = (partes.length - 1) * lineSpacing;
           const startX = centerX - totalWidthBlock / 2;
 
           partes.forEach((parte, idx) => {
             const currentX = startX + idx * lineSpacing;
-            // El texto empieza cerca del borde inferior de la cabecera
             const textY = y + dynamicHeaderHeight - 5;
 
             doc.text(parte, currentX, textY, {
@@ -344,7 +324,6 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
           });
         });
 
-        // Línea de cierre
         doc.line(
           marginLeft,
           y + dynamicHeaderHeight,
@@ -398,12 +377,25 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
           let texto = "";
 
           if (estado) {
-            if (estado.entregado) texto += "E";
-            if (estado.devuelto) texto += "D";
+            // Sumamos 1 al total asignado de este libro
+            totalesLibros[libro.idlibro].existente += 1;
+
+            if (estado.entregado) {
+              texto += "E";
+              totalesLibros[libro.idlibro].entregados += 1;
+            } else {
+              // Si está asignado pero NO entregado, está pendiente de recoger
+              totalesLibros[libro.idlibro].pendientesRecoger += 1;
+            }
+
+            if (estado.devuelto) {
+              texto += "D";
+              totalesLibros[libro.idlibro].devueltos += 1;
+            }
           }
 
           if (texto) {
-            doc.text(texto, x - 2, y + 5);
+            doc.text(texto, x, y + 5, { align: "center" }); // Centrado queda mejor con la columna
           }
         });
 
@@ -417,8 +409,332 @@ export const generarListadoPrestamosLibrosAlumnosPdf = ({
 
         y += rowHeight;
       });
+
+      /* ----------------------------------------------
+       * PIE DEL INFORME (Resumen por libro en el curso)
+       * ---------------------------------------------- */
+      const filasResumen = [
+        { clave: "existente", etiqueta: "Total Asignados" },
+        { clave: "entregados", etiqueta: "Total Entregados (E)" },
+        { clave: "devueltos", etiqueta: "Total Devueltos (D)" },
+        { clave: "pendientesRecoger", etiqueta: "Pendientes Recogida" },
+      ];
+
+      const alturaResumenTotal = 6 + filasResumen.length * rowHeight;
+
+      // Control de página para el bloque de resumen
+      if (y + alturaResumenTotal > pageHeight - marginBottom) {
+        doc.addPage();
+        y = marginTop;
+      }
+
+      y += 9; // Separación del listado de alumnos
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("Resumen de Estadísticas del Curso:", marginLeft, y);
+      y += 4;
+
+      filasResumen.forEach((fila) => {
+        // Fondo gris suave para alternar o distinguir el pie
+        doc.setFillColor(245, 245, 245);
+        doc.rect(marginLeft, y, usableWidth, rowHeight, "F");
+
+        // Etiqueta de la fila (ej: "Total Entregados")
+        doc.setFont("helvetica", "bold");
+        doc.text(fila.etiqueta, marginLeft + 2, y + 5);
+
+        doc.setFont("helvetica", "normal");
+        // Pintar el valor correspondiente debajo de cada columna de libro
+        librosCurso.forEach((libro, i) => {
+          const x =
+            marginLeft + colWidthAlumno + i * colWidthLibro + colWidthLibro / 2;
+          const valor = totalesLibros[libro.idlibro][fila.clave];
+
+          // Si el valor es 0, puedes optar por poner '-' o '0'. Ponemos el número.
+          doc.text(valor.toString(), x, y + 5, { align: "center" });
+        });
+
+        // Línea divisoria inferior de la fila
+        doc.setLineWidth(0.2);
+        doc.line(
+          marginLeft,
+          y + rowHeight,
+          marginLeft + usableWidth,
+          y + rowHeight
+        );
+
+        y += rowHeight;
+      });
     }
   );
+
+  doc.save(nombrePdf.endsWith(".pdf") ? nombrePdf : `${nombrePdf}.pdf`);
+};
+
+
+export const generarListadoResumenLibrosAlumnosPdf = ({
+  alumnos = [],
+  cursos = [],
+  nombrePdf = "listado_resumen_libros_alumnos",
+}) => {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  /* --------------------------------------------------
+   * Layout y Configuración de Márgenes
+   * -------------------------------------------------- */
+  const marginLeft = 15;
+  const marginRight = 15;
+  const marginTop = 25;
+  const marginBottom = 15;
+  const usableWidth = pageWidth - marginLeft - marginRight; // 180mm en A4
+
+  const rowHeight = 8;
+  const headerHeight = 10;
+
+  /* --------------------------------------------------
+   * NUEVO AJUSTE: Definición y Ancho de Columnas
+   * -------------------------------------------------- */
+  // Ampliamos el libro a 110mm. Quedan 70mm a repartir entre las 4 columnas (17.5mm cada una)
+  const colWidthLibro = 110;
+  const colWidthDato = (usableWidth - colWidthLibro) / 4;
+
+  /* --------------------------------------------------
+   * Diccionario auxiliar para buscar nombres de curso rápidos
+   * -------------------------------------------------- */
+  const mapaCursos = new Map(cursos.map((c) => [String(c.id), c.curso]));
+
+  /* --------------------------------------------------
+   * 1. Procesar y Acumular Datos Globales por Libro
+   * -------------------------------------------------- */
+  const resumenLibros = {};
+
+  alumnos.forEach((alumno) => {
+    (alumno.prestamos ?? []).forEach((p) => {
+      const cursoLibro =
+        mapaCursos.get(String(p.idcurso)) || `Curso ID: ${p.idcurso}`;
+
+      if (!resumenLibros[p.idlibro]) {
+        resumenLibros[p.idlibro] = {
+          nombre: p.libro || "Sin nombre",
+          idcurso: p.idcurso,
+          nombreCurso: cursoLibro,
+          existente: 0,
+          entregados: 0,
+          devueltos: 0,
+          pendientesRecoger: 0,
+        };
+      }
+
+      resumenLibros[p.idlibro].existente += 1;
+
+      if (p.entregado) {
+        resumenLibros[p.idlibro].entregados += 1;
+      } else {
+        resumenLibros[p.idlibro].pendientesRecoger += 1;
+      }
+
+      if (p.devuelto) {
+        resumenLibros[p.idlibro].devueltos += 1;
+      }
+    });
+  });
+
+  const listaResumen = Object.values(resumenLibros);
+
+  // Ordenar por el nombre del curso académico y luego por nombre de libro
+  listaResumen.sort((a, b) => {
+    const compararCurso = a.nombreCurso.localeCompare(
+      b.nombreCurso,
+      undefined,
+      { numeric: true, sensitivity: "base" }
+    );
+    if (compararCurso === 0) {
+      return a.nombre.localeCompare(b.nombre, undefined, {
+        sensitivity: "base",
+      });
+    }
+    return compararCurso;
+  });
+
+  /* --------------------------------------------------
+   * Título General del Informe
+   * -------------------------------------------------- */
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("Listado resumen global de estado por libro", pageWidth / 2, 12, {
+    align: "center",
+  });
+
+  let y = marginTop;
+
+  const dibujarCabeceraTabla = (currentY) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+
+    doc.setFillColor(230, 230, 230);
+    doc.rect(marginLeft, currentY, usableWidth, headerHeight, "F");
+
+    doc.text("Libro / Manual (Curso)", marginLeft + 2, currentY + 6);
+
+    let xOffset = marginLeft + colWidthLibro;
+
+    doc.text("Asignados", xOffset + colWidthDato / 2, currentY + 6, {
+      align: "center",
+    });
+    xOffset += colWidthDato;
+    doc.text("Entregados", xOffset + colWidthDato / 2, currentY + 6, {
+      align: "center",
+    });
+    xOffset += colWidthDato;
+    doc.text("Devueltos", xOffset + colWidthDato / 2, currentY + 6, {
+      align: "center",
+    });
+    xOffset += colWidthDato;
+    doc.text("Pendientes", xOffset + colWidthDato / 2, currentY + 6, {
+      align: "center",
+    });
+
+    doc.setLineWidth(0.3);
+    doc.line(
+      marginLeft,
+      currentY + headerHeight,
+      marginLeft + usableWidth,
+      currentY + headerHeight
+    );
+
+    return currentY + headerHeight;
+  };
+
+  y = dibujarCabeceraTabla(y);
+
+  /* --------------------------------------------------
+   * 2. Renderizar las Filas de Libros
+   * -------------------------------------------------- */
+  doc.setFontSize(9);
+
+  listaResumen.forEach((libro, index) => {
+    if (y + rowHeight > pageHeight - marginBottom) {
+      doc.addPage();
+      y = marginTop;
+      y = dibujarCabeceraTabla(y);
+    }
+
+    if (index % 2 === 0) {
+      doc.setFillColor(248, 248, 248);
+      doc.rect(marginLeft, y, usableWidth, rowHeight, "F");
+    }
+
+    const nombreCompleto = `${libro.nombre} (${libro.nombreCurso})`;
+
+    doc.setFont("helvetica", "bold");
+    // Ahora splitTextToSize cuenta con un margen mucho mayor (110 - 4 = 106mm)
+    const nombreTruncado = doc.splitTextToSize(
+      nombreCompleto,
+      colWidthLibro - 4
+    )[0];
+    doc.text(nombreTruncado, marginLeft + 2, y + 5);
+
+    let xOffset = marginLeft + colWidthLibro;
+
+    doc.setFont("helvetica", "normal");
+    doc.text(libro.existente.toString(), xOffset + colWidthDato / 2, y + 5, {
+      align: "center",
+    });
+    xOffset += colWidthDato;
+
+    doc.text(libro.entregados.toString(), xOffset + colWidthDato / 2, y + 5, {
+      align: "center",
+    });
+    xOffset += colWidthDato;
+
+    doc.text(libro.devueltos.toString(), xOffset + colWidthDato / 2, y + 5, {
+      align: "center",
+    });
+    xOffset += colWidthDato;
+
+    doc.text(
+      libro.pendientesRecoger.toString(),
+      xOffset + colWidthDato / 2,
+      y + 5,
+      { align: "center" }
+    );
+
+    doc.setLineWidth(0.1);
+    doc.line(
+      marginLeft,
+      y + rowHeight,
+      marginLeft + usableWidth,
+      y + rowHeight
+    );
+
+    y += rowHeight;
+  });
+
+  /* --------------------------------------------------
+   * 3. Fila de Totales Absolutos
+   * -------------------------------------------------- */
+  const totalesGlobales = listaResumen.reduce(
+    (acc, item) => {
+      acc.existente += item.existente;
+      acc.entregados += item.entregados;
+      acc.devueltos += item.devueltos;
+      acc.pendientesRecoger += item.pendientesRecoger;
+      return acc;
+    },
+    { existente: 0, entregados: 0, devueltos: 0, pendientesRecoger: 0 }
+  );
+
+  if (y + rowHeight > pageHeight - marginBottom) {
+    doc.addPage();
+    y = marginTop;
+    y = dibujarCabeceraTabla(y);
+  }
+
+  doc.setFillColor(220, 220, 220);
+  doc.rect(marginLeft, y, usableWidth, rowHeight, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.text("TOTALES GENERALES", marginLeft + 2, y + 5);
+
+  let xOffsetTotales = marginLeft + colWidthLibro;
+  doc.text(
+    totalesGlobales.existente.toString(),
+    xOffsetTotales + colWidthDato / 2,
+    y + 5,
+    { align: "center" }
+  );
+  xOffsetTotales += colWidthDato;
+  doc.text(
+    totalesGlobales.entregados.toString(),
+    xOffsetTotales + colWidthDato / 2,
+    y + 5,
+    { align: "center" }
+  );
+  xOffsetTotales += colWidthDato;
+  doc.text(
+    totalesGlobales.devueltos.toString(),
+    xOffsetTotales + colWidthDato / 2,
+    y + 5,
+    { align: "center" }
+  );
+  xOffsetTotales += colWidthDato;
+  doc.text(
+    totalesGlobales.pendientesRecoger.toString(),
+    xOffsetTotales + colWidthDato / 2,
+    y + 5,
+    { align: "center" }
+  );
+
+  doc.setLineWidth(0.4);
+  doc.line(marginLeft, y + rowHeight, marginLeft + usableWidth, y + rowHeight);
 
   doc.save(nombrePdf.endsWith(".pdf") ? nombrePdf : `${nombrePdf}.pdf`);
 };
