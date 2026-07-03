@@ -37,7 +37,7 @@ import { TablaUsuarios } from "../components/TablaUsuarios";
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
 import { resolverRutaLogo } from "@/Informes/utils";
-import { Loader, Plus, Pencil, Trash2, Users, Printer } from "lucide-react";
+import { Loader, Plus, Pencil, Trash2, Users, Printer, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DialogoEditarUsuario from "../components/DialogoEditarUsuario";
 import {
@@ -48,12 +48,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { generateListadoAPs } from "@/Informes/usuarios";
+import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 
 export function ProfesoresIndex() {
   const [profesoresFiltrados, setProfesoresFiltrados] = useState([]);
   const [profesorSeleccionado, setProfesorSeleccionado] = useState(null);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
   const [abrirEditar, setAbrirEditar] = useState(false);
+
+  const [abrirDialogoEtiquetas, setAbrirDialogoEtiquetas] = useState(false);
 
   const {
     data: profesores,
@@ -84,7 +87,7 @@ export function ProfesoresIndex() {
     //const empleado = empleados.find((e) => e.uid === seleccionado.uid) || null;
     setEmpleadoSeleccionado(seleccionado);
 
-    console.log ("usuario: ", seleccionado);
+    console.log("usuario: ", seleccionado);
 
     setAbrirEditar(true);
   };
@@ -137,6 +140,12 @@ export function ProfesoresIndex() {
                   <Users className="mr-2 h-4 w-4" />
                   Listado profesores
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setAbrirDialogoEtiquetas(true)}
+                >
+                  <Tag className="mr-2 h-4 w-4" />
+                  Etiquetas para profesores
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           }
@@ -165,6 +174,13 @@ export function ProfesoresIndex() {
           )}
         />
       )}
+
+      <DialogoEtiquetas
+        usuarios={profesoresFiltrados}
+        open={abrirDialogoEtiquetas}
+        onOpenChange={setAbrirDialogoEtiquetas}
+        esAlumno={false} // <--- Crucial para que aplique el formato sin foto ni curso
+      />
 
       <DialogoEditarUsuario
         open={abrirEditar}
