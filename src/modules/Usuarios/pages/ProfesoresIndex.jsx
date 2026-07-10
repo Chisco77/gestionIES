@@ -37,7 +37,15 @@ import { TablaUsuarios } from "../components/TablaUsuarios";
 import { useProfesoresLdap } from "@/hooks/useProfesoresLdap";
 import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
 import { resolverRutaLogo } from "@/Informes/utils";
-import { Loader, Plus, Pencil, Trash2, Users, Printer, Tag } from "lucide-react";
+import {
+  Loader,
+  Plus,
+  Pencil,
+  Trash2,
+  Users,
+  Printer,
+  Tag,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DialogoEditarUsuario from "../components/DialogoEditarUsuario";
 import {
