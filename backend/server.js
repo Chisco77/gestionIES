@@ -67,7 +67,7 @@ async function initServer() {
 
       const nombreIES = rows?.[0]?.nombre_ies?.toLowerCase() || "";
 
-      restringirPorIP = nombreIES.includes("francisco de orellana");
+      //restringirPorIP = nombreIES.includes("francisco de orellana");
 
       console.log(
         `🏫 Centro detectado: ${rows?.[0]?.nombre_ies || "desconocido"}`
