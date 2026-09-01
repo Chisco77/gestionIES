@@ -30,6 +30,8 @@ const { getRestriccionesAsuntos } = require("./restriccionesController");
 const { buscarPorUid } = require("../ldap/usuariosController");
 const mailer = require("../../mailer");
 
+const { getCursoActual } = require("../../utils/fechas");
+
 const { obtenerEmpleado } = require("./empleadosController");
 
 const MAPA_TIPOS = {
@@ -275,6 +277,12 @@ async function insertAsuntoPropio(req, res) {
     });
 
   try {
+
+    // -------------------------------------------------------------
+    // Obtener contexto del curso escolar para la fecha solicitada
+    // -------------------------------------------------------------
+    const cursoSolicitado = getCursoActual(fecha);
+    const { inicioCurso, finCurso } = cursoSolicitado;
     const restricciones = await getRestriccionesAsuntos();
 
     // ❌ No hay restricciones definidas
@@ -346,7 +354,7 @@ async function insertAsuntoPropio(req, res) {
     if (!maxDias || maxDias === 0) maxDias = dias;
 
     // Comprobar máximo de días del usuario. Solo cuento aquellos APs cuyo estado es aceptado (1)
-    const { rows: totalCurso } = await db.query(
+    /*const { rows: totalCurso } = await db.query(
       `SELECT COUNT(*)::int AS total FROM permisos WHERE uid = $1 AND tipo = 13 AND estado = 1`,
       [uid]
     );
@@ -354,7 +362,17 @@ async function insertAsuntoPropio(req, res) {
       return res.status(400).json({
         ok: false,
         error: `Ya has solicitado el máximo de ${maxDias} días de asuntos propios este curso.`,
-      });
+      });*/
+
+      const { rows: totalCurso } = await db.query(
+      `SELECT COUNT(*)::int AS total 
+       FROM permisos 
+       WHERE uid = $1 
+         AND tipo = 13 
+         AND estado = 1 
+         AND fecha BETWEEN $2 AND $3`,
+      [uid, inicioCurso, finCurso]
+    );
 
     // --- Si NO tiene autorización, aplicamos todas las restricciones normales ---
     if (!tieneAutorizacion) {

@@ -65,8 +65,9 @@ export function PanelReservas({ uid, loading = false }) {
   const [dialogoEditarAsuntoAbierto, setDialogoEditarAsuntoAbierto] =
     useState(false);
   const [asuntoAEliminar, setAsuntoAEliminar] = useState(null);
-  const [dialogoEliminarAbiertoAsunto, setDialogoEliminarAsuntoAbierto] =
-    useState(false);
+
+const [dialogoEliminarAbiertoAsunto, setDialogoEliminarAsuntoAbierto] =
+  useState(false);
 
   const [extraescolarSeleccionada, setExtraescolarSeleccionada] =
     useState(null);
@@ -117,16 +118,18 @@ export function PanelReservas({ uid, loading = false }) {
     setAsuntoSeleccionado(asunto);
     setDialogoEditarAsuntoAbierto(true);
   };
-  const handleEliminarAsunto = (asunto) => {
-    if (asunto.estado === 1) {
-      toast.warning(
-        "No se puede eliminar un asunto propio que ha sido aceptado.",
-      );
-      return;
-    }
-    setAsuntoAEliminar(asunto);
-    setDialogoEliminarAsuntoAbierto(true);
-  };
+ const handleEliminarAsunto = (asunto) => {
+  if (asunto.estado === 1) {
+    toast.warning(
+      "No se puede eliminar un asunto propio que ha sido aceptado.",
+    );
+    return;
+  }
+
+  setAsuntoAEliminar(asunto);
+  setDialogoEliminarAsuntoAbierto(true);
+};
+
   const handleClickExtraescolar = (actividad) => {
     setExtraescolarSeleccionada(actividad);
     setDialogoEditarExtraAbierto(true);
@@ -684,16 +687,16 @@ export function PanelReservas({ uid, loading = false }) {
           onClose={() => setDialogoEditarAsuntoAbierto(false)}
         />
       )}
-      {asuntoAEliminar && (
-        <DialogoEliminarAsunto
-          asunto={asuntoAEliminar}
-          open={dialogoEliminarAbiertoAsunto}
-          onOpenChange={setDialogoEliminarAbiertoAsunto}
-          onDeleteSuccess={() => {
-            setAsuntoAEliminar(null);
-          }}
-        />
-      )}
+{asuntoAEliminar && (
+  <DialogoEliminarAsunto
+    asunto={asuntoAEliminar}
+    open={dialogoEliminarAbiertoAsunto}
+    onOpenChange={setDialogoEliminarAsuntoAbierto}
+    onDeleteSuccess={() => {
+      setAsuntoAEliminar(null);
+    }}
+  />
+)}
       {extraescolarSeleccionada && (
         <DialogoEditarExtraescolar
           actividad={extraescolarSeleccionada}
