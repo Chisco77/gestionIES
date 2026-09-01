@@ -2,22 +2,17 @@ const fs = require("fs");
 const db = require("../../db");
 
 const { parseHorariosCSV } = require("../services/untis/parseHorariosCSV");
-const { parseProfesoresCSV } = require("../services/untis/parseProfesoresCSV");
-const { parseMateriasCSV } = require("../services/untis/parseMateriasCSV");
 const { agruparHorarios } = require("../services/untis/agruparHorarios");
-const { normalizarTexto } = require("../services/untis/normalizarTexto");
 
-// 👇 NUEVOS SERVICIOS LDAP
-const getProfesoresLDAP = require("../services/ldap/getProfesoresLDAP");
+// Servicios LDAP
 const getGruposLDAP = require("../services/ldap/getGruposLDAP");
+
 exports.importHorariosUntisController = async (req, res) => {
   try {
-    const archivoHorarios = req.files?.horarios?.[0];
-    const archivoProfesores = req.files?.profesores?.[0];
-    const archivoMaterias = req.files?.materias?.[0];
+    const archivoHorarios = req.file; // Al usar upload.single("horarios") viene en req.file
 
-    if (!archivoHorarios || !archivoProfesores || !archivoMaterias) {
-      return res.status(400).json({ error: "Faltan archivos" });
+    if (!archivoHorarios) {
+      return res.status(400).json({ error: "Falta el archivo de horarios" });
     }
 
     res.writeHead(200, {
@@ -27,48 +22,47 @@ exports.importHorariosUntisController = async (req, res) => {
     });
 
     // =====================================
-    // LDAP (SERVICIOS DIRECTOS, SIN FETCH)
+    // 1. LDAP (Solo Grupos para obtener gidNumber)
     // =====================================
-
     const ldapSession = req.session.ldap;
-
-    const ldapProfesores = await getProfesoresLDAP(ldapSession);
     const ldapGrupos = await getGruposLDAP(ldapSession);
 
-    const ldapMap = {};
-    ldapProfesores.forEach((p) => {
-      ldapMap[p.nombreNormalizado] = p;
-    });
+    console.log ("Grupos LDAP. ", ldapGrupos);
 
     const gruposMap = {};
     ldapGrupos.forEach((g) => {
       gruposMap[g.cn] = g.gidNumber;
     });
 
-    console.log("Profesores normalizados: ", ldapMap);
-    console.log("Grupos normalizados: ", gruposMap);
-
     // =====================================
-    // MATERIAS DB
+    // 2. EMPLEADOS DESDE DB (Mapeo por acrónimo UNTIS -> uid)
     // =====================================
-
-    const materiasDB = await db.query(`
-      SELECT id, nombre FROM materias
+    const profsDB = await db.query(`
+      SELECT uid, acronimo_untis FROM empleados WHERE acronimo_untis IS NOT NULL
     `);
 
-    const materiasMap = {};
-
-    materiasDB.rows.forEach((m) => {
-      materiasMap[normalizarTexto(m.nombre)] = m.id;
+    const profsUntisMap = {};
+    profsDB.rows.forEach((p) => {
+      profsUntisMap[p.acronimo_untis.trim().toUpperCase()] = p.uid;
     });
 
     // =====================================
-    // CSV
+    // 3. MATERIAS DESDE DB (Mapeo por acrónimo UNTIS -> id)
     // =====================================
+    const materiasDB = await db.query(`
+      SELECT id, acronimo_untis FROM materias WHERE acronimo_untis IS NOT NULL
+    `);
 
+    const materiasUntisMap = {};
+    materiasDB.rows.forEach((m) => {
+      materiasUntisMap[m.acronimo_untis.trim().toUpperCase()] = m.id;
+    });
+
+    // =====================================
+    // 4. PARSEAR CSV DE HORARIOS
+    // =====================================
     const horariosRaw = await parseHorariosCSV(archivoHorarios.path);
-    const profesoresUNTIS = await parseProfesoresCSV(archivoProfesores.path);
-    const materiasUNTIS = await parseMateriasCSV(archivoMaterias.path);
+    console.log ("Horarios Raw: ", horariosRaw);
 
     const incidencias = [];
     const horariosFinales = [];
@@ -76,28 +70,48 @@ exports.importHorariosUntisController = async (req, res) => {
     for (let i = 0; i < horariosRaw.length; i++) {
       const fila = horariosRaw[i];
 
-      const profUNTIS = profesoresUNTIS[fila.codigoProfesor];
-      if (!profUNTIS) continue;
+      const acronimoProfesor = fila.codigoProfesor?.trim().toUpperCase();
+      
+      const acronimoMateria = fila.codigoMateria?.trim().toUpperCase();
 
-      const nombreNormalizado = normalizarTexto(profUNTIS.nombre);
-      const profLDAP = ldapMap[nombreNormalizado];
+      // Obtener uid directamente de la tabla empleados mediante el acrónimo UNTIS
+      const uidEmpleado = profsUntisMap[acronimoProfesor];
+      if (!uidEmpleado) {
+        incidencias.push({
+          tipo: "Profesor no encontrado en empleados",
+          fila: i + 1,
+          data: fila,
+        });
+        continue;
+      }
 
-      if (!profLDAP) continue;
-
+      // Buscar grupo en LDAP
       const gidnumber = gruposMap[fila.grupo];
-      if (!gidnumber) continue;
+      if (!gidnumber) {
+        incidencias.push({
+          tipo: "Grupo no encontrado en LDAP",
+          fila: i + 1,
+          grupo: fila.grupo,
+        });
+        continue;
+      }
 
-      const nombreMateria = materiasUNTIS[fila.codigoMateria];
-      if (!nombreMateria) continue;
-
-      const idMateria = materiasMap[normalizarTexto(nombreMateria)];
-      if (!idMateria) continue;
+      // Buscar materia en BD por su acrónimo UNTIS
+      const idMateria = materiasUntisMap[acronimoMateria];
+      if (!idMateria) {
+        incidencias.push({
+          tipo: "Materia no encontrada",
+          fila: i + 1,
+          materia: acronimoMateria,
+        });
+        continue;
+      }
 
       let periodo = fila.periodo;
       if (periodo >= 4) periodo++;
 
       horariosFinales.push({
-        uid: profLDAP.uid,
+        uid: uidEmpleado,
         dia_semana: fila.dia,
         idperiodo: periodo,
         tipo: "lectiva",
@@ -117,9 +131,8 @@ exports.importHorariosUntisController = async (req, res) => {
     }
 
     // =====================================
-    // AGRUPAR + INSERTAR
+    // 5. AGRUPAR + INSERTAR EN BD
     // =====================================
-
     const agrupados = agruparHorarios(horariosFinales);
 
     await db.query(`TRUNCATE horario_profesorado RESTART IDENTITY`);
@@ -127,7 +140,6 @@ exports.importHorariosUntisController = async (req, res) => {
     const hoy = new Date();
     const year = hoy.getFullYear();
     const month = hoy.getMonth() + 1;
-
     const curso = month >= 9 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
 
     for (const h of agrupados) {
@@ -160,13 +172,15 @@ exports.importHorariosUntisController = async (req, res) => {
 
     res.end();
 
-    [
-      archivoHorarios.path,
-      archivoProfesores.path,
-      archivoMaterias.path,
-    ].forEach((f) => fs.existsSync(f) && fs.unlinkSync(f));
+    // Borrar fichero temporal subido
+    if (fs.existsSync(archivoHorarios.path)) {
+      fs.unlinkSync(archivoHorarios.path);
+    }
   } catch (error) {
     console.error(error);
+    res.write(
+      `event: end\ndata: ${JSON.stringify({ error: error.message })}\n\n`
+    );
     res.end();
   }
 };

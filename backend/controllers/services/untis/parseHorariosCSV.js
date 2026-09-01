@@ -7,7 +7,7 @@ exports.parseHorariosCSV = (filePath) => {
 
     const horarios = [];
 
-    fs.createReadStream(filePath)
+    fs.createReadStream(filePath, { encoding: "latin1" })
       .pipe(csv({
         headers: false,
         separator: ","

@@ -63,11 +63,7 @@ const upload = multer({
 // ======================================================
 router.post(
   "/horarios-untis",
-  upload.fields([
-    { name: "horarios", maxCount: 1 },
-    { name: "profesores", maxCount: 1 },
-    { name: "materias", maxCount: 1 },
-  ]),
+  upload.single("horarios"),
   importHorariosUntisController
 );
 
