@@ -47,6 +47,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
 export function DialogoInsertarReserva({
   open,
   onClose,
@@ -62,6 +64,9 @@ export function DialogoInsertarReserva({
   const [descripcion, setDescripcion] = useState("");
   const [inicio, setInicio] = useState("");
   const [fin, setFin] = useState("");
+
+  const [necesidadesAula, setNecesidadesAula] = useState("aula");
+
   const [dialogConfirmacion, setDialogConfirmacion] = useState({
     open: false,
     estancias: [],
@@ -87,9 +92,9 @@ export function DialogoInsertarReserva({
       setDescripcion("");
       setInicio(inicioSeleccionado?.toString() || "");
       setFin(finSeleccionado?.toString() || "");
+      setNecesidadesAula("aula");
     }
   }, [open, inicioSeleccionado, finSeleccionado]);
-
 
   const reservarEnOtraEstancia = (id) => {
     setDialogConfirmacion({ open: false, estancias: [] });
@@ -244,6 +249,56 @@ export function DialogoInsertarReserva({
               onChange={(e) => setDescripcion(e.target.value)}
             />
           </div>
+
+          {Number(idestancia) === 47 && (
+            <div className="border rounded-lg bg-gray-50/50 p-4">
+              <label className="block text-sm font-medium mb-3">
+                Necesidades del aula
+              </label>
+
+              <RadioGroup
+                value={necesidadesAula}
+                onValueChange={setNecesidadesAula}
+                className="space-y-2"
+              >
+                <label
+                  htmlFor="solo-aula"
+                  className={`flex items-center gap-3 border rounded-md px-3 py-2.5 cursor-pointer transition-colors ${
+                    necesidadesAula === "aula"
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 bg-white hover:bg-gray-50"
+                  }`}
+                >
+                  <RadioGroupItem value="aula" id="solo-aula" />
+                  <span className="text-sm">Solo necesito el aula</span>
+                </label>
+
+                <label
+                  htmlFor="ordenadores"
+                  className={`flex items-center gap-3 border rounded-md px-3 py-2.5 cursor-pointer transition-colors ${
+                    necesidadesAula === "ordenadores"
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 bg-white hover:bg-gray-50"
+                  }`}
+                >
+                  <RadioGroupItem value="ordenadores" id="ordenadores" />
+                  <span className="text-sm">Necesito los ordenadores</span>
+                </label>
+
+                <label
+                  htmlFor="todo-material"
+                  className={`flex items-center gap-3 border rounded-md px-3 py-2.5 cursor-pointer transition-colors ${
+                    necesidadesAula === "todo"
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 bg-white hover:bg-gray-50"
+                  }`}
+                >
+                  <RadioGroupItem value="todo" id="todo-material" />
+                  <span className="text-sm">Necesito todo el material</span>
+                </label>
+              </RadioGroup>
+            </div>
+          )}
         </div>
 
         {/* PIE */}
