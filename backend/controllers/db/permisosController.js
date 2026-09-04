@@ -277,7 +277,6 @@ async function insertAsuntoPropio(req, res) {
     });
 
   try {
-
     // -------------------------------------------------------------
     // Obtener contexto del curso escolar para la fecha solicitada
     // -------------------------------------------------------------
@@ -364,7 +363,7 @@ async function insertAsuntoPropio(req, res) {
         error: `Ya has solicitado el máximo de ${maxDias} días de asuntos propios este curso.`,
       });*/
 
-      const { rows: totalCurso } = await db.query(
+    const { rows: totalCurso } = await db.query(
       `SELECT COUNT(*)::int AS total 
        FROM permisos 
        WHERE uid = $1 
@@ -818,7 +817,7 @@ async function updateEstadoPermiso(req, res) {
     // ================================================================
     // 1. VALIDACIÓN DE ASUNTOS PROPIOS (Lógica de cupo máximo)
     // ================================================================
-    if (estado === 1) {
+    /*   if (estado === 1) {
       const { rows: permisoRows } = await client.query(
         `SELECT uid, tipo, estado FROM permisos WHERE id = $1`,
         [id]
@@ -867,8 +866,133 @@ async function updateEstadoPermiso(req, res) {
           );
         }
       }
-    }
+    }*/
 
+    if (estado === 1) {
+      const { rows: permisoRows } = await client.query(
+        `
+    SELECT
+      uid,
+      tipo,
+      estado,
+      fecha,
+      fecha_fin
+    FROM permisos
+    WHERE id = $1
+    `,
+        [id]
+      );
+
+      const permiso = permisoRows[0];
+
+      if (!permiso) {
+        throw new Error("Permiso no encontrado");
+      }
+
+      // ==============================================================
+      // Validación específica para Asuntos Propios (Tipo 13)
+      // ==============================================================
+      if (permiso.tipo === 13 && permiso.estado !== 1) {
+        const empleado = await obtenerEmpleado(permiso.uid);
+
+        if (!empleado) {
+          throw new Error("Empleado no encontrado");
+        }
+
+        let maxDias = Number(empleado.asuntos_propios);
+
+        if (!maxDias || maxDias === 0) {
+          const restricciones = await getRestriccionesAsuntos();
+
+          const diasRestriccion = restricciones.find(
+            (r) => r.descripcion === "dias"
+          );
+
+          maxDias = Number(diasRestriccion?.valor_num ?? 0);
+        }
+
+        if (!maxDias || maxDias <= 0) {
+          throw new Error(
+            "No está configurado el número máximo de asuntos propios"
+          );
+        }
+
+        // ==============================================================
+        // Determinar el curso académico según la fecha del permiso
+        //
+        // El curso académico comienza el 1 de septiembre
+        // y termina el 30 de junio.
+        //
+        // Ejemplos:
+        //   15/09/2026 -> 2026-2027
+        //   15/05/2027 -> 2026-2027
+        //   30/06/2027 -> 2026-2027
+        // ==============================================================
+
+        const fechaPermiso = new Date(permiso.fecha);
+
+        if (Number.isNaN(fechaPermiso.getTime())) {
+          throw new Error("La fecha del permiso no es válida");
+        }
+
+        const year = fechaPermiso.getFullYear();
+        const month = fechaPermiso.getMonth() + 1;
+
+        let cursoInicio;
+
+        if (month >= 9 && month <= 12) {
+          // Septiembre - Diciembre
+          cursoInicio = year;
+        } else if (month >= 1 && month <= 6) {
+          // Enero - Junio
+          cursoInicio = year - 1;
+        } else {
+          // Julio - Agosto quedan fuera del curso académico
+          throw new Error(
+            "La fecha del permiso está fuera del curso académico"
+          );
+        }
+
+        const cursoAcademico = `${cursoInicio}-${cursoInicio + 1}`;
+
+        // Fechas que delimitan el curso académico
+        const fechaInicioCurso = `${cursoInicio}-09-01`;
+        const fechaFinCurso = `${cursoInicio + 1}-06-30`;
+
+        console.log(
+          `[updateEstadoPermiso] Permiso ${id} -> curso ${cursoAcademico}`
+        );
+
+        // ==============================================================
+        // Contar asuntos propios YA CONCEDIDOS dentro de ese curso
+        // ==============================================================
+
+        const { rows: concedidos } = await client.query(
+          `
+      SELECT COUNT(*)::int AS total
+      FROM permisos
+      WHERE uid = $1
+        AND tipo = 13
+        AND estado = 1
+        AND fecha >= $2
+        AND fecha <= $3
+      `,
+          [permiso.uid, fechaInicioCurso, fechaFinCurso]
+        );
+
+        const totalConcedidos = concedidos[0].total;
+
+        console.log(
+          `[updateEstadoPermiso] Empleado ${permiso.uid}, curso ${cursoAcademico}: ${totalConcedidos}/${maxDias} asuntos propios`
+        );
+
+        if (totalConcedidos >= maxDias) {
+          throw new Error(
+            `Cupo alcanzado: El empleado ya tiene ${maxDias} días concedidos en el curso ${cursoAcademico}.`
+          );
+        }
+      }
+    }
     // ================================================================
     // 2. ACTUALIZACIÓN DEL REGISTRO DE PERMISO
     // ================================================================
