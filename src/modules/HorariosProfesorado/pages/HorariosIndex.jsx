@@ -132,6 +132,8 @@ export function HorariosIndex() {
       const query = new URLSearchParams();
       uids.forEach((uid) => query.append("uid", uid));
 
+      console.log (query.toString());
+
       const url = `${API_URL}/db/horario-profesorado/enriquecido?${query.toString()}`;
       const response = await fetch(url);
       const data = await response.json();

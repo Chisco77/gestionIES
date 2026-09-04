@@ -11,7 +11,7 @@ const { obtenerGruposPorTipo } = require("../ldap/gruposController");
 /**
  * Obtener horario del profesorado enriquecido
  */
-async function getHorarioProfesoradoEnriquecido(req, res) {
+/*async function getHorarioProfesoradoEnriquecido(req, res) {
   try {
     const ldapSession = req.session?.ldap;
     if (!ldapSession)
@@ -70,6 +70,130 @@ async function getHorarioProfesoradoEnriquecido(req, res) {
     if (curso_academico) {
       filtros.push(`h.curso_academico = $${++i}`);
       vals.push(curso_academico);
+    }
+
+    // Filtro por dia_semana
+    if (dia_semana) {
+      filtros.push(`h.dia_semana = $${++i}`);
+      vals.push(Number(dia_semana));
+    }
+
+    const where = filtros.length ? "WHERE " + filtros.join(" AND ") : "";
+
+    // Consulta principal con ordenación cronológica real
+    const { rows } = await db.query(
+      `SELECT h.*, 
+          m.nombre AS materia_nombre,
+          e.descripcion AS estancia_descripcion,
+          p.inicio, 
+          p.fin,
+          p.nombre AS periodo_nombre
+   FROM horario_profesorado h
+   INNER JOIN periodos_horarios p ON h.idperiodo = p.id
+   LEFT JOIN materias m ON h.idmateria = m.id
+   LEFT JOIN estancias e ON h.idestancia = e.id
+   ${where}
+   ORDER BY h.uid, h.dia_semana, p.inicio ASC`,
+      vals
+    );
+
+    // Obtenemos los nombres de los profesores desde LDAP
+    const uidsUnicos = Array.from(
+      new Set(rows.map((r) => r.uid).filter(Boolean))
+    );
+    await Promise.all(uidsUnicos.map((u) => getNombreProfesor(u)));
+
+    // Enriquecemos los datos
+    const enriquecido = rows.map((item) => {
+      let nombresGrupos = [];
+      if (Array.isArray(item.gidnumber)) {
+        nombresGrupos = item.gidnumber.map(
+          (g) => gruposCache[String(g)] || `Grupo ${g}`
+        );
+      }
+
+      return {
+        ...item,
+        nombreProfesor: usuariosCache[item.uid] || "Profesor desconocido",
+        grupos_nombres: nombresGrupos,
+        grupo: nombresGrupos.join(", ") || null,
+        materia: item.materia_nombre || "Materia desconocida",
+        estancia: item.estancia_descripcion || "Estancia desconocida",
+      };
+    });
+
+    res.json({ ok: true, horario: enriquecido });
+  } catch (err) {
+    console.error("[getHorarioProfesoradoEnriquecido] Error:", err);
+    res.status(500).json({ ok: false, error: "Error obteniendo horario" });
+  }
+}*/
+
+/**
+ * Obtener horario del profesorado enriquecido
+ */
+async function getHorarioProfesoradoEnriquecido(req, res) {
+  try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession)
+      return res
+        .status(401)
+        .json({ ok: false, error: "No autenticado en LDAP" });
+
+    const usuariosCache = {};
+    const gruposCache = {};
+
+    const getNombreProfesor = (uid) =>
+      new Promise((resolve) => {
+        if (!uid) return resolve("Profesor desconocido");
+        if (usuariosCache[uid]) return resolve(usuariosCache[uid]);
+        buscarPorUid(ldapSession, uid, (err, datos) => {
+          const nombre =
+            !err && datos
+              ? `${datos.sn || ""}, ${datos.givenName || ""}`.trim()
+              : "Profesor desconocido";
+          usuariosCache[uid] = nombre;
+          resolve(nombre);
+        });
+      });
+
+    // Obtenemos los grupos del tipo school_class
+    const grupos = await obtenerGruposPorTipo(ldapSession, "school_class");
+    grupos.forEach((g) => {
+      gruposCache[String(g.gidNumber)] = g.cn;
+    });
+
+    // Obtenemos los parámetros de consulta
+    let { uid, gidnumber, curso_academico, dia_semana } = req.query;
+
+    // 🎯 SI NO SE PASA CURSO ACADÉMICO, SE USA EL DEL CURSO ACTUAL (req.curso inyectado por middleware)
+    const cursoFiltro = curso_academico || req.curso?.label;
+
+    // Aseguramos que uid sea un array
+    if (!uid) uid = [];
+    else if (!Array.isArray(uid)) uid = [uid];
+
+    const filtros = [];
+    const vals = [];
+    let i = 0;
+
+    // Filtro por UIDs usando IN
+    if (uid.length) {
+      const placeholders = uid.map(() => `$${++i}`).join(", ");
+      filtros.push(`h.uid IN (${placeholders})`);
+      vals.push(...uid);
+    }
+
+    // Filtro por gidnumber (usa ANY para arrays)
+    if (gidnumber) {
+      filtros.push(`$${++i} = ANY(h.gidnumber)`);
+      vals.push(Number(gidnumber));
+    }
+
+    // 🎯 Filtro por curso_academico
+    if (cursoFiltro) {
+      filtros.push(`h.curso_academico = $${++i}`);
+      vals.push(cursoFiltro);
     }
 
     // Filtro por dia_semana
@@ -454,7 +578,9 @@ async function deleteCuadranteGuardias(req, res) {
   try {
     const { curso_academico } = req.body;
     if (!curso_academico)
-      return res.status(400).json({ ok: false, error: "Curso académico requerido" });
+      return res
+        .status(400)
+        .json({ ok: false, error: "Curso académico requerido" });
 
     await db.query(
       `DELETE FROM horario_profesorado WHERE tipo='guardia' AND curso_academico=$1`,
