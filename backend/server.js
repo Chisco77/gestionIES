@@ -109,12 +109,12 @@ async function initServer() {
     app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
     app.use((req, res, next) => {
-      console.log("=================================");
-      console.log("IP detectada:", req.ip);
-      console.log("X-Forwarded-For:", req.headers["x-forwarded-for"]);
-      console.log("RemoteAddress:", req.socket.remoteAddress);
-      console.log("URL:", req.originalUrl);
-      console.log("=================================");
+     // console.log("=================================");
+      //console.log("IP detectada:", req.ip);
+      //console.log("X-Forwarded-For:", req.headers["x-forwarded-for"]);
+      //console.log("RemoteAddress:", req.socket.remoteAddress);
+     // console.log("URL:", req.originalUrl);
+      //console.log("=================================");
 
       next();
     });

@@ -67,6 +67,8 @@ async function simularGuardiasDia(req, res) {
       [fecha]
     );
 
+    console.log ("Ausencias: ", ausencias);
+
     // Obtener sustituciones activas para esa fecha
     // Esto nos dice qué profesores ausentes ya tienen a alguien cubriendo su horario (profes de baja que ya tienen sustituto)
     const { rows: sustitucionesActivas } = await db.query(
@@ -125,7 +127,6 @@ async function simularGuardiasDia(req, res) {
         [ausencia.uid_profesor, diaSemana]
       );*/
 
-      console.log("CUrso academico: ", $3);
 
       const { rows: horarioAusente } = await db.query(
         `SELECT h.*, m.nombre AS materia_nombre, e.descripcion AS estancia_nombre, p.nombre as nombre_periodo

@@ -90,10 +90,36 @@ export function PanelGuardias({
   const { user } = useAuth();
   const { data: todosLosPeriodos, isLoading: loadingPeriodos } =
     usePeriodosHorarios();
-  const { data, isLoading: loadingGuardias } = useGuardiasDia(fechaFmt, {
+
+  /*  const { data, isLoading: loadingGuardias } = useGuardiasDia(fechaFmt, {
     tokenTV: publicToken, //
     refetchInterval: modoTV ? 30000 : false,
+  });*/
+
+  const {
+    data,
+    isLoading: loadingGuardias,
+    error: errorGuardias,
+  } = useGuardiasDia(fechaFmt, {
+    tokenTV: publicToken,
+    refetchInterval: modoTV ? 30000 : false,
   });
+
+  useEffect(() => {
+    console.group("🛡️ [PanelGuardias] useGuardiasDia");
+    console.log("Fecha solicitada:", fechaFmt);
+    console.log("Modo TV:", modoTV);
+    console.log("Public token:", publicToken ? "SÍ" : "NO");
+    console.log("Loading:", loadingGuardias);
+    console.log("Error:", errorGuardias);
+    console.log("Data completa:", data);
+    console.log("Simulación:", data?.simulacion);
+    console.log(
+      "Número de registros simulación:",
+      data?.simulacion?.length ?? 0
+    );
+    console.groupEnd();
+  }, [fechaFmt, modoTV, publicToken, loadingGuardias, errorGuardias, data]);
 
   const [tabActiva, setTabActiva] = useState("");
 
@@ -733,7 +759,6 @@ function GuardiaCard({
     </Card>
   );
 }
-
 
 function ListaProfesGuardia({ fecha, idPeriodo }) {
   const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
