@@ -7,7 +7,7 @@ async function simularGuardiasDia(req, res) {
   const ldapSession = req.session?.ldap;
 
   // Usamos el curso calculado por el middleware
-  const { inicioCurso, finCurso } = req.curso;
+  const { inicioCurso, finCurso, label: cursoAcademico } = req.curso;
 
   try {
     const diaSemana = new Date(fecha).getDay();
@@ -36,28 +36,6 @@ async function simularGuardiasDia(req, res) {
       });
     };
 
-    // ==========================================
-    // Extraer nombre Y avatar de LDAP
-    // ==========================================
-    /*const getDatosProfesor = async (uid) => {
-      if (!uid) return { nombre: "Desconocido", avatar: null };
-      if (usuariosCache[uid]) return usuariosCache[uid];
-
-      return new Promise((resolve) => {
-        buscarPorUid(ldapSession, uid, (err, datos) => {
-          const nombreCompleto =
-            !err && datos
-              ? `${datos.sn || ""}, ${datos.givenName || ""}`.trim()
-              : uid;
-
-          const avatar = !err && datos ? datos.avatar : null;
-
-          // Guardamos el objeto completo en caché para no saturar los sockets LDAP
-          usuariosCache[uid] = { nombre: nombreCompleto, avatar };
-          resolve(usuariosCache[uid]);
-        });
-      });
-    };*/
     // Función auxiliar unificada para obtener nombre Y avatar de LDAP
     const getDatosProfesor = async (uid) => {
       if (!uid) return { nombre: "Desconocido", avatar: null };
@@ -137,7 +115,7 @@ async function simularGuardiasDia(req, res) {
       }
 
       // Traemos el horario del ausente...
-      const { rows: horarioAusente } = await db.query(
+      /* const { rows: horarioAusente } = await db.query(
         `SELECT h.*, m.nombre AS materia_nombre, e.descripcion AS estancia_nombre, p.nombre as nombre_periodo
          FROM horario_profesorado h
          LEFT JOIN materias m ON h.idmateria = m.id
@@ -145,6 +123,21 @@ async function simularGuardiasDia(req, res) {
          LEFT JOIN periodos_horarios p ON h.idperiodo = p.id
          WHERE h.uid = $1 AND h.dia_semana = $2 AND (h.tipo = 'lectiva' OR h.tipo = 'guardia')`,
         [ausencia.uid_profesor, diaSemana]
+      );*/
+
+      console.log("CUrso academico: ", $3);
+
+      const { rows: horarioAusente } = await db.query(
+        `SELECT h.*, m.nombre AS materia_nombre, e.descripcion AS estancia_nombre, p.nombre as nombre_periodo
+         FROM horario_profesorado h
+         LEFT JOIN materias m ON h.idmateria = m.id
+         LEFT JOIN estancias e ON h.idestancia = e.id
+         LEFT JOIN periodos_horarios p ON h.idperiodo = p.id
+         WHERE h.uid = $1 
+           AND h.dia_semana = $2 
+           AND h.curso_academico = $3
+           AND (h.tipo = 'lectiva' OR h.tipo = 'guardia')`,
+        [ausencia.uid_profesor, diaSemana, cursoAcademico]
       );
 
       for (const slot of horarioAusente) {
@@ -190,7 +183,7 @@ async function simularGuardiasDia(req, res) {
         }
 
         // 6. Buscar candidatos (Tienen guardia, no están ausentes y no tienen ya una guardia asignada)
-        const { rows: candidatos } = await db.query(
+        /*  const { rows: candidatos } = await db.query(
           `SELECT h.uid FROM horario_profesorado h
            WHERE h.dia_semana = $1 AND h.idperiodo = $2 AND h.tipo = 'guardia'
            AND h.uid NOT IN (
@@ -202,6 +195,24 @@ async function simularGuardiasDia(req, res) {
               WHERE fecha = $3 AND idperiodo = $2 AND estado = 'activa'
            )`,
           [diaSemana, slot.idperiodo, fecha]
+        );*/
+
+        // 6. Buscar candidatos (Tienen guardia en el curso actual, no están ausentes y no tienen ya una guardia asignada)
+        const { rows: candidatos } = await db.query(
+          `SELECT h.uid FROM horario_profesorado h
+           WHERE h.dia_semana = $1 
+             AND h.idperiodo = $2 
+             AND h.tipo = 'guardia'
+             AND h.curso_academico = $4
+             AND h.uid NOT IN (
+                SELECT uid_profesor FROM ausencias_profesorado 
+                WHERE fecha_inicio <= $3 AND (fecha_fin IS NULL OR fecha_fin >= $3)
+             )
+             AND h.uid NOT IN (
+                SELECT uid_profesor_cubridor FROM guardias_asignadas
+                WHERE fecha = $3 AND idperiodo = $2 AND estado = 'activa'
+             )`,
+          [diaSemana, slot.idperiodo, fecha, cursoAcademico]
         );
 
         /* const candidatosEnriquecidos = await Promise.all(
@@ -269,7 +280,8 @@ async function autoasignarGuardia(req, res) {
   const { fecha, idperiodo, uid_profesor_ausente, idausencia, fuerza_doble } =
     req.body; // <-- Recibimos el flag
   const usuarioSesion = req.session?.user;
-
+  // Obtenemos el curso académico desde el middleware req.curso
+  const cursoAcademico = req.curso?.label;
   // 1. Control de acceso básico
   if (!usuarioSesion) {
     return res.status(401).json({ ok: false, error: "No autenticado" });
@@ -281,10 +293,20 @@ async function autoasignarGuardia(req, res) {
     const diaSemana = new Date(fecha).getDay();
 
     // 2. VALIDACIÓN: ¿Tiene el profesor esa hora de guardia en su horario?
-    const { rows: horarioPropio } = await db.query(
+    /* const { rows: horarioPropio } = await db.query(
       `SELECT id FROM horario_profesorado 
        WHERE uid = $1 AND dia_semana = $2 AND idperiodo = $3 AND tipo = 'guardia'`,
       [uid_cubridor, diaSemana, idperiodo]
+    );*/
+
+    const { rows: horarioPropio } = await db.query(
+      `SELECT id FROM horario_profesorado 
+       WHERE uid = $1 
+         AND dia_semana = $2 
+         AND idperiodo = $3 
+         AND tipo = 'guardia'
+         AND curso_academico = $4`,
+      [uid_cubridor, diaSemana, idperiodo, cursoAcademico]
     );
 
     if (horarioPropio.length === 0) {
@@ -466,10 +488,11 @@ async function confirmarGuardias(req, res) {
  * @param {*} res
  */
 
-async function getProfesoresDeGuardia(req, res) {
+/*async function getProfesoresDeGuardia(req, res) {
   const { fecha, idperiodo } = req.params;
   const ldapSession = req.session?.ldap;
-  const { inicioCurso, finCurso } = req.curso;
+  //const { inicioCurso, finCurso } = req.curso;
+  const { inicioCurso, finCurso, label: cursoAcademico } = req.curso;
   const diaSemana = new Date(fecha).getDay();
 
   try {
@@ -550,6 +573,128 @@ async function getProfesoresDeGuardia(req, res) {
               uid: row.uid,
               total_guardias: parseInt(row.total_guardias),
               // Añadimos el nuevo dato de guardias acumuladas
+              guardias_periodo_acumuladas: parseInt(
+                row.guardias_periodo_acumuladas
+              ),
+              num_asignadas_ahora: parseInt(row.num_asignadas_ahora),
+              ya_asignado: parseInt(row.num_asignadas_ahora) > 0,
+            };
+
+            if (!err && datos) {
+              resolve({
+                ...baseData,
+                nombre: datos.givenName || "",
+                apellido1: datos.sn || "",
+                apellido2: "",
+                avatar: datos.avatar || null,
+              });
+            } else {
+              resolve({
+                ...baseData,
+                nombre: row.uid,
+                apellido1: "",
+                apellido2: "",
+                avatar: null,
+              });
+            }
+          });
+        });
+      })
+    );
+
+    res.json(profesEnriquecidos);
+  } catch (err) {
+    console.error("[getProfesoresDeGuardia] Error:", err);
+    res.status(500).json({ error: "Error al consultar disponibilidad real" });
+  }
+}*/
+
+async function getProfesoresDeGuardia(req, res) {
+  const { fecha, idperiodo } = req.params;
+  const ldapSession = req.session?.ldap;
+
+  // 🎯 Extraemos inicioCurso, finCurso y label (como cursoAcademico) del middleware req.curso
+  const { inicioCurso, finCurso, label: cursoAcademico } = req.curso;
+  const diaSemana = new Date(fecha).getDay();
+
+  try {
+    const query = `
+      SELECT 
+        h.uid, 
+        -- Equidad TOTAL (Curso completo)
+        (SELECT COUNT(DISTINCT (ga.fecha, ga.idperiodo)) 
+         FROM guardias_asignadas ga 
+         WHERE ga.uid_profesor_cubridor = h.uid 
+         AND ga.fecha BETWEEN $1 AND $2 
+         AND ga.estado = 'activa'
+         AND ga.confirmada = true) as total_guardias,
+
+        -- Conteo por DÍA DE LA SEMANA y PERIODO
+        (SELECT COUNT(*) 
+         FROM guardias_asignadas ga_slot
+         WHERE ga_slot.uid_profesor_cubridor = h.uid
+           AND ga_slot.idperiodo = $4
+           AND ga_slot.estado = 'activa'
+           AND ga_slot.confirmada = true
+           AND EXTRACT(DOW FROM ga_slot.fecha) = $3 
+           AND ga_slot.fecha BETWEEN $1 AND $2) as guardias_periodo_acumuladas,
+
+        -- Ocupación específica para HOY
+        (SELECT COUNT(*) 
+         FROM guardias_asignadas ga2
+         WHERE ga2.uid_profesor_cubridor = h.uid
+           AND ga2.fecha = $5
+           AND ga2.idperiodo = $4
+           AND ga2.estado = 'activa') as num_asignadas_ahora
+      FROM horario_profesorado h
+      WHERE h.dia_semana = $3 
+        AND h.idperiodo = $4 
+        AND h.tipo = 'guardia'
+        AND h.curso_academico = $6
+        
+        -- 1. FILTRO DE AUSENCIAS PUNTUALES
+        AND NOT EXISTS (
+          SELECT 1 FROM ausencias_profesorado aus
+          WHERE aus.uid_profesor = h.uid
+            AND aus.fecha_inicio <= $5
+            AND (aus.fecha_fin IS NULL OR aus.fecha_fin >= $5)
+            AND (
+              (aus.idperiodo_inicio IS NULL AND aus.idperiodo_fin IS NULL)
+              OR 
+              ($4 BETWEEN COALESCE(aus.idperiodo_inicio, 0) AND COALESCE(aus.idperiodo_fin, 99))
+            )
+        )
+        
+        -- 2. FILTRO: BAJAS / SUSTITUCIONES
+        AND NOT EXISTS (
+          SELECT 1 FROM sustituciones s
+          WHERE s.uid_titular = h.uid
+            AND s.fecha_inicio <= $5
+            AND (s.fecha_fin IS NULL OR s.fecha_fin >= $5)
+        )
+        
+      ORDER BY guardias_periodo_acumuladas ASC, total_guardias ASC
+    `;
+
+    // 🎯 Pasamos los 6 parámetros a la query
+    const { rows: uidsDisponibles } = await db.query(query, [
+      inicioCurso, // $1
+      finCurso, // $2
+      diaSemana, // $3
+      idperiodo, // $4
+      fecha, // $5
+      cursoAcademico, // $6
+    ]);
+
+    // 2. "Humanizar" los resultados con LDAP respetando estrictamente los campos originales
+    const profesEnriquecidos = await Promise.all(
+      uidsDisponibles.map(async (row) => {
+        return new Promise((resolve) => {
+          buscarPorUid(ldapSession, row.uid, (err, datos) => {
+            // Objeto base respetando nombres originales para el frontend
+            const baseData = {
+              uid: row.uid,
+              total_guardias: parseInt(row.total_guardias),
               guardias_periodo_acumuladas: parseInt(
                 row.guardias_periodo_acumuladas
               ),
