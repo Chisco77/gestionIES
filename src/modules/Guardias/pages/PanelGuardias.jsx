@@ -409,9 +409,23 @@ export function PanelGuardias({
             </div>
 
             {periodosUnicos.map((p) => {
-              const ausenciasEnPeriodo = data.simulacion.filter(
+              /*  const ausenciasEnPeriodo = data.simulacion.filter(
                 (s) => s.periodo === p.id
               );
+              const ausenciasOrdenadas = [...ausenciasEnPeriodo].sort(
+                (a, b) => {
+                  if (a.tipo === "propuesta" && b.tipo === "confirmada")
+                    return -1;
+                  if (a.tipo === "confirmada" && b.tipo === "propuesta")
+                    return 1;
+                  return 0;
+                }
+              );*/
+              // Filtrar solo las ausencias reales (ignorando los marcadores 'sin_ausencia')
+              const ausenciasEnPeriodo = data.simulacion.filter(
+                (s) => s.periodo === p.id && s.tipo !== "sin_ausencia"
+              );
+
               const ausenciasOrdenadas = [...ausenciasEnPeriodo].sort(
                 (a, b) => {
                   if (a.tipo === "propuesta" && b.tipo === "confirmada")
@@ -429,7 +443,7 @@ export function PanelGuardias({
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 outline-none"
                 >
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* COLUMNA IZQUIERDA: Profesores de Guardia */}
+                    {/* COLUMNA IZQUIERDA: Profesores de Guardia (Muestra los profes de esa hora independientemente de si hay ausencias) */}
                     <div className="lg:col-span-4 space-y-4">
                       <div className="flex items-center gap-2 px-1 text-slate-700">
                         <Users className="w-5 h-5 text-primary" />
@@ -455,30 +469,47 @@ export function PanelGuardias({
                         </h3>
                       </div>
 
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                        {ausenciasOrdenadas.map((item, idx) => (
-                          <GuardiaCard
-                            key={idx}
-                            item={item}
-                            modoTV={modoTV}
-                            uidUsuarioActual={user?.username}
-                            onAsignar={() =>
-                              mutationAuto.mutate({
-                                fecha: fechaFmt,
-                                idperiodo: item.periodo,
-                                uid_profesor_ausente: item.uid_ausente,
-                                idausencia: item.idausencia,
-                              })
-                            }
-                            onCancelar={() => mutationCancelar.mutate(item.id)}
-                            onOpenPlano={handleOpenPlano}
-                            loading={
-                              mutationAuto.isPending ||
-                              mutationCancelar.isPending
-                            }
-                          />
-                        ))}
-                      </div>
+                      {ausenciasOrdenadas.length === 0 ? (
+                        /* Mensaje cuando NO hay ausencias en este periodo en particular */
+                        <div className="p-8 border-2 border-dashed rounded-xl bg-emerald-50/50 border-emerald-200 text-center">
+                          <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500 mb-2" />
+                          <p className="text-emerald-800 font-bold text-sm">
+                            Sin ausencias en esta hora
+                          </p>
+                          <p className="text-slate-500 text-xs mt-1">
+                            Todos los profesores de guardia están disponibles
+                            ante cualquier emergencia.
+                          </p>
+                        </div>
+                      ) : (
+                        /* Renderizado normal de las cards de ausencia */
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                          {ausenciasOrdenadas.map((item, idx) => (
+                            <GuardiaCard
+                              key={idx}
+                              item={item}
+                              modoTV={modoTV}
+                              uidUsuarioActual={user?.username}
+                              onAsignar={() =>
+                                mutationAuto.mutate({
+                                  fecha: fechaFmt,
+                                  idperiodo: item.periodo,
+                                  uid_profesor_ausente: item.uid_ausente,
+                                  idausencia: item.idausencia,
+                                })
+                              }
+                              onCancelar={() =>
+                                mutationCancelar.mutate(item.id)
+                              }
+                              onOpenPlano={handleOpenPlano}
+                              loading={
+                                mutationAuto.isPending ||
+                                mutationCancelar.isPending
+                              }
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </TabsContent>

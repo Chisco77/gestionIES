@@ -67,7 +67,7 @@ async function simularGuardiasDia(req, res) {
       [fecha]
     );
 
-    console.log ("Ausencias: ", ausencias);
+    console.log("Ausencias: ", ausencias);
 
     // Obtener sustituciones activas para esa fecha
     // Esto nos dice qué profesores ausentes ya tienen a alguien cubriendo su horario (profes de baja que ya tienen sustituto)
@@ -126,7 +126,6 @@ async function simularGuardiasDia(req, res) {
          WHERE h.uid = $1 AND h.dia_semana = $2 AND (h.tipo = 'lectiva' OR h.tipo = 'guardia')`,
         [ausencia.uid_profesor, diaSemana]
       );*/
-
 
       const { rows: horarioAusente } = await db.query(
         `SELECT h.*, m.nombre AS materia_nombre, e.descripcion AS estancia_nombre, p.nombre as nombre_periodo
@@ -260,6 +259,27 @@ async function simularGuardiasDia(req, res) {
           grupo: nombresGrupos.join(", "),
           candidatos: candidatosEnriquecidos,
           propuesta: candidatosEnriquecidos[0] || null,
+        });
+      }
+    }
+
+    // TRAER también periodos sin ausencias, para poder mostrar en frontend
+    // los profes que están de guardia en una hora en la que no hay ausencias.
+    const { rows: todosPeriodos } = await db.query(
+      `SELECT id, nombre FROM periodos_horarios ORDER BY id ASC`
+    );
+
+    // Comprobar qué periodos ya tienen elementos en la simulación
+    const periodosConDatos = new Set(simulacion.map((item) => item.periodo));
+
+    // 3. Para cada periodo que no tenga ausencias, meter un registro marcador "sin_ausencia"
+    for (const p of todosPeriodos) {
+      if (!periodosConDatos.has(p.id)) {
+        simulacion.push({
+          tipo: "sin_ausencia", // Identificador de periodo libre de ausencias
+          periodo: p.id,
+          nombre_periodo: p.nombre || `${p.id}º Hora`,
+          // Los campos de ausencias se dejan vacíos
         });
       }
     }
