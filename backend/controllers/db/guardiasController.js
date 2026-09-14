@@ -773,6 +773,16 @@ async function getGuardiasEnriquecidas(req, res) {
     const vals = [];
     let i = 0;
 
+    // Filtro del curso actual (por defecto o si se pasa una fecha concreta)
+    if (fecha) {
+      filtros.push(`g.fecha = $${++i}`);
+      vals.push(fecha);
+    } else if (inicioCurso && finCurso) {
+      // Si no se pide una fecha específica, limitamos al rango del curso académico actual
+      filtros.push(`g.fecha BETWEEN $${++i} AND $${++i}`);
+      vals.push(inicioCurso, finCurso);
+    }
+
     if (uid_profesor_cubridor) {
       filtros.push(`g.uid_profesor_cubridor = $${++i}`);
       vals.push(uid_profesor_cubridor);
@@ -781,10 +791,7 @@ async function getGuardiasEnriquecidas(req, res) {
       filtros.push(`g.uid_profesor_ausente = $${++i}`);
       vals.push(uid_profesor_ausente);
     }
-    if (fecha) {
-      filtros.push(`g.fecha = $${++i}`);
-      vals.push(fecha);
-    }
+
     if (estado) {
       filtros.push(`g.estado = $${++i}`);
       vals.push(estado);
@@ -792,7 +799,7 @@ async function getGuardiasEnriquecidas(req, res) {
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
 
-    // 1. Consulta principal a la tabla de guardias
+   // Consulta principal a la tabla de guardias filtrada por el curso actual
     const { rows: guardias } = await db.query(
       `SELECT 
         g.id, 
