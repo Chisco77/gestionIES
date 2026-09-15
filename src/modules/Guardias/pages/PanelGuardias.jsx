@@ -454,7 +454,11 @@ export function PanelGuardias({
                           </span>
                         </h3>
                       </div>
-                      <ListaProfesGuardia fecha={fechaFmt} idPeriodo={p.id} />
+                      <ListaProfesGuardia
+                        fecha={fechaFmt}
+                        idPeriodo={p.id}
+                        estancias={estancias}
+                      />
                     </div>
 
                     {/* COLUMNA DERECHA: Ausencias */}
@@ -791,7 +795,7 @@ function GuardiaCard({
   );
 }
 
-function ListaProfesGuardia({ fecha, idPeriodo }) {
+function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
   const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
 
   if (isLoading)
@@ -818,6 +822,20 @@ function ListaProfesGuardia({ fecha, idPeriodo }) {
         const iniciales =
           `${inicialNombre}${inicialApellido}` ||
           profe.uid.substring(0, 2).toUpperCase();
+
+        // 🔍 Búsqueda de la descripción en el array de estancias recibido por prop
+        const estanciaEncontrada = estancias?.find(
+          (e) =>
+            String(e.id) === String(profe.idestancia) ||
+            e.idestancia === profe.idestancia ||
+            e.nombre === profe.idestancia
+        );
+
+        // Fallback progresivo: descripción -> nombre -> idestancia bruto
+        const textoEstancia =
+          estanciaEncontrada?.descripcion ||
+          estanciaEncontrada?.nombre ||
+          profe.idestancia;
 
         return (
           <Card
@@ -892,6 +910,14 @@ function ListaProfesGuardia({ fecha, idPeriodo }) {
                       Acumulado: {profe.total_guardias}
                     </span>
                   </div>
+                  {/* DESCRIPCIÓN DE LA ESTANCIA (TEXTO PLANO SIMPLICIDAD) */}
+                  {profe.idestancia && (
+                    <div className="mt-1">
+                      <span className="text-[10px] font-medium text-slate-500 truncate block">
+                        Ubicación: {textoEstancia}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 

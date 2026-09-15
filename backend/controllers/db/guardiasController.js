@@ -642,6 +642,8 @@ async function getProfesoresDeGuardia(req, res) {
     const query = `
       SELECT 
         h.uid, 
+        h.idestancia, -- 👈 Añadido idestancia de la tabla horario_profesorado
+        
         -- Equidad TOTAL (Curso completo)
         (SELECT COUNT(DISTINCT (ga.fecha, ga.idperiodo)) 
          FROM guardias_asignadas ga 
@@ -715,6 +717,7 @@ async function getProfesoresDeGuardia(req, res) {
             // Objeto base respetando nombres originales para el frontend
             const baseData = {
               uid: row.uid,
+              idestancia: row.idestancia || null, // 👈 Se propaga idestancia al JSON final
               total_guardias: parseInt(row.total_guardias),
               guardias_periodo_acumuladas: parseInt(
                 row.guardias_periodo_acumuladas
@@ -799,7 +802,7 @@ async function getGuardiasEnriquecidas(req, res) {
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
 
-   // Consulta principal a la tabla de guardias filtrada por el curso actual
+    // Consulta principal a la tabla de guardias filtrada por el curso actual
     const { rows: guardias } = await db.query(
       `SELECT 
         g.id, 
