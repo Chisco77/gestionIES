@@ -912,9 +912,12 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
                   </div>
                   {/* DESCRIPCIÓN DE LA ESTANCIA (TEXTO PLANO SIMPLICIDAD) */}
                   {profe.idestancia && (
-                    <div className="mt-1">
-                      <span className="text-[10px] font-medium text-slate-500 truncate block">
-                        Ubicación: {textoEstancia}
+                    <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100/80 border border-slate-200/60">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Ubicación:
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-700 truncate max-w-[180px]">
+                        {textoEstancia}
                       </span>
                     </div>
                   )}
