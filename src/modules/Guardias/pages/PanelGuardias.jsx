@@ -442,9 +442,9 @@ export function PanelGuardias({
                   value={String(p.id)}
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 outline-none"
                 >
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* COLUMNA IZQUIERDA: Profesores de Guardia (Muestra los profes de esa hora independientemente de si hay ausencias) */}
-                    <div className="lg:col-span-4 space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* COLUMNA IZQUIERDA: Profesores de Guardia (Ajustada en ancho) */}
+                    <div className="lg:col-span-4 max-w-md space-y-3">
                       <div className="flex items-center gap-2 px-1 text-slate-700">
                         <Users className="w-5 h-5 text-primary" />
                         <h3 className="font-bold text-lg">
@@ -462,7 +462,7 @@ export function PanelGuardias({
                     </div>
 
                     {/* COLUMNA DERECHA: Ausencias */}
-                    <div className="lg:col-span-8 space-y-4">
+                    <div className="lg:col-span-6 space-y-3">
                       <div className="flex items-center gap-2 px-1 text-slate-700">
                         <AlertCircle className="w-5 h-5 text-orange-500" />
                         <h3 className="font-bold text-lg">
@@ -795,7 +795,7 @@ function GuardiaCard({
   );
 }
 
-function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
+/*function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
   const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
 
   if (isLoading)
@@ -850,10 +850,8 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
           >
             <CardContent className="p-3 flex justify-between items-center">
               <div className="flex items-center gap-3 min-w-0 w-full">
-                {/* CONTENEDOR DEL AVATAR CON EL INDICADOR DE ESTADO INTEGRADO */}
                 <div className="relative flex-shrink-0">
                   <Avatar className="w-10 h-10 border border-slate-200 shadow-sm">
-                    {/* Al pasar el String 'data:image/jpeg;base64,...' el navegador lo renderiza nativamente */}
                     <AvatarImage
                       src={profe.avatar}
                       alt={`${profe.nombre} ${profe.apellido1}`}
@@ -864,7 +862,6 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
                     </AvatarFallback>
                   </Avatar>
 
-                  {/* El indicador circular ahora flota discretamente sobre la esquina del avatar */}
                   <div
                     className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white flex-shrink-0 ${
                       estaOcupado
@@ -876,7 +873,6 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
                   />
                 </div>
 
-                {/* DATOS DEL PROFESOR */}
                 <div className="min-w-0 flex-1">
                   <p
                     className={`text-sm font-bold truncate ${
@@ -910,7 +906,6 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
                       Acumulado: {profe.total_guardias}
                     </span>
                   </div>
-                  {/* DESCRIPCIÓN DE LA ESTANCIA (TEXTO PLANO SIMPLICIDAD) */}
                   {profe.idestancia && (
                     <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100/80 border border-slate-200/60">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -924,7 +919,6 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
                 </div>
               </div>
 
-              {/* BLOQUE DEL CONTADOR DE SLOT */}
               <div className="flex items-center gap-3 bg-white border border-slate-100 p-1.5 pl-3 rounded-xl shadow-sm flex-shrink-0">
                 <div className="flex flex-col items-end leading-none">
                   <span className="text-[16px] font-black font-mono text-slate-800">
@@ -937,6 +931,146 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
                 >
                   <Clock className="w-4 h-4" />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+*/
+
+function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
+  const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
+
+  if (isLoading)
+    return (
+      <div className="animate-pulse space-y-2 text-slate-400">
+        Cargando disponibilidad...
+      </div>
+    );
+
+  return (
+    /* Columna única compacta */
+    <div className="space-y-2">
+      {profes?.map((profe) => {
+        const numGuardiasHoy = profe.num_asignadas_ahora || 0;
+        const estaOcupado = numGuardiasHoy > 0;
+        const esDoble = numGuardiasHoy > 1;
+
+        // Generar iniciales para el Fallback
+        const inicialNombre = profe.nombre
+          ? profe.nombre.charAt(0).toUpperCase()
+          : "";
+        const inicialApellido = profe.apellido1
+          ? profe.apellido1.charAt(0).toUpperCase()
+          : "";
+        const iniciales =
+          `${inicialNombre}${inicialApellido}` ||
+          profe.uid.substring(0, 2).toUpperCase();
+
+        // Búsqueda de la estancia por prop
+        const estanciaEncontrada = estancias?.find(
+          (e) =>
+            String(e.id) === String(profe.idestancia) ||
+            e.idestancia === profe.idestancia ||
+            e.nombre === profe.idestancia
+        );
+
+        const textoEstancia =
+          estanciaEncontrada?.descripcion ||
+          estanciaEncontrada?.nombre ||
+          profe.idestancia;
+
+        return (
+          <Card
+            key={profe.uid}
+            className={`transition-all duration-300 border shadow-none ${
+              estaOcupado
+                ? esDoble
+                  ? "bg-indigo-50/50 border-indigo-200 ring-1 ring-indigo-100"
+                  : "bg-blue-50/50 border-blue-200 ring-1 ring-blue-100"
+                : "bg-white border-slate-200 shadow-sm hover:shadow-md"
+            }`}
+          >
+            <CardContent className="p-2 px-3 flex justify-between items-center gap-2">
+              <div className="flex items-center gap-2.5 min-w-0 w-full">
+                {/* AVATAR COMPACTO (w-8 h-8) */}
+                <div className="relative flex-shrink-0">
+                  <Avatar className="w-8 h-8 border border-slate-200 shadow-sm">
+                    <AvatarImage
+                      src={profe.avatar}
+                      alt={`${profe.nombre} ${profe.apellido1}`}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-slate-100 text-slate-600 text-[10px] font-bold font-mono">
+                      {iniciales}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div
+                    className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white flex-shrink-0 ${
+                      estaOcupado
+                        ? esDoble
+                          ? "bg-indigo-600 animate-bounce"
+                          : "bg-blue-500 animate-pulse"
+                        : "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]"
+                    }`}
+                  />
+                </div>
+
+                {/* DATOS DEL PROFESOR Y UBICACIÓN INTEGRADA */}
+                <div className="min-w-0 flex-1 leading-tight">
+                  <p
+                    className={`text-xs font-bold truncate ${
+                      estaOcupado
+                        ? esDoble
+                          ? "text-indigo-900"
+                          : "text-blue-900"
+                        : "text-slate-800"
+                    }`}
+                  >
+                    {profe.apellido1}
+                    {profe.nombre ? `, ${profe.nombre}` : ""}
+                  </p>
+
+                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px]">
+                    <span
+                      className={`font-black uppercase tracking-tight ${
+                        estaOcupado
+                          ? esDoble
+                            ? "text-indigo-600"
+                            : "text-blue-600"
+                          : "text-emerald-600"
+                      }`}
+                    >
+                      {estaOcupado
+                        ? esDoble
+                          ? "Doble"
+                          : "Asignada"
+                        : "Disponible"}
+                    </span>
+
+                    {/* Ubicación integrada en línea */}
+                    {profe.idestancia && (
+                      <>
+                        <span className="text-slate-300">|</span>
+                        <span className="font-semibold text-slate-500 truncate max-w-[200px]">
+                          {textoEstancia}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* CONTADOR LATERAL COMPACTO */}
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/60 px-2 py-1 rounded-lg flex-shrink-0">
+                <span className="text-xs font-black font-mono text-slate-700">
+                  {profe.guardias_periodo_acumuladas}
+                </span>
+                <Clock className="w-3 h-3 text-slate-400" />
               </div>
             </CardContent>
           </Card>
