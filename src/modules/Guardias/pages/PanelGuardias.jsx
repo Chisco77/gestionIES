@@ -443,8 +443,8 @@ export function PanelGuardias({
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 outline-none"
                 >
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* COLUMNA IZQUIERDA: Profesores de Guardia (Ajustada en ancho) */}
-                    <div className="lg:col-span-4 max-w-md space-y-3">
+                    {/* COLUMNA IZQUIERDA: Profesores de Guardia (Ampliada a 4 columnas sin max-w) */}
+                    <div className="lg:col-span-4 space-y-3">
                       <div className="flex items-center gap-2 px-1 text-slate-700">
                         <Users className="w-5 h-5 text-primary" />
                         <h3 className="font-bold text-lg">
@@ -461,8 +461,8 @@ export function PanelGuardias({
                       />
                     </div>
 
-                    {/* COLUMNA DERECHA: Ausencias */}
-                    <div className="lg:col-span-6 space-y-3">
+                    {/* COLUMNA DERECHA: Ausencias a cubrir (8 columnas) */}
+                    <div className="lg:col-span-8 space-y-3">
                       <div className="flex items-center gap-2 px-1 text-slate-700">
                         <AlertCircle className="w-5 h-5 text-orange-500" />
                         <h3 className="font-bold text-lg">
@@ -474,7 +474,6 @@ export function PanelGuardias({
                       </div>
 
                       {ausenciasOrdenadas.length === 0 ? (
-                        /* Mensaje cuando NO hay ausencias en este periodo en particular */
                         <div className="p-8 border-2 border-dashed rounded-xl bg-emerald-50/50 border-emerald-200 text-center">
                           <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500 mb-2" />
                           <p className="text-emerald-800 font-bold text-sm">
@@ -486,8 +485,8 @@ export function PanelGuardias({
                           </p>
                         </div>
                       ) : (
-                        /* Renderizado normal de las cards de ausencia */
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                        /* Forzamos exactamente 2 columnas a partir de pantallas medianas (md:grid-cols-2) */
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {ausenciasOrdenadas.map((item, idx) => (
                             <GuardiaCard
                               key={idx}
@@ -952,14 +951,12 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
     );
 
   return (
-    /* Columna única compacta */
     <div className="space-y-2">
       {profes?.map((profe) => {
         const numGuardiasHoy = profe.num_asignadas_ahora || 0;
         const estaOcupado = numGuardiasHoy > 0;
         const esDoble = numGuardiasHoy > 1;
 
-        // Generar iniciales para el Fallback
         const inicialNombre = profe.nombre
           ? profe.nombre.charAt(0).toUpperCase()
           : "";
@@ -970,7 +967,6 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
           `${inicialNombre}${inicialApellido}` ||
           profe.uid.substring(0, 2).toUpperCase();
 
-        // Búsqueda de la estancia por prop
         const estanciaEncontrada = estancias?.find(
           (e) =>
             String(e.id) === String(profe.idestancia) ||
@@ -994,23 +990,23 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
                 : "bg-white border-slate-200 shadow-sm hover:shadow-md"
             }`}
           >
-            <CardContent className="p-2 px-3 flex justify-between items-center gap-2">
-              <div className="flex items-center gap-2.5 min-w-0 w-full">
-                {/* AVATAR COMPACTO (w-8 h-8) */}
+            <CardContent className="p-2.5 px-3 flex justify-between items-center gap-3">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                {/* AVATAR (w-9 h-9) */}
                 <div className="relative flex-shrink-0">
-                  <Avatar className="w-8 h-8 border border-slate-200 shadow-sm">
+                  <Avatar className="w-9 h-9 border border-slate-200 shadow-sm">
                     <AvatarImage
                       src={profe.avatar}
                       alt={`${profe.nombre} ${profe.apellido1}`}
                       className="object-cover"
                     />
-                    <AvatarFallback className="bg-slate-100 text-slate-600 text-[10px] font-bold font-mono">
+                    <AvatarFallback className="bg-slate-100 text-slate-600 text-xs font-bold font-mono">
                       {iniciales}
                     </AvatarFallback>
                   </Avatar>
 
                   <div
-                    className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white flex-shrink-0 ${
+                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white flex-shrink-0 ${
                       estaOcupado
                         ? esDoble
                           ? "bg-indigo-600 animate-bounce"
@@ -1020,24 +1016,25 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
                   />
                 </div>
 
-                {/* DATOS DEL PROFESOR Y UBICACIÓN INTEGRADA */}
+                {/* DATOS DEL PROFESOR Y UBICACIÓN */}
                 <div className="min-w-0 flex-1 leading-tight">
                   <p
-                    className={`text-xs font-bold truncate ${
+                    className={`text-xs md:text-[13px] font-bold truncate ${
                       estaOcupado
                         ? esDoble
                           ? "text-indigo-900"
                           : "text-blue-900"
                         : "text-slate-800"
                     }`}
+                    title={`${profe.apellido1}${profe.nombre ? `, ${profe.nombre}` : ""}`}
                   >
                     {profe.apellido1}
                     {profe.nombre ? `, ${profe.nombre}` : ""}
                   </p>
 
-                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px]">
+                  <div className="flex items-center gap-1 mt-0.5 text-[10px]">
                     <span
-                      className={`font-black uppercase tracking-tight ${
+                      className={`font-black uppercase tracking-tight flex-shrink-0 ${
                         estaOcupado
                           ? esDoble
                             ? "text-indigo-600"
@@ -1052,11 +1049,13 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
                         : "Disponible"}
                     </span>
 
-                    {/* Ubicación integrada en línea */}
                     {profe.idestancia && (
                       <>
-                        <span className="text-slate-300">|</span>
-                        <span className="font-semibold text-slate-500 truncate max-w-[200px]">
+                        <span className="text-slate-300 flex-shrink-0">|</span>
+                        <span
+                          className="font-semibold text-slate-500 truncate"
+                          title={textoEstancia}
+                        >
                           {textoEstancia}
                         </span>
                       </>
@@ -1066,11 +1065,16 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
               </div>
 
               {/* CONTADOR LATERAL COMPACTO */}
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/60 px-2 py-1 rounded-lg flex-shrink-0">
-                <span className="text-xs font-black font-mono text-slate-700">
-                  {profe.guardias_periodo_acumuladas}
+              <div className="flex flex-col items-end flex-shrink-0 justify-center">
+                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg shadow-2xs">
+                  <span className="text-sm font-black font-mono text-slate-800">
+                    {profe.guardias_periodo_acumuladas}
+                  </span>
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+                <span className="text-[9px] font-medium text-slate-400 font-mono pr-0.5 mt-0.5">
+                  tot: {profe.total_guardias}
                 </span>
-                <Clock className="w-3 h-3 text-slate-400" />
               </div>
             </CardContent>
           </Card>
