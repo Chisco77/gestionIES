@@ -282,6 +282,10 @@ export function PanelGuardias({
     },
   });
 
+  // Saber si el periodo es recreo, para mostrar solo profes de guardia en zona central.
+  const esRecreo = (nombrePeriodo = "") =>
+    nombrePeriodo.toLowerCase().includes("recreo");
+
   return (
     <>
       <div className="max-w-7xl mx-auto space-y-6 p-4">
@@ -409,19 +413,6 @@ export function PanelGuardias({
             </div>
 
             {periodosUnicos.map((p) => {
-              /*  const ausenciasEnPeriodo = data.simulacion.filter(
-                (s) => s.periodo === p.id
-              );
-              const ausenciasOrdenadas = [...ausenciasEnPeriodo].sort(
-                (a, b) => {
-                  if (a.tipo === "propuesta" && b.tipo === "confirmada")
-                    return -1;
-                  if (a.tipo === "confirmada" && b.tipo === "propuesta")
-                    return 1;
-                  return 0;
-                }
-              );*/
-              // Filtrar solo las ausencias reales (ignorando los marcadores 'sin_ausencia')
               const ausenciasEnPeriodo = data.simulacion.filter(
                 (s) => s.periodo === p.id && s.tipo !== "sin_ausencia"
               );
@@ -436,85 +427,127 @@ export function PanelGuardias({
                 }
               );
 
+              const periodoEsRecreo = esRecreo(p.nombre);
+
               return (
                 <TabsContent
                   key={p.id}
                   value={String(p.id)}
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 outline-none"
                 >
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* COLUMNA IZQUIERDA: Profesores de Guardia (Ampliada a 4 columnas sin max-w) */}
-                    <div className="lg:col-span-4 space-y-3">
-                      <div className="flex items-center gap-2 px-1 text-slate-700">
-                        <Users className="w-5 h-5 text-primary" />
-                        <h3 className="font-bold text-lg">
-                          Profesores de Guardia{" "}
-                          <span className="text-slate-400 font-medium ml-1">
-                            ({p.nombre})
-                          </span>
-                        </h3>
+                  {/* ============================================================ */}
+                  {/* VISTA ESPECIAL PARA EL RECREO (Panel Unificado en rejilla) */}
+                  {/* ============================================================ */}
+                  {periodoEsRecreo ? (
+                    <div className="space-y-4 max-w-5xl mx-auto">
+                      {/* Banner explicativo y centrado */}
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50 border border-slate-200/80 p-3.5 px-5 rounded-xl shadow-2xs">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-amber-100/80 rounded-lg text-amber-700">
+                            <Clock className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-800 text-base">
+                              Turno de Guardia de Recreo
+                            </h3>
+                            <p className="text-xs text-slate-500">
+                              Profesores asignados a la vigilancia y atención
+                              durante el periodo de descanso.
+                            </p>
+                          </div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="bg-white border-slate-200 text-slate-600 font-bold px-3 py-1"
+                        >
+                          Periodo No Lectivo
+                        </Badge>
                       </div>
-                      <ListaProfesGuardia
+
+                      {/* Grilla unificada de Profesores de Guardia de Recreo */}
+                      <ListaProfesGuardiaRecreo
                         fecha={fechaFmt}
                         idPeriodo={p.id}
                         estancias={estancias}
                       />
                     </div>
-
-                    {/* COLUMNA DERECHA: Ausencias a cubrir (8 columnas) */}
-                    <div className="lg:col-span-8 space-y-3">
-                      <div className="flex items-center gap-2 px-1 text-slate-700">
-                        <AlertCircle className="w-5 h-5 text-orange-500" />
-                        <h3 className="font-bold text-lg">
-                          Ausencias a cubrir{" "}
-                          <span className="text-slate-400 font-medium ml-1">
-                            ({p.nombre})
-                          </span>
-                        </h3>
+                  ) : (
+                    /* ============================================================ */
+                    /* VISTA ESTÁNDAR PARA HORAS LECTIVAS (Dos columnas: Guardias / Ausencias) */
+                    /* ============================================================ */
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      {/* COLUMNA IZQUIERDA: Profesores de Guardia */}
+                      <div className="lg:col-span-4 space-y-3">
+                        <div className="flex items-center gap-2 px-1 text-slate-700">
+                          <Users className="w-5 h-5 text-primary" />
+                          <h3 className="font-bold text-lg">
+                            Profesores de Guardia{" "}
+                            <span className="text-slate-400 font-medium ml-1">
+                              ({p.nombre})
+                            </span>
+                          </h3>
+                        </div>
+                        <ListaProfesGuardia
+                          fecha={fechaFmt}
+                          idPeriodo={p.id}
+                          estancias={estancias}
+                        />
                       </div>
 
-                      {ausenciasOrdenadas.length === 0 ? (
-                        <div className="p-8 border-2 border-dashed rounded-xl bg-emerald-50/50 border-emerald-200 text-center">
-                          <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500 mb-2" />
-                          <p className="text-emerald-800 font-bold text-sm">
-                            Sin ausencias en esta hora
-                          </p>
-                          <p className="text-slate-500 text-xs mt-1">
-                            Todos los profesores de guardia están disponibles
-                            ante cualquier emergencia.
-                          </p>
+                      {/* COLUMNA DERECHA: Ausencias a cubrir */}
+                      <div className="lg:col-span-8 space-y-3">
+                        <div className="flex items-center gap-2 px-1 text-slate-700">
+                          <AlertCircle className="w-5 h-5 text-orange-500" />
+                          <h3 className="font-bold text-lg">
+                            Ausencias a cubrir{" "}
+                            <span className="text-slate-400 font-medium ml-1">
+                              ({p.nombre})
+                            </span>
+                          </h3>
                         </div>
-                      ) : (
-                        /* Forzamos exactamente 2 columnas a partir de pantallas medianas (md:grid-cols-2) */
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {ausenciasOrdenadas.map((item, idx) => (
-                            <GuardiaCard
-                              key={idx}
-                              item={item}
-                              modoTV={modoTV}
-                              uidUsuarioActual={user?.username}
-                              onAsignar={() =>
-                                mutationAuto.mutate({
-                                  fecha: fechaFmt,
-                                  idperiodo: item.periodo,
-                                  uid_profesor_ausente: item.uid_ausente,
-                                  idausencia: item.idausencia,
-                                })
-                              }
-                              onCancelar={() =>
-                                mutationCancelar.mutate(item.id)
-                              }
-                              onOpenPlano={handleOpenPlano}
-                              loading={
-                                mutationAuto.isPending ||
-                                mutationCancelar.isPending
-                              }
-                            />
-                          ))}
-                        </div>
-                      )}
+
+                        {ausenciasOrdenadas.length === 0 ? (
+                          <div className="p-8 border-2 border-dashed rounded-xl bg-emerald-50/50 border-emerald-200 text-center">
+                            <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500 mb-2" />
+                            <p className="text-emerald-800 font-bold text-sm">
+                              Sin ausencias en esta hora
+                            </p>
+                            <p className="text-slate-500 text-xs mt-1">
+                              Todos los profesores de guardia están disponibles
+                              ante cualquier emergencia.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {ausenciasOrdenadas.map((item, idx) => (
+                              <GuardiaCard
+                                key={idx}
+                                item={item}
+                                modoTV={modoTV}
+                                uidUsuarioActual={user?.username}
+                                onAsignar={() =>
+                                  mutationAuto.mutate({
+                                    fecha: fechaFmt,
+                                    idperiodo: item.periodo,
+                                    uid_profesor_ausente: item.uid_ausente,
+                                    idausencia: item.idausencia,
+                                  })
+                                }
+                                onCancelar={() =>
+                                  mutationCancelar.mutate(item.id)
+                                }
+                                onOpenPlano={handleOpenPlano}
+                                loading={
+                                  mutationAuto.isPending ||
+                                  mutationCancelar.isPending
+                                }
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </TabsContent>
               );
             })}
@@ -1067,6 +1100,133 @@ function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
               {/* CONTADOR LATERAL COMPACTO */}
               <div className="flex flex-col items-end flex-shrink-0 justify-center">
                 <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg shadow-2xs">
+                  <span className="text-sm font-black font-mono text-slate-800">
+                    {profe.guardias_periodo_acumuladas}
+                  </span>
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+                <span className="text-[9px] font-medium text-slate-400 font-mono pr-0.5 mt-0.5">
+                  tot: {profe.total_guardias}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function ListaProfesGuardiaRecreo({ fecha, idPeriodo, estancias }) {
+  const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
+
+  if (isLoading)
+    return (
+      <div className="p-8 text-center text-slate-400 animate-pulse">
+        Cargando profesores de guardia del recreo...
+      </div>
+    );
+
+  if (!profes || profes.length === 0) {
+    return (
+      <div className="p-8 border-2 border-dashed rounded-xl bg-slate-50 text-center">
+        <Users className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+        <p className="text-slate-600 font-bold text-sm">
+          No hay profesores asignados de guardia para este recreo
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      {profes.map((profe) => {
+        const numGuardiasHoy = profe.num_asignadas_ahora || 0;
+        const estaOcupado = numGuardiasHoy > 0;
+        const esDoble = numGuardiasHoy > 1;
+
+        const inicialNombre = profe.nombre
+          ? profe.nombre.charAt(0).toUpperCase()
+          : "";
+        const inicialApellido = profe.apellido1
+          ? profe.apellido1.charAt(0).toUpperCase()
+          : "";
+        const iniciales =
+          `${inicialNombre}${inicialApellido}` ||
+          profe.uid.substring(0, 2).toUpperCase();
+
+        const estanciaEncontrada = estancias?.find(
+          (e) =>
+            String(e.id) === String(profe.idestancia) ||
+            e.idestancia === profe.idestancia ||
+            e.nombre === profe.idestancia
+        );
+
+        const textoEstancia =
+          estanciaEncontrada?.descripcion ||
+          estanciaEncontrada?.nombre ||
+          profe.idestancia;
+
+        return (
+          <Card
+            key={profe.uid}
+            className={`transition-all duration-300 border shadow-none ${
+              estaOcupado
+                ? esDoble
+                  ? "bg-indigo-50/50 border-indigo-200 ring-1 ring-indigo-100"
+                  : "bg-blue-50/50 border-blue-200 ring-1 ring-blue-100"
+                : "bg-white border-slate-200 shadow-sm hover:shadow-md"
+            }`}
+          >
+            <CardContent className="p-3 flex justify-between items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                {/* AVATAR */}
+                <div className="relative flex-shrink-0">
+                  <Avatar className="w-10 h-10 border border-slate-200 shadow-sm">
+                    <AvatarImage
+                      src={profe.avatar}
+                      alt={`${profe.nombre} ${profe.apellido1}`}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-slate-100 text-slate-600 text-xs font-bold font-mono">
+                      {iniciales}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div
+                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white flex-shrink-0 ${
+                      estaOcupado
+                        ? esDoble
+                          ? "bg-indigo-600 animate-bounce"
+                          : "bg-blue-500 animate-pulse"
+                        : "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]"
+                    }`}
+                  />
+                </div>
+
+                {/* DATOS DEL PROFESOR Y ZONA DE RECREO */}
+                <div className="min-w-0 flex-1 leading-tight">
+                  <p
+                    className="text-xs md:text-sm font-bold truncate text-slate-800"
+                    title={`${profe.apellido1}${profe.nombre ? `, ${profe.nombre}` : ""}`}
+                  >
+                    {profe.apellido1}
+                    {profe.nombre ? `, ${profe.nombre}` : ""}
+                  </p>
+
+                  <div className="flex items-center gap-1.5 mt-1 text-[11px]">
+                    <span className="font-bold text-slate-500 truncate">
+                      {textoEstancia
+                        ? `Zona: ${textoEstancia}`
+                        : "Patio / Recreo"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* CONTADOR ACUMULADO */}
+              <div className="flex flex-col items-end flex-shrink-0 justify-center">
+                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
                   <span className="text-sm font-black font-mono text-slate-800">
                     {profe.guardias_periodo_acumuladas}
                   </span>
