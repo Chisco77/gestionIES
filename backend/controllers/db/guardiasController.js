@@ -374,14 +374,17 @@ async function autoasignarGuardia(req, res) {
       });
     }
 
+    
+
     // VALIDACIÓN: ¿Este profesor ya se ha asignado ESTA HORA específica de esta ausencia?
-    const { rows: yaCubreEsteSlot } = await db.query(
+   const { rows: yaCubreEsteSlot } = await db.query(
       `SELECT id FROM guardias_asignadas 
-   WHERE idausencia = $1 
-     AND idperiodo = $2 
-     AND uid_profesor_cubridor = $3 
-     AND estado = 'activa'`,
-      [idausencia, idperiodo, uid_cubridor]
+       WHERE idausencia = $1 
+         AND fecha = $2
+         AND idperiodo = $3 
+         AND uid_profesor_cubridor = $4 
+         AND estado = 'activa'`,
+      [idausencia, fecha, idperiodo, uid_cubridor]
     );
 
     if (yaCubreEsteSlot.length > 0) {

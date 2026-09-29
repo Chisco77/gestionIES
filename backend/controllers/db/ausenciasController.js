@@ -365,7 +365,7 @@ async function updateAusencia(req, res) {
     );
     const ausenciaActualizada = rows[0];
 
-    // 4. Limpieza de guardias (SOLO si se ha cambiado el horario y somos admin)
+    // 4. Limpieza de guardias (SOLO si se ha cambiado el horario y somos directiva)
     if (esDirectiva && cambiaHorario) {
       await db.query(
         `DELETE FROM guardias_asignadas 
