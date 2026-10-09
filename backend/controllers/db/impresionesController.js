@@ -1,6 +1,5 @@
 const { Pool } = require("pg");
 
-// Reutilizamos la configuración del pool desde el entorno
 const pgPool = new Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
@@ -10,24 +9,31 @@ const pgPool = new Pool({
 });
 
 /**
- * Registra una nueva impresión enviada desde el script de tea4cups/CUPS
+ * Registra una nueva impresión enviada desde el script cliente
  */
 async function insertRegistroImpresion(req, res) {
   try {
-    const { uid, impresora, jobid, equipo, titulo, paginas, copias, tamanio } =
-      req.body;
+    const {
+      uid,
+      impresora,
+      job_id, // <--- Leemos job_id coincidiendo con la columna
+      equipo,
+      titulo,
+      paginas,
+      copias,
+      formato,
+    } = req.body;
 
-    // Validación básica
     if (!uid || !impresora || !paginas) {
       return res.status(400).json({
         error: "Faltan parámetros obligatorios (uid, impresora, paginas)",
       });
     }
 
-    const numPaginas = parseInt(paginas, 10) || 1;
+    const numPaginasCopia = parseInt(paginas, 10) || 1;
     const numCopias = parseInt(copias, 10) || 1;
-    const totalPaginas = numPaginas * numCopias;
-    const jobIdInt = parseInt(jobid, 10) || null;
+    const totalPaginasCalculado = numPaginasCopia * numCopias;
+    const jobIdInt = job_id ? parseInt(job_id, 10) : null;
 
     const query = `
       INSERT INTO registro_impresiones (
@@ -39,7 +45,7 @@ async function insertRegistroImpresion(req, res) {
         paginas_copia,
         copias,
         total_paginas,
-        tamanio
+        formato
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id, fecha;
     `;
@@ -50,10 +56,10 @@ async function insertRegistroImpresion(req, res) {
       jobIdInt,
       equipo || null,
       titulo || "Sin título",
-      numPaginas,
+      numPaginasCopia,
       numCopias,
-      totalPaginas,
-      tamanio || "A4",
+      totalPaginasCalculado,
+      formato || "A4",
     ];
 
     const { rows } = await pgPool.query(query, values);
@@ -71,25 +77,25 @@ async function insertRegistroImpresion(req, res) {
 }
 
 /**
- * Obtiene el listado de impresiones registradas (para el panel de gestión)
+ * Obtiene el listado de impresiones registradas
  */
 async function getRegistrosImpresiones(req, res) {
   try {
     const query = `
       SELECT 
-        r.id,
-        r.uid,
-        r.impresora,
-        r.job_id,
-        r.equipo,
-        r.titulo_documento,
-        r.paginas_copia,
-        r.copias,
-        r.total_paginas,
-        r.tamanio,
-        r.fecha
-      FROM registro_impresiones r
-      ORDER BY r.fecha DESC
+        id,
+        uid,
+        impresora,
+        job_id,
+        equipo,
+        titulo_documento,
+        paginas_copia,
+        copias,
+        total_paginas,
+        formato,
+        fecha
+      FROM registro_impresiones
+      ORDER BY fecha DESC
       LIMIT 500;
     `;
 
