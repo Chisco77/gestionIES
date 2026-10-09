@@ -300,6 +300,11 @@ const {
   getPendientesDirectiva,
 } = require("../controllers/db/notificacionesDirectivaController");
 
+const {
+  insertRegistroImpresion,
+  getRegistrosImpresiones
+} = require("../controllers/db/impresionesController");
+
 // ================================================================
 //   DEFINICIÓN DE RUTAS
 // ================================================================
@@ -511,5 +516,9 @@ router.get("/access-tokens", getTokens);
 router.post("/access-tokens", insertToken);
 router.put("/access-tokens/:id", updateToken);
 router.delete("/access-tokens/:id", deleteToken);
+
+// --- Rutas de Registro de Impresiones ---
+router.get("/impresiones", getRegistrosImpresiones);
+router.post("/impresiones/registro", insertRegistroImpresion);
 
 module.exports = router;

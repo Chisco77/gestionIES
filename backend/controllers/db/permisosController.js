@@ -817,56 +817,6 @@ async function updateEstadoPermiso(req, res) {
     // ================================================================
     // 1. VALIDACIÓN DE ASUNTOS PROPIOS (Lógica de cupo máximo)
     // ================================================================
-    /*   if (estado === 1) {
-      const { rows: permisoRows } = await client.query(
-        `SELECT uid, tipo, estado FROM permisos WHERE id = $1`,
-        [id]
-      );
-
-      const permiso = permisoRows[0];
-
-      if (!permiso) {
-        throw new Error("Asunto propio no encontrado");
-      }
-
-      // Validación específica para Asuntos Propios (Tipo 13)
-      if (permiso.tipo === 13 && permiso.estado !== 1) {
-        const empleado = await obtenerEmpleado(permiso.uid);
-
-        if (!empleado) {
-          throw new Error("Empleado no encontrado");
-        }
-
-        let maxDias = empleado.asuntos_propios;
-
-        if (!maxDias || maxDias === 0) {
-          const restricciones = await getRestriccionesAsuntos();
-          const diasRestriccion = restricciones.find(
-            (r) => r.descripcion === "dias"
-          );
-          maxDias = diasRestriccion?.valor_num ?? 0;
-        }
-
-        if (!maxDias || maxDias <= 0) {
-          throw new Error(
-            "No está configurado el número máximo de asuntos propios"
-          );
-        }
-
-        const { rows: concedidos } = await client.query(
-          `SELECT COUNT(*)::int AS total
-           FROM permisos
-           WHERE uid = $1 AND tipo = 13 AND estado = 1`,
-          [permiso.uid]
-        );
-
-        if (concedidos[0].total >= maxDias) {
-          throw new Error(
-            `Cupo alcanzado: El empleado ya tiene ${maxDias} días concedidos.`
-          );
-        }
-      }
-    }*/
 
     if (estado === 1) {
       const { rows: permisoRows } = await client.query(

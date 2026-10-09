@@ -41,42 +41,6 @@ const pool = require("../db"); // conexión a PostgreSQL
 
 router.post("/login", loginLdap);
 
-// Check auth con perfil
-/*router.get("/check-auth", async (req, res) => {
-  if (req.session.ldap) {
-    try {
-      const match = req.session.ldap.dn.match(/^(uid|cn)=(.+?),/);
-      const uid = match ? match[2] : req.session.ldap.dn;
-
-      // Consultar perfil en la tabla
-      const result = await pool.query(
-        "SELECT perfil FROM perfiles_usuario WHERE uid = $1 LIMIT 1",
-        [uid]
-      );
-
-      // Si no hay perfil en la tabla, asignar "profesor" por defecto
-      const perfil =
-        result.rows.length > 0 ? result.rows[0].perfil : "profesor";
-      const employeeNumber = req.session.ldap.employeeNumber || null;
-
-      return res.json({
-        authenticated: true,
-        username: uid,
-        uid: uid,
-        perfil,
-        employeeNumber,
-      });
-    } catch (error) {
-      console.error("Error consultando perfil:", error);
-      return res.status(500).json({ error: "Error obteniendo perfil" });
-    }
-  } else {
-    return res.status(401).json({
-      authenticated: false,
-      error: "No autenticado",
-    });
-  }
-});*/
 
 // Check auth con perfil y datos LDAP
 router.get("/check-auth", async (req, res) => {
