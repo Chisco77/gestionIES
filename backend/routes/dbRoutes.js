@@ -302,8 +302,12 @@ const {
 
 const {
   insertRegistroImpresion,
-  getRegistrosImpresiones
+  getRegistrosImpresiones,
 } = require("../controllers/db/impresionesController");
+
+const {
+  simularYEnviarAsuntosPropios,
+} = require("../controllers/db/procesarAsuntosPropiosController");
 
 // ================================================================
 //   DEFINICIÓN DE RUTAS
@@ -409,25 +413,25 @@ router.get("/reservas-estancias/repeticion", getReservasEstanciasRepeticion);
 router.post("/reservas-estancias/repeticion", insertReservaEstanciaRepeticion);
 router.put(
   "/reservas-estancias/repeticion/:id",
-  updateReservaEstanciaRepeticion,
+  updateReservaEstanciaRepeticion
 );
 router.delete(
   "/reservas-estancias/repeticion/:id",
-  deleteReservaEstanciaRepeticion,
+  deleteReservaEstanciaRepeticion
 );
 router.get(
   "/reservas-estancias/repeticiones/enriquecidas",
-  getReservasEstanciasRepeticionEnriquecidas,
+  getReservasEstanciasRepeticionEnriquecidas
 );
 router.post(
   "/reservas-estancias/repeticion/simular",
-  simularReservaEstanciaRepeticion,
+  simularReservaEstanciaRepeticion
 );
 
 // --- Horarios del profesorado ---
 router.get(
   "/horario-profesorado/enriquecido",
-  getHorarioProfesoradoEnriquecido,
+  getHorarioProfesoradoEnriquecido
 );
 router.post("/horario-profesorado", insertHorarioProfesorado);
 router.put("/horario-profesorado/:id", updateHorarioProfesorado);
@@ -435,7 +439,7 @@ router.post("/horario-profesorado/duplicar", duplicarHorarioProfesorado);
 router.delete("/horario-profesorado/:id", deleteHorarioProfesorado);
 router.post(
   "/horario-profesorado/insertCuadranteGuardias",
-  insertCuadranteGuardias,
+  insertCuadranteGuardias
 );
 
 // --- Cursos y Materias ---
@@ -481,7 +485,7 @@ router.post(
     { name: "logo_centro", maxCount: 1 },
     { name: "favicon", maxCount: 1 },
   ]),
-  saveConfiguracionCentro,
+  saveConfiguracionCentro
 );
 
 // --- Notificaciones Directiva ---
@@ -500,7 +504,7 @@ router.post("/guardias/autoasignar", autoasignarGuardia);
 router.get("/guardias/disponibles/:fecha/:idperiodo", getProfesoresDeGuardia);
 router.delete(
   "/guardias/cancelar/:id_guardia_asignada",
-  cancelarAutoasignacion,
+  cancelarAutoasignacion
 );
 router.get("/guardias-enriquecidas", getGuardiasEnriquecidas);
 
@@ -520,5 +524,8 @@ router.delete("/access-tokens/:id", deleteToken);
 // --- Rutas de Registro de Impresiones ---
 router.get("/impresiones", getRegistrosImpresiones);
 router.post("/impresiones/registro", insertRegistroImpresion);
+
+// --- Automatización / Cron Asuntos Propios ---
+router.post("/cron/evaluar-asuntos", simularYEnviarAsuntosPropios);
 
 module.exports = router;
