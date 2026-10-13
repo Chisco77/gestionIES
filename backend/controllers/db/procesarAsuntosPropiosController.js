@@ -16,7 +16,7 @@
 
 const db = require("../../db");
 const mailer = require("../../mailer");
-const { buscarPorUid } = require("../ldap/usuariosController");
+const { buscarPorUidAnonimo } = require("../ldap/usuariosController");
 
 // Festivos nacionales, autonómicos (Extremadura) y locales (Trujillo)
 const FESTIVOS = [
@@ -191,7 +191,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
           );
 
           const nombreDocente = await new Promise((resolve) => {
-            buscarPorUid(ldapSession, sol.uid, (err, datos) => {
+            buscarPorUidAnonimo(sol.uid, (err, datos) => {
               resolve(
                 !err && datos ? `${datos.sn}, ${datos.givenName}` : sol.uid
               );
