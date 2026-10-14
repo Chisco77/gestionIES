@@ -719,11 +719,17 @@ async function updateExtraescolar(req, res) {
     if (!actividadPrevia)
       return res.status(404).json({ ok: false, error: "No encontrado" });
 
+    // Modificación de permisos y mensaje descriptivo
     if (
       actividadPrevia.uid !== usuarioSesion.username &&
-      usuarioSesion.perfil !== "directiva"
+      usuarioSesion.perfil !== "directiva" &&
+      usuarioSesion.perfil !== "extraescolares"
     ) {
-      return res.status(403).json({ ok: false, error: "No autorizado" });
+      return res.status(403).json({
+        ok: false,
+        error:
+          "No autorizado. Solo se permite a Directiva, responsable de Extraescolares o usuario que creó la actividad",
+      });
     }
 
     const data = req.body;
