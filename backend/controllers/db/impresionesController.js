@@ -215,7 +215,7 @@ async function getRegistrosImpresiones(req, res) {
         total_paginas,
         formato,
         color,
-        fecha
+        (fecha + INTERVAL '2 hours') AS fecha
       FROM registro_impresiones
       ORDER BY fecha DESC
       LIMIT 500;
