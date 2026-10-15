@@ -62,6 +62,7 @@ import { useEffect } from "react";
 import { BajasIndex } from "./modules/BajasProfesorado/pages/BajasIndex";
 import { DashboardAgendaExtraescolares } from "./modules/Dashboard/pages/DashboardAgendaExtraescolares";
 import { FormacionIndex } from "./modules/Formacion/pages/FormacionIndex";
+import { RegistroImpresionesIndex } from "./modules/RegistroImpresiones/pages/RegistroImpresionesIndex";
 
 const queryClient = new QueryClient();
 
@@ -325,6 +326,7 @@ const router = createBrowserRouter(
 
         { path: "extraescolares", element: <ExtraescolaresIndex /> },
         { path: "reservasEstancias", element: <ReservasEstanciasIndex /> },
+        { path: "registro-impresion", element: <RegistroImpresionesIndex /> },
         {
           path: "avisos",
           element: (

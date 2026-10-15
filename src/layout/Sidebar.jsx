@@ -58,6 +58,7 @@ import {
   CalendarOff,
   ClipboardCheck,
   Monitor,
+  PrinterCheck,
 } from "lucide-react";
 
 import { usePlanos } from "@/hooks/usePlanos";
@@ -230,6 +231,11 @@ function SidebarComponent({
             url: "#",
             onClick: () => onOpenEtiquetas(),
             icon: Tag,
+          },
+          {
+            title: "Registro Impresión",
+            url: "/registro-impresion",
+            icon: PrinterCheck,
           },
         ],
       },

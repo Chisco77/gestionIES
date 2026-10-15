@@ -114,9 +114,10 @@ module.exports = {
 */
 
 const db = require("../../db");
+const { buscarPorUid } = require("../ldap/usuariosController");
 
 /**
- * Registra una nueva impresión enviada desde el script cliente
+ * Registra una nueva impresión. Enviada desde el script cliente y programado en el cron (o similar, Jenkins en mi caso)
  */
 async function insertRegistroImpresion(req, res) {
   const client = await db.connect();
@@ -131,7 +132,7 @@ async function insertRegistroImpresion(req, res) {
       paginas,
       copias,
       formato,
-      es_color, // Leemos es_color del JSON de curl/jq
+      es_color,
     } = req.body;
 
     if (!uid || !impresora || !paginas) {
@@ -192,12 +193,15 @@ async function insertRegistroImpresion(req, res) {
 }
 
 /**
- * Obtiene el listado de impresiones registradas
+ * Obtiene el listado de impresiones registradas enriquecido con datos de LDAP
  */
 async function getRegistrosImpresiones(req, res) {
   const client = await db.connect();
 
   try {
+    const ldapSession = req.session?.ldap;
+    if (!ldapSession) return res.status(401).json({ error: "No autenticado" });
+
     const query = `
       SELECT 
         id,
@@ -218,7 +222,44 @@ async function getRegistrosImpresiones(req, res) {
     `;
 
     const { rows } = await client.query(query);
-    return res.json(rows);
+
+    // Caché temporal para evitar consultas repetidas a LDAP para el mismo UID en la misma petición
+    const ldapCache = new Map();
+
+    const registrosEnriquecidos = await Promise.all(
+      rows.map(async (row) => {
+        let nombre = "";
+        let apellidos = "";
+
+        if (row.uid) {
+          if (ldapCache.has(row.uid)) {
+            const cached = ldapCache.get(row.uid);
+            nombre = cached.nombre;
+            apellidos = cached.apellidos;
+          } else {
+            const datosLdap = await new Promise((resolve) => {
+              buscarPorUid(ldapSession, row.uid, (err, datos) => {
+                if (!err && datos) resolve(datos);
+                else resolve(null);
+              });
+            });
+
+            nombre = datosLdap?.givenName || "";
+            apellidos = datosLdap?.sn || "";
+
+            ldapCache.set(row.uid, { nombre, apellidos });
+          }
+        }
+
+        return {
+          ...row,
+          nombre,
+          apellidos,
+        };
+      })
+    );
+
+    return res.json(registrosEnriquecidos);
   } catch (error) {
     console.error("❌ Error consultando impresiones:", error);
     return res.status(500).json({ error: "Error interno del servidor" });
