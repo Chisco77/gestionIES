@@ -229,7 +229,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
     const enEsperaConNombre = await Promise.all(
       enEspera.map(async (sol) => {
         const nombreDocente = await new Promise((resolve) => {
-          buscarPorUid(ldapSession, sol.uid, (err, datos) => {
+          buscarPorUidAnonimo(sol.uid, (err, datos) => {
             resolve(
               !err && datos ? `${datos.sn}, ${datos.givenName}` : sol.uid
             );
