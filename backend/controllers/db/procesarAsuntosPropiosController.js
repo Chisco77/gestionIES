@@ -91,7 +91,6 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
         tipo
       FROM public.permisos
       WHERE tipo = 13 
-        AND estado = 0
         AND COALESCE(created_at, NOW()) >= NOW() - INTERVAL '4 days'
       ORDER BY fecha ASC, created_at ASC
     `);
