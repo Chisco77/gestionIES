@@ -326,7 +326,15 @@ const router = createBrowserRouter(
 
         { path: "extraescolares", element: <ExtraescolaresIndex /> },
         { path: "reservasEstancias", element: <ReservasEstanciasIndex /> },
-        { path: "registro-impresion", element: <RegistroImpresionesIndex /> },
+        {
+          path: "registro-impresion",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador", "directiva"]}>
+              {" "}
+              <RegistroImpresionesIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
         {
           path: "avisos",
           element: (
