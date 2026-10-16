@@ -137,8 +137,8 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
 
     const { rows: configCupo } = await client.query(`
       SELECT valor_num 
-      FROM restricciones_asuntos 
-      WHERE descripcion = 'max_profesores_dia' 
+      FROM restricciones
+      WHERE restriccion = 'asuntos' and descripcion = 'concurrentes'
       LIMIT 1
     `);
     const cupoMaximoDiario = Number(configCupo[0]?.valor_num) || 3;
