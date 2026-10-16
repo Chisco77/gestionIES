@@ -89,6 +89,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
         descripcion
       FROM public.permisos
       WHERE tipo = 13 
+        AND created_at <= NOW() - INTERVAL '4 days'
       ORDER BY fecha ASC, created_at ASC
     `);
 
