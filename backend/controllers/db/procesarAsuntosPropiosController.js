@@ -89,7 +89,6 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
         descripcion
       FROM public.permisos
       WHERE tipo = 13 
-        AND (estado = 0 OR estado IS NULL)
       ORDER BY fecha ASC, created_at ASC
     `);
 
@@ -125,13 +124,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
       console.log(
         "ℹ️ Ninguna solicitud cumple aún el plazo de 3 días hábiles."
       );
-      await enviarInformeDirectiva(
-        [],
-        enEspera,
-        fechaProcesoStr,
-        client,
-        ldapSession
-      );
+      await enviarInformeDirectiva([], enEspera, fechaProcesoStr, client);
       if (res)
         return res.json({
           ok: true,
