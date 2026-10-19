@@ -267,13 +267,19 @@ async function enviarInformeDirectiva(
       });
       const colorBadge = d.decision === "ACEPTAR" ? "#16a34a" : "#dc2626";
 
+      const fechaRegStr = new Date(d.fecha_registro).toLocaleString("es-ES", {
+        timeZone: "Europe/Madrid",
+        dateStyle: "short",
+        timeStyle: "medium",
+      });
+
       htmlResueltas += `
         <div style="background: #f8fafc; border-left: 4px solid ${colorBadge}; padding: 12px; margin-bottom: 10px; border-radius: 4px;">
           <span style="background: ${colorBadge}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: bold;">${d.decision}</span>
           <b style="margin-left: 8px;">👤 ${d.nombreDocente}</b><br>
           <div style="margin-top: 6px; font-size: 0.9rem; color: #475569;">
             📅 <b>Fecha solicitada:</b> ${fechaStr}<br>
-            ⏱️ <b>Registrada:</b> ${new Date(d.fecha_registro).toLocaleString("es-ES")}<br>
+            ⏱️ <b>Registrada:</b> ${fechaRegStr}<br>
             📊 <b>Días disfrutados este curso:</b> ${d.diasDisfrutados}<br>
             📝 <b>Criterio DOE:</b> ${d.motivo}
           </div>
@@ -286,11 +292,22 @@ async function enviarInformeDirectiva(
 
     let htmlEnEspera = "";
     enEspera.forEach((e) => {
+      const fechaRegStr = new Date(e.fecha_registro).toLocaleString("es-ES", {
+        timeZone: "Europe/Madrid",
+        dateStyle: "short",
+        timeStyle: "medium",
+      });
+      const fechaLimiteStr = new Date(e.fechaLimite).toLocaleString("es-ES", {
+        timeZone: "Europe/Madrid",
+        dateStyle: "short",
+        timeStyle: "medium",
+      });
+
       htmlEnEspera += `
         <li style="margin-bottom: 8px; font-size: 0.9rem; color: #475569;">
           ⏳ <b>${e.nombreDocente}</b> | <b>Fecha disfrute:</b> ${new Date(e.fecha_disfrute).toLocaleDateString("es-ES")} <br>
-          <span style="font-size: 0.8rem; color: #64748b;">⏱️ <b>Registrada:</b> ${new Date(e.fecha_registro).toLocaleString("es-ES")}</span><br>
-          <span style="font-size: 0.8rem; color: #94a3b8;">Resoluble a partir de: ${new Date(e.fechaLimite).toLocaleString("es-ES")}</span>
+          <span style="font-size: 0.8rem; color: #64748b;">⏱️ <b>Registrada:</b> ${fechaRegStr}</span><br>
+          <span style="font-size: 0.8rem; color: #94a3b8;">Resoluble a partir de: ${fechaLimiteStr}</span>
         </li>`;
     });
 
@@ -322,16 +339,34 @@ async function enviarInformeDirectiva(
         </div>
       </div>`;
 
-    const emailPruebas = "fmendezpalma@gmail.com";
+    // 1. Obtenemos los emails configurados en la tabla avisos para el módulo "asuntos-propios"
+    const { rows: avisos } = await client.query(
+      `SELECT emails FROM avisos WHERE modulo = $1 LIMIT 1`,
+      ["asuntos-propios"]
+    );
 
+    const configAviso = avisos[0] || {};
+    const destinatarios = (configAviso.emails || [])
+      .map((e) => e.trim())
+      .filter(Boolean);
+
+    if (destinatarios.length === 0) {
+      console.warn(
+        "⚠️ [Email Asuntos Propios Autónomo] No hay destinatarios configurados en la tabla 'avisos' para el módulo 'asuntos-propios'."
+      );
+      return;
+    }
+
+    // 2. Envío del correo a los destinatarios oficiales del módulo
     await mailer.sendMail({
-      to: emailPruebas,
-      subject: `[gestionIES - PRUEBAS] Propuesta Autónoma de Asuntos Propios - ${fechaProceso}`,
+      from: `"Gestión IES"`,
+      to: destinatarios.join(", "),
+      subject: `[gestionIES] Propuesta Autónoma de Asuntos Propios - ${fechaProceso}`,
       html: htmlContent,
     });
 
     console.log(
-      `✅ Informe de pruebas con nombres LDAP enviado con éxito a: ${emailPruebas}`
+      `✅ Informe autónomo de asuntos propios enviado con éxito a: ${destinatarios.join(", ")}`
     );
   } catch (err) {
     console.error("[Email Asuntos Propios Autónomo] Error:", err);
