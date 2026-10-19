@@ -296,8 +296,9 @@ async function enviarInformeDirectiva(
     let htmlEnEspera = "";
     enEspera.forEach((e) => {
       htmlEnEspera += `
-        <li style="margin-bottom: 6px; font-size: 0.9rem; color: #475569;">
+        <li style="margin-bottom: 8px; font-size: 0.9rem; color: #475569;">
           ⏳ <b>${e.nombreDocente}</b> | <b>Fecha disfrute:</b> ${new Date(e.fecha_disfrute).toLocaleDateString("es-ES")} <br>
+          <span style="font-size: 0.8rem; color: #64748b;">⏱️ <b>Registrada:</b> ${new Date(e.fecha_registro).toLocaleString("es-ES")}</span><br>
           <span style="font-size: 0.8rem; color: #94a3b8;">Resoluble a partir de: ${new Date(e.fechaLimite).toLocaleString("es-ES")}</span>
         </li>`;
     });

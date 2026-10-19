@@ -257,15 +257,19 @@ exports.buscarPorUid = (ldapSession, uid, callback) => {
 
 exports.buscarPorUidAnonimo = (uid, callback) => {
   const LDAP_URL = process.env.LDAP_URL;
+  // Si tienes un usuario de lectura general en .env, úsalo aquí.
+  // Si no, puedes probar con una cuenta técnica fija de tu sistema.
+  const LDAP_BIND_DN = process.env.LDAP_BIND_DN || "";
+  const LDAP_BIND_PASSWORD = process.env.LDAP_BIND_PASSWORD || "";
 
   const client = ldap.createClient({
     url: LDAP_URL,
   });
 
-  client.bind("", "", (err) => {
+  client.bind(LDAP_BIND_DN, LDAP_BIND_PASSWORD, (err) => {
     if (err) {
       console.error(
-        `❌ [LDAP Anónimo] Error en bind para uid '${uid}':`,
+        `❌ [LDAP Consulta] Error en bind para uid '${uid}':`,
         err.message
       );
       try {
@@ -286,7 +290,7 @@ exports.buscarPorUidAnonimo = (uid, callback) => {
     client.search(`ou=People,${baseDN}`, options, (err, res) => {
       if (err) {
         console.error(
-          `❌ [LDAP Anónimo] Error en búsqueda para uid '${uid}':`,
+          `❌ [LDAP Consulta] Error en búsqueda para uid '${uid}':`,
           err.message
         );
         try {
@@ -310,7 +314,7 @@ exports.buscarPorUidAnonimo = (uid, callback) => {
 
       res.on("error", (searchErr) => {
         console.error(
-          `❌ [LDAP Anónimo] Error en evento 'res' para uid '${uid}':`,
+          `❌ [LDAP Consulta] Error en evento 'res' para uid '${uid}':`,
           searchErr.message
         );
       });
@@ -321,7 +325,7 @@ exports.buscarPorUidAnonimo = (uid, callback) => {
         } catch (e) {}
         if (!alumno) {
           console.warn(
-            `⚠️ [LDAP Anónimo] No se encontró entrada para el uid: '${uid}'`
+            `⚠️ [LDAP Consulta] No se encontró entrada para el uid: '${uid}'. Se usará el UID plano.`
           );
         }
         callback(null, alumno);
