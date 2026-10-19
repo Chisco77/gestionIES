@@ -111,10 +111,22 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
       return;
     }
 
+    // 1. Obtenemos el nombre de LDAP de forma secuencial para TODOS los pendientes primero
+    const pendientesConNombre = [];
+    for (const sol of pendientes) {
+      const nombreDocente = await new Promise((resolve) => {
+        buscarPorUidAnonimo(sol.uid, (err, datos) => {
+          resolve(!err && datos ? `${datos.sn}, ${datos.givenName}` : sol.uid);
+        });
+      });
+      pendientesConNombre.push({ ...sol, nombreDocente });
+    }
+
+    // 2. Clasificamos entre los que se deben resolver y los que siguen en espera
     const listasParaResolver = [];
     const enEspera = [];
 
-    for (const sol of pendientes) {
+    for (const sol of pendientesConNombre) {
       const fechaLimite = calcularLimiteDiasHabiles(sol.fecha_registro, 3);
       if (ahora >= fechaLimite) {
         listasParaResolver.push({ ...sol, fechaLimite });
@@ -127,6 +139,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
       console.log(
         "ℹ️ Ninguna solicitud cumple aún el plazo de 3 días hábiles."
       );
+      // Ahora `enEspera` ya viaja con sus nombres LDAP correctamente resueltos
       await enviarInformeDirectiva([], enEspera, fechaProcesoStr, client);
       if (res)
         return res.json({
@@ -174,34 +187,25 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
         cupoMaximoDiario - concedidosPreviamente
       );
 
-      const solicitudesConHistorial = await Promise.all(
-        listaSolicitudes.map(async (sol) => {
-          const { rows: concedidosCurso } = await client.query(
-            `
-            SELECT COUNT(*)::int AS total
-            FROM public.permisos
-            WHERE uid = $1 AND tipo = 13 AND estado = 1
-              AND fecha >= $2 AND fecha <= $3
-          `,
-            [sol.uid, rangoCurso.inicio, rangoCurso.fin]
-          );
+      // Como ya tenemos el nombreDocente gracias al paso 1, solo consultamos el historial de la DB
+      const solicitudesConHistorial = [];
+      for (const sol of listaSolicitudes) {
+        const { rows: concedidosCurso } = await client.query(
+          `
+          SELECT COUNT(*)::int AS total
+          FROM public.permisos
+          WHERE uid = $1 AND tipo = 13 AND estado = 1
+            AND fecha >= $2 AND fecha <= $3
+        `,
+          [sol.uid, rangoCurso.inicio, rangoCurso.fin]
+        );
 
-          const nombreDocente = await new Promise((resolve) => {
-            buscarPorUidAnonimo(sol.uid, (err, datos) => {
-              resolve(
-                !err && datos ? `${datos.sn}, ${datos.givenName}` : sol.uid
-              );
-            });
-          });
-
-          return {
-            ...sol,
-            nombreDocente,
-            diasDisfrutados: concedidosCurso[0]?.total || 0,
-            cursoAcademico: rangoCurso.label,
-          };
-        })
-      );
+        solicitudesConHistorial.push({
+          ...sol,
+          diasDisfrutados: concedidosCurso[0]?.total || 0,
+          cursoAcademico: rangoCurso.label,
+        });
+      }
 
       solicitudesConHistorial.sort((a, b) => {
         if (a.diasDisfrutados !== b.diasDisfrutados) {
@@ -222,22 +226,9 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
       });
     }
 
-    const enEsperaConNombre = await Promise.all(
-      enEspera.map(async (sol) => {
-        const nombreDocente = await new Promise((resolve) => {
-          buscarPorUidAnonimo(sol.uid, (err, datos) => {
-            resolve(
-              !err && datos ? `${datos.sn}, ${datos.givenName}` : sol.uid
-            );
-          });
-        });
-        return { ...sol, nombreDocente };
-      })
-    );
-
     await enviarInformeDirectiva(
       decisionesSimuladas,
-      enEsperaConNombre,
+      enEspera,
       fechaProcesoStr,
       client
     );
