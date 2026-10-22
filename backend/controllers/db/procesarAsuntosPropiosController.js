@@ -42,10 +42,24 @@ function esDiaInhabil(fecha) {
 }
 
 function calcularLimiteDiasHabiles(fechaInicio, diasHabiles = 3) {
-  const fecha = new Date(fechaInicio);
+  const fechaStr = new Date(fechaInicio).toISOString().split("T")[0];
+  const fecha = new Date(`${fechaStr}T00:00:00`);
   let cont = 0;
   while (cont < diasHabiles) {
     fecha.setDate(fecha.getDate() + 1);
+    if (!esDiaInhabil(fecha)) {
+      cont++;
+    }
+  }
+  return fecha;
+}
+
+function obtenerFechaInicioHabilesAtras(fechaBase, diasHabiles = 3) {
+  const fecha = new Date(fechaBase);
+  fecha.setHours(0, 0, 0, 0);
+  let cont = 0;
+  while (cont < diasHabiles) {
+    fecha.setDate(fecha.getDate() - 1);
     if (!esDiaInhabil(fecha)) {
       cont++;
     }
@@ -68,7 +82,12 @@ function getRangoCursoAcademico(fechaPermiso) {
 exports.simularYEnviarAsuntosPropios = async (req, res) => {
   const client = await db.connect();
   const ahora = new Date();
-  const fechaProcesoStr = ahora.toLocaleString("es-ES");
+
+  const fechaProcesoStr = ahora.toLocaleString("es-ES", {
+    timeZone: "Europe/Madrid",
+    dateStyle: "short",
+    timeStyle: "medium",
+  });
 
   console.log(`\n====================================================`);
   console.log(`🚀 [${fechaProcesoStr}] PROCESO AUTOMATIZADO: ASUNTOS PROPIOS`);
@@ -77,10 +96,13 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
   try {
     const ldapSession = req?.session?.ldap || null;
 
+    const fechaInicioFiltro = obtenerFechaInicioHabilesAtras(ahora, 3);
+
     console.log(
-      "🔍 [DB] Consultando en public.permisos solicitudes de tipo 13 con estado pendiente..."
+      `🔍 [DB] Consultando en public.permisos solicitudes de tipo 13 desde ${fechaInicioFiltro.toISOString()}...`
     );
-    const { rows: pendientes } = await client.query(`
+    const { rows: pendientes } = await client.query(
+      `
       SELECT 
         id,
         uid,
@@ -91,27 +113,28 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
         tipo
       FROM public.permisos
       WHERE tipo = 13 
-        AND COALESCE(created_at, NOW()) >= NOW() - INTERVAL '3 days'
+        AND COALESCE(created_at, NOW()) >= $1
       ORDER BY fecha ASC, created_at ASC
-    `);
+    `,
+      [fechaInicioFiltro.toISOString()]
+    );
 
     console.log(
-      `📊 [DB] Resultado: Se han encontrado ${pendientes.length} registros pendientes.`
+      `📊 [DB] Resultado: Se han encontrado ${pendientes.length} registros en el rango.`
     );
 
     if (pendientes.length === 0) {
       console.log(
-        "ℹ️ No hay solicitudes pendientes de asuntos propios para evaluar."
+        "ℹ️ No hay solicitudes de asuntos propios para evaluar en este rango."
       );
       if (res)
         return res.json({
           ok: true,
-          message: "Conexión a BD OK. No hay solicitudes pendientes.",
+          message: "Conexión a BD OK. No hay solicitudes en el rango.",
         });
       return;
     }
 
-    // 1. Obtenemos el nombre de LDAP de forma secuencial para TODOS los pendientes primero
     const pendientesConNombre = [];
     for (const sol of pendientes) {
       const nombreDocente = await new Promise((resolve) => {
@@ -122,7 +145,6 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
       pendientesConNombre.push({ ...sol, nombreDocente });
     }
 
-    // 2. Clasificamos entre los que se deben resolver y los que siguen en espera
     const listasParaResolver = [];
     const enEspera = [];
 
@@ -139,7 +161,6 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
       console.log(
         "ℹ️ Ninguna solicitud cumple aún el plazo de 3 días hábiles."
       );
-      // Ahora `enEspera` ya viaja con sus nombres LDAP correctamente resueltos
       await enviarInformeDirectiva([], enEspera, fechaProcesoStr, client);
       if (res)
         return res.json({
@@ -158,6 +179,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
     `);
     const cupoMaximoDiario = Number(configCupo[0]?.valor_num) || 3;
 
+    // Agrupamos por fecha de disfrute
     const solicitudesPorDia = {};
     for (const sol of listasParaResolver) {
       const fechaKey = new Date(sol.fecha_disfrute).toISOString().split("T")[0];
@@ -166,10 +188,14 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
     }
 
     const decisionesSimuladas = [];
+    // Memoria en tiempo de ejecución para acumular los días aprobados en cascada
+    const consumoExtraEnMemoria = {};
 
-    for (const [fechaDia, listaSolicitudes] of Object.entries(
-      solicitudesPorDia
-    )) {
+    // Ordenamos cronológicamente las fechas de disfrute a procesar
+    const fechasOrdenadas = Object.keys(solicitudesPorDia).sort();
+
+    for (const fechaDia of fechasOrdenadas) {
+      const listaSolicitudes = solicitudesPorDia[fechaDia];
       const rangoCurso = getRangoCursoAcademico(fechaDia);
 
       const { rows: yaConcedidosDia } = await client.query(
@@ -187,7 +213,6 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
         cupoMaximoDiario - concedidosPreviamente
       );
 
-      // Como ya tenemos el nombreDocente gracias al paso 1, solo consultamos el historial de la DB
       const solicitudesConHistorial = [];
       for (const sol of listaSolicitudes) {
         const { rows: concedidosCurso } = await client.query(
@@ -200,9 +225,13 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
           [sol.uid, rangoCurso.inicio, rangoCurso.fin]
         );
 
+        const diasDb = concedidosCurso[0]?.total || 0;
+        const diasExtra = consumoExtraEnMemoria[sol.uid] || 0;
+        const diasDisfrutados = diasDb + diasExtra;
+
         solicitudesConHistorial.push({
           ...sol,
-          diasDisfrutados: concedidosCurso[0]?.total || 0,
+          diasDisfrutados,
           cursoAcademico: rangoCurso.label,
         });
       }
@@ -213,15 +242,33 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
         }
         return new Date(a.fecha_registro) - new Date(b.fecha_registro);
       });
-
       solicitudesConHistorial.forEach((item, index) => {
         const esAceptado = index < plazasDisponibles;
+
+        if (esAceptado) {
+          consumoExtraEnMemoria[item.uid] =
+            (consumoExtraEnMemoria[item.uid] || 0) + 1;
+        }
+
+        let explicacionCriterio = "";
+        const puesto = index + 1;
+
+        if (esAceptado) {
+          explicacionCriterio =
+            `Plaza concedida (${concedidosPreviamente + puesto}/${cupoMaximoDiario}). ` +
+            `1º Criterio (menor consumo en el curso): ${item.diasDisfrutados} días. ` +
+            `2º Criterio (orden de llegada): ${puesto}ª posición de ${solicitudesConHistorial.length} peticiones para este día.`;
+        } else {
+          explicacionCriterio =
+            `Denegada por concurrencia: se han cubierto las ${cupoMaximoDiario} plazas máximas del día con solicitudes prioritarias o de hora anterior. ` +
+            `Criterio aplicado (Art. 13.2 DOE): Posición ${puesto}ª de ${solicitudesConHistorial.length} ` +
+            `(Consumo acumulado: ${item.diasDisfrutados} días | Registrada a las ${new Date(item.fecha_registro).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid" })}).`;
+        }
+
         decisionesSimuladas.push({
           ...item,
           decision: esAceptado ? "ACEPTAR" : "RECHAZAR",
-          motivo: esAceptado
-            ? `Criterio DOE cumplido. Plaza concedida (${concedidosPreviamente + index + 1}/${cupoMaximoDiario}). Consumo en el curso: ${item.diasDisfrutados} días.`
-            : `Excede cupo diario (${cupoMaximoDiario} máx, ${concedidosPreviamente} concedidos previamente). Desempate DOE: posición ${index + 1}.`,
+          motivo: explicacionCriterio,
         });
       });
     }
@@ -339,7 +386,6 @@ async function enviarInformeDirectiva(
         </div>
       </div>`;
 
-    // 1. Obtenemos los emails configurados en la tabla avisos para el módulo "asuntos-propios"
     const { rows: avisos } = await client.query(
       `SELECT emails FROM avisos WHERE modulo = $1 LIMIT 1`,
       ["asuntos-propios"]
@@ -357,7 +403,6 @@ async function enviarInformeDirectiva(
       return;
     }
 
-    // 2. Envío del correo a los destinatarios oficiales del módulo
     await mailer.sendMail({
       from: `"Gestión IES"`,
       to: destinatarios.join(", "),
