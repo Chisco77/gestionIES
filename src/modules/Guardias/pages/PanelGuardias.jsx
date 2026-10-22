@@ -169,7 +169,7 @@ export function PanelGuardias({
   }, [fecha]);
 
   // 2. Lógica para detectar el periodo actual dinámicamente
-  useEffect(() => {
+  /*useEffect(() => {
     if (todosLosPeriodos && data?.simulacion && periodosUnicos.length > 0) {
       // Si ya hemos seleccionado pestaña antes y NO estamos en modo TV, no hacemos nada
       if (autoSeleccionRealizada.current && !modoTV) return;
@@ -208,7 +208,70 @@ export function PanelGuardias({
       }, 15000);
       return () => clearInterval(intervaloRotacion);
     }
+  }, [todosLosPeriodos, data, periodosUnicos, modoTV, fecha]);*/
+
+  // 2. Lógica para detectar el periodo actual dinámicamente y rotación de TV
+  // 1. Detección inicial del periodo actual (al cargar o cambiar de fecha/datos)
+  useEffect(() => {
+    if (todosLosPeriodos && data?.simulacion && periodosUnicos.length > 0) {
+      if (autoSeleccionRealizada.current && !modoTV) return;
+
+      const ahora = format(new Date(), "HH:mm:ss");
+      const periodoActual = todosLosPeriodos.find(
+        (p) => ahora >= p.inicio && ahora <= p.fin
+      );
+
+      if (
+        periodoActual &&
+        periodosUnicos.some((p) => p.id === periodoActual.id)
+      ) {
+        setTabActiva(String(periodoActual.id));
+      } else if (!tabActiva) {
+        setTabActiva(String(periodosUnicos[0].id));
+      }
+
+      if (!modoTV) {
+        autoSeleccionRealizada.current = true;
+      }
+    }
   }, [todosLosPeriodos, data, periodosUnicos, modoTV, fecha]);
+
+  // 2. Lógica exclusiva de rotación para el Modo TV (15s la activa, 8s las demás)
+  useEffect(() => {
+    if (!modoTV || periodosUnicos.length <= 1) return;
+
+    let timeoutId;
+
+    const programarSiguienteRotacion = () => {
+      const ahora = format(new Date(), "HH:mm:ss");
+      const infoPeriodoActual = todosLosPeriodos?.find(
+        (tp) => String(tp.id) === tabActiva
+      );
+
+      const esLaActivaEnCurso =
+        infoPeriodoActual &&
+        ahora >= infoPeriodoActual.inicio &&
+        ahora <= infoPeriodoActual.fin;
+
+      const tiempoEspera = esLaActivaEnCurso ? 15000 : 8000;
+
+      timeoutId = setTimeout(() => {
+        setTabActiva((currentTab) => {
+          const currentIndex = periodosUnicos.findIndex(
+            (p) => String(p.id) === currentTab
+          );
+          const nextIndex = (currentIndex + 1) % periodosUnicos.length;
+          return String(periodosUnicos[nextIndex].id);
+        });
+
+        programarSiguienteRotacion();
+      }, tiempoEspera);
+    };
+
+    programarSiguienteRotacion();
+
+    return () => clearTimeout(timeoutId);
+  }, [modoTV, periodosUnicos, tabActiva, todosLosPeriodos]);
 
   // Handlers para navegar rápido
   const irAyer = () => setFecha((prev) => subDays(prev, 1));
@@ -826,152 +889,6 @@ function GuardiaCard({
     </Card>
   );
 }
-
-/*function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
-  const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
-
-  if (isLoading)
-    return (
-      <div className="animate-pulse space-y-2 text-slate-400">
-        Cargando disponibilidad...
-      </div>
-    );
-
-  return (
-    <div className="space-y-3">
-      {profes?.map((profe) => {
-        const numGuardiasHoy = profe.num_asignadas_ahora || 0;
-        const estaOcupado = numGuardiasHoy > 0;
-        const esDoble = numGuardiasHoy > 1;
-
-        // Generar iniciales para el Fallback (ej: "García, Juan" -> "JG")
-        const inicialNombre = profe.nombre
-          ? profe.nombre.charAt(0).toUpperCase()
-          : "";
-        const inicialApellido = profe.apellido1
-          ? profe.apellido1.charAt(0).toUpperCase()
-          : "";
-        const iniciales =
-          `${inicialNombre}${inicialApellido}` ||
-          profe.uid.substring(0, 2).toUpperCase();
-
-        // 🔍 Búsqueda de la descripción en el array de estancias recibido por prop
-        const estanciaEncontrada = estancias?.find(
-          (e) =>
-            String(e.id) === String(profe.idestancia) ||
-            e.idestancia === profe.idestancia ||
-            e.nombre === profe.idestancia
-        );
-
-        // Fallback progresivo: descripción -> nombre -> idestancia bruto
-        const textoEstancia =
-          estanciaEncontrada?.descripcion ||
-          estanciaEncontrada?.nombre ||
-          profe.idestancia;
-
-        return (
-          <Card
-            key={profe.uid}
-            className={`transition-all duration-300 border shadow-none ${
-              estaOcupado
-                ? esDoble
-                  ? "bg-indigo-50/50 border-indigo-200 ring-1 ring-indigo-100"
-                  : "bg-blue-50/50 border-blue-200 ring-1 ring-blue-100"
-                : "bg-white border-slate-200 shadow-sm hover:shadow-md"
-            }`}
-          >
-            <CardContent className="p-3 flex justify-between items-center">
-              <div className="flex items-center gap-3 min-w-0 w-full">
-                <div className="relative flex-shrink-0">
-                  <Avatar className="w-10 h-10 border border-slate-200 shadow-sm">
-                    <AvatarImage
-                      src={profe.avatar}
-                      alt={`${profe.nombre} ${profe.apellido1}`}
-                      className="object-cover"
-                    />
-                    <AvatarFallback className="bg-slate-100 text-slate-600 text-xs font-bold font-mono">
-                      {iniciales}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <div
-                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white flex-shrink-0 ${
-                      estaOcupado
-                        ? esDoble
-                          ? "bg-indigo-600 animate-bounce"
-                          : "bg-blue-500 animate-pulse"
-                        : "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
-                    }`}
-                  />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={`text-sm font-bold truncate ${
-                      estaOcupado
-                        ? esDoble
-                          ? "text-indigo-900"
-                          : "text-blue-900"
-                        : "text-slate-700"
-                    }`}
-                  >
-                    {profe.apellido1}
-                    {profe.nombre ? `, ${profe.nombre}` : ""}
-                  </p>
-
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {estaOcupado ? (
-                      <span
-                        className={`text-[10px] font-black uppercase tracking-tight ${
-                          esDoble ? "text-indigo-600" : "text-blue-600"
-                        }`}
-                      >
-                        {esDoble ? "Doble Guardia" : "Asignada"}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-                        Disponible
-                      </span>
-                    )}
-                    <span className="text-slate-300">|</span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      Acumulado: {profe.total_guardias}
-                    </span>
-                  </div>
-                  {profe.idestancia && (
-                    <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100/80 border border-slate-200/60">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Ubicación:
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-700 truncate max-w-[180px]">
-                        {textoEstancia}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 bg-white border border-slate-100 p-1.5 pl-3 rounded-xl shadow-sm flex-shrink-0">
-                <div className="flex flex-col items-end leading-none">
-                  <span className="text-[16px] font-black font-mono text-slate-800">
-                    {profe.guardias_periodo_acumuladas}
-                  </span>
-                </div>
-
-                <div
-                  className={`p-1.5 rounded-lg ${estaOcupado ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-500"}`}
-                >
-                  <Clock className="w-4 h-4" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
-*/
 
 function ListaProfesGuardia({ fecha, idPeriodo, estancias }) {
   const { data: profes, isLoading } = useProfesoresGuardia(fecha, idPeriodo);
