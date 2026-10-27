@@ -113,6 +113,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
         tipo
       FROM public.permisos
       WHERE tipo = 13 
+        AND (ap_procesado = FALSE OR ap_procesado IS NULL) 
         AND COALESCE(created_at, NOW()) >= $1
       ORDER BY fecha ASC, created_at ASC
     `,
@@ -242,7 +243,8 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
         }
         return new Date(a.fecha_registro) - new Date(b.fecha_registro);
       });
-      solicitudesConHistorial.forEach((item, index) => {
+      for (let index = 0; index < solicitudesConHistorial.length; index++) {
+        const item = solicitudesConHistorial[index];
         const esAceptado = index < plazasDisponibles;
 
         if (esAceptado) {
@@ -250,17 +252,23 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
             (consumoExtraEnMemoria[item.uid] || 0) + 1;
         }
 
+        // 👈 Actualizamos ap_procesado a TRUE en la BD de forma síncrona/secuencial
+        await client.query(
+          `UPDATE public.permisos SET ap_procesado = TRUE WHERE id = $1`,
+          [item.id]
+        );
+
         let explicacionCriterio = "";
         const puesto = index + 1;
 
         if (esAceptado) {
           explicacionCriterio =
-            `Plaza concedida (${concedidosPreviamente + puesto}/${cupoMaximoDiario}). ` +
+            `Plaza concedida (simulación) (${concedidosPreviamente + puesto}/${cupoMaximoDiario}). ` +
             `1º Criterio (menor consumo en el curso): ${item.diasDisfrutados} días. ` +
             `2º Criterio (orden de llegada): ${puesto}ª posición de ${solicitudesConHistorial.length} peticiones para este día.`;
         } else {
           explicacionCriterio =
-            `Denegada por concurrencia: se han cubierto las ${cupoMaximoDiario} plazas máximas del día con solicitudes prioritarias o de hora anterior. ` +
+            `Denegada (simulación por concurrencia): se habrían cubierto las ${cupoMaximoDiario} plazas máximas del día. ` +
             `Criterio aplicado (Art. 13.2 DOE): Posición ${puesto}ª de ${solicitudesConHistorial.length} ` +
             `(Consumo acumulado: ${item.diasDisfrutados} días | Registrada a las ${new Date(item.fecha_registro).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid" })}).`;
         }
@@ -270,7 +278,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
           decision: esAceptado ? "ACEPTAR" : "RECHAZAR",
           motivo: explicacionCriterio,
         });
-      });
+      }
     }
 
     await enviarInformeDirectiva(

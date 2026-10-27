@@ -91,13 +91,27 @@ async function getPermisos(req, res) {
 
     const where = filtros.length > 0 ? "WHERE " + filtros.join(" AND ") : "";
 
-    const { rows } = await db.query(
+    /*const { rows } = await db.query(
       `SELECT 
          id, uid,
          TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha,
          TO_CHAR(fecha_fin, 'YYYY-MM-DD') AS fecha_fin,
          descripcion, estado, tipo,
          idperiodo_inicio, idperiodo_fin, dia_completo
+       FROM permisos
+       ${where}
+       ORDER BY fecha ASC`,
+      vals
+    );*/
+
+    const { rows } = await db.query(
+      `SELECT 
+         id, uid,
+         TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha,
+         TO_CHAR(fecha_fin, 'YYYY-MM-DD') AS fecha_fin,
+         descripcion, estado, tipo,
+         idperiodo_inicio, idperiodo_fin, dia_completo,
+         ap_procesado 
        FROM permisos
        ${where}
        ORDER BY fecha ASC`,
@@ -458,13 +472,13 @@ async function insertAsuntoPropio(req, res) {
     // --- Insertar asunto propio ---
     const { rows } = await db.query(
       `INSERT INTO permisos 
-   (uid, fecha, fecha_fin, descripcion, tipo, idperiodo_inicio, idperiodo_fin, dia_completo)
-   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-   RETURNING id, uid, fecha, fecha_fin, descripcion, tipo, idperiodo_inicio, idperiodo_fin, dia_completo`,
+       (uid, fecha, fecha_fin, descripcion, tipo, idperiodo_inicio, idperiodo_fin, dia_completo, ap_procesado) -- 👈 AÑADIR ap_procesado
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE) -- 👈 AÑADIR FALSE explícitamente
+       RETURNING id, uid, fecha, fecha_fin, descripcion, tipo, idperiodo_inicio, idperiodo_fin, dia_completo, ap_procesado`,
       [
         uid,
         fecha,
-        fecha_fin || fecha, // 👈 fallback clave
+        fecha_fin || fecha,
         descripcion,
         tipo,
         idperiodo_inicio,
@@ -662,19 +676,19 @@ async function updatePermiso(req, res) {
       UPDATE permisos
       SET ${sets.join(", ")}
       WHERE id = $${++i} AND estado = 0
-     RETURNING
-  id,
-  uid,
-  fecha,
-  fecha_fin,
-  descripcion,
-  tipo,
-  idperiodo_inicio,
-  idperiodo_fin,
-  dia_completo,
-  estado
+      RETURNING
+        id,
+        uid,
+        fecha,
+        fecha_fin,
+        descripcion,
+        tipo,
+        idperiodo_inicio,
+        idperiodo_fin,
+        dia_completo,
+        estado,
+        ap_procesado -- 👈 AÑADIR ESTA LÍNEA
     `;
-
     vals.push(id);
 
     const { rows } = await db.query(query, vals);
@@ -943,6 +957,7 @@ async function updateEstadoPermiso(req, res) {
         }
       }
     }
+
     // ================================================================
     // 2. ACTUALIZACIÓN DEL REGISTRO DE PERMISO
     // ================================================================
@@ -951,11 +966,12 @@ async function updateEstadoPermiso(req, res) {
       `UPDATE permisos 
        SET estado = $1, 
            uid_ultimo_procesado = $3, 
-           fecha_ultimo_procesado = NOW() 
+           fecha_ultimo_procesado = NOW(),
+           ap_procesado = TRUE 
        WHERE id = $2 
        RETURNING id, uid, fecha, fecha_fin, descripcion, estado, tipo, 
                  idperiodo_inicio, idperiodo_fin, dia_completo, 
-                 uid_ultimo_procesado, fecha_ultimo_procesado`,
+                 uid_ultimo_procesado, fecha_ultimo_procesado, ap_procesado`,
       [estado, id, uidDirectiva]
     );
 
