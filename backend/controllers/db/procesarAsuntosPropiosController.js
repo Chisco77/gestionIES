@@ -96,7 +96,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
   try {
     const ldapSession = req?.session?.ldap || null;
 
-    const fechaInicioFiltro = obtenerFechaInicioHabilesAtras(ahora, 3);
+    const fechaInicioFiltro = obtenerFechaInicioHabilesAtras(ahora, 2);
 
     console.log(
       `🔍 [DB] Consultando en public.permisos solicitudes de tipo 13 desde ${fechaInicioFiltro.toISOString()}...`
@@ -150,7 +150,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
     const enEspera = [];
 
     for (const sol of pendientesConNombre) {
-      const fechaLimite = calcularLimiteDiasHabiles(sol.fecha_registro, 3);
+      const fechaLimite = calcularLimiteDiasHabiles(sol.fecha_registro, 2);
       if (ahora >= fechaLimite) {
         listasParaResolver.push({ ...sol, fechaLimite });
       } else {
