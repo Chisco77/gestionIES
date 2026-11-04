@@ -101,7 +101,8 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
     console.log(
       `🔍 [DB] Consultando en public.permisos solicitudes de tipo 13 desde ${fechaInicioFiltro.toISOString()}...`
     );
-    const { rows: pendientes } = await client.query(
+    
+    /*const { rows: pendientes } = await client.query(
       `
       SELECT 
         id,
@@ -114,6 +115,24 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
       FROM public.permisos
       WHERE tipo = 13 
         AND (ap_procesado = FALSE OR ap_procesado IS NULL) 
+        AND COALESCE(created_at, NOW()) >= $1
+      ORDER BY fecha ASC, created_at ASC
+    `,
+      [fechaInicioFiltro.toISOString()]
+    );*/
+
+    const { rows: pendientes } = await client.query(
+      `
+      SELECT 
+        id,
+        uid,
+        fecha AS fecha_disfrute,
+        COALESCE(created_at, NOW()) AS fecha_registro,
+        descripcion,
+        estado,
+        tipo
+      FROM public.permisos
+      WHERE tipo = 13 
         AND COALESCE(created_at, NOW()) >= $1
       ORDER BY fecha ASC, created_at ASC
     `,
