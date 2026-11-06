@@ -197,7 +197,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
       WHERE restriccion = 'asuntos' and descripcion = 'concurrentes'
       LIMIT 1
     `);
-    const cupoMaximoDiario = Number(configCupo[0]?.valor_num) || 3;
+    const cupoMaximoDiario = Number(configCupo[0]?.valor_num) || 2;
 
     // Agrupamos por fecha de disfrute
     const solicitudesPorDia = {};
