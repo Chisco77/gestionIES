@@ -101,7 +101,7 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
     console.log(
       `🔍 [DB] Consultando en public.permisos solicitudes de tipo 13 desde ${fechaInicioFiltro.toISOString()}...`
     );
-    
+
     /*const { rows: pendientes } = await client.query(
       `
       SELECT 
@@ -218,16 +218,43 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
       const listaSolicitudes = solicitudesPorDia[fechaDia];
       const rangoCurso = getRangoCursoAcademico(fechaDia);
 
-      const { rows: yaConcedidosDia } = await client.query(
-        `
-        SELECT COUNT(*)::int AS total
-        FROM public.permisos
-        WHERE tipo = 13 AND estado = 1 AND fecha = $1
-      `,
-        [fechaDia]
-      );
+      // Obtenemos los IDs de las solicitudes que estamos evaluando hoy en este lote
+      const idsEvaluadosHoy = listaSolicitudes.map((s) => s.id);
 
+      let yaConcedidosDia = [];
+      if (idsEvaluadosHoy.length > 0) {
+        // Contamos los concedidos en BD EXRAYENDO los que están en este lote actual,
+        // para que si alguno de ellos ya era estado 1, no se cuente doble a sí mismo,
+        // pero SÍ refleje correctamente cuántas plazas del cupo total ya están ocupadas por otros.
+        const placeholders = idsEvaluadosHoy
+          .map((_, i) => `$${i + 2}`)
+          .join(", ");
+        const resConcedidos = await client.query(
+          `
+          SELECT COUNT(*)::int AS total
+          FROM public.permisos
+          WHERE tipo = 13 AND estado = 1 AND fecha = $1
+            AND id NOT IN (${placeholders})
+        `,
+          [fechaDia, ...idsEvaluadosHoy]
+        );
+        yaConcedidosDia = resConcedidos.rows;
+      } else {
+        const resConcedidos = await client.query(
+          `
+          SELECT COUNT(*)::int AS total
+          FROM public.permisos
+          WHERE tipo = 13 AND estado = 1 AND fecha = $1
+        `,
+          [fechaDia]
+        );
+        yaConcedidosDia = resConcedidos.rows;
+      }
+
+      // Este valor representa las plazas ya ocupadas por OTROS (tanto manuales como automáticos previos)
       const concedidosPreviamente = yaConcedidosDia[0]?.total || 0;
+
+      // El cupo disponible se evalúa respetando estrictamente el máximo diario
       const plazasDisponibles = Math.max(
         0,
         cupoMaximoDiario - concedidosPreviamente
@@ -256,22 +283,29 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
         });
       }
 
+      // Ordenamos por criterios (1º menor consumo, 2º orden de registro)
       solicitudesConHistorial.sort((a, b) => {
         if (a.diasDisfrutados !== b.diasDisfrutados) {
           return a.diasDisfrutados - b.diasDisfrutados;
         }
         return new Date(a.fecha_registro) - new Date(b.fecha_registro);
       });
+
       for (let index = 0; index < solicitudesConHistorial.length; index++) {
         const item = solicitudesConHistorial[index];
-        const esAceptado = index < plazasDisponibles;
 
-        if (esAceptado) {
+        // Si el profesor ya tenía este permiso aprobado de forma manual previamente (estado = 1),
+        // lo respetamos automáticamente sin que compita por las plazas libres.
+        const yaAprobadoManual = item.estado === 1;
+
+        // Si no está aprobado de manual, entra a competir por las plazasDisponibles restantes del cupo
+        const esAceptado = yaAprobadoManual || index < plazasDisponibles;
+
+        if (esAceptado && !yaAprobadoManual) {
           consumoExtraEnMemoria[item.uid] =
             (consumoExtraEnMemoria[item.uid] || 0) + 1;
         }
 
-        // 👈 Actualizamos ap_procesado a TRUE en la BD de forma síncrona/secuencial
         await client.query(
           `UPDATE public.permisos SET ap_procesado = TRUE WHERE id = $1`,
           [item.id]
@@ -280,7 +314,9 @@ exports.simularYEnviarAsuntosPropios = async (req, res) => {
         let explicacionCriterio = "";
         const puesto = index + 1;
 
-        if (esAceptado) {
+        if (yaAprobadoManual) {
+          explicacionCriterio = `Aprobado previamente de forma manual por la directiva (respetado por el sistema automático).`;
+        } else if (esAceptado) {
           explicacionCriterio =
             `Plaza concedida (simulación) (${concedidosPreviamente + puesto}/${cupoMaximoDiario}). ` +
             `1º Criterio (menor consumo en el curso): ${item.diasDisfrutados} días. ` +
