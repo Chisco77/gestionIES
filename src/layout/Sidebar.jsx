@@ -510,6 +510,8 @@ function SidebarComponent({
           { title: "Planos", url: "/planos", icon: Building2 },
           { title: "Edición de Planos", url: "/edicionPlanos", icon: Map },
           { title: "Estancias", url: "/estancias", icon: Building2 },
+          { title: "Equipos Informáticos", url: "/equipos-informaticos", icon: Building2 },
+
           {
             title: "Horarios UNTIS",
             url: "#",

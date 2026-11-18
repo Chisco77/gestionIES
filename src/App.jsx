@@ -319,10 +319,23 @@ const router = createBrowserRouter(
           ),
         },
 
+        {
+          path: "equipos-informaticos",
+          element: (
+            <ProtectedRoute perfilesPermitidos={["administrador"]}>
+              {" "}
+              <EstanciasIndex />{" "}
+            </ProtectedRoute>
+          ),
+        },
+
         { path: "asuntos", element: <AsuntosPropiosIndex /> },
         { path: "permisos", element: <PermisosIndex /> },
         { path: "asistencia-cursos", element: <FormacionIndex /> },
-        { path: "agenda-extraescolares", element: <DashboardAgendaExtraescolares /> },
+        {
+          path: "agenda-extraescolares",
+          element: <DashboardAgendaExtraescolares />,
+        },
 
         { path: "extraescolares", element: <ExtraescolaresIndex /> },
         { path: "reservasEstancias", element: <ReservasEstanciasIndex /> },

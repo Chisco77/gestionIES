@@ -102,6 +102,7 @@ export default function Layout(props) {
       "/asistencia-cursos": "Asistencia a Cursos",
       "/agenda-extraescolares": "Agenda de Extraescolares y Complementarias",
       "/registro-impresion": "Registro de impresiones",
+      "/equipos-informaticos": "Equipos Informáticos",
     };
 
     let titulo = pathToTitleMap[location.pathname];
