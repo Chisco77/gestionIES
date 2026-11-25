@@ -28,8 +28,6 @@
  * ================================================================
  */
 
-
-
 const express = require("express");
 const router = express.Router();
 const {
@@ -43,10 +41,18 @@ const {
   getMiembrosPorGidNumber,
 } = require("../controllers/ldap/gruposController");
 
+const hostsController = require("../controllers/ldap/hostsController");
+
 router.get("/grupos", getLdapGrupos);
 router.get("/grupos/:gidNumber/miembros", getMiembrosPorGidNumber);
 router.get("/usuarios", getLdapUsuarios);
 router.get("/usuariosPorGrupo", obtenerAlumnosPorGrupo);
 router.get("/usuarios/:uid", obtenerUsuarioPorUid);
+
+// Obtener todos los hosts o filtrar por dc
+router.get("/hosts", hostsController.getLdapHosts);
+
+// Obtener un host concreto
+router.get("/hosts/:dc", hostsController.getLdapHostPorDc);
 
 module.exports = router;

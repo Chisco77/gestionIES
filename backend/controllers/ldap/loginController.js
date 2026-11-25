@@ -94,10 +94,8 @@ exports.loginLdap = (req, res) => {
           console.log("✅ Admin login correcto, employeeNumber:", empNum);
         });
         // ➜ Lanzar volcado completo usando contraseña del admin
-        const volcarProfesoresALaBD = require("../../utils/volcadoProfesores");
-        const volcarAusenciasALaBD = require("../../utils/volcadoAusencias");
 
-        Promise.all([
+        /*Promise.all([
           volcarProfesoresALaBD(password),
           volcarAusenciasALaBD(), // <--- Nueva llamada
         ])
@@ -113,6 +111,41 @@ exports.loginLdap = (req, res) => {
         searchRes.on("end", () => {
           client.unbind();
           return res.json({ message: "Login correcto (usuario admin)" });
+        });*/
+
+        // Lanzar los volcados después del login de administrador.
+        const volcarProfesoresALaBD = require("../../utils/volcadoProfesores");
+        const volcarAusenciasALaBD = require("../../utils/volcadoAusencias");
+        const volcarHostsALaBD = require("../../utils/volcadoHosts");
+
+        Promise.allSettled([
+          volcarProfesoresALaBD(password),
+          volcarAusenciasALaBD(),
+          volcarHostsALaBD(password),
+        ]).then((resultados) => {
+          const procesos = ["Profesores", "Ausencias", "Hosts"];
+
+          resultados.forEach((resultado, index) => {
+            if (resultado.status === "fulfilled") {
+              console.log(
+                `🟢 Volcado ${procesos[index]} finalizado correctamente`
+              );
+            } else {
+              console.error(
+                `❌ Error en volcado ${procesos[index]}:`,
+                resultado.reason
+              );
+            }
+          });
+        });
+
+        // IMPORTANTE: responder al frontend al terminar la búsqueda LDAP.
+        searchRes.on("end", () => {
+          client.unbind();
+
+          return res.json({
+            message: "Login correcto (usuario admin)",
+          });
         });
       });
 

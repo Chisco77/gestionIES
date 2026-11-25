@@ -40,7 +40,15 @@ import { TablaUsuarios } from "../components/TablaUsuarios";
 import { DialogoEtiquetas } from "../components/DialogoEtiquetas";
 import DialogoEditarUsuario from "../components/DialogoEditarUsuario";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Printer, Users, Tag } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Printer,
+  Users,
+  Tag,
+  FileText,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -51,8 +59,10 @@ import { useAlumnosLdap } from "@/hooks/useAlumnosLdap";
 import { useConfiguracionCentro } from "@/hooks/useConfiguracionCentro";
 import { resolverRutaLogo } from "@/Informes/utils";
 
-
-import { generarPdfListadoPorCurso } from "@/Informes/usuarios";
+import {
+  generarPdfListadoPorCurso,
+  generarPdfCompromisosPortatil,
+} from "@/Informes/usuarios";
 
 const handleInsertar = () => alert("Inserción de alumno: No implementado");
 
@@ -126,6 +136,18 @@ export function AlumnosIndex() {
                 >
                   <Users className="mr-2 h-4 w-4" />
                   Alumnos por grupo
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    generarPdfCompromisosPortatil(
+                      alumnosFiltrados,
+                      "compromisos_retirada_portatil",
+                      urlLogoParaInformes
+                    )
+                  }
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Compromiso de retirada de portátil
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
