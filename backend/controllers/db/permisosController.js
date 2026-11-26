@@ -829,7 +829,7 @@ async function updateEstadoPermiso(req, res) {
     await client.query("BEGIN");
 
     // ================================================================
-    // 1. VALIDACIÓN DE ASUNTOS PROPIOS (Lógica de cupo máximo)
+    // 1. VALIDACIÓN DE ASUNTOS PROPIOS (Lógica de cupo máximo para el profesor)
     // ================================================================
 
     if (estado === 1) {
@@ -953,6 +953,41 @@ async function updateEstadoPermiso(req, res) {
         if (totalConcedidos >= maxDias) {
           throw new Error(
             `Cupo alcanzado: El empleado ya tiene ${maxDias} días concedidos en el curso ${cursoAcademico}.`
+          );
+        }
+        // ==============================================================
+        // 1B. VALIDACIÓN DE CUPOS DIARIOS CONCURRENTES ("concurrentes")
+        // ==============================================================
+        const restricciones = await getRestriccionesAsuntos();
+        const concurrentesRestriccion = restricciones.find(
+          (r) => r.descripcion === "concurrentes"
+        );
+
+        const maxConcurrentes = Number(concurrentesRestriccion?.valor_num ?? 0);
+
+        if (!maxConcurrentes || maxConcurrentes <= 0) {
+          throw new Error(
+            "No está configurado el número máximo de asuntos propios concurrentes por día"
+          );
+        }
+
+        const { rows: concurrentesRows } = await client.query(
+          `
+          SELECT COUNT(*)::int AS total_dia
+          FROM permisos
+          WHERE tipo = 13
+            AND estado = 1
+            AND id <> $2
+            AND fecha = $1::date
+          `,
+          [permiso.fecha, id]
+        );
+
+        const totalDia = concurrentesRows[0]?.total_dia ?? 0;
+
+        if (totalDia >= maxConcurrentes) {
+          throw new Error(
+            `Cupo diario alcanzado: ya hay ${totalDia}/${maxConcurrentes} asuntos propios concedidos para esa fecha.`
           );
         }
       }
